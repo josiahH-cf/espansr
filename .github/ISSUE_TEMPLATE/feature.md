@@ -4,6 +4,8 @@ about: Propose a new feature for agent implementation
 labels: "type:feature, status:idea"
 ---
 
+<!-- For human use only. Agents: create /specs/ files instead of filing issues. -->
+
 ## Idea
 
 <!-- 1–3 sentences: what and why -->

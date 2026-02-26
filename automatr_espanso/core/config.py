@@ -9,35 +9,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
-
-def get_platform() -> str:
-    """Get the current platform.
-
-    Returns:
-        'windows', 'linux', 'wsl2', or 'macos'
-    """
-    system = platform.system()
-
-    if system == "Windows":
-        return "windows"
-    elif system == "Darwin":
-        return "macos"
-    elif system == "Linux":
-        # Check for WSL2
-        try:
-            with open("/proc/version", "r") as f:
-                version = f.read().lower()
-                if "microsoft" in version or "wsl" in version:
-                    return "wsl2"
-        except (OSError, IOError):
-            pass
-        return "linux"
-    return "unknown"
-
-
-def is_windows() -> bool:
-    """Check if running on native Windows."""
-    return get_platform() == "windows"
+from automatr_espanso.core.platform import get_platform, is_windows  # noqa: F401
 
 
 def get_config_dir() -> Path:
