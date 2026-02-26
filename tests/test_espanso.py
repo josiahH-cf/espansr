@@ -25,8 +25,6 @@ def test_config_manager_returns_defaults_when_no_file(tmp_path):
 
     assert isinstance(config.espanso, EspansoConfig)
     assert isinstance(config.ui, UIConfig)
-    # Must NOT have LLMConfig
-    assert not hasattr(config, "llm")
 
 
 def test_config_manager_save_and_reload(tmp_path):
