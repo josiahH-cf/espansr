@@ -24,6 +24,10 @@ dev = [
 [project.scripts]
 automatr-espanso = "automatr_espanso.__main__:main"
 
+[project.urls]
+Homepage = "https://github.com/josiahH-cf/automatr-espanso"
+Repository = "https://github.com/josiahH-cf/automatr-espanso"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["automatr_espanso*"]
