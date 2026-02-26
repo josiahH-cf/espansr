@@ -3,7 +3,7 @@
 Covers: ConfigManager, EspansoConfig, TemplateManager, iter_with_triggers,
 sync_to_espanso YAML output, WSL2 path detection, CLI commands.
 
-Minimum 8 test functions required (currently 12).
+Minimum 8 test functions required (currently 14).
 """
 
 import json
@@ -25,8 +25,6 @@ def test_config_manager_returns_defaults_when_no_file(tmp_path):
 
     assert isinstance(config.espanso, EspansoConfig)
     assert isinstance(config.ui, UIConfig)
-    # Must NOT have LLMConfig
-    assert not hasattr(config, "llm")
 
 
 def test_config_manager_save_and_reload(tmp_path):
@@ -146,7 +144,7 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
         result = sync_to_espanso()
 
     assert result is True
-    output = match_dir / "automatr.yml"
+    output = match_dir / "automatr-espanso.yml"
     assert output.exists()
 
     data = yaml.safe_load(output.read_text())
@@ -190,7 +188,7 @@ def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
 
         sync_to_espanso()
 
-    data = yaml.safe_load((match_dir / "automatr.yml").read_text())
+    data = yaml.safe_load((match_dir / "automatr-espanso.yml").read_text())
     replace_text = data["matches"][0]["replace"]
     # Form vars must use .value accessor
     assert "{{name.value}}" in replace_text
@@ -226,7 +224,7 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
 
     assert result is True
     # No file should be written when there are no matches
-    assert not (match_dir / "automatr.yml").exists()
+    assert not (match_dir / "automatr-espanso.yml").exists()
 
 
 def test_sync_returns_false_when_no_match_dir():

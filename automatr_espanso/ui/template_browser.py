@@ -1,7 +1,6 @@
 """Template browser widget for automatr-espanso.
 
-Shows templates organized by folder with trigger info prominently displayed.
-Adapted from automatr-prompt's TemplateTreeWidget, refocused on Espanso usage:
+Shows templates organized by folder with trigger info prominently displayed:
 - Trigger column shown alongside template name
 - Preview pane shows content + trigger
 - Search filters by name, trigger, or description

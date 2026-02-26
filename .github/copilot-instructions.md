@@ -27,5 +27,10 @@
 
 ## Coding Agent
 
-- Read the linked spec before starting
-- Do not modify files outside the scope described in the issue
+- Read `/AGENTS.md` before starting any task — it defines the feature lifecycle and agent boundaries
+- For new features: create a spec in `/specs/` using `/specs/_TEMPLATE.md`, then a task breakdown in `/tasks/` using `/tasks/_TEMPLATE.md`
+- Do not create GitHub issues, labels, or milestones — these are managed by humans
+- Do not modify files outside the scope described in the spec
+- Follow the feature lifecycle: Scope → Plan → Test → Implement → Review
+- Read the linked spec before writing any code
+- One task per session; commit after each task passes its tests
