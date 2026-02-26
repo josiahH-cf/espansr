@@ -200,39 +200,6 @@ setup_templates_dir() {
 
 setup_templates_dir
 
-# ─── AutoHotkey script (WSL2 only) ───────────────────────────────────────────
-setup_autohotkey() {
-    if [[ "$PLATFORM" != "wsl2" ]]; then
-        return 0
-    fi
-
-    info "WSL2: Checking AutoHotkey setup…"
-
-    local win_user
-    win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')" || true
-    if [[ -z "$win_user" ]]; then
-        warn "Could not determine Windows username — skipping AutoHotkey setup"
-        return 0
-    fi
-
-    local ahk_dir="/mnt/c/Users/$win_user/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Startup"
-    local ahk_script="$SCRIPT_DIR/scripts/automatr-espanso.ahk"
-
-    if [[ ! -f "$ahk_script" ]]; then
-        # No AHK script bundled — skip silently
-        return 0
-    fi
-
-    if [[ -d "$ahk_dir" ]]; then
-        cp "$ahk_script" "$ahk_dir/" 2>/dev/null && ok "AutoHotkey script installed to Startup folder" || \
-            warn "Could not copy AutoHotkey script — copy manually from scripts/"
-    else
-        warn "Windows Startup folder not found at expected path"
-    fi
-}
-
-setup_autohotkey
-
 # ─── Shell integration ────────────────────────────────────────────────────────
 setup_shell_alias() {
     local shell_rc
