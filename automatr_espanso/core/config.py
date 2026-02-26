@@ -5,7 +5,7 @@ Handles loading/saving app configuration from a single JSON file.
 
 import json
 import platform
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 

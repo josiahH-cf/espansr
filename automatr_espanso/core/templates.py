@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
-from automatr_espanso.core.config import get_templates_dir, get_config
+from automatr_espanso.core.config import get_config, get_templates_dir
 
 
 @dataclass

@@ -6,7 +6,6 @@ showing exactly what will be written to automatr.yml.
 
 from typing import Optional
 
-from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
