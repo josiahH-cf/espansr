@@ -36,11 +36,11 @@
 
 # Core Code Lineage
 
-`config.py` and `templates.py` are adapted copies of the same files from `automatr-prompt`.
-They will diverge over time — this is intentional. Do not attempt to re-merge or share them.
-Key differences from automatr-prompt:
-- `EspansoConfig` replaces `LLMConfig`
-- Config dir is `automatr-espanso` (not `automatr`)
+`config.py` and `templates.py` are adapted from an earlier project and will continue to diverge.
+Do not attempt to re-merge or share them with external codebases.
+Key design decisions:
+- `EspansoConfig` is the primary config dataclass
+- Config dir is `automatr-espanso`
 - `TemplateManager` has `iter_with_triggers()` method
 
 # Testing
@@ -58,8 +58,6 @@ Key differences from automatr-prompt:
 - PyYAML: required for Espanso YAML file generation
 - PyQt6: required for GUI
 - No `requests` dependency
-- No llama.cpp dependency
-- No dependency on `automatr-prompt` at runtime
 
 # Planning
 

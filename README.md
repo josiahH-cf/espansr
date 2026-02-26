@@ -2,8 +2,6 @@
 
 A standalone GUI and CLI for managing [Espanso](https://espanso.org/) text expansion templates.
 
-Part of the Automatr project — a split from the original monolithic `automatr` app.
-
 ## Features
 
 - Browse and search your Espanso templates
@@ -67,9 +65,9 @@ Templates are JSON files stored in `~/.config/automatr-espanso/templates/` (Linu
 
 The `trigger` field is the Espanso trigger string (e.g., `:greet`). Templates without a trigger are shown in the browser but excluded from Espanso sync.
 
-## Schema Compatibility
+## Schema
 
-This app reads the same JSON template format as `automatr-prompt`. The `trigger` field is the primary field used here; other fields (`variables`, `refinements`) are preserved as-is.
+Templates use a standard JSON format with `name`, `content`, `trigger`, and `variables` fields. The `trigger` field is used for Espanso matching; other fields (`variables`, `refinements`) are preserved as-is.
 
 ## Development
 

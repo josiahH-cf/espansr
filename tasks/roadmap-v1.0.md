@@ -16,9 +16,9 @@
 - Warn on unsupported trigger patterns
 - Surface config errors in the UI
 
-### Template Import from Prompt App
-- Import template JSON files from automatr-prompt
-- Auto-strip LLM-specific fields (non-applicable to Espanso)
+### Template Import
+- Import template JSON files from external sources
+- Strip fields not applicable to Espanso
 - Map template variables to Espanso trigger variables
 
 ### First Public Release (v1.0)
@@ -38,4 +38,4 @@ _No active work — ready for v1.0 planning._
 - CLI and GUI interfaces
 - 14 tests passing
 - CI/CD with GitHub Actions (Python 3.11–3.12)
-- Governance docs (AGENTS.md, GOVERNANCE.md)
+- Governance docs (AGENTS.md)
