@@ -27,6 +27,7 @@ class MainWindow(QMainWindow):
         self.resize(self._config.ui.window_width, self._config.ui.window_height)
         self._setup_ui()
         self._apply_theme()
+        self._clean_stale_espanso_files()
 
     def _setup_ui(self) -> None:
         """Build the two-pane splitter layout."""
@@ -65,6 +66,12 @@ class MainWindow(QMainWindow):
             font_size=self._config.ui.font_size,
         )
         self.setStyleSheet(stylesheet)
+
+    def _clean_stale_espanso_files(self) -> None:
+        """Remove automatr-managed files from non-canonical Espanso dirs."""
+        from automatr_espanso.integrations.espanso import clean_stale_espanso_files
+
+        clean_stale_espanso_files()
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:
         """Persist splitter position when the user drags it."""
