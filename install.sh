@@ -2,7 +2,6 @@
 # install.sh — automatr-espanso installer
 #
 # Supports: Linux, WSL2, macOS
-# Does NOT require: llama.cpp, LLM models, requests library
 #
 # Usage: ./install.sh [--no-desktop]
 
