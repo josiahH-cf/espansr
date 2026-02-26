@@ -1,11 +1,17 @@
 """Tests for automatr_espanso.core.platform module.
 
-Covers: get_platform(), is_wsl2(), get_windows_username()
+Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username()
 """
 
-import importlib
+import subprocess
 from unittest.mock import MagicMock, mock_open, patch
 
+from automatr_espanso.core.platform import (
+    get_platform,
+    get_windows_username,
+    is_windows,
+    is_wsl2,
+)
 
 # ─── get_platform() tests ────────────────────────────────────────────────────
 
@@ -19,11 +25,6 @@ def test_get_platform_returns_wsl2_when_proc_version_contains_microsoft():
             mock_open(read_data="Linux version 5.15 (Microsoft WSL2)"),
         ),
     ):
-        from automatr_espanso.core.platform import get_platform
-
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_platform
-
         assert get_platform() == "wsl2"
 
 
@@ -36,33 +37,18 @@ def test_get_platform_returns_linux_on_native():
             mock_open(read_data="Linux version 5.15 generic ubuntu"),
         ),
     ):
-        from automatr_espanso.core.platform import get_platform
-
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_platform
-
         assert get_platform() == "linux"
 
 
 def test_get_platform_returns_macos_on_darwin():
     """get_platform() returns 'macos' on macOS."""
     with patch("platform.system", return_value="Darwin"):
-        from automatr_espanso.core.platform import get_platform
-
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_platform
-
         assert get_platform() == "macos"
 
 
 def test_get_platform_returns_windows():
     """get_platform() returns 'windows' on Windows."""
     with patch("platform.system", return_value="Windows"):
-        from automatr_espanso.core.platform import get_platform
-
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_platform
-
         assert get_platform() == "windows"
 
 
@@ -72,12 +58,25 @@ def test_get_platform_returns_linux_when_proc_version_unreadable():
         patch("platform.system", return_value="Linux"),
         patch("builtins.open", side_effect=OSError("Permission denied")),
     ):
-        from automatr_espanso.core.platform import get_platform
-
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_platform
-
         assert get_platform() == "linux"
+
+
+def test_get_platform_returns_unknown_for_unrecognized_system():
+    """get_platform() returns 'unknown' for unrecognized platform.system() values."""
+    with patch("platform.system", return_value="FreeBSD"):
+        assert get_platform() == "unknown"
+
+
+def test_get_platform_detects_wsl_keyword_in_proc_version():
+    """get_platform() detects 'wsl' (lowercase) in /proc/version as WSL2."""
+    with (
+        patch("platform.system", return_value="Linux"),
+        patch(
+            "builtins.open",
+            mock_open(read_data="Linux version 5.15.90.1-wsl2-standard"),
+        ),
+    ):
+        assert get_platform() == "wsl2"
 
 
 # ─── is_wsl2() tests ─────────────────────────────────────────────────────────
@@ -92,9 +91,6 @@ def test_is_wsl2_returns_true_on_wsl2():
             mock_open(read_data="Linux version 5.15 Microsoft WSL2"),
         ),
     ):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import is_wsl2
-
         assert is_wsl2() is True
 
 
@@ -107,10 +103,40 @@ def test_is_wsl2_returns_false_on_native_linux():
             mock_open(read_data="Linux version 5.15 generic ubuntu"),
         ),
     ):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import is_wsl2
-
         assert is_wsl2() is False
+
+
+def test_is_wsl2_returns_false_on_windows():
+    """is_wsl2() returns False on native Windows."""
+    with patch("platform.system", return_value="Windows"):
+        assert is_wsl2() is False
+
+
+def test_is_wsl2_returns_false_on_macos():
+    """is_wsl2() returns False on macOS."""
+    with patch("platform.system", return_value="Darwin"):
+        assert is_wsl2() is False
+
+
+# ─── is_windows() tests ──────────────────────────────────────────────────────
+
+
+def test_is_windows_returns_true_on_windows():
+    """is_windows() returns True on native Windows."""
+    with patch("platform.system", return_value="Windows"):
+        assert is_windows() is True
+
+
+def test_is_windows_returns_false_on_linux():
+    """is_windows() returns False on Linux."""
+    with (
+        patch("platform.system", return_value="Linux"),
+        patch(
+            "builtins.open",
+            mock_open(read_data="Linux version 5.15 generic"),
+        ),
+    ):
+        assert is_windows() is False
 
 
 # ─── get_windows_username() tests ────────────────────────────────────────────
@@ -122,29 +148,21 @@ def test_get_windows_username_returns_name_on_success():
     mock_result.stdout = "JohnDoe\r\n"
 
     with patch("subprocess.run", return_value=mock_result):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_windows_username
-
         assert get_windows_username() == "JohnDoe"
 
 
 def test_get_windows_username_returns_none_on_failure():
     """get_windows_username() returns None when cmd.exe fails."""
     with patch("subprocess.run", side_effect=FileNotFoundError("cmd.exe not found")):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_windows_username
-
         assert get_windows_username() is None
 
 
 def test_get_windows_username_returns_none_on_timeout():
     """get_windows_username() returns None when cmd.exe times out."""
-    import subprocess
-
-    with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("cmd.exe", 5)):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_windows_username
-
+    with patch(
+        "subprocess.run",
+        side_effect=subprocess.TimeoutExpired("cmd.exe", 5),
+    ):
         assert get_windows_username() is None
 
 
@@ -154,7 +172,29 @@ def test_get_windows_username_returns_none_on_empty_output():
     mock_result.stdout = "  \r\n"
 
     with patch("subprocess.run", return_value=mock_result):
-        importlib.reload(importlib.import_module("automatr_espanso.core.platform"))
-        from automatr_espanso.core.platform import get_windows_username
-
         assert get_windows_username() is None
+
+
+def test_get_windows_username_returns_none_on_os_error():
+    """get_windows_username() returns None on generic OSError."""
+    with patch("subprocess.run", side_effect=OSError("Unexpected error")):
+        assert get_windows_username() is None
+
+
+# ─── config.py re-export tests ───────────────────────────────────────────────
+
+
+def test_config_reexports_get_platform():
+    """config.py re-exports get_platform from platform module."""
+    from automatr_espanso.core.config import get_platform as config_get_platform
+
+    assert callable(config_get_platform)
+    assert config_get_platform is get_platform
+
+
+def test_config_reexports_is_windows():
+    """config.py re-exports is_windows from platform module."""
+    from automatr_espanso.core.config import is_windows as config_is_windows
+
+    assert callable(config_is_windows)
+    assert config_is_windows is is_windows
