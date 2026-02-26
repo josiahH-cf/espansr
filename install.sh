@@ -172,6 +172,67 @@ detect_espanso() {
 
 detect_espanso
 
+# ─── Stale file cleanup ──────────────────────────────────────────────────────
+clean_stale_espanso_files() {
+    # Find the canonical Espanso config path (first existing candidate)
+    local canonical=""
+    local candidates=()
+
+    if [[ "$PLATFORM" == "wsl2" ]]; then
+        local win_user
+        win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')" || true
+        if [[ -n "$win_user" ]]; then
+            candidates+=(
+                "/mnt/c/Users/$win_user/.config/espanso"
+                "/mnt/c/Users/$win_user/.espanso"
+                "/mnt/c/Users/$win_user/AppData/Roaming/espanso"
+            )
+        fi
+    fi
+
+    if [[ "$PLATFORM" == "macos" ]]; then
+        candidates+=(
+            "$HOME/Library/Application Support/espanso"
+            "$HOME/.config/espanso"
+        )
+    else
+        candidates+=(
+            "$HOME/.config/espanso"
+            "$HOME/.espanso"
+        )
+    fi
+
+    # Detect canonical path (first existing candidate)
+    for c in "${candidates[@]}"; do
+        if [[ -d "$c" ]]; then
+            canonical="$c"
+            break
+        fi
+    done
+
+    if [[ -z "$canonical" ]]; then
+        return 0  # No Espanso config found, nothing to clean
+    fi
+
+    # Remove automatr-managed files from non-canonical locations
+    local managed_files=("automatr-espanso.yml" "automatr-launcher.yml")
+    for c in "${candidates[@]}"; do
+        [[ "$c" == "$canonical" ]] && continue
+        local match_dir="$c/match"
+        [[ -d "$match_dir" ]] || continue
+
+        for f in "${managed_files[@]}"; do
+            if [[ -f "$match_dir/$f" ]]; then
+                rm -f "$match_dir/$f" 2>/dev/null && \
+                    info "Removed stale file: $match_dir/$f" || \
+                    warn "Could not remove stale file: $match_dir/$f"
+            fi
+        done
+    done
+}
+
+clean_stale_espanso_files
+
 # ─── Templates directory ──────────────────────────────────────────────────────
 setup_templates_dir() {
     local config_dir
