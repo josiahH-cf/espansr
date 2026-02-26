@@ -100,6 +100,37 @@ def test_get_espanso_config_dir_redetects_when_persisted_path_missing(tmp_path):
 
     assert result == real_dir
     assert config.espanso.config_path == str(real_dir)
+    # Called twice: once to clear stale path, once to persist new path
+    assert mock_save.call_count == 2
+
+
+def test_get_espanso_config_dir_clears_stale_path_when_no_candidates(tmp_path):
+    """When persisted path is gone and no candidates exist, stale value is cleared."""
+    from automatr_espanso.core.config import ConfigManager
+
+    gone_dir = tmp_path / "gone"
+
+    cm = ConfigManager(config_path=tmp_path / "config.json")
+    config = cm.config
+    config.espanso.config_path = str(gone_dir)
+
+    with (
+        patch("automatr_espanso.integrations.espanso.get_config", return_value=config),
+        patch("automatr_espanso.integrations.espanso.save_config") as mock_save,
+        patch("automatr_espanso.integrations.espanso.is_wsl2", return_value=False),
+        patch("platform.system", return_value="Linux"),
+        patch(
+            "automatr_espanso.integrations.espanso._get_candidate_paths",
+            return_value=[],
+        ),
+    ):
+        from automatr_espanso.integrations.espanso import get_espanso_config_dir
+
+        result = get_espanso_config_dir()
+
+    assert result is None
+    assert config.espanso.config_path == ""
+    # save_config called once to clear the stale value
     mock_save.assert_called_once_with(config)
 
 
@@ -334,6 +365,42 @@ def test_sync_calls_cleanup_before_write(tmp_path):
         from automatr_espanso.integrations.espanso import sync_to_espanso
 
         sync_to_espanso()
+
+    mock_clean.assert_called_once()
+
+
+def test_espanso_manager_sync_calls_cleanup(tmp_path):
+    """EspansoManager.sync() calls clean_stale_espanso_files() before writing."""
+    from automatr_espanso.core.templates import TemplateManager
+
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+
+    match_dir = tmp_path / "espanso" / "match"
+    match_dir.mkdir(parents=True)
+
+    with (
+        patch(
+            "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+            return_value=tmp_path / "espanso",
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso.get_template_manager"
+        ) as mock_mgr,
+        patch(
+            "automatr_espanso.integrations.espanso.clean_stale_espanso_files"
+        ) as mock_clean,
+    ):
+        mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
+
+        from automatr_espanso.integrations.espanso import EspansoManager
+
+        manager = EspansoManager()
+        manager.sync()
 
     mock_clean.assert_called_once()
 

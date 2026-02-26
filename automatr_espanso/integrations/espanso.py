@@ -131,6 +131,8 @@ def get_espanso_config_dir() -> Optional[Path]:
             "Persisted Espanso path %s no longer exists, re-detecting",
             config.espanso.config_path,
         )
+        config.espanso.config_path = ""
+        save_config(config)
 
     # Auto-detect from candidate paths
     for candidate in _get_candidate_paths():
@@ -324,6 +326,8 @@ class EspansoManager:
         """Sync templates to Espanso and return count of synced templates."""
         if not self.match_dir:
             return 0
+
+        clean_stale_espanso_files()
 
         template_manager = get_template_manager()
         matches = []
