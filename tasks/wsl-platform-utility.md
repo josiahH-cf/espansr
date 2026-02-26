@@ -45,6 +45,6 @@
 
 | Task | Status |
 |------|--------|
-| 1    | Not started |
-| 2    | Not started |
-| 3    | Not started |
+| 1    | Complete |
+| 2    | Complete |
+| 3    | Complete |
