@@ -37,3 +37,5 @@ jobs:
 
       - name: Test
         run: pytest
+        env:
+          QT_QPA_PLATFORM: offscreen
