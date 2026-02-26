@@ -61,11 +61,50 @@ Key differences from automatr-prompt:
 - No llama.cpp dependency
 - No dependency on `automatr-prompt` at runtime
 
+# Planning
+
+- Features with more than 3 implementation steps require a written plan
+- Plans go in `/tasks/[feature-name].md` or as an ExecPlan per `/.codex/PLANS.md`
+- Plans are living documents — update progress, decisions, and surprises as work proceeds
+- A plan that cannot fit in 5 tasks indicates the feature should be split. Call this out.
+- Small-fix fast path: if a change is <= 3 files and has no behavior change, a full spec/task lifecycle is optional; still document intent in the PR and run lint + relevant tests.
+
 # Commits
 
 - One logical change per commit
 - Present-tense imperative subject line, under 72 characters
 - Reference the spec or task file in the commit body when applicable
+- Commit after each completed task, not after all tasks
+
+# Branches
+
+- Branch from the latest target branch immediately before starting work
+- One feature per branch
+- Delete after merge
+- Never commit directly to the target branch
+- Naming: `[type]/[issue-id]-[slug]` (e.g., `feat/42-user-auth`, `fix/87-null-check`)
+
+# Worktrees
+
+- Use git worktrees for concurrent features across agents
+- Worktree root: `.trees/[branch-name]/`
+- Each worktree is isolated: agents operate only within their assigned worktree
+- Artifacts (specs, tasks, decisions) live in the main worktree and are shared read-only
+- Never switch branches inside a worktree — create a new one
+
+# Pull Requests
+
+- Link to the spec file
+- Diff under 300 lines; if larger, split the feature
+- All CI checks pass before requesting review
+- PR description states: what changed, why, how to verify
+
+# Review
+
+- Reviewable in under 15 minutes
+- Tests cover every acceptance criterion
+- No unrelated changes in the diff
+- Cross-agent review encouraged: use a different model than the one that wrote the code
 
 # Security
 

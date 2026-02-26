@@ -8,3 +8,14 @@ build/
 .pytest_cache/
 .ruff_cache/
 *.so
+
+# Editor
+.vscode/
+
+# Agent local config (gitignored per convention)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/plans/
+
+# Worktrees
+.trees/
