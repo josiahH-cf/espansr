@@ -1,8 +1,10 @@
 # Project
 
-- Project name: automatr-espanso
+- Project name: Automatr Espanso
 - Description: A standalone Espanso text expansion template manager with CLI and GUI. No LLM dependency.
 - Primary language/framework: Python with PyQt6
+- Scope: Espanso config management, template-to-trigger sync, YAML generation
+- Non-goals: LLM integration, prompt optimization, cloud APIs, multi-tenant, mobile/web, PyPI publishing
 
 # Build
 
