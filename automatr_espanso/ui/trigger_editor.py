@@ -1,7 +1,7 @@
 """Trigger editor dialog for automatr-espanso.
 
 Allows editing a template's Espanso trigger string with a live YAML preview
-showing exactly what will be written to automatr.yml.
+showing exactly what will be written to automatr-espanso.yml.
 """
 
 from typing import Optional
@@ -71,7 +71,7 @@ class TriggerEditorDialog(QDialog):
         layout.addLayout(trigger_layout)
 
         # YAML preview
-        preview_label = QLabel("Espanso match preview (automatr.yml):")
+        preview_label = QLabel("Espanso match preview (automatr-espanso.yml):")
         preview_label.setStyleSheet("font-weight: bold;")
         layout.addWidget(preview_label)
 

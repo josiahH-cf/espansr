@@ -162,7 +162,7 @@ def get_match_dir() -> Optional[Path]:
 def sync_to_espanso() -> bool:
     """Sync templates to Espanso match file.
 
-    Generates a single `automatr.yml` in the Espanso match directory
+    Generates a single `automatr-espanso.yml` in the Espanso match directory
     containing all templates that have triggers defined.
 
     Returns:
@@ -196,7 +196,7 @@ def sync_to_espanso() -> bool:
         print("No templates with triggers found")
         return True
 
-    output_path = match_dir / "automatr.yml"
+    output_path = match_dir / "automatr-espanso.yml"
     try:
         content = {"matches": matches}
         with open(output_path, "w", encoding="utf-8") as f:
@@ -329,7 +329,7 @@ class EspansoManager:
         if not matches:
             return 0
 
-        output_path = self.match_dir / "automatr.yml"
+        output_path = self.match_dir / "automatr-espanso.yml"
         try:
             content = {"matches": matches}
             with open(output_path, "w", encoding="utf-8") as f:
