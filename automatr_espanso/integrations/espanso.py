@@ -86,15 +86,15 @@ def get_espanso_config_dir() -> Optional[Path]:
         # Locate Windows user via cmd.exe and check Windows Espanso paths
         win_user = get_windows_username()
         if win_user:
-                # Espanso v2 default on Windows
-                candidates = [
-                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
-                ]
-                for candidate in candidates:
-                    if candidate.exists():
-                        return candidate
+            # Espanso v2 default on Windows
+            candidates = [
+                Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
+                Path(f"/mnt/c/Users/{win_user}/.espanso"),
+                Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+            ]
+            for candidate in candidates:
+                if candidate.exists():
+                    return candidate
 
     # Standard platform paths
     candidates: list[Path] = []
