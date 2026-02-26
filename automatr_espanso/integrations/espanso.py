@@ -1,0 +1,355 @@
+"""Espanso integration for automatr-espanso.
+
+Generates Espanso match files from templates that have triggers defined.
+Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
+"""
+
+import platform
+from pathlib import Path
+from typing import Optional
+
+import yaml
+
+from automatr_espanso.core.config import get_config
+from automatr_espanso.core.templates import get_template_manager
+
+
+def _convert_to_espanso_placeholders(content: str, variables) -> str:
+    """Convert template placeholders {{var}} to Espanso form placeholders.
+
+    Form variables use {{var.value}} to access the form field value.
+    Date and other simple types use {{var}} directly (no conversion).
+    """
+    updated = content
+    for var in variables:
+        name = var.name
+        var_type = getattr(var, "type", "form")
+
+        if var_type == "form":
+            # Espanso v2 form layout returns objects; access via .value
+            updated = updated.replace(f"{{{{{name}}}}}", f"{{{{{name}.value}}}}")
+            updated = updated.replace(f"{{{{ {name} }}}}", f"{{{{{name}.value}}}}")
+        # Date and other simple types use {{var}} directly — no conversion needed
+    return updated
+
+
+def _build_espanso_var_entry(var) -> dict:
+    """Build an Espanso variable entry from a Variable object."""
+    var_type = getattr(var, "type", "form")
+    params = getattr(var, "params", {})
+
+    if var_type == "date":
+        var_entry: dict = {
+            "name": var.name,
+            "type": "date",
+        }
+        if params:
+            var_entry["params"] = params
+        return var_entry
+
+    # Default: form type with Espanso v2 [[value]] layout placeholder
+    var_entry = {
+        "name": var.name,
+        "type": "form",
+        "params": {
+            "layout": f"{var.label}: [[value]]",
+        },
+    }
+    if var.default:
+        var_entry["params"]["default"] = var.default
+    return var_entry
+
+
+def get_espanso_config_dir() -> Optional[Path]:
+    """Get the Espanso configuration directory.
+
+    Checks (in order):
+    1. User-configured path from config.espanso.config_path
+    2. WSL2: Windows user's Espanso config via /mnt/c/Users/<user>/...
+    3. Standard platform paths
+
+    Returns:
+        Path to Espanso config directory, or None if not found.
+    """
+    config = get_config()
+
+    # Use configured path if set
+    if config.espanso.config_path:
+        path = Path(config.espanso.config_path).expanduser()
+        if path.exists():
+            return path
+
+    system = platform.system()
+
+    # Check if running in WSL2
+    is_wsl2 = False
+    if system == "Linux":
+        try:
+            with open("/proc/version", "r") as f:
+                version = f.read().lower()
+                is_wsl2 = "microsoft" in version or "wsl" in version
+        except Exception:
+            pass
+
+    if is_wsl2:
+        # Locate Windows user via cmd.exe and check Windows Espanso paths
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                ["cmd.exe", "/c", "echo %USERNAME%"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            win_user = result.stdout.strip()
+            if win_user:
+                # Espanso v2 default on Windows
+                candidates = [
+                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+                ]
+                for candidate in candidates:
+                    if candidate.exists():
+                        return candidate
+        except Exception:
+            pass
+
+    # Standard platform paths
+    candidates: list[Path] = []
+
+    if system == "Linux":
+        candidates = [
+            Path.home() / ".config" / "espanso",
+            Path.home() / ".espanso",
+        ]
+    elif system == "Darwin":
+        candidates = [
+            Path.home() / "Library" / "Application Support" / "espanso",
+            Path.home() / ".config" / "espanso",
+        ]
+    elif system == "Windows":
+        import os
+
+        appdata = os.environ.get("APPDATA", "")
+        if appdata:
+            candidates.append(Path(appdata) / "espanso")
+        candidates.append(Path.home() / ".espanso")
+
+    for path in candidates:
+        if path.exists():
+            return path
+
+    return None
+
+
+def get_match_dir() -> Optional[Path]:
+    """Get the Espanso match directory, creating it if necessary.
+
+    Returns:
+        Path to the match directory, or None if Espanso config not found.
+    """
+    config_dir = get_espanso_config_dir()
+    if not config_dir:
+        return None
+
+    match_dir = config_dir / "match"
+    match_dir.mkdir(parents=True, exist_ok=True)
+    return match_dir
+
+
+def sync_to_espanso() -> bool:
+    """Sync templates to Espanso match file.
+
+    Generates a single `automatr.yml` in the Espanso match directory
+    containing all templates that have triggers defined.
+
+    Returns:
+        True if sync was successful, False otherwise.
+    """
+    match_dir = get_match_dir()
+    if not match_dir:
+        print("Error: Could not find Espanso config directory")
+        return False
+
+    template_manager = get_template_manager()
+    matches = []
+
+    for template in template_manager.iter_with_triggers():
+        replace_text = _convert_to_espanso_placeholders(
+            template.content, template.variables or []
+        )
+        match_entry: dict = {
+            "trigger": template.trigger,
+            "replace": replace_text,
+        }
+
+        if template.variables:
+            match_entry["vars"] = [
+                _build_espanso_var_entry(var) for var in template.variables
+            ]
+
+        matches.append(match_entry)
+
+    if not matches:
+        print("No templates with triggers found")
+        return True
+
+    output_path = match_dir / "automatr.yml"
+    try:
+        content = {"matches": matches}
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+
+        print(f"Synced {len(matches)} trigger(s) to {output_path}")
+
+        # WSL2: file writes via /mnt/c/ don't trigger Windows file watcher — restart Espanso
+        is_wsl2 = False
+        if platform.system() == "Linux":
+            try:
+                with open("/proc/version", "r") as f:
+                    version = f.read().lower()
+                    is_wsl2 = "microsoft" in version or "wsl" in version
+            except Exception:
+                pass
+
+        if is_wsl2:
+            _restart_espanso_wsl2()
+
+        return True
+    except Exception as e:
+        print(f"Error writing Espanso file: {e}")
+        return False
+
+
+def _restart_espanso_wsl2() -> None:
+    """Restart Espanso via PowerShell (WSL2 context)."""
+    import subprocess
+
+    try:
+        subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", "cd C:/; espanso service stop"],
+            capture_output=True,
+            timeout=10,
+        )
+        result = subprocess.run(
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                "cd C:/; Start-Process espanso -ArgumentList 'service','start' -WindowStyle Hidden",
+            ],
+            capture_output=True,
+            timeout=10,
+        )
+        if result.returncode == 0:
+            print("Espanso restarted successfully.")
+        else:
+            print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
+    except Exception:
+        print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
+
+
+def restart_espanso() -> bool:
+    """Restart the Espanso daemon.
+
+    Returns:
+        True if restart was successful, False otherwise.
+    """
+    import shutil
+    import subprocess
+
+    is_wsl2 = False
+    if platform.system() == "Linux":
+        try:
+            with open("/proc/version", "r") as f:
+                version = f.read().lower()
+                is_wsl2 = "microsoft" in version or "wsl" in version
+        except Exception:
+            pass
+
+    if is_wsl2:
+        try:
+            subprocess.run(
+                ["powershell.exe", "-Command", "espanso restart"],
+                capture_output=True,
+                timeout=10,
+            )
+            return True
+        except Exception:
+            pass
+
+    if shutil.which("espanso"):
+        try:
+            subprocess.run(["espanso", "restart"], capture_output=True, timeout=10)
+            return True
+        except Exception:
+            pass
+
+    return False
+
+
+class EspansoManager:
+    """High-level manager for Espanso integration."""
+
+    def __init__(self):
+        """Initialize, detecting config and match directories."""
+        self.config_dir = get_espanso_config_dir()
+        self.match_dir = get_match_dir()
+
+    def is_available(self) -> bool:
+        """Return True if Espanso config directory was found."""
+        return self.match_dir is not None
+
+    def sync(self) -> int:
+        """Sync templates to Espanso and return count of synced templates."""
+        if not self.match_dir:
+            return 0
+
+        template_manager = get_template_manager()
+        matches = []
+
+        for template in template_manager.iter_with_triggers():
+            replace_text = _convert_to_espanso_placeholders(
+                template.content, template.variables or []
+            )
+            match_entry: dict = {
+                "trigger": template.trigger,
+                "replace": replace_text,
+            }
+
+            if template.variables:
+                match_entry["vars"] = [
+                    _build_espanso_var_entry(var) for var in template.variables
+                ]
+
+            matches.append(match_entry)
+
+        if not matches:
+            return 0
+
+        output_path = self.match_dir / "automatr.yml"
+        try:
+            content = {"matches": matches}
+            with open(output_path, "w", encoding="utf-8") as f:
+                yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+            return len(matches)
+        except Exception:
+            return 0
+
+    def restart(self) -> bool:
+        """Restart the Espanso daemon."""
+        return restart_espanso()
+
+
+# Global instance
+_espanso_manager: Optional[EspansoManager] = None
+
+
+def get_espanso_manager() -> EspansoManager:
+    """Get the global EspansoManager instance."""
+    global _espanso_manager
+    if _espanso_manager is None:
+        _espanso_manager = EspansoManager()
+    return _espanso_manager
