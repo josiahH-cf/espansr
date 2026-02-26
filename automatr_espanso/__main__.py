@@ -21,9 +21,9 @@ def cmd_sync(args) -> int:
 
 def cmd_status(args) -> int:
     """Show Espanso availability and config path."""
-    import platform
     import shutil
 
+    from automatr_espanso.core.platform import is_wsl2
     from automatr_espanso.integrations.espanso import get_espanso_config_dir
 
     config_dir = get_espanso_config_dir()
@@ -39,16 +39,7 @@ def cmd_status(args) -> int:
         return 0
 
     # WSL2: Espanso runs on the Windows side
-    is_wsl2 = False
-    if platform.system() == "Linux":
-        try:
-            with open("/proc/version") as f:
-                if "microsoft" in f.read().lower():
-                    is_wsl2 = True
-        except OSError:
-            pass
-
-    if is_wsl2:
+    if is_wsl2():
         print("Espanso binary: Windows host (WSL2 — use PowerShell to manage)")
     else:
         print("Espanso binary: not found")

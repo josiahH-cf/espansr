@@ -25,6 +25,18 @@
 - `templates/`: Bundled Espanso-specific template JSON files (starts empty; add static snippets here).
 - `tests/`: Test suite.
 
+# Feature Lifecycle
+
+1. **Ideate** — Human files a GitHub issue or describes the feature
+2. **Scope** — Agent explores the codebase and writes `/specs/[feature-name].md` using the template
+3. **Plan** — Agent decomposes the spec into `/tasks/[feature-name].md` (2–5 tasks)
+4. **Test** — Agent writes failing tests for each acceptance criterion
+5. **Implement** — Agent makes tests pass, one task per session
+6. **Review** — A different agent or human reviews the PR
+
+GitHub Issues are the human intake mechanism. Agents read issues but do not create, edit, or close them.
+All agent-driven planning happens in local files (`/specs/`, `/tasks/`, `/decisions/`).
+
 # Conventions
 
 - Functions and variables: standard Python `snake_case` (classes use `PascalCase`)
@@ -80,7 +92,7 @@ Key design decisions:
 - One feature per branch
 - Delete after merge
 - Never commit directly to the target branch
-- Naming: `[type]/[issue-id]-[slug]` (e.g., `feat/42-user-auth`, `fix/87-null-check`)
+- Naming: `[type]/[slug]` (e.g., `feat/user-auth`, `fix/null-check`). Include the issue number if one exists: `feat/42-user-auth`
 
 # Worktrees
 
@@ -110,3 +122,10 @@ Key design decisions:
 - Use environment variables for all credentials
 - Sanitize all external input
 - Log security-relevant events
+
+# Agent Boundaries
+
+- Agents do not create or modify GitHub issues, labels, milestones, or projects
+- Agents do not push to main/master directly
+- Agents do not modify CI/CD workflows without explicit human instruction
+- Agents work within local files: specs, tasks, decisions, and source code

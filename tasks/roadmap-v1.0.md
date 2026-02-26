@@ -2,6 +2,9 @@
 
 ## Backlog
 
+> Each item below requires scoping (`/specs/`) before implementation begins.
+> See the Feature Lifecycle in `/AGENTS.md`.
+
 ### CI Hardening
 - Add ruff lint step to CI
 - Pin dependency versions in pyproject.toml

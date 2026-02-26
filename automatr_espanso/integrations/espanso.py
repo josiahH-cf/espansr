@@ -11,6 +11,7 @@ from typing import Optional
 import yaml
 
 from automatr_espanso.core.config import get_config
+from automatr_espanso.core.platform import get_windows_username, is_wsl2
 from automatr_espanso.core.templates import get_template_manager
 
 
@@ -81,29 +82,10 @@ def get_espanso_config_dir() -> Optional[Path]:
 
     system = platform.system()
 
-    # Check if running in WSL2
-    is_wsl2 = False
-    if system == "Linux":
-        try:
-            with open("/proc/version", "r") as f:
-                version = f.read().lower()
-                is_wsl2 = "microsoft" in version or "wsl" in version
-        except Exception:
-            pass
-
-    if is_wsl2:
+    if is_wsl2():
         # Locate Windows user via cmd.exe and check Windows Espanso paths
-        try:
-            import subprocess
-
-            result = subprocess.run(
-                ["cmd.exe", "/c", "echo %USERNAME%"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-            )
-            win_user = result.stdout.strip()
-            if win_user:
+        win_user = get_windows_username()
+        if win_user:
                 # Espanso v2 default on Windows
                 candidates = [
                     Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
@@ -113,8 +95,6 @@ def get_espanso_config_dir() -> Optional[Path]:
                 for candidate in candidates:
                     if candidate.exists():
                         return candidate
-        except Exception:
-            pass
 
     # Standard platform paths
     candidates: list[Path] = []
@@ -205,16 +185,7 @@ def sync_to_espanso() -> bool:
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
 
         # WSL2: file writes via /mnt/c/ don't trigger Windows file watcher — restart Espanso
-        is_wsl2 = False
-        if platform.system() == "Linux":
-            try:
-                with open("/proc/version", "r") as f:
-                    version = f.read().lower()
-                    is_wsl2 = "microsoft" in version or "wsl" in version
-            except Exception:
-                pass
-
-        if is_wsl2:
+        if is_wsl2():
             _restart_espanso_wsl2()
 
         return True
@@ -260,16 +231,7 @@ def restart_espanso() -> bool:
     import shutil
     import subprocess
 
-    is_wsl2 = False
-    if platform.system() == "Linux":
-        try:
-            with open("/proc/version", "r") as f:
-                version = f.read().lower()
-                is_wsl2 = "microsoft" in version or "wsl" in version
-        except Exception:
-            pass
-
-    if is_wsl2:
+    if is_wsl2():
         try:
             subprocess.run(
                 ["powershell.exe", "-Command", "espanso restart"],
