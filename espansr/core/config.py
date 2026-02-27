@@ -4,12 +4,45 @@ Handles loading/saving app configuration from a single JSON file.
 """
 
 import json
+import logging
 import platform
+import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
 from espansr.core.platform import get_platform, is_windows  # noqa: F401
+
+logger = logging.getLogger(__name__)
+
+_OLD_CONFIG_DIR_NAME = "automatr-espanso"
+_NEW_CONFIG_DIR_NAME = "espansr"
+
+
+def _migrate_config_dir(base: Path) -> bool:
+    """Migrate config from old automatr-espanso dir to espansr dir.
+
+    Moves the old config directory to the new location if the old one
+    exists and the new one does not yet exist.
+
+    Args:
+        base: Parent directory containing config dirs.
+
+    Returns:
+        True if migration was performed, False otherwise.
+    """
+    old_dir = base / _OLD_CONFIG_DIR_NAME
+    new_dir = base / _NEW_CONFIG_DIR_NAME
+
+    if old_dir.is_dir() and not new_dir.exists():
+        try:
+            shutil.move(str(old_dir), str(new_dir))
+            logger.info("Migrated config dir: %s \u2192 %s", old_dir, new_dir)
+            return True
+        except OSError as exc:
+            logger.warning("Failed to migrate config dir: %s", exc)
+            return False
+    return False
 
 
 def get_config_dir() -> Path:
@@ -17,6 +50,8 @@ def get_config_dir() -> Path:
 
     On macOS: ~/Library/Application Support/espansr
     On Linux/WSL: XDG_CONFIG_HOME or ~/.config/espansr
+
+    On first launch, migrates from automatr-espanso \u2192 espansr if needed.
     """
     import os
 
@@ -30,7 +65,10 @@ def get_config_dir() -> Path:
         else:
             base = Path.home() / ".config"
 
-    config_dir = base / "espansr"
+    # Migrate from old name if needed
+    _migrate_config_dir(base)
+
+    config_dir = base / _NEW_CONFIG_DIR_NAME
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
 

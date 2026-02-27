@@ -313,3 +313,119 @@ def test_cli_status_runs_without_error():
     )
     # Status reports availability — should not crash regardless of Espanso presence
     assert result.returncode == 0
+
+
+# ─── Config dir migration tests ──────────────────────────────────────────────
+
+
+def test_migrate_config_dir_moves_old_to_new(tmp_path):
+    """_migrate_config_dir() moves automatr-espanso dir to espansr."""
+    from espansr.core.config import _migrate_config_dir
+
+    old_dir = tmp_path / "automatr-espanso"
+    old_dir.mkdir()
+    (old_dir / "config.json").write_text('{"test": true}')
+    (old_dir / "templates").mkdir()
+    (old_dir / "templates" / "t.json").write_text('{"name": "test"}')
+
+    result = _migrate_config_dir(tmp_path)
+
+    assert result is True
+    assert not old_dir.exists()
+    new_dir = tmp_path / "espansr"
+    assert new_dir.is_dir()
+    assert (new_dir / "config.json").read_text() == '{"test": true}'
+    assert (new_dir / "templates" / "t.json").read_text() == '{"name": "test"}'
+
+
+def test_migrate_config_dir_skips_when_new_exists(tmp_path):
+    """_migrate_config_dir() does nothing when espansr dir already exists."""
+    from espansr.core.config import _migrate_config_dir
+
+    old_dir = tmp_path / "automatr-espanso"
+    old_dir.mkdir()
+    (old_dir / "old.json").write_text("{}")
+
+    new_dir = tmp_path / "espansr"
+    new_dir.mkdir()
+    (new_dir / "new.json").write_text("{}")
+
+    result = _migrate_config_dir(tmp_path)
+
+    assert result is False
+    # Both dirs still exist — no migration
+    assert old_dir.exists()
+    assert new_dir.exists()
+    assert (new_dir / "new.json").exists()
+
+
+def test_migrate_config_dir_skips_when_no_old(tmp_path):
+    """_migrate_config_dir() does nothing when old dir doesn't exist."""
+    from espansr.core.config import _migrate_config_dir
+
+    result = _migrate_config_dir(tmp_path)
+
+    assert result is False
+
+
+def test_get_config_dir_triggers_migration(tmp_path):
+    """get_config_dir() automatically migrates old config dir."""
+    import os
+
+    from espansr.core.config import get_config_dir
+
+    old_dir = tmp_path / "automatr-espanso"
+    old_dir.mkdir()
+    (old_dir / "config.json").write_text('{"migrated": true}')
+
+    with patch.dict(os.environ, {"XDG_CONFIG_HOME": str(tmp_path)}):
+        config_dir = get_config_dir()
+
+    assert config_dir == tmp_path / "espansr"
+    assert not old_dir.exists()
+    assert (config_dir / "config.json").read_text() == '{"migrated": true}'
+
+
+# ─── Old Espanso file cleanup tests ──────────────────────────────────────────
+
+
+def test_sync_cleans_old_automatr_files(tmp_path):
+    """sync_to_espanso() removes old automatr-espanso.yml and automatr-launcher.yml."""
+    from espansr.core.templates import TemplateManager
+
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "greet.json").write_text(
+        json.dumps({"name": "Greet", "content": "Hello!", "trigger": ":greet"})
+    )
+
+    match_dir = tmp_path / "espanso" / "match"
+    match_dir.mkdir(parents=True)
+
+    # Create old-named files in the canonical match dir
+    (match_dir / "automatr-espanso.yml").write_text("matches: []")
+    (match_dir / "automatr-launcher.yml").write_text("matches: []")
+
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch(
+            "espansr.integrations.espanso.get_espanso_config_dir",
+            return_value=tmp_path / "espanso",
+        ),
+        patch(
+            "espansr.integrations.espanso._get_candidate_paths",
+            return_value=[tmp_path / "espanso"],
+        ),
+    ):
+        mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
+        from espansr.integrations.espanso import sync_to_espanso
+
+        result = sync_to_espanso()
+
+    assert result is True
+    # Old files should be cleaned up
+    assert not (match_dir / "automatr-espanso.yml").exists()
+    assert not (match_dir / "automatr-launcher.yml").exists()
+    # New file should exist
+    assert (match_dir / "espansr.yml").exists()
