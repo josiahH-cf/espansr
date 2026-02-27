@@ -283,6 +283,37 @@ QToolBar QPushButton {
     min-width: 60px;
     padding: 6px 12px;
 }
+
+/* Variable editor rows */
+VariableRowWidget {
+    border: 1px solid #2d2d2d;
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 2px;
+}
+
+VariableRowWidget QLineEdit {
+    padding: 4px 6px;
+}
+
+VariableRowWidget QComboBox {
+    padding: 4px 6px;
+}
+
+VariableRowWidget QPushButton#danger {
+    min-width: 24px;
+    max-width: 30px;
+    padding: 2px;
+    font-weight: bold;
+}
+
+/* YAML preview (read-only) */
+QPlainTextEdit[readOnly="true"] {
+    background-color: #1a1a2e;
+    color: #9cdcfe;
+    font-family: monospace;
+    border: 1px solid #3c3c3c;
+}
 """
 
 # Light theme (for future use)
