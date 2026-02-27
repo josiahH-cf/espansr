@@ -1,4 +1,4 @@
-"""Template management for automatr-espanso.
+"""Template management for espansr.
 
 Handles loading, saving, and rendering JSON templates.
 Templates are stored as individual JSON files in the templates directory.
@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
-from automatr_espanso.core.config import get_config, get_templates_dir
+from espansr.core.config import get_config, get_templates_dir
 
 
 @dataclass

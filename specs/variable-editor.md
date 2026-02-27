@@ -21,9 +21,9 @@ Add a "Variables" section to the template editor panel (from Issue #3). Users ca
 
 | Area | Files |
 |------|-------|
-| **Create** | `automatr_espanso/ui/variable_editor.py` — new widget for variable list + add/edit/delete |
-| **Modify** | `automatr_espanso/ui/template_editor.py` — integrate variable editor + YAML preview |
-| **Modify** | `automatr_espanso/ui/theme.py` — styles for variable rows, type dropdown |
+| **Create** | `espansr/ui/variable_editor.py` — new widget for variable list + add/edit/delete |
+| **Modify** | `espansr/ui/template_editor.py` — integrate variable editor + YAML preview |
+| **Modify** | `espansr/ui/theme.py` — styles for variable rows, type dropdown |
 | **Create** | `tests/test_variable_editor.py` — widget-level tests for variable CRUD and validation |
 
 ## Constraints

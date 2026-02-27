@@ -20,7 +20,7 @@
 
 ## Task 2 — Create `platform.py` and make tests pass
 
-**Files:** `automatr_espanso/core/platform.py`
+**Files:** `espansr/core/platform.py`
 
 - Extract `get_platform()` from `config.py`
 - Add `is_wsl2()` (calls `get_platform()`)

@@ -1,4 +1,4 @@
-# automatr-espanso
+# espansr
 
 A standalone GUI and CLI for managing [Espanso](https://espanso.org/) text expansion templates.
 
@@ -30,27 +30,27 @@ pip install -e .
 
 ```bash
 # Sync templates to Espanso
-automatr-espanso sync
+espansr sync
 
 # Show Espanso status and config path
-automatr-espanso status
+espansr status
 
 # List templates with triggers
-automatr-espanso list
+espansr list
 
 # Launch the GUI
-automatr-espanso gui
+espansr gui
 ```
 
 ### GUI
 
 ```bash
-automatr-espanso gui
+espansr gui
 ```
 
 ## Template Format
 
-Templates are JSON files stored in `~/.config/automatr-espanso/templates/` (Linux/WSL2) or `~/Library/Application Support/automatr-espanso/templates/` (macOS).
+Templates are JSON files stored in `~/.config/espansr/templates/` (Linux/WSL2) or `~/Library/Application Support/espansr/templates/` (macOS).
 
 ```json
 {

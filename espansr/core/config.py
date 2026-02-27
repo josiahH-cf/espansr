@@ -1,4 +1,4 @@
-"""Configuration management for automatr-espanso.
+"""Configuration management for espansr.
 
 Handles loading/saving app configuration from a single JSON file.
 """
@@ -9,14 +9,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from automatr_espanso.core.platform import get_platform, is_windows  # noqa: F401
+from espansr.core.platform import get_platform, is_windows  # noqa: F401
 
 
 def get_config_dir() -> Path:
     """Get the configuration directory path.
 
-    On macOS: ~/Library/Application Support/automatr-espanso
-    On Linux/WSL: XDG_CONFIG_HOME or ~/.config/automatr-espanso
+    On macOS: ~/Library/Application Support/espansr
+    On Linux/WSL: XDG_CONFIG_HOME or ~/.config/espansr
     """
     import os
 
@@ -30,7 +30,7 @@ def get_config_dir() -> Path:
         else:
             base = Path.home() / ".config"
 
-    config_dir = base / "automatr-espanso"
+    config_dir = base / "espansr"
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
 

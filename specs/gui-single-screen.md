@@ -21,13 +21,13 @@ Replace the current two-panel layout (template browser + sync/status panel) and 
 
 | Area | Files |
 |------|-------|
-| **Rewrite** | `automatr_espanso/ui/main_window.py` — new layout with toolbar, splitter, status bar |
-| **Rewrite** | `automatr_espanso/ui/template_browser.py` — simplified list (remove preview pane, add New/Delete buttons) |
-| **Remove** | `automatr_espanso/ui/sync_panel.py` — functionality moves to toolbar + status bar |
-| **Remove** | `automatr_espanso/ui/trigger_editor.py` — trigger editing is inline |
-| **Create** | `automatr_espanso/ui/template_editor.py` — new right-panel editor widget |
-| **Modify** | `automatr_espanso/ui/theme.py` — styles for new toolbar, editor widgets |
-| **Modify** | `automatr_espanso/core/config.py` — wire up unused `UIConfig` fields (geometry, last_template) |
+| **Rewrite** | `espansr/ui/main_window.py` — new layout with toolbar, splitter, status bar |
+| **Rewrite** | `espansr/ui/template_browser.py` — simplified list (remove preview pane, add New/Delete buttons) |
+| **Remove** | `espansr/ui/sync_panel.py` — functionality moves to toolbar + status bar |
+| **Remove** | `espansr/ui/trigger_editor.py` — trigger editing is inline |
+| **Create** | `espansr/ui/template_editor.py` — new right-panel editor widget |
+| **Modify** | `espansr/ui/theme.py` — styles for new toolbar, editor widgets |
+| **Modify** | `espansr/core/config.py` — wire up unused `UIConfig` fields (geometry, last_template) |
 
 ## Constraints
 

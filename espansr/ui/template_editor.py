@@ -1,4 +1,4 @@
-"""Inline template editor widget for automatr-espanso.
+"""Inline template editor widget for espansr.
 
 Right-panel editor with name, trigger, content, variables, and YAML preview.
 Saves new or existing templates via TemplateManager.
@@ -18,13 +18,13 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from automatr_espanso.core.config import get_config
-from automatr_espanso.core.templates import Template, get_template_manager
-from automatr_espanso.integrations.espanso import (
+from espansr.core.config import get_config
+from espansr.core.templates import Template, get_template_manager
+from espansr.integrations.espanso import (
     _build_espanso_var_entry,
     _convert_to_espanso_placeholders,
 )
-from automatr_espanso.ui.variable_editor import VariableEditorWidget
+from espansr.ui.variable_editor import VariableEditorWidget
 
 
 class TemplateEditorWidget(QWidget):

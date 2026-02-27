@@ -5,14 +5,14 @@
 
 ## Description
 
-Auto-generate a separate `automatr-launcher.yml` in the Espanso match directory containing a shell trigger (default: `:aopen`) that launches the Automatr GUI. The file is created during installation and on first app run. On WSL2, the command invokes the Linux-side binary via `wsl.exe`. The trigger keyword is configurable. First-run detection shows setup instructions in the GUI.
+Auto-generate a separate `espansr-launcher.yml` in the Espanso match directory containing a shell trigger (default: `:aopen`) that launches the Espansr GUI. The file is created during installation and on first app run. On WSL2, the command invokes the Linux-side binary via `wsl.exe`. The trigger keyword is configurable. First-run detection shows setup instructions in the GUI.
 
 ## Acceptance Criteria
 
-- [ ] A `automatr-launcher.yml` file is written to the Espanso `match/` directory with a single shell trigger that launches `automatr-espanso gui`; the file is separate from `automatr-espanso.yml`
+- [ ] A `espansr-launcher.yml` file is written to the Espanso `match/` directory with a single shell trigger that launches `espansr gui`; the file is separate from `espansr.yml`
 - [ ] The trigger keyword defaults to `:aopen` and is configurable via `config.espanso.launcher_trigger`; changing the config regenerates the file
 - [ ] On WSL2, the shell command uses `wsl.exe -d $WSL_DISTRO_NAME -- <path-to-binary> gui` to correctly invoke the Linux binary from Windows-side Espanso
-- [ ] On native Linux/macOS, the shell command invokes the `automatr-espanso gui` binary directly
+- [ ] On native Linux/macOS, the shell command invokes the `espansr gui` binary directly
 - [ ] `install.sh` generates the launcher file during installation if an Espanso config directory is found
 - [ ] On first run (launcher file does not exist), the GUI displays a non-blocking info message explaining the trigger keyword and how to customize it
 - [ ] The launcher file is included in stale cleanup (Issue #2) — old copies in non-canonical paths are removed
@@ -21,9 +21,9 @@ Auto-generate a separate `automatr-launcher.yml` in the Espanso match directory 
 
 | Area | Files |
 |------|-------|
-| **Modify** | `automatr_espanso/integrations/espanso.py` — add `generate_launcher_file()`, update stale cleanup list |
-| **Modify** | `automatr_espanso/core/config.py` — add `launcher_trigger` field to `EspansoConfig` |
-| **Modify** | `automatr_espanso/ui/main_window.py` — first-run detection + info message |
+| **Modify** | `espansr/integrations/espanso.py` — add `generate_launcher_file()`, update stale cleanup list |
+| **Modify** | `espansr/core/config.py` — add `launcher_trigger` field to `EspansoConfig` |
+| **Modify** | `espansr/ui/main_window.py` — first-run detection + info message |
 | **Modify** | `install.sh` — call launcher generation during install |
 | **Create** | `tests/test_launcher.py` — tests for launcher YAML generation and WSL2 command construction |
 
@@ -57,9 +57,9 @@ Auto-generate a separate `automatr-launcher.yml` in the Espanso match directory 
         - name: output
           type: shell
           params:
-            cmd: "wsl.exe -d Ubuntu -- /home/user/automatr-espanso/.venv/bin/automatr-espanso gui &"
+            cmd: "wsl.exe -d Ubuntu -- /home/user/espansr/.venv/bin/espansr gui &"
   ```
 - The `&` at the end of the shell command is important — without it, Espanso blocks until the GUI closes
 - `$WSL_DISTRO_NAME` is set automatically in WSL2 sessions; it contains the distro name (e.g., "Ubuntu")
-- The binary path should be resolved at generation time using `shutil.which("automatr-espanso")` or the known venv path
+- The binary path should be resolved at generation time using `shutil.which("espansr")` or the known venv path
 - `EspansoConfig` needs a new field: `launcher_trigger: str = ":aopen"`

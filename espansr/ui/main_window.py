@@ -1,4 +1,4 @@
-"""Main window for automatr-espanso."""
+"""Main window for espansr."""
 
 import base64
 import sys
@@ -16,22 +16,22 @@ from PyQt6.QtWidgets import (
     QToolBar,
 )
 
-from automatr_espanso.core.config import get_config, get_config_manager, save_config
-from automatr_espanso.ui.template_browser import TemplateBrowserWidget
-from automatr_espanso.ui.template_editor import TemplateEditorWidget
-from automatr_espanso.ui.theme import get_theme_stylesheet
+from espansr.core.config import get_config, get_config_manager, save_config
+from espansr.ui.template_browser import TemplateBrowserWidget
+from espansr.ui.template_editor import TemplateEditorWidget
+from espansr.ui.theme import get_theme_stylesheet
 
 AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000  # 5 minutes
 
 
 class MainWindow(QMainWindow):
-    """Main application window for automatr-espanso."""
+    """Main application window for espansr."""
 
     def __init__(self):
         """Initialize the main window."""
         super().__init__()
         self._config = get_config()
-        self.setWindowTitle("Automatr — Espanso Manager")
+        self.setWindowTitle("Espansr")
         self._setup_ui()
         self._apply_theme()
         self._restore_geometry()
@@ -120,25 +120,25 @@ class MainWindow(QMainWindow):
             self._browser.select_template_by_name(name)
 
     def _clean_stale_espanso_files(self) -> None:
-        """Remove automatr-managed files from non-canonical Espanso dirs."""
-        from automatr_espanso.integrations.espanso import clean_stale_espanso_files
+        """Remove espansr-managed files from non-canonical Espanso dirs."""
+        from espansr.integrations.espanso import clean_stale_espanso_files
 
         clean_stale_espanso_files()
 
     def _check_launcher(self) -> None:
         """Show a status bar tip if the launcher trigger file is missing."""
-        from automatr_espanso.integrations.espanso import get_match_dir
+        from espansr.integrations.espanso import get_match_dir
 
         match_dir = get_match_dir()
         if match_dir is None:
             return
 
-        launcher = match_dir / "automatr-launcher.yml"
+        launcher = match_dir / "espansr-launcher.yml"
         if not launcher.exists():
             trigger = self._config.espanso.launcher_trigger or ":aopen"
             self.statusBar().showMessage(
                 f"Tip: Type '{trigger}' anywhere after syncing to launch this GUI. "
-                f"Run 'automatr-espanso sync' or use install.sh to enable it.",
+                f"Run 'espansr sync' or use install.sh to enable it.",
                 8000,
             )
 
@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
         """Perform the Espanso sync and update status bar."""
         self._sync_btn.setEnabled(False)
         try:
-            from automatr_espanso.integrations.espanso import sync_to_espanso
+            from espansr.integrations.espanso import sync_to_espanso
 
             success = sync_to_espanso()
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
