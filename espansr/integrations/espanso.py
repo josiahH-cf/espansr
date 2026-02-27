@@ -20,6 +20,9 @@ logger = logging.getLogger(__name__)
 # File names managed by espansr — only these are cleaned up
 _MANAGED_FILES = ("espansr.yml", "espansr-launcher.yml")
 
+# Old file names from before the rebrand — cleaned up on sync
+_OLD_MANAGED_FILES = ("automatr-espanso.yml", "automatr-launcher.yml")
+
 
 def _convert_to_espanso_placeholders(content: str, variables) -> str:
     """Convert template placeholders {{var}} to Espanso form placeholders.
@@ -152,6 +155,9 @@ def clean_stale_espanso_files() -> None:
     `espansr.yml` and `espansr-launcher.yml` from any `match/`
     directory that is NOT the canonical one.
 
+    Also removes old automatr-espanso.yml and automatr-launcher.yml files
+    from ALL directories (including canonical) as part of the rebrand migration.
+
     Silent on permission errors — logs a warning but does not raise.
     Does nothing if no canonical directory is found.
     """
@@ -164,8 +170,23 @@ def clean_stale_espanso_files() -> None:
     for candidate in _get_candidate_paths():
         match_dir = candidate / "match"
 
-        # Skip the canonical dir and non-existent dirs
-        if match_dir == canonical_match or not match_dir.is_dir():
+        if not match_dir.is_dir():
+            continue
+
+        # Clean old automatr-* files from ALL directories (rebrand migration)
+        for filename in _OLD_MANAGED_FILES:
+            old_file = match_dir / filename
+            if old_file.exists():
+                try:
+                    old_file.unlink()
+                    logger.info("Removed old file (rebrand): %s", old_file)
+                except PermissionError as exc:
+                    logger.warning(
+                        "Could not remove old file %s: %s", old_file, exc
+                    )
+
+        # Skip canonical dir for current managed files
+        if match_dir == canonical_match:
             continue
 
         for filename in _MANAGED_FILES:
