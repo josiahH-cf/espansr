@@ -227,6 +227,18 @@ def test_first_run_shows_launcher_tip(tmp_path, qtbot):
             "automatr_espanso.ui.main_window.get_config",
         ) as mock_config,
         patch(
+            "automatr_espanso.ui.main_window.get_config_manager",
+        ),
+        patch(
+            "automatr_espanso.ui.template_browser.get_config",
+        ),
+        patch(
+            "automatr_espanso.ui.template_browser.get_template_manager",
+        ),
+        patch(
+            "automatr_espanso.ui.template_editor.get_config",
+        ),
+        patch(
             "automatr_espanso.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
@@ -263,6 +275,18 @@ def test_no_tip_when_launcher_exists(tmp_path, qtbot):
         patch(
             "automatr_espanso.ui.main_window.get_config",
         ) as mock_config,
+        patch(
+            "automatr_espanso.ui.main_window.get_config_manager",
+        ),
+        patch(
+            "automatr_espanso.ui.template_browser.get_config",
+        ),
+        patch(
+            "automatr_espanso.ui.template_browser.get_template_manager",
+        ),
+        patch(
+            "automatr_espanso.ui.template_editor.get_config",
+        ),
         patch(
             "automatr_espanso.integrations.espanso.get_match_dir",
             return_value=match_dir,
