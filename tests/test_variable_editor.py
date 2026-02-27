@@ -122,7 +122,7 @@ def test_date_type_shows_format(var_editor, qtbot):
     var_editor._add_variable()
     row = var_editor.get_row(0)
     row._type_combo.setCurrentText("date")
-    assert row._format_edit.isVisible()
+    assert not row._format_edit.isHidden()
 
 
 def test_form_type_shows_multiline(var_editor, qtbot):
@@ -130,7 +130,7 @@ def test_form_type_shows_multiline(var_editor, qtbot):
     var_editor._add_variable()
     row = var_editor.get_row(0)
     row._type_combo.setCurrentText("form")
-    assert row._multiline_cb.isVisible()
+    assert not row._multiline_cb.isHidden()
 
 
 def test_date_type_hides_multiline(var_editor, qtbot):
@@ -138,7 +138,7 @@ def test_date_type_hides_multiline(var_editor, qtbot):
     var_editor._add_variable()
     row = var_editor.get_row(0)
     row._type_combo.setCurrentText("date")
-    assert not row._multiline_cb.isVisible()
+    assert row._multiline_cb.isHidden()
 
 
 def test_form_type_hides_format(var_editor, qtbot):
@@ -146,7 +146,7 @@ def test_form_type_hides_format(var_editor, qtbot):
     var_editor._add_variable()
     row = var_editor.get_row(0)
     row._type_combo.setCurrentText("form")
-    assert not row._format_edit.isVisible()
+    assert row._format_edit.isHidden()
 
 
 # ── Get / Load / Clear ─────────────────────────────────────────────────────
