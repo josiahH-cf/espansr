@@ -152,7 +152,7 @@ def test_browser_new_signal(browser, qtbot):
 
 def test_browser_delete_undo(browser, tm, qtbot):
     """Deleting then clicking Undo preserves the template."""
-    t = tm.create(name="Keep Me", content="body")
+    tm.create(name="Keep Me", content="body")
     browser.load_templates()
     browser.select_template_by_name("Keep Me")
 
@@ -169,7 +169,7 @@ def test_browser_delete_undo(browser, tm, qtbot):
 
 def test_browser_delete_confirmed(browser, tm, qtbot):
     """Deleting without undo removes the template after timeout."""
-    t = tm.create(name="Delete Me", content="body")
+    tm.create(name="Delete Me", content="body")
     browser.load_templates()
     browser.select_template_by_name("Delete Me")
 
