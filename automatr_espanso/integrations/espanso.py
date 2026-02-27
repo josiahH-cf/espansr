@@ -12,7 +12,7 @@ from typing import Optional
 import yaml
 
 from automatr_espanso.core.config import get_config, save_config
-from automatr_espanso.core.platform import get_windows_username, is_wsl2
+from automatr_espanso.core.platform import get_windows_username, get_wsl_distro_name, is_wsl2
 from automatr_espanso.core.templates import get_template_manager
 
 logger = logging.getLogger(__name__)
@@ -195,6 +195,70 @@ def get_match_dir() -> Optional[Path]:
     return match_dir
 
 
+def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
+    """Generate automatr-launcher.yml with a shell trigger to launch the GUI.
+
+    Args:
+        match_dir: Override match directory (for testing). Uses get_match_dir() if None.
+
+    Returns:
+        True if file was written successfully, False otherwise.
+    """
+    import shutil
+    import sys
+
+    if match_dir is None:
+        match_dir = get_match_dir()
+    if match_dir is None:
+        return False
+
+    config = get_config()
+    trigger = config.espanso.launcher_trigger or ":aopen"
+
+    # Resolve binary path
+    binary = shutil.which("automatr-espanso")
+    if binary:
+        gui_cmd = f"{binary} gui"
+    else:
+        gui_cmd = f"{sys.executable} -m automatr_espanso gui"
+
+    # Build platform-specific shell command
+    if is_wsl2():
+        distro = get_wsl_distro_name()
+        if distro:
+            cmd = f"wsl.exe -d {distro} -- {gui_cmd} &"
+        else:
+            cmd = f"wsl.exe -- {gui_cmd} &"
+    else:
+        cmd = f"{gui_cmd} &"
+
+    content = {
+        "matches": [
+            {
+                "trigger": trigger,
+                "replace": "{{output}}",
+                "vars": [
+                    {
+                        "name": "output",
+                        "type": "shell",
+                        "params": {"cmd": cmd},
+                    }
+                ],
+            }
+        ]
+    }
+
+    try:
+        output_path = match_dir / "automatr-launcher.yml"
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+        logger.info("Generated launcher trigger at %s", output_path)
+        return True
+    except Exception as exc:
+        logger.warning("Failed to generate launcher file: %s", exc)
+        return False
+
+
 def sync_to_espanso() -> bool:
     """Sync templates to Espanso match file.
 
@@ -359,6 +423,10 @@ class EspansoManager:
             return len(matches)
         except Exception:
             return 0
+
+    def generate_launcher(self) -> bool:
+        """Generate the Espanso launcher trigger file."""
+        return generate_launcher_file(self.match_dir)
 
     def restart(self) -> bool:
         """Restart the Espanso daemon."""
