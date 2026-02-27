@@ -5,13 +5,11 @@ config trigger override, binary path resolution.
 """
 
 import sys
-from pathlib import Path
 from unittest.mock import patch
 
 import yaml
 
 from automatr_espanso.integrations.espanso import _MANAGED_FILES
-
 
 # ─── generate_launcher_file() tests ─────────────────────────────────────────
 
