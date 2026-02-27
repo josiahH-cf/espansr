@@ -1,4 +1,4 @@
-# Roadmap — Automatr Espanso v1.0
+# Roadmap — Espansr v1.0
 
 ## Backlog
 

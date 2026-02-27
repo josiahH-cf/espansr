@@ -5,11 +5,11 @@
 
 ## Description
 
-Extract all platform and WSL2 detection logic from `config.py` and `espanso.py` into a single `automatr_espanso/core/platform.py` module. This module becomes the sole source of truth for `get_platform()`, `is_wsl2()`, and `get_windows_username()` across the Python codebase. The refactor eliminates three separate `/proc/version` reads and two independent `cmd.exe` subprocess calls.
+Extract all platform and WSL2 detection logic from `config.py` and `espanso.py` into a single `espansr/core/platform.py` module. This module becomes the sole source of truth for `get_platform()`, `is_wsl2()`, and `get_windows_username()` across the Python codebase. The refactor eliminates three separate `/proc/version` reads and two independent `cmd.exe` subprocess calls.
 
 ## Acceptance Criteria
 
-- [ ] A new `automatr_espanso/core/platform.py` module exports `get_platform()`, `is_wsl2()`, and `get_windows_username()`
+- [ ] A new `espansr/core/platform.py` module exports `get_platform()`, `is_wsl2()`, and `get_windows_username()`
 - [ ] `config.py` imports `get_platform` from `platform.py` instead of defining its own; no `/proc/version` read remains in `config.py`
 - [ ] `espanso.py` imports `is_wsl2` and `get_windows_username` from `platform.py` instead of inline detection; no `/proc/version` read or `cmd.exe` call remains in `espanso.py`
 - [ ] `get_windows_username()` returns `None` (not raises) when `cmd.exe` is unavailable, times out, or returns empty output
@@ -20,10 +20,10 @@ Extract all platform and WSL2 detection logic from `config.py` and `espanso.py` 
 
 | Area | Files |
 |------|-------|
-| **Create** | `automatr_espanso/core/platform.py` |
-| **Modify** | `automatr_espanso/core/config.py` — remove `get_platform()`, `is_windows()`, import from platform |
-| **Modify** | `automatr_espanso/integrations/espanso.py` — remove inline WSL2 checks, import from platform |
-| **Modify** | `automatr_espanso/__main__.py` — `cmd_status()` uses platform module |
+| **Create** | `espansr/core/platform.py` |
+| **Modify** | `espansr/core/config.py` — remove `get_platform()`, `is_windows()`, import from platform |
+| **Modify** | `espansr/integrations/espanso.py` — remove inline WSL2 checks, import from platform |
+| **Modify** | `espansr/__main__.py` — `cmd_status()` uses platform module |
 | **Create** | `tests/test_platform.py` — unit tests for the new module |
 
 ## Constraints

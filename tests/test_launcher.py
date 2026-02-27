@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import yaml
 
-from automatr_espanso.integrations.espanso import _MANAGED_FILES
+from espansr.integrations.espanso import _MANAGED_FILES
 
 # ─── generate_launcher_file() tests ─────────────────────────────────────────
 
@@ -21,22 +21,22 @@ def test_generate_launcher_creates_valid_yaml(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
-        patch("shutil.which", return_value="/usr/bin/automatr-espanso"),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file()
 
     assert result is True
 
-    launcher = match_dir / "automatr-launcher.yml"
+    launcher = match_dir / "espansr-launcher.yml"
     assert launcher.exists()
 
     data = yaml.safe_load(launcher.read_text())
@@ -49,7 +49,7 @@ def test_generate_launcher_creates_valid_yaml(tmp_path):
     assert len(match["vars"]) == 1
     assert match["vars"][0]["name"] == "output"
     assert match["vars"][0]["type"] == "shell"
-    assert "automatr-espanso gui" in match["vars"][0]["params"]["cmd"]
+    assert "espansr gui" in match["vars"][0]["params"]["cmd"]
     assert match["vars"][0]["params"]["cmd"].endswith("&")
 
 
@@ -60,25 +60,25 @@ def test_generate_launcher_uses_config_trigger(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
-        patch("shutil.which", return_value="/usr/bin/automatr-espanso"),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
         patch(
-            "automatr_espanso.integrations.espanso.get_config"
+            "espansr.integrations.espanso.get_config"
         ) as mock_config,
     ):
         mock_config.return_value.espanso.launcher_trigger = ":launch"
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file()
 
     assert result is True
-    data = yaml.safe_load((match_dir / "automatr-launcher.yml").read_text())
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
     assert data["matches"][0]["trigger"] == ":launch"
 
 
@@ -89,31 +89,31 @@ def test_generate_launcher_wsl2_command(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=True,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_wsl_distro_name",
+            "espansr.integrations.espanso.get_wsl_distro_name",
             return_value="Ubuntu",
         ),
         patch(
             "shutil.which",
-            return_value="/home/user/.venv/bin/automatr-espanso",
+            return_value="/home/user/.venv/bin/espansr",
         ),
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file()
 
     assert result is True
-    data = yaml.safe_load((match_dir / "automatr-launcher.yml").read_text())
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
     cmd = data["matches"][0]["vars"][0]["params"]["cmd"]
     assert "wsl.exe -d Ubuntu --" in cmd
-    assert "/home/user/.venv/bin/automatr-espanso gui" in cmd
+    assert "/home/user/.venv/bin/espansr gui" in cmd
     assert cmd.endswith("&")
 
 
@@ -124,25 +124,25 @@ def test_generate_launcher_wsl2_no_distro_name(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=True,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_wsl_distro_name",
+            "espansr.integrations.espanso.get_wsl_distro_name",
             return_value=None,
         ),
-        patch("shutil.which", return_value="/usr/bin/automatr-espanso"),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file()
 
     assert result is True
-    data = yaml.safe_load((match_dir / "automatr-launcher.yml").read_text())
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
     cmd = data["matches"][0]["vars"][0]["params"]["cmd"]
     assert "wsl.exe --" in cmd
     assert "-d" not in cmd
@@ -151,10 +151,10 @@ def test_generate_launcher_wsl2_no_distro_name(tmp_path):
 def test_generate_launcher_returns_false_no_match_dir():
     """generate_launcher_file() returns False when no Espanso match dir found."""
     with patch(
-        "automatr_espanso.integrations.espanso.get_match_dir",
+        "espansr.integrations.espanso.get_match_dir",
         return_value=None,
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         assert generate_launcher_file() is False
 
@@ -166,24 +166,24 @@ def test_generate_launcher_fallback_sys_executable(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
         patch("shutil.which", return_value=None),
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file()
 
     assert result is True
-    data = yaml.safe_load((match_dir / "automatr-launcher.yml").read_text())
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
     cmd = data["matches"][0]["vars"][0]["params"]["cmd"]
     assert sys.executable in cmd
-    assert "-m automatr_espanso gui" in cmd
+    assert "-m espansr gui" in cmd
 
 
 def test_generate_launcher_with_explicit_match_dir(tmp_path):
@@ -193,25 +193,25 @@ def test_generate_launcher_with_explicit_match_dir(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.is_wsl2",
+            "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
-        patch("shutil.which", return_value="/usr/bin/automatr-espanso"),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
     ):
-        from automatr_espanso.integrations.espanso import generate_launcher_file
+        from espansr.integrations.espanso import generate_launcher_file
 
         result = generate_launcher_file(match_dir=match_dir)
 
     assert result is True
-    assert (match_dir / "automatr-launcher.yml").exists()
+    assert (match_dir / "espansr-launcher.yml").exists()
 
 
 # ─── Integration assertions ─────────────────────────────────────────────────
 
 
 def test_managed_files_includes_launcher():
-    """_MANAGED_FILES includes automatr-launcher.yml for stale cleanup."""
-    assert "automatr-launcher.yml" in _MANAGED_FILES
+    """_MANAGED_FILES includes espansr-launcher.yml for stale cleanup."""
+    assert "espansr-launcher.yml" in _MANAGED_FILES
 
 
 # ─── GUI first-run tip tests ────────────────────────────────────────────────
@@ -224,38 +224,38 @@ def test_first_run_shows_launcher_tip(tmp_path, qtbot):
 
     with (
         patch(
-            "automatr_espanso.ui.main_window.get_config",
+            "espansr.ui.main_window.get_config",
         ) as mock_config,
         patch(
-            "automatr_espanso.ui.main_window.get_config_manager",
+            "espansr.ui.main_window.get_config_manager",
         ),
         patch(
-            "automatr_espanso.ui.template_browser.get_config",
+            "espansr.ui.template_browser.get_config",
         ),
         patch(
-            "automatr_espanso.ui.template_browser.get_template_manager",
+            "espansr.ui.template_browser.get_template_manager",
         ),
         patch(
-            "automatr_espanso.ui.template_editor.get_config",
+            "espansr.ui.template_editor.get_config",
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+            "espansr.integrations.espanso.get_espanso_config_dir",
             return_value=tmp_path,
         ),
         patch(
-            "automatr_espanso.integrations.espanso._get_candidate_paths",
+            "espansr.integrations.espanso._get_candidate_paths",
             return_value=[],
         ),
     ):
-        from automatr_espanso.core.config import Config
+        from espansr.core.config import Config
 
         mock_config.return_value = Config()
 
-        from automatr_espanso.ui.main_window import MainWindow
+        from espansr.ui.main_window import MainWindow
 
         window = MainWindow()
         qtbot.addWidget(window)
@@ -269,42 +269,42 @@ def test_no_tip_when_launcher_exists(tmp_path, qtbot):
     """MainWindow does not show tip when launcher file already exists."""
     match_dir = tmp_path / "match"
     match_dir.mkdir()
-    (match_dir / "automatr-launcher.yml").write_text("matches: []")
+    (match_dir / "espansr-launcher.yml").write_text("matches: []")
 
     with (
         patch(
-            "automatr_espanso.ui.main_window.get_config",
+            "espansr.ui.main_window.get_config",
         ) as mock_config,
         patch(
-            "automatr_espanso.ui.main_window.get_config_manager",
+            "espansr.ui.main_window.get_config_manager",
         ),
         patch(
-            "automatr_espanso.ui.template_browser.get_config",
+            "espansr.ui.template_browser.get_config",
         ),
         patch(
-            "automatr_espanso.ui.template_browser.get_template_manager",
+            "espansr.ui.template_browser.get_template_manager",
         ),
         patch(
-            "automatr_espanso.ui.template_editor.get_config",
+            "espansr.ui.template_editor.get_config",
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+            "espansr.integrations.espanso.get_espanso_config_dir",
             return_value=tmp_path,
         ),
         patch(
-            "automatr_espanso.integrations.espanso._get_candidate_paths",
+            "espansr.integrations.espanso._get_candidate_paths",
             return_value=[],
         ),
     ):
-        from automatr_espanso.core.config import Config
+        from espansr.core.config import Config
 
         mock_config.return_value = Config()
 
-        from automatr_espanso.ui.main_window import MainWindow
+        from espansr.ui.main_window import MainWindow
 
         window = MainWindow()
         qtbot.addWidget(window)

@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from automatr_espanso.core.templates import TemplateManager, Variable
+from espansr.core.templates import TemplateManager, Variable
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ def tm(tmp_path):
 @pytest.fixture()
 def var_editor(qtbot):
     """Create a standalone VariableEditorWidget for testing."""
-    from automatr_espanso.ui.variable_editor import VariableEditorWidget
+    from espansr.ui.variable_editor import VariableEditorWidget
 
     widget = VariableEditorWidget()
     qtbot.addWidget(widget)
@@ -233,10 +233,10 @@ def _patch_editor_deps(tm):
     """Patch dependencies for TemplateEditorWidget."""
     with (
         patch(
-            "automatr_espanso.ui.template_editor.get_template_manager",
+            "espansr.ui.template_editor.get_template_manager",
             return_value=tm,
         ),
-        patch("automatr_espanso.ui.template_editor.get_config"),
+        patch("espansr.ui.template_editor.get_config"),
     ):
         yield
 
@@ -244,7 +244,7 @@ def _patch_editor_deps(tm):
 @pytest.fixture()
 def editor(qtbot, _patch_editor_deps):
     """Create a TemplateEditorWidget for testing YAML preview."""
-    from automatr_espanso.ui.template_editor import TemplateEditorWidget
+    from espansr.ui.template_editor import TemplateEditorWidget
 
     widget = TemplateEditorWidget()
     qtbot.addWidget(widget)
