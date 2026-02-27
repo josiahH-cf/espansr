@@ -1,6 +1,6 @@
-"""Tests for TemplateEditorWidget.
+"""Tests for TemplateEditorWidget and TemplateBrowserWidget.
 
-Covers load, clear, save-new, and save-existing flows.
+Covers editor load/clear/save flows and browser new/delete/undo flows.
 """
 
 from unittest.mock import patch
@@ -110,3 +110,72 @@ def test_editor_save_empty_name(editor, qtbot):
 
     msg, _duration = sig.args
     assert "required" in msg.lower()
+
+
+# ── Browser fixtures ────────────────────────────────────────────────────────
+
+
+@pytest.fixture()
+def _patch_browser_tm(tm):
+    """Patch get_template_manager and get_config for browser tests."""
+    with (
+        patch(
+            "automatr_espanso.ui.template_browser.get_template_manager",
+            return_value=tm,
+        ),
+        patch("automatr_espanso.ui.template_browser.get_config"),
+    ):
+        yield
+
+
+@pytest.fixture()
+def browser(qtbot, _patch_browser_tm):
+    """Create a TemplateBrowserWidget for testing."""
+    from automatr_espanso.ui.template_browser import TemplateBrowserWidget
+
+    widget = TemplateBrowserWidget()
+    qtbot.addWidget(widget)
+    return widget
+
+
+# ── Browser: New ────────────────────────────────────────────────────────────
+
+
+def test_browser_new_signal(browser, qtbot):
+    """Clicking 'New' emits the new_template_requested signal."""
+    with qtbot.waitSignal(browser.new_template_requested, timeout=1000):
+        browser.new_template_requested.emit()
+
+
+# ── Browser: Delete with undo ──────────────────────────────────────────────
+
+
+def test_browser_delete_undo(browser, tm, qtbot):
+    """Deleting then clicking Undo preserves the template."""
+    t = tm.create(name="Keep Me", content="body")
+    browser.load_templates()
+    browser.select_template_by_name("Keep Me")
+
+    browser._start_delete()
+    assert browser._pending_delete is not None
+    assert not browser._undo_row.isHidden()
+
+    browser._cancel_delete()
+    assert browser._pending_delete is None
+    assert browser._undo_row.isHidden()
+
+    assert tm.get("Keep Me") is not None
+
+
+def test_browser_delete_confirmed(browser, tm, qtbot):
+    """Deleting without undo removes the template after timeout."""
+    t = tm.create(name="Delete Me", content="body")
+    browser.load_templates()
+    browser.select_template_by_name("Delete Me")
+
+    browser._start_delete()
+    # Simulate the timer firing immediately
+    browser._finalize_delete()
+
+    assert tm.get("Delete Me") is None
+    assert browser._current_template is None
