@@ -85,7 +85,7 @@ class VariableRowWidget(QWidget):
 
         # Error label (hidden by default)
         self._error_label = QLabel("")
-        self._error_label.setStyleSheet("color: #f14c4c; font-size: 11px;")
+        self._error_label.setStyleSheet("color: #f14c4c; font-size: 11pt;")
         self._error_label.setVisible(False)
         layout.addWidget(self._error_label)
 
