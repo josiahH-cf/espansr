@@ -10,8 +10,8 @@ from unittest.mock import patch
 
 import pytest
 
-from automatr_espanso.core.config import Config
-from automatr_espanso.core.templates import TemplateManager
+from espansr.core.config import Config
+from espansr.core.templates import TemplateManager
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,39 +24,39 @@ def tm(tmp_path):
 
 def _make_window(qtbot, config, tm=None, match_dir=None, tmp_path=None):
     """Create a patched MainWindow. Returns the window instance."""
-    from automatr_espanso.ui.main_window import MainWindow
+    from espansr.ui.main_window import MainWindow
 
     tm_patch = (
         patch(
-            "automatr_espanso.ui.template_browser.get_template_manager",
+            "espansr.ui.template_browser.get_template_manager",
             return_value=tm,
         )
         if tm is not None
-        else patch("automatr_espanso.ui.template_browser.get_template_manager")
+        else patch("espansr.ui.template_browser.get_template_manager")
     )
 
     with contextlib.ExitStack() as stack:
         stack.enter_context(
-            patch("automatr_espanso.ui.main_window.get_config", return_value=config)
+            patch("espansr.ui.main_window.get_config", return_value=config)
         )
-        stack.enter_context(patch("automatr_espanso.ui.main_window.get_config_manager"))
-        stack.enter_context(patch("automatr_espanso.ui.template_browser.get_config"))
-        stack.enter_context(patch("automatr_espanso.ui.template_editor.get_config"))
+        stack.enter_context(patch("espansr.ui.main_window.get_config_manager"))
+        stack.enter_context(patch("espansr.ui.template_browser.get_config"))
+        stack.enter_context(patch("espansr.ui.template_editor.get_config"))
         stack.enter_context(
             patch(
-                "automatr_espanso.integrations.espanso.get_match_dir",
+                "espansr.integrations.espanso.get_match_dir",
                 return_value=match_dir,
             )
         )
         stack.enter_context(
             patch(
-                "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+                "espansr.integrations.espanso.get_espanso_config_dir",
                 return_value=tmp_path,
             )
         )
         stack.enter_context(
             patch(
-                "automatr_espanso.integrations.espanso._get_candidate_paths",
+                "espansr.integrations.espanso._get_candidate_paths",
                 return_value=[],
             )
         )
@@ -87,7 +87,7 @@ def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     with patch(
-        "automatr_espanso.integrations.espanso.sync_to_espanso",
+        "espansr.integrations.espanso.sync_to_espanso",
         return_value=True,
     ) as mock_sync:
         window._sync_btn.click()
@@ -101,7 +101,7 @@ def test_sync_success_shows_status_message(qtbot, tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.sync_to_espanso",
+            "espansr.integrations.espanso.sync_to_espanso",
             return_value=True,
         ),
         patch.object(window._browser, "refresh"),  # prevent "Loaded N" overwrite
@@ -116,7 +116,7 @@ def test_sync_failure_shows_status_message(qtbot, tmp_path):
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     with patch(
-        "automatr_espanso.integrations.espanso.sync_to_espanso",
+        "espansr.integrations.espanso.sync_to_espanso",
         return_value=False,
     ):
         window._sync_btn.click()
@@ -133,7 +133,7 @@ def test_close_event_saves_geometry(qtbot, tmp_path):
     window = _make_window(qtbot, config, tmp_path=tmp_path)
     window.show()
 
-    with patch("automatr_espanso.ui.main_window.save_config") as mock_save:
+    with patch("espansr.ui.main_window.save_config") as mock_save:
         window.close()
 
     mock_save.assert_called_once()
@@ -204,7 +204,7 @@ def test_last_template_saved_on_close(qtbot, tmp_path):
     # Programmatically select a template.
     window._browser.select_template_by_name("Pick Me")
 
-    with patch("automatr_espanso.ui.main_window.save_config") as mock_save:
+    with patch("espansr.ui.main_window.save_config") as mock_save:
         window.close()
 
     saved_config = mock_save.call_args[0][0]

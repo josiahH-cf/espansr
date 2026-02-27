@@ -1,4 +1,4 @@
-"""Espanso integration for automatr-espanso.
+"""Espanso integration for espansr.
 
 Generates Espanso match files from templates that have triggers defined.
 Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
@@ -11,14 +11,14 @@ from typing import Optional
 
 import yaml
 
-from automatr_espanso.core.config import get_config, save_config
-from automatr_espanso.core.platform import get_windows_username, get_wsl_distro_name, is_wsl2
-from automatr_espanso.core.templates import get_template_manager
+from espansr.core.config import get_config, save_config
+from espansr.core.platform import get_windows_username, get_wsl_distro_name, is_wsl2
+from espansr.core.templates import get_template_manager
 
 logger = logging.getLogger(__name__)
 
-# File names managed by automatr — only these are cleaned up
-_MANAGED_FILES = ("automatr-espanso.yml", "automatr-launcher.yml")
+# File names managed by espansr — only these are cleaned up
+_MANAGED_FILES = ("espansr.yml", "espansr-launcher.yml")
 
 
 def _convert_to_espanso_placeholders(content: str, variables) -> str:
@@ -146,10 +146,10 @@ def get_espanso_config_dir() -> Optional[Path]:
 
 
 def clean_stale_espanso_files() -> None:
-    """Remove automatr-managed files from non-canonical Espanso config dirs.
+    """Remove espansr-managed files from non-canonical Espanso config dirs.
 
     Scans all known Espanso config candidate paths and deletes
-    `automatr-espanso.yml` and `automatr-launcher.yml` from any `match/`
+    `espansr.yml` and `espansr-launcher.yml` from any `match/`
     directory that is NOT the canonical one.
 
     Silent on permission errors — logs a warning but does not raise.
@@ -196,7 +196,7 @@ def get_match_dir() -> Optional[Path]:
 
 
 def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
-    """Generate automatr-launcher.yml with a shell trigger to launch the GUI.
+    """Generate espansr-launcher.yml with a shell trigger to launch the GUI.
 
     Args:
         match_dir: Override match directory (for testing). Uses get_match_dir() if None.
@@ -216,11 +216,11 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     trigger = config.espanso.launcher_trigger or ":aopen"
 
     # Resolve binary path
-    binary = shutil.which("automatr-espanso")
+    binary = shutil.which("espansr")
     if binary:
         gui_cmd = f"{binary} gui"
     else:
-        gui_cmd = f"{sys.executable} -m automatr_espanso gui"
+        gui_cmd = f"{sys.executable} -m espansr gui"
 
     # Build platform-specific shell command
     if is_wsl2():
@@ -249,7 +249,7 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     }
 
     try:
-        output_path = match_dir / "automatr-launcher.yml"
+        output_path = match_dir / "espansr-launcher.yml"
         with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
         logger.info("Generated launcher trigger at %s", output_path)
@@ -262,7 +262,7 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
 def sync_to_espanso() -> bool:
     """Sync templates to Espanso match file.
 
-    Generates a single `automatr-espanso.yml` in the Espanso match directory
+    Generates a single `espansr.yml` in the Espanso match directory
     containing all templates that have triggers defined.
 
     Returns:
@@ -298,7 +298,7 @@ def sync_to_espanso() -> bool:
         print("No templates with triggers found")
         return True
 
-    output_path = match_dir / "automatr-espanso.yml"
+    output_path = match_dir / "espansr.yml"
     try:
         content = {"matches": matches}
         with open(output_path, "w", encoding="utf-8") as f:
@@ -415,7 +415,7 @@ class EspansoManager:
         if not matches:
             return 0
 
-        output_path = self.match_dir / "automatr-espanso.yml"
+        output_path = self.match_dir / "espansr.yml"
         try:
             content = {"matches": matches}
             with open(output_path, "w", encoding="utf-8") as f:

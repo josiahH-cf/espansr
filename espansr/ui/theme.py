@@ -1,4 +1,4 @@
-"""PyQt6 theme configuration for automatr-espanso."""
+"""PyQt6 theme configuration for espansr."""
 
 # Dark theme stylesheet
 DARK_THEME = """

@@ -1,4 +1,4 @@
-"""Tests for automatr-espanso.
+"""Tests for espansr.
 
 Covers: ConfigManager, EspansoConfig, TemplateManager, iter_with_triggers,
 sync_to_espanso YAML output, WSL2 path detection, CLI commands.
@@ -18,7 +18,7 @@ import yaml
 
 def test_config_manager_returns_defaults_when_no_file(tmp_path):
     """ConfigManager returns EspansoConfig defaults when no file exists."""
-    from automatr_espanso.core.config import ConfigManager, EspansoConfig, UIConfig
+    from espansr.core.config import ConfigManager, EspansoConfig, UIConfig
 
     cm = ConfigManager(config_path=tmp_path / "config.json")
     config = cm.config
@@ -29,7 +29,7 @@ def test_config_manager_returns_defaults_when_no_file(tmp_path):
 
 def test_config_manager_save_and_reload(tmp_path):
     """ConfigManager round-trips espanso config correctly."""
-    from automatr_espanso.core.config import ConfigManager
+    from espansr.core.config import ConfigManager
 
     path = tmp_path / "config.json"
     cm = ConfigManager(config_path=path)
@@ -44,7 +44,7 @@ def test_config_manager_save_and_reload(tmp_path):
 
 def test_espanso_config_defaults():
     """EspansoConfig has correct defaults."""
-    from automatr_espanso.core.config import EspansoConfig
+    from espansr.core.config import EspansoConfig
 
     cfg = EspansoConfig()
     assert cfg.config_path == ""
@@ -55,7 +55,7 @@ def test_espanso_config_defaults():
 
 def test_config_update_launcher_trigger(tmp_path):
     """ConfigManager.update() persists launcher_trigger via dot-notation."""
-    from automatr_espanso.core.config import ConfigManager
+    from espansr.core.config import ConfigManager
 
     cm = ConfigManager(config_path=tmp_path / "config.json")
     cm.update(**{"espanso.launcher_trigger": ":myopen"})
@@ -66,7 +66,7 @@ def test_config_update_launcher_trigger(tmp_path):
 
 def test_config_update_nested_key(tmp_path):
     """ConfigManager.update() supports 'espanso.config_path' dot-notation."""
-    from automatr_espanso.core.config import ConfigManager
+    from espansr.core.config import ConfigManager
 
     cm = ConfigManager(config_path=tmp_path / "config.json")
     cm.update(**{"espanso.config_path": "/test/path", "espanso.auto_sync": True})
@@ -80,7 +80,7 @@ def test_config_update_nested_key(tmp_path):
 
 def test_template_loads_trigger_field(tmp_path):
     """Templates load the trigger field from JSON correctly."""
-    from automatr_espanso.core.templates import TemplateManager
+    from espansr.core.templates import TemplateManager
 
     data = {
         "name": "Test Template",
@@ -102,7 +102,7 @@ def test_template_loads_trigger_field(tmp_path):
 
 def test_iter_with_triggers_filters_correctly(tmp_path):
     """iter_with_triggers() yields only templates with a non-empty trigger."""
-    from automatr_espanso.core.templates import TemplateManager
+    from espansr.core.templates import TemplateManager
 
     (tmp_path / "with_trigger.json").write_text(
         json.dumps({"name": "With Trigger", "content": "foo", "trigger": ":foo"})
@@ -127,7 +127,7 @@ def test_iter_with_triggers_filters_correctly(tmp_path):
 
 def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
     """sync_to_espanso() writes a valid Espanso v2 YAML match file."""
-    from automatr_espanso.core.templates import TemplateManager
+    from espansr.core.templates import TemplateManager
 
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
@@ -142,21 +142,21 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_template_manager"
+            "espansr.integrations.espanso.get_template_manager"
         ) as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
 
-        from automatr_espanso.integrations.espanso import sync_to_espanso
+        from espansr.integrations.espanso import sync_to_espanso
 
         result = sync_to_espanso()
 
     assert result is True
-    output = match_dir / "automatr-espanso.yml"
+    output = match_dir / "espansr.yml"
     assert output.exists()
 
     data = yaml.safe_load(output.read_text())
@@ -168,7 +168,7 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
 
 def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
     """Form variables in sync output use {{var.value}} Espanso v2 syntax."""
-    from automatr_espanso.core.templates import TemplateManager
+    from espansr.core.templates import TemplateManager
 
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
@@ -188,19 +188,19 @@ def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_template_manager"
+            "espansr.integrations.espanso.get_template_manager"
         ) as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
-        from automatr_espanso.integrations.espanso import sync_to_espanso
+        from espansr.integrations.espanso import sync_to_espanso
 
         sync_to_espanso()
 
-    data = yaml.safe_load((match_dir / "automatr-espanso.yml").read_text())
+    data = yaml.safe_load((match_dir / "espansr.yml").read_text())
     replace_text = data["matches"][0]["replace"]
     # Form vars must use .value accessor
     assert "{{name.value}}" in replace_text
@@ -209,7 +209,7 @@ def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
 
 def test_sync_succeeds_with_no_triggered_templates(tmp_path):
     """sync_to_espanso() returns True and writes nothing when no triggers exist."""
-    from automatr_espanso.core.templates import TemplateManager
+    from espansr.core.templates import TemplateManager
 
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
@@ -222,29 +222,29 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
 
     with (
         patch(
-            "automatr_espanso.integrations.espanso.get_match_dir",
+            "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
         patch(
-            "automatr_espanso.integrations.espanso.get_template_manager"
+            "espansr.integrations.espanso.get_template_manager"
         ) as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
-        from automatr_espanso.integrations.espanso import sync_to_espanso
+        from espansr.integrations.espanso import sync_to_espanso
 
         result = sync_to_espanso()
 
     assert result is True
     # No file should be written when there are no matches
-    assert not (match_dir / "automatr-espanso.yml").exists()
+    assert not (match_dir / "espansr.yml").exists()
 
 
 def test_sync_returns_false_when_no_match_dir():
     """sync_to_espanso() returns False when Espanso config dir not found."""
     with patch(
-        "automatr_espanso.integrations.espanso.get_match_dir", return_value=None
+        "espansr.integrations.espanso.get_match_dir", return_value=None
     ):
-        from automatr_espanso.integrations.espanso import sync_to_espanso
+        from espansr.integrations.espanso import sync_to_espanso
 
         result = sync_to_espanso()
 
@@ -263,7 +263,7 @@ def test_platform_detection_wsl2():
         patch("platform.system", return_value="Linux"),
         patch("builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")),
     ):
-        import automatr_espanso.core.config as cfg_mod
+        import espansr.core.config as cfg_mod
 
         importlib.reload(cfg_mod)
         result = cfg_mod.get_platform()
@@ -279,7 +279,7 @@ def test_platform_detection_native_linux():
         patch("platform.system", return_value="Linux"),
         patch("builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")),
     ):
-        import automatr_espanso.core.config as cfg_mod
+        import espansr.core.config as cfg_mod
 
         importlib.reload(cfg_mod)
         result = cfg_mod.get_platform()
@@ -291,9 +291,9 @@ def test_platform_detection_native_linux():
 
 
 def test_cli_list_runs_without_error(tmp_path):
-    """'automatr-espanso list' exits 0 with an empty templates directory."""
+    """'espansr list' exits 0 with an empty templates directory."""
     result = subprocess.run(
-        [sys.executable, "-m", "automatr_espanso", "list"],
+        [sys.executable, "-m", "espansr", "list"],
         capture_output=True,
         text=True,
         env={
@@ -305,9 +305,9 @@ def test_cli_list_runs_without_error(tmp_path):
 
 
 def test_cli_status_runs_without_error():
-    """'automatr-espanso status' exits 0 (Espanso may or may not be installed)."""
+    """'espansr status' exits 0 (Espanso may or may not be installed)."""
     result = subprocess.run(
-        [sys.executable, "-m", "automatr_espanso", "status"],
+        [sys.executable, "-m", "espansr", "status"],
         capture_output=True,
         text=True,
     )

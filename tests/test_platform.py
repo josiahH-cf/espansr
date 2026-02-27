@@ -1,4 +1,4 @@
-"""Tests for automatr_espanso.core.platform module.
+"""Tests for espansr.core.platform module.
 
 Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username()
 """
@@ -6,7 +6,7 @@ Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username()
 import subprocess
 from unittest.mock import MagicMock, mock_open, patch
 
-from automatr_espanso.core.platform import (
+from espansr.core.platform import (
     get_platform,
     get_windows_username,
     get_wsl_distro_name,
@@ -232,7 +232,7 @@ def test_get_wsl_distro_name_returns_none_on_empty_output():
 
 def test_config_reexports_get_platform():
     """config.py re-exports get_platform from platform module."""
-    from automatr_espanso.core.config import get_platform as config_get_platform
+    from espansr.core.config import get_platform as config_get_platform
 
     assert callable(config_get_platform)
     assert config_get_platform is get_platform
@@ -240,7 +240,7 @@ def test_config_reexports_get_platform():
 
 def test_config_reexports_is_windows():
     """config.py re-exports is_windows from platform module."""
-    from automatr_espanso.core.config import is_windows as config_is_windows
+    from espansr.core.config import is_windows as config_is_windows
 
     assert callable(config_is_windows)
     assert config_is_windows is is_windows

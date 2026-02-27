@@ -1,4 +1,4 @@
-"""Platform detection utilities for automatr-espanso.
+"""Platform detection utilities for espansr.
 
 Single source of truth for OS and WSL2 detection across the codebase.
 """

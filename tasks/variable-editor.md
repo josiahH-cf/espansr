@@ -23,7 +23,7 @@
 
 ## Task 2 — Create `variable_editor.py` widget
 
-**File:** `automatr_espanso/ui/variable_editor.py` (new)
+**File:** `espansr/ui/variable_editor.py` (new)
 
 - `VariableEditorWidget(QWidget)` with "Variables" header + "Add Variable" button
 - `VariableRowWidget(QWidget)` for each variable: name QLineEdit, type QComboBox (form/date), default QLineEdit, delete QPushButton
@@ -40,7 +40,7 @@
 
 ## Task 3 — Integrate variable editor + YAML preview into template_editor.py
 
-**Files:** `automatr_espanso/ui/template_editor.py` (modify)
+**Files:** `espansr/ui/template_editor.py` (modify)
 
 - Add `VariableEditorWidget` below content field
 - Add YAML preview `QPlainTextEdit` (read-only) below variables
@@ -54,7 +54,7 @@
 
 ## Task 4 — Update theme.py and run full test suite
 
-**Files:** `automatr_espanso/ui/theme.py` (modify)
+**Files:** `espansr/ui/theme.py` (modify)
 
 - Add styles for variable rows, type dropdown, inline error labels
 - Full test suite green across all test files
