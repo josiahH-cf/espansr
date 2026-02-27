@@ -25,8 +25,8 @@ dev = [
 espansr = "espansr.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/josiahH-cf/automatr-espanso"
-Repository = "https://github.com/josiahH-cf/automatr-espanso"
+Homepage = "https://github.com/josiahH-cf/espansr"
+Repository = "https://github.com/josiahH-cf/espansr"
 
 [tool.setuptools.packages.find]
 where = ["."]
