@@ -214,3 +214,78 @@ def test_generate_launcher_with_explicit_match_dir(tmp_path):
 def test_managed_files_includes_launcher():
     """_MANAGED_FILES includes automatr-launcher.yml for stale cleanup."""
     assert "automatr-launcher.yml" in _MANAGED_FILES
+
+
+# ─── GUI first-run tip tests ────────────────────────────────────────────────
+
+
+def test_first_run_shows_launcher_tip(tmp_path, qtbot):
+    """MainWindow shows a status bar tip when launcher file is missing."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch(
+            "automatr_espanso.ui.main_window.get_config",
+        ) as mock_config,
+        patch(
+            "automatr_espanso.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+            return_value=tmp_path,
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso._get_candidate_paths",
+            return_value=[],
+        ),
+    ):
+        from automatr_espanso.core.config import Config
+
+        mock_config.return_value = Config()
+
+        from automatr_espanso.ui.main_window import MainWindow
+
+        window = MainWindow()
+        qtbot.addWidget(window)
+
+    msg = window.statusBar().currentMessage()
+    assert ":aopen" in msg
+    assert "Tip" in msg
+
+
+def test_no_tip_when_launcher_exists(tmp_path, qtbot):
+    """MainWindow does not show tip when launcher file already exists."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+    (match_dir / "automatr-launcher.yml").write_text("matches: []")
+
+    with (
+        patch(
+            "automatr_espanso.ui.main_window.get_config",
+        ) as mock_config,
+        patch(
+            "automatr_espanso.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso.get_espanso_config_dir",
+            return_value=tmp_path,
+        ),
+        patch(
+            "automatr_espanso.integrations.espanso._get_candidate_paths",
+            return_value=[],
+        ),
+    ):
+        from automatr_espanso.core.config import Config
+
+        mock_config.return_value = Config()
+
+        from automatr_espanso.ui.main_window import MainWindow
+
+        window = MainWindow()
+        qtbot.addWidget(window)
+
+    msg = window.statusBar().currentMessage()
+    assert ":aopen" not in msg

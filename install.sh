@@ -233,6 +233,16 @@ clean_stale_espanso_files() {
 
 clean_stale_espanso_files
 
+# ─── Launcher trigger ────────────────────────────────────────────────────────
+generate_launcher() {
+    info "Generating Espanso launcher trigger…"
+    "$VENV_PYTHON" -c "from automatr_espanso.integrations.espanso import generate_launcher_file; generate_launcher_file()" && \
+        ok "Launcher trigger generated" || \
+        warn "Could not generate launcher trigger (Espanso config not found)"
+}
+
+generate_launcher
+
 # ─── Templates directory ──────────────────────────────────────────────────────
 setup_templates_dir() {
     local config_dir

@@ -28,6 +28,7 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._apply_theme()
         self._clean_stale_espanso_files()
+        self._check_launcher()
 
     def _setup_ui(self) -> None:
         """Build the two-pane splitter layout."""
@@ -72,6 +73,23 @@ class MainWindow(QMainWindow):
         from automatr_espanso.integrations.espanso import clean_stale_espanso_files
 
         clean_stale_espanso_files()
+
+    def _check_launcher(self) -> None:
+        """Show a status bar tip if the launcher trigger file is missing."""
+        from automatr_espanso.integrations.espanso import get_match_dir
+
+        match_dir = get_match_dir()
+        if match_dir is None:
+            return
+
+        launcher = match_dir / "automatr-launcher.yml"
+        if not launcher.exists():
+            trigger = self._config.espanso.launcher_trigger or ":aopen"
+            self.statusBar().showMessage(
+                f"Tip: Type '{trigger}' anywhere after syncing to launch this GUI. "
+                f"Run 'automatr-espanso sync' or use install.sh to enable it.",
+                8000,
+            )
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:
         """Persist splitter position when the user drags it."""
