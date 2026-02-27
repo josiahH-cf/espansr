@@ -8,8 +8,7 @@ from unittest.mock import patch
 
 import pytest
 
-from automatr_espanso.core.templates import Template, TemplateManager, Variable
-
+from automatr_espanso.core.templates import TemplateManager, Variable
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -21,14 +20,7 @@ def tm(tmp_path):
 
 
 @pytest.fixture()
-def _patch_config():
-    """Patch get_config for variable editor widget tests."""
-    with patch("automatr_espanso.ui.variable_editor.get_config"):
-        yield
-
-
-@pytest.fixture()
-def var_editor(qtbot, _patch_config):
+def var_editor(qtbot):
     """Create a standalone VariableEditorWidget for testing."""
     from automatr_espanso.ui.variable_editor import VariableEditorWidget
 
