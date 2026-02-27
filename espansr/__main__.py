@@ -1,4 +1,4 @@
-"""CLI entry point for automatr-espanso.
+"""CLI entry point for espansr.
 
 Commands:
   sync    — Sync templates to Espanso match file
@@ -13,7 +13,7 @@ import sys
 
 def cmd_sync(args) -> int:
     """Sync all triggered templates to Espanso."""
-    from automatr_espanso.integrations.espanso import sync_to_espanso
+    from espansr.integrations.espanso import sync_to_espanso
 
     success = sync_to_espanso()
     return 0 if success else 1
@@ -23,8 +23,8 @@ def cmd_status(args) -> int:
     """Show Espanso availability and config path."""
     import shutil
 
-    from automatr_espanso.core.platform import is_wsl2
-    from automatr_espanso.integrations.espanso import get_espanso_config_dir
+    from espansr.core.platform import is_wsl2
+    from espansr.integrations.espanso import get_espanso_config_dir
 
     config_dir = get_espanso_config_dir()
     if config_dir:
@@ -49,7 +49,7 @@ def cmd_status(args) -> int:
 
 def cmd_list(args) -> int:
     """List templates that have triggers defined."""
-    from automatr_espanso.core.templates import get_template_manager
+    from espansr.core.templates import get_template_manager
 
     manager = get_template_manager()
     triggered = list(manager.iter_with_triggers())
@@ -71,16 +71,16 @@ def cmd_list(args) -> int:
 
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
-    from automatr_espanso.ui.main_window import launch
+    from espansr.ui.main_window import launch
 
     launch()
     return 0
 
 
 def main() -> None:
-    """Entry point for the automatr-espanso CLI."""
+    """Entry point for the espansr CLI."""
     parser = argparse.ArgumentParser(
-        prog="automatr-espanso",
+        prog="espansr",
         description="Espanso text expansion template manager",
     )
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")

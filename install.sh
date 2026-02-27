@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — automatr-espanso installer
+# install.sh — espansr installer
 #
 # Supports: Linux, WSL2, macOS
 #
@@ -108,11 +108,11 @@ VENV_PIP="$VENV_DIR/bin/pip"
 info "Upgrading pip…"
 "$VENV_PIP" install --quiet --upgrade pip
 
-info "Installing automatr-espanso…"
+info "Installing espansr…"
 "$VENV_PIP" install --quiet -e "$SCRIPT_DIR"
 ok "Package installed"
 
-VENV_CMD="$VENV_DIR/bin/automatr-espanso"
+VENV_CMD="$VENV_DIR/bin/espansr"
 
 # ─── Espanso detection ────────────────────────────────────────────────────────
 detect_espanso() {
@@ -134,7 +134,7 @@ detect_espanso() {
             done
         fi
         warn "Espanso config not found. Install Espanso on Windows first."
-        warn "Then run: automatr-espanso status"
+        warn "Then run: espansr status"
         return 0
     fi
 
@@ -214,8 +214,8 @@ clean_stale_espanso_files() {
         return 0  # No Espanso config found, nothing to clean
     fi
 
-    # Remove automatr-managed files from non-canonical locations
-    local managed_files=("automatr-espanso.yml" "automatr-launcher.yml")
+    # Remove espansr-managed files from non-canonical locations
+    local managed_files=("espansr.yml" "espansr-launcher.yml")
     for c in "${candidates[@]}"; do
         [[ "$c" == "$canonical" ]] && continue
         local match_dir="$c/match"
@@ -236,7 +236,7 @@ clean_stale_espanso_files
 # ─── Launcher trigger ────────────────────────────────────────────────────────
 generate_launcher() {
     info "Generating Espanso launcher trigger…"
-    "$VENV_PYTHON" -c "from automatr_espanso.integrations.espanso import generate_launcher_file; generate_launcher_file()" && \
+    "$VENV_PYTHON" -c "from espansr.integrations.espanso import generate_launcher_file; generate_launcher_file()" && \
         ok "Launcher trigger generated" || \
         warn "Could not generate launcher trigger (Espanso config not found)"
 }
@@ -247,9 +247,9 @@ generate_launcher
 setup_templates_dir() {
     local config_dir
     if [[ "$PLATFORM" == "macos" ]]; then
-        config_dir="$HOME/Library/Application Support/automatr-espanso"
+        config_dir="$HOME/Library/Application Support/espansr"
     else
-        config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/automatr-espanso"
+        config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/espansr"
     fi
 
     local templates_dir="$config_dir/templates"
@@ -280,13 +280,13 @@ setup_shell_alias() {
         shell_rc="$HOME/.bashrc"
     fi
 
-    local alias_line="alias automatr-espanso='$VENV_CMD'"
+    local alias_line="alias espansr='$VENV_CMD'"
 
-    if grep -qF "automatr-espanso" "$shell_rc" 2>/dev/null; then
+    if grep -qF "espansr" "$shell_rc" 2>/dev/null; then
         ok "Shell alias already present in $shell_rc"
     else
         echo "" >> "$shell_rc"
-        echo "# automatr-espanso" >> "$shell_rc"
+        echo "# espansr" >> "$shell_rc"
         echo "$alias_line" >> "$shell_rc"
         ok "Added alias to $shell_rc"
         info "Run: source $shell_rc  (or open a new terminal)"
@@ -298,16 +298,16 @@ setup_shell_alias
 # ─── Smoke test ──────────────────────────────────────────────────────────────
 info "Running smoke test…"
 
-"$VENV_CMD" list >/dev/null 2>&1 && ok "CLI: automatr-espanso list — OK" || die "Smoke test failed: 'automatr-espanso list' exited non-zero"
-"$VENV_CMD" status >/dev/null 2>&1 && ok "CLI: automatr-espanso status — OK" || warn "automatr-espanso status returned non-zero (Espanso may not be installed)"
+"$VENV_CMD" list >/dev/null 2>&1 && ok "CLI: espansr list — OK" || die "Smoke test failed: 'espansr list' exited non-zero"
+"$VENV_CMD" status >/dev/null 2>&1 && ok "CLI: espansr status — OK" || warn "espansr status returned non-zero (Espanso may not be installed)"
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}╔══════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   automatr-espanso installed successfully!   ║${NC}"
+echo -e "${GREEN}║   espansr installed successfully!   ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
-echo "  CLI:  automatr-espanso sync / status / list"
-echo "  GUI:  automatr-espanso gui"
+echo "  CLI:  espansr sync / status / list"
+echo "  GUI:  espansr gui"
 echo "  Bin:  $VENV_CMD"
 echo ""

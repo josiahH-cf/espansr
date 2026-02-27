@@ -1,6 +1,6 @@
 # Project
 
-- Project name: Automatr Espanso
+- Project name: Espansr
 - Description: A standalone Espanso text expansion template manager with CLI and GUI.
 - Primary language/framework: Python with PyQt6
 - Scope: Espanso config management, template-to-trigger sync, YAML generation
@@ -18,10 +18,10 @@
 
 # Architecture
 
-- `automatr_espanso/`: Main Python package and app entrypoint.
-- `automatr_espanso/core/`: Core configuration and template handling.
-- `automatr_espanso/integrations/`: Espanso sync integration.
-- `automatr_espanso/ui/`: PyQt6 user interface screens.
+- `espansr/`: Main Python package and app entrypoint.
+- `espansr/core/`: Core configuration and template handling.
+- `espansr/integrations/`: Espanso sync integration.
+- `espansr/ui/`: PyQt6 user interface screens.
 - `templates/`: Bundled Espanso-specific template JSON files (starts empty; add static snippets here).
 - `tests/`: Test suite.
 
@@ -52,7 +52,7 @@ All agent-driven planning happens in local files (`/specs/`, `/tasks/`, `/decisi
 Do not attempt to re-merge or share them with external codebases.
 Key design decisions:
 - `EspansoConfig` is the primary config dataclass
-- Config dir is `automatr-espanso`
+- Config dir is `espansr`
 - `TemplateManager` has `iter_with_triggers()` method
 
 # Testing

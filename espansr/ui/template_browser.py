@@ -1,4 +1,4 @@
-"""Template browser widget for automatr-espanso.
+"""Template browser widget for espansr.
 
 Left-panel template list with search, new, and delete controls.
 Templates organized by folder; search filters by name, trigger, or description.
@@ -18,8 +18,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from automatr_espanso.core.config import get_config
-from automatr_espanso.core.templates import Template, get_template_manager
+from espansr.core.config import get_config
+from espansr.core.templates import Template, get_template_manager
 
 
 class TemplateBrowserWidget(QWidget):

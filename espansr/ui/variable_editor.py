@@ -1,4 +1,4 @@
-"""Inline variable editor widget for automatr-espanso.
+"""Inline variable editor widget for espansr.
 
 Provides a "Variables" section with add/edit/delete rows for template variables.
 Each row has name, type (form/date), default value, and type-specific fields.
@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from automatr_espanso.core.templates import Variable
+from espansr.core.templates import Variable
 
 _NAME_RE = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 

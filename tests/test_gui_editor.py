@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from automatr_espanso.core.templates import Template, TemplateManager
+from espansr.core.templates import Template, TemplateManager
 
 
 @pytest.fixture()
@@ -21,10 +21,10 @@ def _patch_tm(tm):
     """Patch get_template_manager and get_config for all editor tests."""
     with (
         patch(
-            "automatr_espanso.ui.template_editor.get_template_manager",
+            "espansr.ui.template_editor.get_template_manager",
             return_value=tm,
         ),
-        patch("automatr_espanso.ui.template_editor.get_config"),
+        patch("espansr.ui.template_editor.get_config"),
     ):
         yield
 
@@ -32,7 +32,7 @@ def _patch_tm(tm):
 @pytest.fixture()
 def editor(qtbot, _patch_tm):
     """Create a TemplateEditorWidget for testing."""
-    from automatr_espanso.ui.template_editor import TemplateEditorWidget
+    from espansr.ui.template_editor import TemplateEditorWidget
 
     widget = TemplateEditorWidget()
     qtbot.addWidget(widget)
@@ -120,10 +120,10 @@ def _patch_browser_tm(tm):
     """Patch get_template_manager and get_config for browser tests."""
     with (
         patch(
-            "automatr_espanso.ui.template_browser.get_template_manager",
+            "espansr.ui.template_browser.get_template_manager",
             return_value=tm,
         ),
-        patch("automatr_espanso.ui.template_browser.get_config"),
+        patch("espansr.ui.template_browser.get_config"),
     ):
         yield
 
@@ -131,7 +131,7 @@ def _patch_browser_tm(tm):
 @pytest.fixture()
 def browser(qtbot, _patch_browser_tm):
     """Create a TemplateBrowserWidget for testing."""
-    from automatr_espanso.ui.template_browser import TemplateBrowserWidget
+    from espansr.ui.template_browser import TemplateBrowserWidget
 
     widget = TemplateBrowserWidget()
     qtbot.addWidget(widget)
