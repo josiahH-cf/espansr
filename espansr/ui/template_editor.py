@@ -68,7 +68,7 @@ class TemplateEditorWidget(QWidget):
         trigger_row = QHBoxLayout()
         trigger_row.addWidget(QLabel("Trigger:"))
         hint = QLabel("(start with ':' for Espanso)")
-        hint.setStyleSheet("color: #808080; font-style: italic;")
+        hint.setStyleSheet("color: #808080;")
         trigger_row.addWidget(hint)
         trigger_row.addStretch()
         layout.addLayout(trigger_row)
