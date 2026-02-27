@@ -50,6 +50,18 @@ def test_espanso_config_defaults():
     assert cfg.config_path == ""
     assert cfg.auto_sync is False
     assert cfg.last_sync == ""
+    assert cfg.launcher_trigger == ":aopen"
+
+
+def test_config_update_launcher_trigger(tmp_path):
+    """ConfigManager.update() persists launcher_trigger via dot-notation."""
+    from automatr_espanso.core.config import ConfigManager
+
+    cm = ConfigManager(config_path=tmp_path / "config.json")
+    cm.update(**{"espanso.launcher_trigger": ":myopen"})
+
+    cm2 = ConfigManager(config_path=tmp_path / "config.json")
+    assert cm2.config.espanso.launcher_trigger == ":myopen"
 
 
 def test_config_update_nested_key(tmp_path):

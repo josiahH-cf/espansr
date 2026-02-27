@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, mock_open, patch
 from automatr_espanso.core.platform import (
     get_platform,
     get_windows_username,
+    get_wsl_distro_name,
     is_windows,
     is_wsl2,
 )
@@ -179,6 +180,51 @@ def test_get_windows_username_returns_none_on_os_error():
     """get_windows_username() returns None on generic OSError."""
     with patch("subprocess.run", side_effect=OSError("Unexpected error")):
         assert get_windows_username() is None
+
+
+# ─── get_wsl_distro_name() tests ─────────────────────────────────────────────
+
+
+def test_get_wsl_distro_name_from_env():
+    """get_wsl_distro_name() returns distro name from WSL_DISTRO_NAME env var."""
+    with patch.dict("os.environ", {"WSL_DISTRO_NAME": "Ubuntu"}):
+        assert get_wsl_distro_name() == "Ubuntu"
+
+
+def test_get_wsl_distro_name_fallback_wsl_exe():
+    """get_wsl_distro_name() falls back to wsl.exe -l -q when env var is missing."""
+    mock_result = MagicMock()
+    mock_result.stdout = "Ubuntu\r\n"
+
+    with (
+        patch.dict("os.environ", {}, clear=False),
+        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert get_wsl_distro_name() == "Ubuntu"
+
+
+def test_get_wsl_distro_name_returns_none_on_failure():
+    """get_wsl_distro_name() returns None when both env var and wsl.exe fail."""
+    with (
+        patch.dict("os.environ", {}, clear=False),
+        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch("subprocess.run", side_effect=FileNotFoundError("wsl.exe not found")),
+    ):
+        assert get_wsl_distro_name() is None
+
+
+def test_get_wsl_distro_name_returns_none_on_empty_output():
+    """get_wsl_distro_name() returns None when wsl.exe returns empty output."""
+    mock_result = MagicMock()
+    mock_result.stdout = "  \r\n"
+
+    with (
+        patch.dict("os.environ", {}, clear=False),
+        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch("subprocess.run", return_value=mock_result),
+    ):
+        assert get_wsl_distro_name() is None
 
 
 # ─── config.py re-export tests ───────────────────────────────────────────────

@@ -50,6 +50,34 @@ def is_windows() -> bool:
     return get_platform() == "windows"
 
 
+def get_wsl_distro_name() -> Optional[str]:
+    """Get the WSL2 distribution name.
+
+    Checks the WSL_DISTRO_NAME environment variable first, then falls back
+    to parsing ``wsl.exe -l -q`` output.
+
+    Returns:
+        The distro name string (e.g. "Ubuntu"), or None if unavailable.
+    """
+    import os
+
+    name = os.environ.get("WSL_DISTRO_NAME")
+    if name:
+        return name
+
+    try:
+        result = subprocess.run(
+            ["wsl.exe", "-l", "-q"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        distro = result.stdout.strip()
+        return distro if distro else None
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return None
+
+
 def get_windows_username() -> Optional[str]:
     """Get the Windows username via cmd.exe (for WSL2 environments).
 
