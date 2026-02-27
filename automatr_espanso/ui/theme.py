@@ -271,6 +271,18 @@ QToolTip {
     border: 1px solid #3c3c3c;
     padding: 4px;
 }
+
+QToolBar {
+    background-color: #252526;
+    border-bottom: 1px solid #3c3c3c;
+    padding: 4px;
+    spacing: 8px;
+}
+
+QToolBar QPushButton {
+    min-width: 60px;
+    padding: 6px 12px;
+}
 """
 
 # Light theme (for future use)
