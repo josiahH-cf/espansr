@@ -3,9 +3,107 @@
 Single source of truth for OS and WSL2 detection across the codebase.
 """
 
+import os
 import platform
 import subprocess
+from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Optional
+
+
+@dataclass
+class PlatformConfig:
+    """Platform-specific path configuration.
+
+    Maps each platform to its complete set of paths so that
+    platform-specific path logic is defined in exactly one place.
+    """
+
+    platform: str  # "linux", "macos", "wsl2", "windows", "unknown"
+    espansr_config_dir: Path  # where espansr stores its own config and templates
+    espanso_candidate_dirs: list[Path] = field(
+        default_factory=list
+    )  # ordered dirs to probe for Espanso config
+
+
+def get_platform_config() -> PlatformConfig:
+    """Build a PlatformConfig for the detected platform.
+
+    Returns:
+        PlatformConfig with all platform-specific paths resolved.
+    """
+    plat = get_platform()
+
+    if plat == "macos":
+        base = Path.home() / "Library" / "Application Support"
+        return PlatformConfig(
+            platform=plat,
+            espansr_config_dir=base / "espansr",
+            espanso_candidate_dirs=[
+                base / "espanso",
+                Path.home() / ".config" / "espanso",
+            ],
+        )
+
+    if plat == "windows":
+        appdata = os.environ.get("APPDATA", "")
+        candidates: list[Path] = []
+        if appdata:
+            candidates.append(Path(appdata) / "espanso")
+            config_dir = Path(appdata) / "espansr"
+        else:
+            config_dir = Path.home() / "espansr"
+        candidates.append(Path.home() / ".espanso")
+        return PlatformConfig(
+            platform=plat,
+            espansr_config_dir=config_dir,
+            espanso_candidate_dirs=candidates,
+        )
+
+    if plat == "wsl2":
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        base = Path(xdg) if xdg else Path.home() / ".config"
+
+        candidates = []
+        win_user = get_windows_username()
+        if win_user:
+            candidates.extend(
+                [
+                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+                ]
+            )
+        candidates.extend(
+            [
+                Path.home() / ".config" / "espanso",
+                Path.home() / ".espanso",
+            ]
+        )
+        return PlatformConfig(
+            platform=plat,
+            espansr_config_dir=base / "espansr",
+            espanso_candidate_dirs=candidates,
+        )
+
+    if plat == "linux":
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        base = Path(xdg) if xdg else Path.home() / ".config"
+        return PlatformConfig(
+            platform=plat,
+            espansr_config_dir=base / "espansr",
+            espanso_candidate_dirs=[
+                Path.home() / ".config" / "espanso",
+                Path.home() / ".espanso",
+            ],
+        )
+
+    # Unknown platform — no paths
+    return PlatformConfig(
+        platform=plat,
+        espansr_config_dir=Path.home() / ".config" / "espansr",
+        espanso_candidate_dirs=[],
+    )
 
 
 def get_platform() -> str:
