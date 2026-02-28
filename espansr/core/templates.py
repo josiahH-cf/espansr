@@ -211,9 +211,7 @@ class TemplateManager:
         config = get_config()
         return config.ui.max_template_versions
 
-    def create_version(
-        self, template: Template, note: str = ""
-    ) -> Optional[TemplateVersion]:
+    def create_version(self, template: Template, note: str = "") -> Optional[TemplateVersion]:
         """Create a new version snapshot of a template."""
         version_dir = self._get_version_dir(template)
 
@@ -253,9 +251,7 @@ class TemplateManager:
 
         return sorted(versions, key=lambda v: v.version)
 
-    def get_version(
-        self, template: Template, version_num: int
-    ) -> Optional[TemplateVersion]:
+    def get_version(self, template: Template, version_num: int) -> Optional[TemplateVersion]:
         """Get a specific version of a template."""
         version_dir = self._get_version_dir(template)
         version_path = version_dir / f"v{version_num}.json"
@@ -280,9 +276,7 @@ class TemplateManager:
             return None
 
         if create_backup:
-            self.create_version(
-                template, note=f"Backup before revert to v{version_num}"
-            )
+            self.create_version(template, note=f"Backup before revert to v{version_num}")
 
         restored = Template.from_dict(version.template_data, path=template._path)
 
@@ -608,9 +602,7 @@ def _deduplicate_name(name: str, manager: TemplateManager) -> tuple[str, bool]:
         counter += 1
 
 
-def import_template(
-    path: Path, manager: Optional[TemplateManager] = None
-) -> ImportResult:
+def import_template(path: Path, manager: Optional[TemplateManager] = None) -> ImportResult:
     """Import a single JSON template file.
 
     Loads the file, strips unrecognized fields, de-duplicates the name against
@@ -660,9 +652,7 @@ def import_template(
     return ImportResult(template=template, renamed=was_renamed)
 
 
-def import_templates(
-    directory: Path, manager: Optional[TemplateManager] = None
-) -> ImportSummary:
+def import_templates(directory: Path, manager: Optional[TemplateManager] = None) -> ImportSummary:
     """Import all JSON template files from a directory.
 
     Args:

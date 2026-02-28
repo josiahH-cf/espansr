@@ -312,8 +312,7 @@ def test_clean_stale_silent_on_permission_error(tmp_path, caplog):
 
     # Should have logged a warning
     assert any(
-        "permission" in record.message.lower()
-        or "access denied" in record.message.lower()
+        "permission" in record.message.lower() or "access denied" in record.message.lower()
         for record in caplog.records
     )
 

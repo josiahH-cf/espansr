@@ -202,9 +202,7 @@ class TemplateBrowserWidget(QWidget):
             return item
 
         # Root-level templates
-        for template in sorted(
-            templates_by_folder.get("", []), key=lambda t: t.name.lower()
-        ):
+        for template in sorted(templates_by_folder.get("", []), key=lambda t: t.name.lower()):
             self.tree.addTopLevelItem(_make_item(template))
 
         # Folders
@@ -212,9 +210,7 @@ class TemplateBrowserWidget(QWidget):
             folder_item = QTreeWidgetItem([folder])
             folder_item.setData(0, Qt.ItemDataRole.UserRole, None)
             folder_item.setExpanded(True)
-            for template in sorted(
-                templates_by_folder[folder], key=lambda t: t.name.lower()
-            ):
+            for template in sorted(templates_by_folder[folder], key=lambda t: t.name.lower()):
                 folder_item.addChild(_make_item(template))
             self.tree.addTopLevelItem(folder_item)
 
