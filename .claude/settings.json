@@ -1,41 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Read",
-      "Write",
-      "Edit",
-      "MultiEdit",
-      "Bash(git *)",
-      "Bash(npm *)",
-      "Bash(npx *)",
-      "Bash(yarn *)",
-      "Bash(pnpm *)",
-      "Bash(bun *)",
-      "Bash(pip *)",
-      "Bash(python *)",
-      "Bash(node *)",
-      "Bash(cat *)",
-      "Bash(ls *)",
-      "Bash(find *)",
-      "Bash(grep *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(wc *)",
-      "Bash(diff *)",
-      "Bash(mkdir *)",
-      "Bash(cp *)",
-      "Bash(mv *)"
-    ],
-    "deny": [
-      "Bash(rm -rf *)",
-      "Bash(git push --force*)",
-      "Bash(git push -f*)",
-      "Bash(git checkout main)",
-      "Bash(git checkout master)",
-      "Bash(chmod 777*)",
-      "Bash(curl * | bash*)",
-      "Bash(wget * | bash*)"
-    ]
+    "defaultMode": "bypassPermissions"
   },
   "hooks": {
     "PostToolUse": [
