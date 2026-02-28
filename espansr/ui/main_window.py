@@ -192,9 +192,7 @@ class MainWindow(QMainWindow):
         ui.window_x = self.x()
         ui.window_y = self.y()
         ui.window_maximized = self.isMaximized()
-        ui.window_geometry = base64.b64encode(
-            self.saveGeometry().data()
-        ).decode()
+        ui.window_geometry = base64.b64encode(self.saveGeometry().data()).decode()
         ui.splitter_sizes = list(self._splitter.sizes())
         t = self._browser.get_current_template()
         ui.last_template = t.name if t else ""

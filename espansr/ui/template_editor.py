@@ -148,9 +148,7 @@ class TemplateEditorWidget(QWidget):
         }
 
         if variables:
-            match_entry["vars"] = [
-                _build_espanso_var_entry(var) for var in variables
-            ]
+            match_entry["vars"] = [_build_espanso_var_entry(var) for var in variables]
 
         preview = yaml.dump(
             {"matches": [match_entry]},
@@ -177,7 +175,9 @@ class TemplateEditorWidget(QWidget):
         try:
             if self._current_template is None:
                 template = manager.create(
-                    name=name, content=content, trigger=trigger,
+                    name=name,
+                    content=content,
+                    trigger=trigger,
                 )
                 template.variables = variables
                 manager.save(template)

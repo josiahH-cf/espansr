@@ -68,9 +68,7 @@ def test_generate_launcher_uses_config_trigger(tmp_path):
             return_value=False,
         ),
         patch("shutil.which", return_value="/usr/bin/espansr"),
-        patch(
-            "espansr.integrations.espanso.get_config"
-        ) as mock_config,
+        patch("espansr.integrations.espanso.get_config") as mock_config,
     ):
         mock_config.return_value.espanso.launcher_trigger = ":launch"
         from espansr.integrations.espanso import generate_launcher_file

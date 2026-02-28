@@ -82,22 +82,28 @@ def _get_candidate_paths() -> list[Path]:
     if is_wsl2():
         win_user = get_windows_username()
         if win_user:
-            candidates.extend([
-                Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
-                Path(f"/mnt/c/Users/{win_user}/.espanso"),
-                Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
-            ])
+            candidates.extend(
+                [
+                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+                ]
+            )
 
     if system == "Linux":
-        candidates.extend([
-            Path.home() / ".config" / "espanso",
-            Path.home() / ".espanso",
-        ])
+        candidates.extend(
+            [
+                Path.home() / ".config" / "espanso",
+                Path.home() / ".espanso",
+            ]
+        )
     elif system == "Darwin":
-        candidates.extend([
-            Path.home() / "Library" / "Application Support" / "espanso",
-            Path.home() / ".config" / "espanso",
-        ])
+        candidates.extend(
+            [
+                Path.home() / "Library" / "Application Support" / "espanso",
+                Path.home() / ".config" / "espanso",
+            ]
+        )
     elif system == "Windows":
         import os
 
@@ -181,9 +187,7 @@ def clean_stale_espanso_files() -> None:
                     old_file.unlink()
                     logger.info("Removed old file (rebrand): %s", old_file)
                 except PermissionError as exc:
-                    logger.warning(
-                        "Could not remove old file %s: %s", old_file, exc
-                    )
+                    logger.warning("Could not remove old file %s: %s", old_file, exc)
 
         # Skip canonical dir for current managed files
         if match_dir == canonical_match:
@@ -196,9 +200,7 @@ def clean_stale_espanso_files() -> None:
                     stale.unlink()
                     logger.info("Removed stale file: %s", stale)
                 except PermissionError as exc:
-                    logger.warning(
-                        "Could not remove stale file %s: %s", stale, exc
-                    )
+                    logger.warning("Could not remove stale file %s: %s", stale, exc)
 
 
 def get_match_dir() -> Optional[Path]:
@@ -343,7 +345,12 @@ def _restart_espanso_wsl2() -> None:
 
     try:
         subprocess.run(
-            ["powershell.exe", "-NoProfile", "-Command", "cd C:/; espanso service stop"],
+            [
+                "powershell.exe",
+                "-NoProfile",
+                "-Command",
+                "cd C:/; espanso service stop",
+            ],
             capture_output=True,
             timeout=10,
         )
@@ -360,7 +367,9 @@ def _restart_espanso_wsl2() -> None:
         if result.returncode == 0:
             print("Espanso restarted successfully.")
         else:
-            print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
+            print(
+                "Note: Run 'espanso restart' from Windows PowerShell to reload triggers."
+            )
     except Exception:
         print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
 
