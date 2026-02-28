@@ -1,6 +1,6 @@
 # Feature: GUI Template Preview Pane
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -10,13 +10,13 @@ When a template is selected or edited, the preview updates live — showing the 
 
 ## Acceptance Criteria
 
-- [ ] The editor panel includes a "Preview" section below the YAML preview
-- [ ] The preview shows the template content with all `{{var}}` placeholders replaced by their default values
-- [ ] Variables with no default value use their label as the preview value (e.g., `{{name}}` → `Name`)
-- [ ] The preview updates live as the user edits content or variables
-- [ ] The preview is read-only (not editable by the user)
-- [ ] Templates with no variables show the content as-is in the preview
-- [ ] The preview is visually distinct from the editable content field (styled as read-only)
+- [x] The editor panel includes a "Preview" section below the YAML preview
+- [x] The preview shows the template content with all `{{var}}` placeholders replaced by their default values
+- [x] Variables with no default value use their label as the preview value (e.g., `{{name}}` → `Name`)
+- [x] The preview updates live as the user edits content or variables
+- [x] The preview is read-only (not editable by the user)
+- [x] Templates with no variables show the content as-is in the preview
+- [x] The preview is visually distinct from the editable content field (styled as read-only)
 
 ## Affected Areas
 
