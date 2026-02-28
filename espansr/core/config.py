@@ -5,13 +5,12 @@ Handles loading/saving app configuration from a single JSON file.
 
 import json
 import logging
-import platform
 import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from espansr.core.platform import get_platform, is_windows  # noqa: F401
+from espansr.core.platform import get_platform, get_platform_config, is_windows  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -48,27 +47,16 @@ def _migrate_config_dir(base: Path) -> bool:
 def get_config_dir() -> Path:
     """Get the configuration directory path.
 
-    On macOS: ~/Library/Application Support/espansr
-    On Linux/WSL: XDG_CONFIG_HOME or ~/.config/espansr
-
+    Delegates to the platform module for path resolution.
     On first launch, migrates from automatr-espanso \u2192 espansr if needed.
     """
-    import os
-
-    system = platform.system()
-    if system == "Darwin":
-        base = Path.home() / "Library" / "Application Support"
-    else:
-        xdg_config = os.environ.get("XDG_CONFIG_HOME")
-        if xdg_config:
-            base = Path(xdg_config)
-        else:
-            base = Path.home() / ".config"
+    pc = get_platform_config()
+    base = pc.espansr_config_dir.parent
 
     # Migrate from old name if needed
     _migrate_config_dir(base)
 
-    config_dir = base / _NEW_CONFIG_DIR_NAME
+    config_dir = pc.espansr_config_dir
     config_dir.mkdir(parents=True, exist_ok=True)
     return config_dir
 

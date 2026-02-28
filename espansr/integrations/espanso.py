@@ -5,14 +5,17 @@ Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
 """
 
 import logging
-import platform
 from pathlib import Path
 from typing import Optional
 
 import yaml
 
 from espansr.core.config import get_config, save_config
-from espansr.core.platform import get_windows_username, get_wsl_distro_name, is_wsl2
+from espansr.core.platform import (
+    get_platform_config,
+    get_wsl_distro_name,
+    is_wsl2,
+)
 from espansr.core.templates import get_template_manager
 from espansr.integrations.validate import validate_all
 
@@ -74,46 +77,12 @@ def _build_espanso_var_entry(var) -> dict:
 def _get_candidate_paths() -> list[Path]:
     """Return all known Espanso config candidate directories for the current platform.
 
+    Delegates to get_platform_config() for platform-specific path resolution.
+
     Returns:
         List of candidate paths (may or may not exist on disk).
     """
-    candidates: list[Path] = []
-    system = platform.system()
-
-    if is_wsl2():
-        win_user = get_windows_username()
-        if win_user:
-            candidates.extend(
-                [
-                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
-                ]
-            )
-
-    if system == "Linux":
-        candidates.extend(
-            [
-                Path.home() / ".config" / "espanso",
-                Path.home() / ".espanso",
-            ]
-        )
-    elif system == "Darwin":
-        candidates.extend(
-            [
-                Path.home() / "Library" / "Application Support" / "espanso",
-                Path.home() / ".config" / "espanso",
-            ]
-        )
-    elif system == "Windows":
-        import os
-
-        appdata = os.environ.get("APPDATA", "")
-        if appdata:
-            candidates.append(Path(appdata) / "espanso")
-        candidates.append(Path.home() / ".espanso")
-
-    return candidates
+    return get_platform_config().espanso_candidate_dirs
 
 
 def get_espanso_config_dir() -> Optional[Path]:
