@@ -1,7 +1,7 @@
 # Spec: GUI Overhaul — Single-Screen Layout with Inline Template Editor
 
 **Issue:** #3  
-**Status:** Draft
+**Status:** Complete
 
 ## Description
 
@@ -9,13 +9,13 @@ Replace the current two-panel layout (template browser + sync/status panel) and 
 
 ## Acceptance Criteria
 
-- [ ] The right panel displays an inline editor with: template name field, trigger input, and editable content area (`QPlainTextEdit`) — no modal dialogs are used for editing
-- [ ] A "New Template" button clears the editor to empty fields; saving creates a new template JSON on disk
-- [ ] A "Delete" button removes the selected template from disk and the list, with an inline undo/confirmation widget (not a `QMessageBox` dialog)
-- [ ] A "Sync Now" button in the toolbar calls `sync_to_espanso()` and shows the result in the status bar; auto-sync toggle is accessible from the toolbar area
-- [ ] Selecting a template in the left-panel list loads its name, trigger, and content into the right-panel editor
-- [ ] Saving a template (via Save button) persists name, trigger, and content to the template JSON file and refreshes the template list
-- [ ] Window geometry (position, size, maximized state) and last-selected template are persisted to `UIConfig` and restored on next launch
+- [x] The right panel displays an inline editor with: template name field, trigger input, and editable content area (`QPlainTextEdit`) — no modal dialogs are used for editing
+- [x] A "New Template" button clears the editor to empty fields; saving creates a new template JSON on disk
+- [x] A "Delete" button removes the selected template from disk and the list, with an inline undo/confirmation widget (not a `QMessageBox` dialog)
+- [x] A "Sync Now" button in the toolbar calls `sync_to_espanso()` and shows the result in the status bar; auto-sync toggle is accessible from the toolbar area
+- [x] Selecting a template in the left-panel list loads its name, trigger, and content into the right-panel editor
+- [x] Saving a template (via Save button) persists name, trigger, and content to the template JSON file and refreshes the template list
+- [x] Window geometry (position, size, maximized state) and last-selected template are persisted to `UIConfig` and restored on next launch
 
 ## Affected Areas
 

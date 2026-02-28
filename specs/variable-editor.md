@@ -1,7 +1,7 @@
 # Spec: Add Inline Variable Editor to Template Editor Panel
 
 **Issue:** #4  
-**Status:** Draft
+**Status:** Complete
 
 ## Description
 
@@ -9,13 +9,13 @@ Add a "Variables" section to the template editor panel (from Issue #3). Users ca
 
 ## Acceptance Criteria
 
-- [ ] A "Variables" section appears below the content editor with an "Add Variable" button; clicking it adds an inline row with name, type dropdown (form/date), and default value fields
-- [ ] Each variable row has edit (inline) and delete controls; deleting a variable removes it from the list immediately
-- [ ] Variable names are validated: non-empty, alphanumeric plus underscores only, unique within the template; invalid names show an inline error message
-- [ ] A live YAML preview panel shows the Espanso match entry (trigger + content + vars) and updates on every change to trigger, content, or variables
-- [ ] Date-type variables show a format parameter field (e.g., `%Y-%m-%d`); form-type variables show a multiline toggle
-- [ ] Saving the template persists all variable data (name, label, default, type, multiline, params) to the template JSON file
-- [ ] Loading a template with existing variables populates the variable rows correctly
+- [x] A "Variables" section appears below the content editor with an "Add Variable" button; clicking it adds an inline row with name, type dropdown (form/date), and default value fields
+- [x] Each variable row has edit (inline) and delete controls; deleting a variable removes it from the list immediately
+- [x] Variable names are validated: non-empty, alphanumeric plus underscores only, unique within the template; invalid names show an inline error message
+- [x] A live YAML preview panel shows the Espanso match entry (trigger + content + vars) and updates on every change to trigger, content, or variables
+- [x] Date-type variables show a format parameter field (e.g., `%Y-%m-%d`); form-type variables show a multiline toggle
+- [x] Saving the template persists all variable data (name, label, default, type, multiline, params) to the template JSON file
+- [x] Loading a template with existing variables populates the variable rows correctly
 
 ## Affected Areas
 

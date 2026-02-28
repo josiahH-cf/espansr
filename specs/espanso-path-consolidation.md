@@ -1,7 +1,7 @@
 # Spec: Consolidate Espanso Config Path Resolution and Auto-Clean Stale YAML
 
 **Issue:** #2  
-**Status:** Draft
+**Status:** Complete
 
 ## Description
 
@@ -9,12 +9,12 @@ Ensure `get_espanso_config_dir()` resolves to one canonical Espanso config path 
 
 ## Acceptance Criteria
 
-- [ ] After first successful detection, `get_espanso_config_dir()` persists the resolved path to `config.espanso.config_path` so subsequent calls skip probing
-- [ ] A new `clean_stale_espanso_files()` function scans all known Espanso config candidate paths and deletes `espansr.yml` and `espansr-launcher.yml` from any `match/` directory that is NOT the canonical one
-- [ ] `clean_stale_espanso_files()` is called before each `sync_to_espanso()` write and on GUI startup
-- [ ] `clean_stale_espanso_files()` never deletes user-authored files — only files named `espansr.yml` or `espansr-launcher.yml`
-- [ ] `install.sh` detects and removes stale `espansr.yml` files from non-canonical Espanso locations during installation
-- [ ] When `config.espanso.config_path` is already set but the directory no longer exists, the resolver falls back to auto-detection and updates the persisted path
+- [x] After first successful detection, `get_espanso_config_dir()` persists the resolved path to `config.espanso.config_path` so subsequent calls skip probing
+- [x] A new `clean_stale_espanso_files()` function scans all known Espanso config candidate paths and deletes `espansr.yml` and `espansr-launcher.yml` from any `match/` directory that is NOT the canonical one
+- [x] `clean_stale_espanso_files()` is called before each `sync_to_espanso()` write and on GUI startup
+- [x] `clean_stale_espanso_files()` never deletes user-authored files — only files named `espansr.yml` or `espansr-launcher.yml`
+- [x] `install.sh` detects and removes stale `espansr.yml` files from non-canonical Espanso locations during installation
+- [x] When `config.espanso.config_path` is already set but the directory no longer exists, the resolver falls back to auto-detection and updates the persisted path
 
 ## Affected Areas
 
