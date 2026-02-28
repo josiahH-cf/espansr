@@ -44,9 +44,18 @@
 
 _No active work — ready for next feature._
 
-**Next up:** Setup/platform resilience (#14) per recommended order
+**Next up:** CLI dry-run & verbose (#11) per recommended order
 
 ## Completed
+
+### GUI Persistent Status Bar and Sync Feedback
+- Permanent `QLabel` in status bar showing `Espanso: <path>` or `Espanso: not found`
+- Status indicator refreshes on launch and after each sync
+- Successful sync shows "Synced N template(s) to Espanso" with actual count
+- Failed sync shows "Sync blocked: N error(s)" with reason
+- `SyncResult` dataclass and `_last_sync_count` for richer feedback
+- 12 tests in `tests/test_status_bar.py`
+- **Spec:** `/specs/gui-status-bar-feedback.md` — **Tasks:** `/tasks/gui-status-bar-feedback.md`
 
 ### `espansr doctor` Diagnostic Command
 - `cmd_doctor()` in `espansr/__main__.py` runs 7 sequential checks
@@ -181,9 +190,9 @@ _No active work — ready for next feature._
 | 13 | Colored CLI output | `/specs/cli-colored-output.md` | Not started |
 | 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
 | 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Not started |
-| 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Not started |
+| 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Complete |
 | 17 | GUI template preview | `/specs/gui-template-preview.md` | Not started |
 | 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Not started |
 | 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Not started |
 
-**v1.0 total tests: 167 passing** (as of 2026-02-28)
+**v1.0 total tests: 201 passing** (as of 2026-02-28)

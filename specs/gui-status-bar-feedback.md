@@ -1,6 +1,6 @@
 # Feature: GUI Persistent Status Bar and Sync Feedback
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -12,12 +12,12 @@ Two related GUI improvements that make the application's state visible at all ti
 
 ## Acceptance Criteria
 
-- [ ] The status bar has a permanent widget on the left showing `Espanso: <path>` or `Espanso: not found`
-- [ ] The permanent widget updates after `espansr setup` is detected or after a manual sync
-- [ ] After a successful sync, the status bar shows "Synced N template(s) to Espanso" with the actual count
-- [ ] After a failed sync, the status bar shows the reason (e.g., "Sync blocked: 2 validation errors")
-- [ ] Transient messages (sync result, import result) still disappear after their timeout; the permanent indicator remains visible
-- [ ] Status bar indicator is testable via `pytest-qt` (widget text can be asserted)
+- [x] The status bar has a permanent widget on the left showing `Espanso: <path>` or `Espanso: not found`
+- [x] The permanent widget updates after `espansr setup` is detected or after a manual sync
+- [x] After a successful sync, the status bar shows "Synced N template(s) to Espanso" with the actual count
+- [x] After a failed sync, the status bar shows the reason (e.g., "Sync blocked: 2 validation errors")
+- [x] Transient messages (sync result, import result) still disappear after their timeout; the permanent indicator remains visible
+- [x] Status bar indicator is testable via `pytest-qt` (widget text can be asserted)
 
 ## Affected Areas
 
