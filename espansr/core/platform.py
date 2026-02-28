@@ -7,11 +7,12 @@ import os
 import platform
 import subprocess
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
 
-@dataclass
+@dataclass(frozen=True)
 class PlatformConfig:
     """Platform-specific path configuration.
 
@@ -26,8 +27,12 @@ class PlatformConfig:
     )  # ordered dirs to probe for Espanso config
 
 
+@lru_cache(maxsize=1)
 def get_platform_config() -> PlatformConfig:
     """Build a PlatformConfig for the detected platform.
+
+    Cached: returns the same object on repeated calls within a process.
+    Call ``get_platform_config.cache_clear()`` in tests that mock platform.
 
     Returns:
         PlatformConfig with all platform-specific paths resolved.
@@ -106,8 +111,12 @@ def get_platform_config() -> PlatformConfig:
     )
 
 
+@lru_cache(maxsize=1)
 def get_platform() -> str:
     """Get the current platform.
+
+    Cached: returns the same string on repeated calls within a process.
+    Call ``get_platform.cache_clear()`` in tests that mock platform.
 
     Returns:
         'windows', 'linux', 'wsl2', or 'macos'
