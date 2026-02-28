@@ -278,7 +278,7 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
 _last_sync_count: int = 0
 
 
-def sync_to_espanso() -> bool:
+def sync_to_espanso(dry_run: bool = False) -> bool:
     """Sync templates to Espanso match file.
 
     Generates a single `espansr.yml` in the Espanso match directory
@@ -286,6 +286,9 @@ def sync_to_espanso() -> bool:
 
     After a successful call, ``_last_sync_count`` holds the number
     of templates that were written.
+
+    Args:
+        dry_run: If True, print what would be written without writing.
 
     Returns:
         True if sync was successful, False otherwise.
@@ -298,7 +301,8 @@ def sync_to_espanso() -> bool:
         print("Error: Could not find Espanso config directory")
         return False
 
-    clean_stale_espanso_files()
+    if not dry_run:
+        clean_stale_espanso_files()
 
     # Validate before writing
     warnings = validate_all()
@@ -334,6 +338,13 @@ def sync_to_espanso() -> bool:
         return True
 
     output_path = match_dir / "espansr.yml"
+
+    if dry_run:
+        print(f"[dry-run] Would write {len(matches)} trigger(s) to {output_path}")
+        for m in matches:
+            print(f"  {m['trigger']}: {m['replace'][:60]}")
+        return True
+
     try:
         content = {"matches": matches}
         with open(output_path, "w", encoding="utf-8") as f:

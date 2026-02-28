@@ -115,9 +115,7 @@ class TestSyncResult:
             ),
             patch("espansr.integrations.espanso.clean_stale_espanso_files"),
             patch("espansr.integrations.espanso.validate_all", return_value=[]),
-            patch(
-                "espansr.integrations.espanso.get_template_manager"
-            ) as mock_mgr,
+            patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
             patch("espansr.integrations.espanso.is_wsl2", return_value=False),
         ):
             mock_mgr.return_value.iter_with_triggers.return_value = []
@@ -142,16 +140,12 @@ class TestEspansoStatusIndicator:
 
     def test_espanso_status_shows_path(self, qtbot, tmp_path):
         """Permanent status shows the Espanso path when detected."""
-        window = _make_window(
-            qtbot, Config(), tmp_path=tmp_path, espanso_dir=tmp_path
-        )
+        window = _make_window(qtbot, Config(), tmp_path=tmp_path, espanso_dir=tmp_path)
         assert str(tmp_path) in window._espanso_status.text()
 
     def test_espanso_status_shows_not_found(self, qtbot, tmp_path):
         """Permanent status shows 'not found' when Espanso is not detected."""
-        window = _make_window(
-            qtbot, Config(), tmp_path=tmp_path, espanso_dir=None
-        )
+        window = _make_window(qtbot, Config(), tmp_path=tmp_path, espanso_dir=None)
         assert "not found" in window._espanso_status.text().lower()
 
     def test_espanso_label_prefix(self, qtbot, tmp_path):
@@ -196,12 +190,8 @@ class TestSyncFeedback:
         window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
         mock_warnings = [
-            ValidationWarning(
-                severity="error", message="bad trigger", template_name="t1"
-            ),
-            ValidationWarning(
-                severity="error", message="short trigger", template_name="t2"
-            ),
+            ValidationWarning(severity="error", message="bad trigger", template_name="t1"),
+            ValidationWarning(severity="error", message="short trigger", template_name="t2"),
         ]
 
         with patch(

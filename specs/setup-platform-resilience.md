@@ -1,6 +1,6 @@
 # Feature: Setup and Platform Resilience
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -16,13 +16,13 @@ Three infrastructure hardening improvements grouped together because they share 
 
 ## Acceptance Criteria
 
-- [ ] `_get_bundled_dir()` falls back to `importlib.resources` when the repo-level `templates/` dir does not exist
-- [ ] `pyproject.toml` includes `templates/*.json` as package data
-- [ ] `espansr setup --strict` returns 1 if Espanso config directory is not detected
-- [ ] `espansr setup` (without `--strict`) still returns 0 when Espanso is missing
-- [ ] After copying bundled templates, `cmd_setup` runs validation and prints any issues found
-- [ ] `get_platform()` and `get_platform_config()` are cached with `@lru_cache` and return identical objects on repeat calls
-- [ ] All existing tests pass without modification
+- [x] `_get_bundled_dir()` falls back to `importlib.resources` when the repo-level `templates/` dir does not exist
+- [x] `pyproject.toml` includes `templates/*.json` as package data
+- [x] `espansr setup --strict` returns 1 if Espanso config directory is not detected
+- [x] `espansr setup` (without `--strict`) still returns 0 when Espanso is missing
+- [x] After copying bundled templates, `cmd_setup` runs validation and prints any issues found
+- [x] `get_platform()` and `get_platform_config()` are cached with `@lru_cache` and return identical objects on repeat calls
+- [x] All existing tests pass without modification
 
 ## Affected Areas
 

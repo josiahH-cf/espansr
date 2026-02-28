@@ -27,7 +27,8 @@ def cmd_sync(args) -> int:
     """Sync all triggered templates to Espanso."""
     from espansr.integrations.espanso import sync_to_espanso
 
-    success = sync_to_espanso()
+    dry_run = getattr(args, "dry_run", False) if args else False
+    success = sync_to_espanso(dry_run=dry_run)
     return 0 if success else 1
 
 
@@ -52,12 +53,16 @@ def cmd_setup(args) -> int:
     """Run post-install setup: copy templates, detect Espanso, generate launcher.
 
     With ``--strict``, returns 1 if Espanso config is not detected.
+    With ``--dry-run``, previews actions without making changes.
+    With ``--verbose``, prints per-file detail during template copy.
     After copying templates, validates each one and prints any issues.
     """
     from espansr.core.templates import TemplateManager
     from espansr.integrations.validate import validate_template
 
     strict = getattr(args, "strict", False) if args else False
+    dry_run = getattr(args, "dry_run", False) if args else False
+    verbose = getattr(args, "verbose", False) if args else False
 
     get_config_dir()  # ensure config dir exists
     templates_dir = get_templates_dir()
@@ -67,44 +72,65 @@ def cmd_setup(args) -> int:
     copied = 0
     existing = 0
     if bundled_dir.is_dir():
-        templates_dir.mkdir(parents=True, exist_ok=True)
+        if not dry_run:
+            templates_dir.mkdir(parents=True, exist_ok=True)
         for src in sorted(bundled_dir.glob("*.json")):
             dest = templates_dir / src.name
             if dest.exists():
                 existing += 1
+                if verbose or dry_run:
+                    print(f"  {src.name}: skipped (already exists)")
             else:
-                shutil.copy2(str(src), str(dest))
-                copied += 1
+                if dry_run:
+                    if verbose:
+                        print(f"  {src.name}: would copy")
+                    copied += 1
+                else:
+                    shutil.copy2(str(src), str(dest))
+                    copied += 1
+                    if verbose:
+                        print(f"  {src.name}: copied")
 
-    if copied:
+    prefix = "[dry-run] " if dry_run else ""
+    if dry_run:
+        if copied:
+            print(f"{prefix}Would copy {copied} bundled template(s) to {templates_dir}")
+        else:
+            print(f"{prefix}Templates: {templates_dir} ({existing} existing, no changes)")
+    elif copied:
         print(f"Templates: copied {copied} bundled template(s) to {templates_dir}")
     else:
         print(f"Templates: {templates_dir} ({existing} existing, no changes)")
 
     # ── Validate copied templates ─────────────────────────────────────────
-    mgr = TemplateManager(templates_dir=templates_dir)
-    all_warnings = []
-    for template in mgr.iter_with_triggers():
-        all_warnings.extend(validate_template(template))
+    if not dry_run:
+        mgr = TemplateManager(templates_dir=templates_dir)
+        all_warnings = []
+        for template in mgr.iter_with_triggers():
+            all_warnings.extend(validate_template(template))
 
-    errors = [w for w in all_warnings if w.severity == "error"]
-    non_errors = [w for w in all_warnings if w.severity != "error"]
+        errors = [w for w in all_warnings if w.severity == "error"]
+        non_errors = [w for w in all_warnings if w.severity != "error"]
 
-    for w in non_errors:
-        print(f"Validation: Warning [{w.template_name}]: {w.message}")
-    for w in errors:
-        print(f"Validation: Error [{w.template_name}]: {w.message}")
-    if not all_warnings:
-        print("Validation: all templates valid")
+        for w in non_errors:
+            print(f"Validation: Warning [{w.template_name}]: {w.message}")
+        for w in errors:
+            print(f"Validation: Error [{w.template_name}]: {w.message}")
+        if not all_warnings:
+            print("Validation: all templates valid")
 
     # ── Espanso detection and launcher ────────────────────────────────────
     espanso_dir = get_espanso_config_dir()
     espanso_found = bool(espanso_dir)
     if espanso_dir:
-        clean_stale_espanso_files()
-        generate_launcher_file()
-        print(f"Espanso config: {espanso_dir}")
-        print("Launcher: generated")
+        if dry_run:
+            print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
+            print("[dry-run] Would generate launcher")
+        else:
+            clean_stale_espanso_files()
+            generate_launcher_file()
+            print(f"Espanso config: {espanso_dir}")
+            print("Launcher: generated")
     else:
         plat = get_platform()
         if plat == "wsl2":
@@ -335,7 +361,13 @@ def main() -> None:
     parser.add_argument("--version", action="version", version=f"espansr {__version__}")
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    subparsers.add_parser("sync", help="Sync templates to Espanso match file")
+    sync_parser = subparsers.add_parser("sync", help="Sync templates to Espanso match file")
+    sync_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Preview what would be synced without writing any files",
+    )
     subparsers.add_parser("status", help="Show Espanso process status and config path")
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
@@ -345,6 +377,18 @@ def main() -> None:
         action="store_true",
         default=False,
         help="Return exit code 1 if Espanso config is not detected",
+    )
+    setup_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Preview what setup would do without making changes",
+    )
+    setup_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Print detailed per-file information during setup",
     )
     subparsers.add_parser("doctor", help="Run diagnostic health checks")
     import_parser = subparsers.add_parser(

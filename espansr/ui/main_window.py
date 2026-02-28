@@ -190,9 +190,7 @@ class MainWindow(QMainWindow):
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if result:
                 if count:
-                    self.statusBar().showMessage(
-                        f"Synced {count} template(s) to Espanso", 5000
-                    )
+                    self.statusBar().showMessage(f"Synced {count} template(s) to Espanso", 5000)
                 elif not non_errors:
                     self.statusBar().showMessage("Sync successful", 5000)
                 get_config_manager().update(**{"espanso.last_sync": now})
