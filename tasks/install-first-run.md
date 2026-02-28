@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 4
-- Complete: 2
-- Remaining: 2
+- Complete: 4
+- Remaining: 0
 
 ## Task List
 
@@ -75,7 +75,7 @@
 - **Files:** `install.sh`
 - **Done when:** `install.sh` no longer contains any of these bash functions: `detect_espanso()`, `clean_stale_espanso_files()`, `generate_launcher()`, `setup_templates_dir()`; instead it calls `$VENV_CMD setup`; the only platform-branching that remains is `detect_platform()` (for apt-get) and the system-deps block; smoke test output is visible (not suppressed); all existing tests still pass
 - **Criteria covered:** AC-6, AC-9
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Implementation details
 
@@ -102,7 +102,7 @@
 - **Files:** `espansr/__main__.py`, `tests/test_setup.py` (or `tests/test_platform.py`)
 - **Done when:** `espansr status` with no Espanso config dir prints a guidance message that includes the URL `https://espanso.org` and is different for WSL2 vs other platforms; tests verify the guidance message for each platform
 - **Criteria covered:** AC-10
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Implementation details
 
@@ -148,3 +148,19 @@
 - Updated WSL2 candidate path test mock targets in `test_path_consolidation.py`
 - 11 new tests for `PlatformConfig`; 148 total tests pass; lint clean
 - `grep -rn "import platform" espansr/` returns only `espansr/core/platform.py`
+
+### 2026-02-28 — Task 3 complete
+- Deleted `detect_espanso()`, `clean_stale_espanso_files()`, `generate_launcher()`, `setup_templates_dir()` and all call sites from `install.sh`
+- Added `"$VENV_CMD" setup` delegation after pip install block
+- Updated smoke test to show output (removed `>/dev/null 2>&1` suppression)
+- Verified `detect_platform()` and `setup_shell_alias()` remain intact
+- `bash -n install.sh` passes; 155 tests pass; lint clean
+- `install.sh` reduced from 314 lines to ~170 lines
+
+### 2026-02-28 — Task 4 complete
+- Updated `cmd_status()` to show platform-specific guidance when Espanso config is not found
+- WSL2: mentions "on Windows", "PowerShell", and espanso.org URL
+- All others: mentions espanso.org URL without Windows-specific language
+- Added `get_platform` to top-level imports, removed redundant local imports and `is_wsl2` usage
+- 3 new tests (wsl2, linux, macos guidance); 158 total tests pass; lint clean
+- **All 4 tasks complete — feature done**

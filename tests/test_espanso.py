@@ -3,7 +3,7 @@
 Covers: ConfigManager, EspansoConfig, TemplateManager, iter_with_triggers,
 sync_to_espanso YAML output, WSL2 path detection, CLI commands.
 
-Minimum 8 test functions required (currently 14).
+Minimum 8 test functions required.
 """
 
 import json

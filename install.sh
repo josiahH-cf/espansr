@@ -114,162 +114,9 @@ ok "Package installed"
 
 VENV_CMD="$VENV_DIR/bin/espansr"
 
-# ─── Espanso detection ────────────────────────────────────────────────────────
-detect_espanso() {
-    info "Detecting Espanso…"
-
-    if [[ "$PLATFORM" == "wsl2" ]]; then
-        # Try to find Windows user and check Windows Espanso config
-        local win_user
-        win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')" || true
-        if [[ -n "$win_user" ]]; then
-            for candidate in \
-                "/mnt/c/Users/$win_user/.config/espanso" \
-                "/mnt/c/Users/$win_user/.espanso" \
-                "/mnt/c/Users/$win_user/AppData/Roaming/espanso"; do
-                if [[ -d "$candidate" ]]; then
-                    ok "Espanso config found (WSL2): $candidate"
-                    return 0
-                fi
-            done
-        fi
-        warn "Espanso config not found. Install Espanso on Windows first."
-        warn "Then run: espansr status"
-        return 0
-    fi
-
-    # Linux / macOS native
-    if command -v espanso &>/dev/null; then
-        ok "Espanso binary: $(command -v espanso)"
-    else
-        warn "Espanso not found in PATH."
-        warn "Install Espanso from https://espanso.org and re-run to verify."
-    fi
-
-    # Check config paths
-    local config_candidates=()
-    if [[ "$PLATFORM" == "macos" ]]; then
-        config_candidates=(
-            "$HOME/Library/Application Support/espanso"
-            "$HOME/.config/espanso"
-        )
-    else
-        config_candidates=(
-            "$HOME/.config/espanso"
-            "$HOME/.espanso"
-        )
-    fi
-
-    for p in "${config_candidates[@]}"; do
-        if [[ -d "$p" ]]; then
-            ok "Espanso config: $p"
-            return 0
-        fi
-    done
-
-    warn "No Espanso config directory found. Run 'espanso start' to initialize Espanso."
-}
-
-detect_espanso
-
-# ─── Stale file cleanup ──────────────────────────────────────────────────────
-clean_stale_espanso_files() {
-    # Find the canonical Espanso config path (first existing candidate)
-    local canonical=""
-    local candidates=()
-
-    if [[ "$PLATFORM" == "wsl2" ]]; then
-        local win_user
-        win_user="$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')" || true
-        if [[ -n "$win_user" ]]; then
-            candidates+=(
-                "/mnt/c/Users/$win_user/.config/espanso"
-                "/mnt/c/Users/$win_user/.espanso"
-                "/mnt/c/Users/$win_user/AppData/Roaming/espanso"
-            )
-        fi
-    fi
-
-    if [[ "$PLATFORM" == "macos" ]]; then
-        candidates+=(
-            "$HOME/Library/Application Support/espanso"
-            "$HOME/.config/espanso"
-        )
-    else
-        candidates+=(
-            "$HOME/.config/espanso"
-            "$HOME/.espanso"
-        )
-    fi
-
-    # Detect canonical path (first existing candidate)
-    for c in "${candidates[@]}"; do
-        if [[ -d "$c" ]]; then
-            canonical="$c"
-            break
-        fi
-    done
-
-    if [[ -z "$canonical" ]]; then
-        return 0  # No Espanso config found, nothing to clean
-    fi
-
-    # Remove espansr-managed files from non-canonical locations
-    local managed_files=("espansr.yml" "espansr-launcher.yml")
-    for c in "${candidates[@]}"; do
-        [[ "$c" == "$canonical" ]] && continue
-        local match_dir="$c/match"
-        [[ -d "$match_dir" ]] || continue
-
-        for f in "${managed_files[@]}"; do
-            if [[ -f "$match_dir/$f" ]]; then
-                rm -f "$match_dir/$f" 2>/dev/null && \
-                    info "Removed stale file: $match_dir/$f" || \
-                    warn "Could not remove stale file: $match_dir/$f"
-            fi
-        done
-    done
-}
-
-clean_stale_espanso_files
-
-# ─── Launcher trigger ────────────────────────────────────────────────────────
-generate_launcher() {
-    info "Generating Espanso launcher trigger…"
-    "$VENV_PYTHON" -c "from espansr.integrations.espanso import generate_launcher_file; generate_launcher_file()" && \
-        ok "Launcher trigger generated" || \
-        warn "Could not generate launcher trigger (Espanso config not found)"
-}
-
-generate_launcher
-
-# ─── Templates directory ──────────────────────────────────────────────────────
-setup_templates_dir() {
-    local config_dir
-    if [[ "$PLATFORM" == "macos" ]]; then
-        config_dir="$HOME/Library/Application Support/espansr"
-    else
-        config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/espansr"
-    fi
-
-    local templates_dir="$config_dir/templates"
-    mkdir -p "$templates_dir"
-    ok "Templates dir: $templates_dir"
-
-    # Copy any bundled templates (currently none per Phase 4 decision)
-    local bundled_dir="$SCRIPT_DIR/templates"
-    if [[ -d "$bundled_dir" ]]; then
-        local count
-        count="$(find "$bundled_dir" -name "*.json" | wc -l)"
-        if (( count > 0 )); then
-            info "Copying $count bundled template(s)…"
-            find "$bundled_dir" -name "*.json" -exec cp -n {} "$templates_dir/" \;
-            ok "Templates copied (existing files preserved)"
-        fi
-    fi
-}
-
-setup_templates_dir
+# ─── Post-install setup ──────────────────────────────────────────────────────
+info "Running post-install setup…"
+"$VENV_CMD" setup && ok "Setup complete" || warn "Setup completed with warnings"
 
 # ─── Shell integration ────────────────────────────────────────────────────────
 setup_shell_alias() {
@@ -298,8 +145,8 @@ setup_shell_alias
 # ─── Smoke test ──────────────────────────────────────────────────────────────
 info "Running smoke test…"
 
-"$VENV_CMD" list >/dev/null 2>&1 && ok "CLI: espansr list — OK" || die "Smoke test failed: 'espansr list' exited non-zero"
-"$VENV_CMD" status >/dev/null 2>&1 && ok "CLI: espansr status — OK" || warn "espansr status returned non-zero (Espanso may not be installed)"
+"$VENV_CMD" list && ok "CLI: espansr list — OK" || die "Smoke test failed: 'espansr list' exited non-zero"
+"$VENV_CMD" status && ok "CLI: espansr status — OK" || warn "espansr status returned non-zero (Espanso may not be installed)"
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""

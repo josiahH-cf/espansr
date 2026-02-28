@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "espansr"
-version = "0.1.0"
+version = "1.0.0"
 description = "Espanso text expansion template manager"
 readme = "README.md"
 requires-python = ">=3.11"

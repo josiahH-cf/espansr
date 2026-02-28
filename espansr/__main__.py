@@ -14,6 +14,7 @@ import sys
 from pathlib import Path
 
 from espansr.core.config import get_config_dir, get_templates_dir
+from espansr.core.platform import get_platform
 from espansr.integrations.espanso import (
     clean_stale_espanso_files,
     generate_launcher_file,
@@ -66,8 +67,6 @@ def cmd_setup(args) -> int:
         print(f"Espanso config: {espanso_dir}")
         print("Launcher: generated")
     else:
-        from espansr.core.platform import get_platform
-
         plat = get_platform()
         if plat == "wsl2":
             print(
@@ -86,13 +85,21 @@ def cmd_setup(args) -> int:
 
 def cmd_status(args) -> int:
     """Show Espanso availability and config path."""
-    from espansr.core.platform import is_wsl2
-
     config_dir = get_espanso_config_dir()
     if config_dir:
         print(f"Espanso config: {config_dir}")
     else:
-        print("Espanso config: not found")
+        platform = get_platform()
+        if platform == "wsl2":
+            print(
+                "Espanso config: not found \u2014 install Espanso on Windows"
+                " (https://espanso.org), then run 'espanso start' from PowerShell"
+            )
+        else:
+            print(
+                "Espanso config: not found \u2014 install Espanso"
+                " (https://espanso.org), then run 'espanso start' to initialize"
+            )
 
     # Check for native binary
     espanso_bin = shutil.which("espanso")
@@ -101,7 +108,7 @@ def cmd_status(args) -> int:
         return 0
 
     # WSL2: Espanso runs on the Windows side
-    if is_wsl2():
+    if get_platform() == "wsl2":
         print("Espanso binary: Windows host (WSL2 — use PowerShell to manage)")
     else:
         print("Espanso binary: not found")
@@ -194,10 +201,13 @@ def cmd_gui(args) -> int:
 
 def main() -> None:
     """Entry point for the espansr CLI."""
+    from espansr import __version__
+
     parser = argparse.ArgumentParser(
         prog="espansr",
         description="Espanso text expansion template manager",
     )
+    parser.add_argument("--version", action="version", version=f"espansr {__version__}")
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
     subparsers.add_parser("sync", help="Sync templates to Espanso match file")

@@ -1,5 +1,7 @@
 # Feature: Native Windows Installer (PowerShell)
 
+**Status:** Complete
+
 ## Description
 
 The espansr Python codebase supports native Windows (`get_platform()` returns `"windows"`, `_get_candidate_paths()` includes `%APPDATA%/espanso` and `~/.espanso`), but there is no installer that can run on native Windows. The bash `install.sh` requires a Unix shell and cannot execute on Windows outside of WSL.
@@ -12,13 +14,13 @@ This feature depends on `/specs/install-first-run.md` being implemented first, b
 
 ## Acceptance Criteria
 
-- [ ] **AC-1**: A `install.ps1` PowerShell script exists in the repo root that can be run via `.\install.ps1` in a Windows PowerShell 5.1+ or PowerShell 7+ session
-- [ ] **AC-2**: `install.ps1` checks for Python ≥3.11, creates a venv at `.\.venv\`, installs the package via `pip install -e .`, and delegates post-install setup to `espansr setup`
-- [ ] **AC-3**: `install.ps1` sets up a shell alias or adds the venv `Scripts` directory to the session/user PATH so that `espansr` is usable after install
-- [ ] **AC-4**: `install.ps1` performs a smoke test by running `espansr list` and `espansr status` with visible output
-- [ ] **AC-5**: After a fresh `.\install.ps1`, the same acceptance criteria from `/specs/install-first-run.md` AC-9 hold: `espansr list` returns at least one triggered template
-- [ ] **AC-6**: `install.ps1` handles Python not being found with a clear error message and download link
-- [ ] **AC-7**: `install.ps1` is idempotent — running it a second time reuses the existing venv and does not duplicate aliases or templates
+- [x] **AC-1**: A `install.ps1` PowerShell script exists in the repo root that can be run via `.\install.ps1` in a Windows PowerShell 5.1+ or PowerShell 7+ session
+- [x] **AC-2**: `install.ps1` checks for Python ≥3.11, creates a venv at `.\.venv\`, installs the package via `pip install -e .`, and delegates post-install setup to `espansr setup`
+- [x] **AC-3**: `install.ps1` sets up a shell alias or adds the venv `Scripts` directory to the session/user PATH so that `espansr` is usable after install
+- [x] **AC-4**: `install.ps1` performs a smoke test by running `espansr list` and `espansr status` with visible output
+- [x] **AC-5**: After a fresh `.\install.ps1`, the same acceptance criteria from `/specs/install-first-run.md` AC-9 hold: `espansr list` returns at least one triggered template
+- [x] **AC-6**: `install.ps1` handles Python not being found with a clear error message and download link
+- [x] **AC-7**: `install.ps1` is idempotent — running it a second time reuses the existing venv and does not duplicate aliases or templates
 
 ## Affected Areas
 
