@@ -1,6 +1,6 @@
 # Feature: Colored CLI Output
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -10,13 +10,13 @@ Colors are applied to `doctor`, `status`, `setup`, `validate`, and `sync` output
 
 ## Acceptance Criteria
 
-- [ ] A `cli_color.py` utility module provides `ok()`, `warn()`, `fail()`, and `info()` helpers that wrap text in ANSI codes
-- [ ] Colors are suppressed when stdout is not a TTY (`sys.stdout.isatty()` is False)
-- [ ] Colors are suppressed when `NO_COLOR` environment variable is set (per https://no-color.org/)
-- [ ] `espansr doctor` output uses green for `[ok]`, yellow for `[warn]`, red for `[FAIL]`
-- [ ] `espansr validate` uses red for errors and yellow for warnings
-- [ ] `espansr status` uses green for found paths and yellow/red for missing
-- [ ] Existing test assertions still pass (tests typically capture output without a TTY, so colors are auto-suppressed)
+- [x] A `cli_color.py` utility module provides `ok()`, `warn()`, `fail()`, and `info()` helpers that wrap text in ANSI codes
+- [x] Colors are suppressed when stdout is not a TTY (`sys.stdout.isatty()` is False)
+- [x] Colors are suppressed when `NO_COLOR` environment variable is set (per https://no-color.org/)
+- [x] `espansr doctor` output uses green for `[ok]`, yellow for `[warn]`, red for `[FAIL]`
+- [x] `espansr validate` uses red for errors and yellow for warnings
+- [x] `espansr status` uses green for found paths and yellow/red for missing
+- [x] Existing test assertions still pass (tests typically capture output without a TTY, so colors are auto-suppressed)
 
 ## Affected Areas
 

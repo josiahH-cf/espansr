@@ -14,6 +14,7 @@ import shutil
 import sys
 from pathlib import Path
 
+from espansr.core.cli_color import fail, ok, warn
 from espansr.core.config import get_config_dir, get_templates_dir
 from espansr.core.platform import get_platform
 from espansr.integrations.espanso import (
@@ -154,31 +155,35 @@ def cmd_status(args) -> int:
     """Show Espanso availability and config path."""
     config_dir = get_espanso_config_dir()
     if config_dir:
-        print(f"Espanso config: {config_dir}")
+        print(ok(f"Espanso config: {config_dir}"))
     else:
         platform = get_platform()
         if platform == "wsl2":
             print(
-                "Espanso config: not found \u2014 install Espanso on Windows"
-                " (https://espanso.org), then run 'espanso start' from PowerShell"
+                fail(
+                    "Espanso config: not found \u2014 install Espanso on Windows"
+                    " (https://espanso.org), then run 'espanso start' from PowerShell"
+                )
             )
         else:
             print(
-                "Espanso config: not found \u2014 install Espanso"
-                " (https://espanso.org), then run 'espanso start' to initialize"
+                fail(
+                    "Espanso config: not found \u2014 install Espanso"
+                    " (https://espanso.org), then run 'espanso start' to initialize"
+                )
             )
 
     # Check for native binary
     espanso_bin = shutil.which("espanso")
     if espanso_bin:
-        print(f"Espanso binary: {espanso_bin}")
+        print(ok(f"Espanso binary: {espanso_bin}"))
         return 0
 
     # WSL2: Espanso runs on the Windows side
     if get_platform() == "wsl2":
-        print("Espanso binary: Windows host (WSL2 — use PowerShell to manage)")
+        print(warn("Espanso binary: Windows host (WSL2 — use PowerShell to manage)"))
     else:
-        print("Espanso binary: not found")
+        print(fail("Espanso binary: not found"))
 
     return 0
 
@@ -212,12 +217,12 @@ def cmd_validate(args) -> int:
     non_errors = [w for w in warnings if w.severity != "error"]
 
     for w in non_errors:
-        print(f"Warning [{w.template_name}]: {w.message}")
+        print(warn(f"[{w.template_name}]: {w.message}"))
     for w in errors:
-        print(f"Error [{w.template_name}]: {w.message}")
+        print(fail(f"[{w.template_name}]: {w.message}"))
 
     if not warnings:
-        print("All templates valid.")
+        print(ok("All templates valid."))
 
     return 1 if errors else 0
 
@@ -272,15 +277,15 @@ def cmd_doctor(args) -> int:
     has_fail = False
 
     def _ok(msg: str) -> None:
-        print(f"[ok]   {msg}")
+        print(ok(msg))
 
     def _warn(msg: str) -> None:
-        print(f"[warn] {msg}")
+        print(warn(msg))
 
     def _fail(msg: str) -> None:
         nonlocal has_fail
         has_fail = True
-        print(f"[FAIL] {msg}")
+        print(fail(msg))
 
     # 1. Python version
     ver = sys.version_info
