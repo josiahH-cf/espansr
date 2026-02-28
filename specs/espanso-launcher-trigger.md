@@ -1,7 +1,7 @@
 # Spec: Ship Espanso Launcher Trigger for Hotkey-Style GUI Launch
 
 **Issue:** #5  
-**Status:** Draft
+**Status:** Complete
 
 ## Description
 
@@ -9,13 +9,13 @@ Auto-generate a separate `espansr-launcher.yml` in the Espanso match directory c
 
 ## Acceptance Criteria
 
-- [ ] A `espansr-launcher.yml` file is written to the Espanso `match/` directory with a single shell trigger that launches `espansr gui`; the file is separate from `espansr.yml`
-- [ ] The trigger keyword defaults to `:aopen` and is configurable via `config.espanso.launcher_trigger`; changing the config regenerates the file
-- [ ] On WSL2, the shell command uses `wsl.exe -d $WSL_DISTRO_NAME -- <path-to-binary> gui` to correctly invoke the Linux binary from Windows-side Espanso
-- [ ] On native Linux/macOS, the shell command invokes the `espansr gui` binary directly
-- [ ] `install.sh` generates the launcher file during installation if an Espanso config directory is found
-- [ ] On first run (launcher file does not exist), the GUI displays a non-blocking info message explaining the trigger keyword and how to customize it
-- [ ] The launcher file is included in stale cleanup (Issue #2) — old copies in non-canonical paths are removed
+- [x] A `espansr-launcher.yml` file is written to the Espanso `match/` directory with a single shell trigger that launches `espansr gui`; the file is separate from `espansr.yml`
+- [x] The trigger keyword defaults to `:aopen` and is configurable via `config.espanso.launcher_trigger`; changing the config regenerates the file
+- [x] On WSL2, the shell command uses `wsl.exe -d $WSL_DISTRO_NAME -- <path-to-binary> gui` to correctly invoke the Linux binary from Windows-side Espanso
+- [x] On native Linux/macOS, the shell command invokes the `espansr gui` binary directly
+- [x] `install.sh` generates the launcher file during installation if an Espanso config directory is found
+- [x] On first run (launcher file does not exist), the GUI displays a non-blocking info message explaining the trigger keyword and how to customize it
+- [x] The launcher file is included in stale cleanup (Issue #2) — old copies in non-canonical paths are removed
 
 ## Affected Areas
 

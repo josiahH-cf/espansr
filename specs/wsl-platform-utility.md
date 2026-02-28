@@ -1,7 +1,7 @@
 # Spec: Consolidate WSL/Platform Detection into Shared Utility Module
 
 **Issue:** #1  
-**Status:** Draft
+**Status:** Complete
 
 ## Description
 
@@ -9,12 +9,12 @@ Extract all platform and WSL2 detection logic from `config.py` and `espanso.py` 
 
 ## Acceptance Criteria
 
-- [ ] A new `espansr/core/platform.py` module exports `get_platform()`, `is_wsl2()`, and `get_windows_username()`
-- [ ] `config.py` imports `get_platform` from `platform.py` instead of defining its own; no `/proc/version` read remains in `config.py`
-- [ ] `espanso.py` imports `is_wsl2` and `get_windows_username` from `platform.py` instead of inline detection; no `/proc/version` read or `cmd.exe` call remains in `espanso.py`
-- [ ] `get_windows_username()` returns `None` (not raises) when `cmd.exe` is unavailable, times out, or returns empty output
-- [ ] `__main__.py` `cmd_status()` imports from `platform.py` instead of doing its own `/proc/version` read
-- [ ] All 14 existing tests pass without modification
+- [x] A new `espansr/core/platform.py` module exports `get_platform()`, `is_wsl2()`, and `get_windows_username()`
+- [x] `config.py` imports `get_platform` from `platform.py` instead of defining its own; no `/proc/version` read remains in `config.py`
+- [x] `espanso.py` imports `is_wsl2` and `get_windows_username` from `platform.py` instead of inline detection; no `/proc/version` read or `cmd.exe` call remains in `espanso.py`
+- [x] `get_windows_username()` returns `None` (not raises) when `cmd.exe` is unavailable, times out, or returns empty output
+- [x] `__main__.py` `cmd_status()` imports from `platform.py` instead of doing its own `/proc/version` read
+- [x] All 14 existing tests pass without modification
 
 ## Affected Areas
 
