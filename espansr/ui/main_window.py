@@ -9,6 +9,7 @@ from PyQt6.QtCore import QByteArray, Qt, QTimer
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QLabel,
     QMainWindow,
     QPushButton,
     QSplitter,
@@ -38,6 +39,7 @@ class MainWindow(QMainWindow):
         self._clean_stale_espanso_files()
         self._check_launcher()
         self._restore_last_template()
+        self._update_espanso_status()
 
     def _setup_ui(self) -> None:
         """Build toolbar, splitter (browser | editor), and status bar."""
@@ -86,6 +88,10 @@ class MainWindow(QMainWindow):
         # Status bar
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
+
+        # Permanent Espanso status indicator
+        self._espanso_status = QLabel()
+        status_bar.addPermanentWidget(self._espanso_status)
 
         # Wire signals
         self._browser.template_selected.connect(self._editor.load_template)
@@ -143,6 +149,16 @@ class MainWindow(QMainWindow):
                 8000,
             )
 
+    def _update_espanso_status(self) -> None:
+        """Refresh the permanent Espanso status indicator."""
+        from espansr.integrations.espanso import get_espanso_config_dir
+
+        config_dir = get_espanso_config_dir()
+        if config_dir:
+            self._espanso_status.setText(f"Espanso: {config_dir}")
+        else:
+            self._espanso_status.setText("Espanso: not found")
+
     # ── Sync ────────────────────────────────────────────────────────────────
 
     def _do_sync(self) -> None:
@@ -166,10 +182,18 @@ class MainWindow(QMainWindow):
                 msg = f"{len(non_errors)} warning(s): {non_errors[0].message}"
                 self.statusBar().showMessage(msg, 8000)
 
-            success = sync_to_espanso()
+            import espansr.integrations.espanso as _espanso_mod
+
+            _espanso_mod._last_sync_count = 0
+            result = sync_to_espanso()
+            count = _espanso_mod._last_sync_count
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if success:
-                if not non_errors:
+            if result:
+                if count:
+                    self.statusBar().showMessage(
+                        f"Synced {count} template(s) to Espanso", 5000
+                    )
+                elif not non_errors:
                     self.statusBar().showMessage("Sync successful", 5000)
                 get_config_manager().update(**{"espanso.last_sync": now})
                 self._browser.refresh()
@@ -179,6 +203,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Sync error: {e}", 5000)
         finally:
             self._sync_btn.setEnabled(True)
+            self._update_espanso_status()
 
     def _toggle_auto_sync(self, state: int) -> None:
         """Start or stop the auto-sync timer."""

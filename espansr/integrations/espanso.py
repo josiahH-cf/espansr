@@ -5,6 +5,7 @@ Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
 """
 
 import logging
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,26 @@ from espansr.core.templates import get_template_manager
 from espansr.integrations.validate import validate_all
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SyncResult:
+    """Result of a sync_to_espanso() call.
+
+    Attributes:
+        success: Whether the sync completed without errors.
+        count: Number of templates synced.
+        errors: Human-readable error descriptions (empty on success).
+    """
+
+    success: bool
+    count: int = 0
+    errors: list[str] = field(default_factory=list)
+
+    def __bool__(self) -> bool:
+        """Allow truthiness check for backward compatibility."""
+        return self.success
+
 
 # File names managed by espansr — only these are cleaned up
 _MANAGED_FILES = ("espansr.yml", "espansr-launcher.yml")
@@ -252,15 +273,26 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
         return False
 
 
+# Tracks the number of templates written by the most recent sync_to_espanso() call.
+# The GUI reads this after sync to display a richer feedback message.
+_last_sync_count: int = 0
+
+
 def sync_to_espanso() -> bool:
     """Sync templates to Espanso match file.
 
     Generates a single `espansr.yml` in the Espanso match directory
     containing all templates that have triggers defined.
 
+    After a successful call, ``_last_sync_count`` holds the number
+    of templates that were written.
+
     Returns:
         True if sync was successful, False otherwise.
     """
+    global _last_sync_count
+    _last_sync_count = 0
+
     match_dir = get_match_dir()
     if not match_dir:
         print("Error: Could not find Espanso config directory")
@@ -307,6 +339,7 @@ def sync_to_espanso() -> bool:
         with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
 
+        _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
 
         # WSL2: file writes via /mnt/c/ don't trigger Windows file watcher — restart Espanso
