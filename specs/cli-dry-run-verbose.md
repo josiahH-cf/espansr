@@ -1,6 +1,6 @@
 # Feature: CLI Dry-Run and Verbose Modes
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 

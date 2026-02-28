@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 3
-- Complete: 0
-- Remaining: 3
+- Complete: 3
+- Remaining: 0
 
 ## Task List
 
@@ -15,7 +15,7 @@
 - **Files:** `tests/test_dry_run.py`
 - **Done when:** All tests exist and fail because the flags/logic are not yet implemented
 - **Criteria covered:** AC-1, AC-2, AC-3, AC-4, AC-5
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Tests to write
 
@@ -33,7 +33,7 @@
 - **Files:** `espansr/__main__.py`, `espansr/integrations/espanso.py`
 - **Done when:** `espansr sync --dry-run` lists planned writes and exits 0 without writing; existing sync behavior unchanged without flag; tests pass
 - **Criteria covered:** AC-1, AC-5
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Implementation details
 
@@ -47,7 +47,7 @@
 - **Files:** `espansr/__main__.py`
 - **Done when:** `espansr setup --dry-run` previews actions without acting; `--verbose` shows per-template detail; both combine; tests pass
 - **Criteria covered:** AC-2, AC-3, AC-4, AC-5
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Implementation details
 
