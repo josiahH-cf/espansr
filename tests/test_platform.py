@@ -287,10 +287,7 @@ def test_get_platform_config_macos():
         pc = get_platform_config()
     assert pc.platform == "macos"
     assert pc.espansr_config_dir == Path.home() / "Library" / "Application Support" / "espansr"
-    assert (
-        Path.home() / "Library" / "Application Support" / "espanso"
-        in pc.espanso_candidate_dirs
-    )
+    assert Path.home() / "Library" / "Application Support" / "espanso" in pc.espanso_candidate_dirs
     assert Path.home() / ".config" / "espanso" in pc.espanso_candidate_dirs
 
 
