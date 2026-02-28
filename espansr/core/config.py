@@ -143,12 +143,18 @@ class Config:
         known_ui = {f.name for f in UIConfig.__dataclass_fields__.values()}
 
         return cls(
-            espanso=EspansoConfig(**{k: v for k, v in espanso_data.items() if k in known_espanso})
-            if espanso_data
-            else EspansoConfig(),
-            ui=UIConfig(**{k: v for k, v in ui_data.items() if k in known_ui})
-            if ui_data
-            else UIConfig(),
+            espanso=(
+                EspansoConfig(
+                    **{k: v for k, v in espanso_data.items() if k in known_espanso}
+                )
+                if espanso_data
+                else EspansoConfig()
+            ),
+            ui=(
+                UIConfig(**{k: v for k, v in ui_data.items() if k in known_ui})
+                if ui_data
+                else UIConfig()
+            ),
         )
 
 

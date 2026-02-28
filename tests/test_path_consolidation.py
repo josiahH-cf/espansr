@@ -311,7 +311,11 @@ def test_clean_stale_silent_on_permission_error(tmp_path, caplog):
         clean_stale_espanso_files()
 
     # Should have logged a warning
-    assert any("permission" in record.message.lower() or "access denied" in record.message.lower() for record in caplog.records)
+    assert any(
+        "permission" in record.message.lower()
+        or "access denied" in record.message.lower()
+        for record in caplog.records
+    )
 
 
 def test_clean_stale_handles_no_canonical_dir(tmp_path):
@@ -353,12 +357,8 @@ def test_sync_calls_cleanup_before_write(tmp_path):
             "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
-        patch(
-            "espansr.integrations.espanso.get_template_manager"
-        ) as mock_mgr,
-        patch(
-            "espansr.integrations.espanso.clean_stale_espanso_files"
-        ) as mock_clean,
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.clean_stale_espanso_files") as mock_clean,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
 
@@ -388,12 +388,8 @@ def test_espanso_manager_sync_calls_cleanup(tmp_path):
             "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
-        patch(
-            "espansr.integrations.espanso.get_template_manager"
-        ) as mock_mgr,
-        patch(
-            "espansr.integrations.espanso.clean_stale_espanso_files"
-        ) as mock_clean,
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.clean_stale_espanso_files") as mock_clean,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
 

@@ -211,7 +211,9 @@ class TemplateManager:
         config = get_config()
         return config.ui.max_template_versions
 
-    def create_version(self, template: Template, note: str = "") -> Optional[TemplateVersion]:
+    def create_version(
+        self, template: Template, note: str = ""
+    ) -> Optional[TemplateVersion]:
         """Create a new version snapshot of a template."""
         version_dir = self._get_version_dir(template)
 
@@ -251,7 +253,9 @@ class TemplateManager:
 
         return sorted(versions, key=lambda v: v.version)
 
-    def get_version(self, template: Template, version_num: int) -> Optional[TemplateVersion]:
+    def get_version(
+        self, template: Template, version_num: int
+    ) -> Optional[TemplateVersion]:
         """Get a specific version of a template."""
         version_dir = self._get_version_dir(template)
         version_path = version_dir / f"v{version_num}.json"
@@ -276,7 +280,9 @@ class TemplateManager:
             return None
 
         if create_backup:
-            self.create_version(template, note=f"Backup before revert to v{version_num}")
+            self.create_version(
+                template, note=f"Backup before revert to v{version_num}"
+            )
 
         restored = Template.from_dict(version.template_data, path=template._path)
 

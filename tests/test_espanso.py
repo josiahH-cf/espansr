@@ -132,9 +132,7 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
     templates_dir = tmp_path / "templates"
     templates_dir.mkdir()
     (templates_dir / "greet.json").write_text(
-        json.dumps(
-            {"name": "Greet", "content": "Hello, World!", "trigger": ":greet"}
-        )
+        json.dumps({"name": "Greet", "content": "Hello, World!", "trigger": ":greet"})
     )
 
     match_dir = tmp_path / "espanso" / "match"
@@ -145,9 +143,7 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
             "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
-        patch(
-            "espansr.integrations.espanso.get_template_manager"
-        ) as mock_mgr,
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
 
@@ -191,9 +187,7 @@ def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
             "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
-        patch(
-            "espansr.integrations.espanso.get_template_manager"
-        ) as mock_mgr,
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
         from espansr.integrations.espanso import sync_to_espanso
@@ -225,9 +219,7 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
             "espansr.integrations.espanso.get_match_dir",
             return_value=match_dir,
         ),
-        patch(
-            "espansr.integrations.espanso.get_template_manager"
-        ) as mock_mgr,
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
         from espansr.integrations.espanso import sync_to_espanso
@@ -241,9 +233,7 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
 
 def test_sync_returns_false_when_no_match_dir():
     """sync_to_espanso() returns False when Espanso config dir not found."""
-    with patch(
-        "espansr.integrations.espanso.get_match_dir", return_value=None
-    ):
+    with patch("espansr.integrations.espanso.get_match_dir", return_value=None):
         from espansr.integrations.espanso import sync_to_espanso
 
         result = sync_to_espanso()
@@ -261,7 +251,9 @@ def test_platform_detection_wsl2():
 
     with (
         patch("platform.system", return_value="Linux"),
-        patch("builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")),
+        patch(
+            "builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")
+        ),
     ):
         import espansr.core.config as cfg_mod
 
@@ -277,7 +269,9 @@ def test_platform_detection_native_linux():
 
     with (
         patch("platform.system", return_value="Linux"),
-        patch("builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")),
+        patch(
+            "builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")
+        ),
     ):
         import espansr.core.config as cfg_mod
 

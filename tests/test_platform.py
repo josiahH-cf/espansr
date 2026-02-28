@@ -198,7 +198,10 @@ def test_get_wsl_distro_name_fallback_wsl_exe():
 
     with (
         patch.dict("os.environ", {}, clear=False),
-        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch(
+            "os.environ.get",
+            side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d,
+        ),
         patch("subprocess.run", return_value=mock_result),
     ):
         assert get_wsl_distro_name() == "Ubuntu"
@@ -208,7 +211,10 @@ def test_get_wsl_distro_name_returns_none_on_failure():
     """get_wsl_distro_name() returns None when both env var and wsl.exe fail."""
     with (
         patch.dict("os.environ", {}, clear=False),
-        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch(
+            "os.environ.get",
+            side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d,
+        ),
         patch("subprocess.run", side_effect=FileNotFoundError("wsl.exe not found")),
     ):
         assert get_wsl_distro_name() is None
@@ -221,7 +227,10 @@ def test_get_wsl_distro_name_returns_none_on_empty_output():
 
     with (
         patch.dict("os.environ", {}, clear=False),
-        patch("os.environ.get", side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d),
+        patch(
+            "os.environ.get",
+            side_effect=lambda k, d=None: None if k == "WSL_DISTRO_NAME" else d,
+        ),
         patch("subprocess.run", return_value=mock_result),
     ):
         assert get_wsl_distro_name() is None
