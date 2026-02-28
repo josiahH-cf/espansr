@@ -1,6 +1,6 @@
 # Feature: CLI Dry-Run and Verbose Modes
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -10,11 +10,11 @@ Add `--dry-run` and `--verbose` flags to `espansr sync` and `espansr setup` so u
 
 ## Acceptance Criteria
 
-- [ ] `espansr sync --dry-run` lists which YAML files would be written or deleted, then exits 0 without writing anything
-- [ ] `espansr setup --dry-run` lists which templates would be copied, which Espanso dir would be detected, whether launcher would be generated — without acting
-- [ ] `espansr setup --verbose` prints one line per template explaining whether it was copied or skipped (and why: "already exists" vs "identical content")
-- [ ] `--dry-run` and `--verbose` can be combined
-- [ ] Both flags are registered in argparse help text
+- [x] `espansr sync --dry-run` lists which YAML files would be written or deleted, then exits 0 without writing anything
+- [x] `espansr setup --dry-run` lists which templates would be copied, which Espanso dir would be detected, whether launcher would be generated — without acting
+- [x] `espansr setup --verbose` prints one line per template explaining whether it was copied or skipped (and why: "already exists" vs "identical content")
+- [x] `--dry-run` and `--verbose` can be combined
+- [x] Both flags are registered in argparse help text
 
 ## Affected Areas
 

@@ -44,9 +44,17 @@
 
 _No active work — ready for next feature._
 
-**Next up:** CLI dry-run & verbose (#11) per recommended order
+**Next up:** Setup/platform resilience (#14) per recommended order
 
 ## Completed
+
+### CLI Dry-Run and Verbose Modes
+- `--dry-run` flag on `espansr sync` and `espansr setup`
+- `--verbose` flag on `espansr setup` for per-file detail
+- Flags combinable; zero side effects in dry-run mode
+- `sync_to_espanso()` accepts `dry_run` parameter
+- 8 tests in `tests/test_dry_run.py`
+- **Spec:** `/specs/cli-dry-run-verbose.md` — **Tasks:** `/tasks/cli-dry-run-verbose.md`
 
 ### GUI Persistent Status Bar and Sync Feedback
 - Permanent `QLabel` in status bar showing `Espanso: <path>` or `Espanso: not found`
@@ -186,7 +194,7 @@ _No active work — ready for next feature._
 | 9 | Windows Installer | `/specs/windows-installer.md` | Complete |
 | 10 | First Public Release (v1.0) | `/specs/first-public-release.md` | Complete |
 | 11 | `espansr doctor` | `/specs/cli-doctor.md` | Complete |
-| 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Not started |
+| 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Complete |
 | 13 | Colored CLI output | `/specs/cli-colored-output.md` | Not started |
 | 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
 | 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Not started |
@@ -195,4 +203,4 @@ _No active work — ready for next feature._
 | 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Not started |
 | 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Not started |
 
-**v1.0 total tests: 201 passing** (as of 2026-02-28)
+**v1.0 total tests: 209 passing** (as of 2026-02-28)
