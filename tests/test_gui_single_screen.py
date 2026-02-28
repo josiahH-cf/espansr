@@ -36,9 +36,7 @@ def _make_window(qtbot, config, tm=None, match_dir=None, tmp_path=None):
     )
 
     with contextlib.ExitStack() as stack:
-        stack.enter_context(
-            patch("espansr.ui.main_window.get_config", return_value=config)
-        )
+        stack.enter_context(patch("espansr.ui.main_window.get_config", return_value=config))
         stack.enter_context(patch("espansr.ui.main_window.get_config_manager"))
         stack.enter_context(patch("espansr.ui.template_browser.get_config"))
         stack.enter_context(patch("espansr.ui.template_editor.get_config"))

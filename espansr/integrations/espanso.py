@@ -317,18 +317,14 @@ def sync_to_espanso() -> bool:
     matches = []
 
     for template in template_manager.iter_with_triggers():
-        replace_text = _convert_to_espanso_placeholders(
-            template.content, template.variables or []
-        )
+        replace_text = _convert_to_espanso_placeholders(template.content, template.variables or [])
         match_entry: dict = {
             "trigger": template.trigger,
             "replace": replace_text,
         }
 
         if template.variables:
-            match_entry["vars"] = [
-                _build_espanso_var_entry(var) for var in template.variables
-            ]
+            match_entry["vars"] = [_build_espanso_var_entry(var) for var in template.variables]
 
         matches.append(match_entry)
 
@@ -382,9 +378,7 @@ def _restart_espanso_wsl2() -> None:
         if result.returncode == 0:
             print("Espanso restarted successfully.")
         else:
-            print(
-                "Note: Run 'espanso restart' from Windows PowerShell to reload triggers."
-            )
+            print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
     except Exception:
         print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
 
@@ -451,9 +445,7 @@ class EspansoManager:
             }
 
             if template.variables:
-                match_entry["vars"] = [
-                    _build_espanso_var_entry(var) for var in template.variables
-                ]
+                match_entry["vars"] = [_build_espanso_var_entry(var) for var in template.variables]
 
             matches.append(match_entry)
 
