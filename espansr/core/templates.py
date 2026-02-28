@@ -527,3 +527,165 @@ def get_template_manager() -> TemplateManager:
 def get_bundled_templates_dir() -> Path:
     """Get the path to the bundled templates directory."""
     return Path(__file__).parent.parent.parent / "templates"
+
+
+# ── Template Import ─────────────────────────────────────────────────────────
+
+# Known top-level fields in the internal template schema.
+_KNOWN_TEMPLATE_FIELDS = {
+    "name",
+    "content",
+    "description",
+    "trigger",
+    "variables",
+    "refinements",
+}
+
+# Known fields in the internal Variable schema.
+_KNOWN_VARIABLE_FIELDS = {"name", "label", "default", "multiline", "type", "params"}
+
+
+@dataclass
+class ImportResult:
+    """Result of importing a single template file.
+
+    Attributes:
+        template: The imported Template, or None if import failed.
+        error: Error message if import failed, else None.
+        renamed: True if the template was renamed to avoid a collision.
+    """
+
+    template: Optional[Template] = None
+    error: Optional[str] = None
+    renamed: bool = False
+
+
+@dataclass
+class ImportSummary:
+    """Summary of a batch import operation.
+
+    Attributes:
+        results: Per-file ImportResult list.
+        succeeded: Count of successfully imported templates.
+        failed: Count of files that failed to import.
+        skipped: Count of files skipped (non-JSON, etc.).
+        error: Top-level error message (e.g., directory not found).
+    """
+
+    results: List[ImportResult] = field(default_factory=list)
+    succeeded: int = 0
+    failed: int = 0
+    skipped: int = 0
+    error: Optional[str] = None
+
+
+def _strip_to_known_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a copy of *data* containing only known template fields."""
+    cleaned = {k: v for k, v in data.items() if k in _KNOWN_TEMPLATE_FIELDS}
+    if "variables" in cleaned and isinstance(cleaned["variables"], list):
+        cleaned["variables"] = [
+            {k: v for k, v in var.items() if k in _KNOWN_VARIABLE_FIELDS}
+            for var in cleaned["variables"]
+            if isinstance(var, dict)
+        ]
+    return cleaned
+
+
+def _deduplicate_name(name: str, manager: TemplateManager) -> tuple[str, bool]:
+    """Return a unique template name, appending a numeric suffix if needed.
+
+    Returns:
+        (final_name, was_renamed)
+    """
+    if manager.get(name) is None:
+        return name, False
+
+    counter = 2
+    while True:
+        candidate = f"{name} ({counter})"
+        if manager.get(candidate) is None:
+            return candidate, True
+        counter += 1
+
+
+def import_template(
+    path: Path, manager: Optional[TemplateManager] = None
+) -> ImportResult:
+    """Import a single JSON template file.
+
+    Loads the file, strips unrecognized fields, de-duplicates the name against
+    existing templates, and saves the result via *manager*.
+
+    Args:
+        path: Path to a JSON template file.
+        manager: TemplateManager to use. Defaults to the global instance.
+
+    Returns:
+        ImportResult with the saved Template or an error message.
+    """
+    if manager is None:
+        manager = get_template_manager()
+
+    path = Path(path)
+    if not path.exists():
+        return ImportResult(error=f"File not found: {path}")
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw_data = json.load(f)
+    except json.JSONDecodeError as exc:
+        return ImportResult(error=f"Invalid JSON in {path.name}: {exc}")
+    except OSError as exc:
+        return ImportResult(error=f"Cannot read {path.name}: {exc}")
+
+    if not isinstance(raw_data, dict):
+        return ImportResult(
+            error=f"{path.name}: expected a JSON object, got {type(raw_data).__name__}"
+        )
+
+    # Default name from filename stem when missing
+    if not raw_data.get("name"):
+        raw_data["name"] = path.stem.replace("_", " ")
+
+    cleaned = _strip_to_known_fields(raw_data)
+    template = Template.from_dict(cleaned)
+
+    # De-duplicate name
+    final_name, was_renamed = _deduplicate_name(template.name, manager)
+    template.name = final_name
+
+    if not manager.save(template):
+        return ImportResult(error=f"Failed to save template '{template.name}'")
+
+    return ImportResult(template=template, renamed=was_renamed)
+
+
+def import_templates(
+    directory: Path, manager: Optional[TemplateManager] = None
+) -> ImportSummary:
+    """Import all JSON template files from a directory.
+
+    Args:
+        directory: Path to a directory containing JSON files.
+        manager: TemplateManager to use. Defaults to the global instance.
+
+    Returns:
+        ImportSummary with per-file results and aggregate counts.
+    """
+    if manager is None:
+        manager = get_template_manager()
+
+    directory = Path(directory)
+    if not directory.is_dir():
+        return ImportSummary(error=f"Directory not found: {directory}")
+
+    summary = ImportSummary()
+    for json_path in sorted(directory.glob("*.json")):
+        result = import_template(json_path, manager)
+        summary.results.append(result)
+        if result.template is not None:
+            summary.succeeded += 1
+        else:
+            summary.failed += 1
+
+    return summary
