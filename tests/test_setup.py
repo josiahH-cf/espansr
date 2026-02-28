@@ -188,3 +188,55 @@ def test_setup_prints_summary(tmp_path, capsys):
     assert "Templates:" in output
     assert "Espanso config:" in output
     assert "Launcher:" in output
+
+
+# ─── cmd_status — platform-specific guidance ─────────────────────────────────
+
+
+def test_status_wsl2_guidance(capsys):
+    """cmd_status shows WSL2-specific guidance when Espanso config is missing."""
+    from espansr.__main__ import cmd_status
+
+    with (
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+        patch("espansr.__main__.get_platform", return_value="wsl2"),
+        patch("shutil.which", return_value=None),
+    ):
+        cmd_status(None)
+
+    output = capsys.readouterr().out
+    assert "on Windows" in output
+    assert "PowerShell" in output
+    assert "https://espanso.org" in output
+
+
+def test_status_linux_guidance(capsys):
+    """cmd_status shows generic guidance on Linux when Espanso config is missing."""
+    from espansr.__main__ import cmd_status
+
+    with (
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+        patch("espansr.__main__.get_platform", return_value="linux"),
+        patch("shutil.which", return_value=None),
+    ):
+        cmd_status(None)
+
+    output = capsys.readouterr().out
+    assert "https://espanso.org" in output
+    assert "on Windows" not in output
+
+
+def test_status_macos_guidance(capsys):
+    """cmd_status shows generic guidance on macOS when Espanso config is missing."""
+    from espansr.__main__ import cmd_status
+
+    with (
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+        patch("espansr.__main__.get_platform", return_value="macos"),
+        patch("shutil.which", return_value=None),
+    ):
+        cmd_status(None)
+
+    output = capsys.readouterr().out
+    assert "https://espanso.org" in output
+    assert "on Windows" not in output

@@ -19,10 +19,10 @@
 # Architecture
 
 - `espansr/`: Main Python package and app entrypoint.
-- `espansr/core/`: Core configuration and template handling.
+- `espansr/core/`: Core configuration, template handling, and platform detection. `platform.py` provides `PlatformConfig` — the single source of truth for all platform-specific paths.
 - `espansr/integrations/`: Espanso sync integration.
 - `espansr/ui/`: PyQt6 user interface screens.
-- `templates/`: Bundled Espanso-specific template JSON files (starts empty; add static snippets here).
+- `templates/`: Bundled template JSON files copied to user config on `espansr setup` (contains `espansr_help.json` starter template).
 - `tests/`: Test suite.
 
 # Feature Lifecycle
@@ -54,6 +54,7 @@ Key design decisions:
 - `EspansoConfig` is the primary config dataclass
 - Config dir is `espansr`
 - `TemplateManager` has `iter_with_triggers()` method
+- `PlatformConfig` is the single source of truth for platform-specific paths; `config.py` and `espanso.py` delegate to it via `get_platform_config()`
 
 # Testing
 

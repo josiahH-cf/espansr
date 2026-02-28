@@ -5,25 +5,53 @@
 > Each item below requires scoping (`/specs/`) before implementation begins.
 > See the Feature Lifecycle in `/AGENTS.md`.
 
-### CI Hardening
-- Add ruff lint step to CI
-- Pin dependency versions in pyproject.toml
-- Add Python 3.13 to test matrix when available
-
-### Lint Cleanup
-- Run ruff check and fix all warnings
-- Enforce consistent code style with black
-
-### First Public Release (v1.0)
-- README polish with screenshots and usage guide
-- License file
-- Tag v1.0.0 release on GitHub
+_Backlog empty — all planned features complete._
 
 ## Active
 
-_No active work — ready for next feature._
+_No active work._
 
 ## Completed
+
+### First Public Release (v1.0)
+- README polished with CI badge, platform support matrix, and complete usage guide
+- `CHANGELOG.md` created with entries for all shipped features
+- Version bumped `0.1.0` → `1.0.0` in `pyproject.toml` and `espansr/__init__.py`
+- `espansr --version` flag added
+- 9 tests in `tests/test_release.py`
+- **Spec:** `/specs/first-public-release.md` — **Tasks:** `/tasks/first-public-release.md`
+- **Remaining human action:** Tag v1.0.0 release on GitHub
+
+### Windows Installer
+- `install.ps1` PowerShell script (5.1+ compatible) mirrors `install.sh` structure
+- Python ≥3.11 check with download link on failure
+- Venv creation, pip install, delegates to `espansr setup`
+- Session PATH setup with instructions for permanent user-level PATH
+- Smoke test with visible output, idempotent re-runs
+- README updated with Windows install instructions
+- **Spec:** `/specs/windows-installer.md` — **Tasks:** `/tasks/windows-installer.md`
+
+### Lint Cleanup
+- `ruff check .` and `black --check .` pass with zero warnings
+- Code style is consistent across all 26 files
+- Verified 2026-02-28
+
+### CI Hardening
+- Ruff lint step in `.github/workflows/ci.yml`
+- Black format check in CI
+- Python 3.11, 3.12, 3.13 test matrix
+- All dependency versions pinned with upper bounds in `pyproject.toml`
+- LICENSE file present in repo root
+
+### Cross-Platform Installer Architecture
+- `PlatformConfig` dataclass and `get_platform_config()` in `espansr/core/platform.py`
+- `config.py` and `espanso.py` delegate all path logic to `PlatformConfig`
+- `espansr setup` CLI command: copies bundled templates, detects Espanso, cleans stale files, generates launcher
+- Bundled starter template `templates/espansr_help.json`
+- `install.sh` restructured: ~145 lines of duplicated bash replaced by `$VENV_CMD setup`
+- `espansr status` shows platform-specific guidance when Espanso is missing
+- 10 tests in `tests/test_setup.py`, 11 new tests in `tests/test_platform.py`
+- **Spec:** `/specs/install-first-run.md` — **Tasks:** `/tasks/install-first-run.md`
 
 ### Issue #7 — Template Import
 - `import_template()` and `import_templates()` in `espansr/core/templates.py`
@@ -94,15 +122,18 @@ _No active work — ready for next feature._
 
 | # | Feature | Spec | Tasks | Tests | Status |
 |---|---------|------|-------|-------|--------|
-| 1 | WSL/Platform Utility | `/specs/wsl-platform-utility.md` | `/tasks/wsl-platform-utility.md` | 24 | Complete |
+| 1 | WSL/Platform Utility | `/specs/wsl-platform-utility.md` | `/tasks/wsl-platform-utility.md` | 33 | Complete |
 | 2 | Espanso Path Consolidation | `/specs/espanso-path-consolidation.md` | `/tasks/espanso-path-consolidation.md` | 15+ | Complete |
 | 3 | GUI Single-Screen Layout | `/specs/gui-single-screen.md` | `/tasks/gui-single-screen.md` | 17 | Complete |
 | 4 | Inline Variable Editor | `/specs/variable-editor.md` | `/tasks/variable-editor.md` | 22 | Complete |
 | 5 | Espanso Launcher Trigger | `/specs/espanso-launcher-trigger.md` | `/tasks/espanso-launcher-trigger.md` | 10 | Complete |
 | 6 | Espanso Config Validation | `/specs/espanso-config-validation.md` | `/tasks/espanso-config-validation.md` | 18 | Complete |
-| — | CI Hardening | _needs spec_ | — | — | Backlog |
-| — | Lint Cleanup | _needs spec_ | — | — | Backlog |
 | 7 | Template Import | `/specs/template-import.md` | `/tasks/template-import.md` | 15 | Complete |
-| — | First Public Release | _needs spec_ | — | — | Backlog |
+| 8 | Cross-Platform Installer | `/specs/install-first-run.md` | `/tasks/install-first-run.md` | 21 | Complete |
+| — | CI Hardening | — | — | — | Complete |
+| — | Lint Cleanup | — | — | — | Complete |
+| 9 | Windows Installer | `/specs/windows-installer.md` | `/tasks/windows-installer.md` | — | Complete |
+| 10 | First Public Release | `/specs/first-public-release.md` | `/tasks/first-public-release.md` | 9 | Complete |
+| — | **Human action** | Tag v1.0.0 on GitHub | — | — | Pending |
 
-**Total tests: 126 passing** (as of 2026-02-28)
+**Total tests: 167 passing** (as of 2026-02-28)

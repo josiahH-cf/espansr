@@ -1,5 +1,7 @@
 # Feature: Cross-Platform Installer Architecture
 
+**Status:** Complete
+
 ## Description
 
 The installer and platform-handling code has five structural problems that will compound as features are added. This spec addresses all five with a single architectural change.
@@ -98,18 +100,18 @@ The following details were verified by reading every source file. They are inclu
 
 ## Acceptance Criteria
 
-- [ ] **AC-1**: `espansr/core/platform.py` exports a `PlatformConfig` dataclass and a `get_platform_config()` function that returns the espansr config dir path and the ordered list of Espanso candidate config dir paths for the detected platform
-- [ ] **AC-2**: `espansr/core/config.py` `get_config_dir()` delegates to the platform module for path resolution — no `import platform` or direct `platform.system()` call remains in `config.py`
-- [ ] **AC-3**: `espansr/integrations/espanso.py` `_get_candidate_paths()` delegates to the platform module — no `import platform` or direct `platform.system()` call remains in `espanso.py`
-- [ ] **AC-4**: There is exactly one place in the Python codebase that defines each platform-specific path (espansr config dir path, each Espanso candidate dir path) — that place is `espansr/core/platform.py`
-- [ ] **AC-5**: A new `espansr setup` CLI command performs: (a) ensure espansr config dir exists, (b) copy bundled templates with no-overwrite, (c) detect and persist Espanso config path, (d) clean stale files, (e) generate launcher trigger, (f) print human-readable summary of results
-- [ ] **AC-6**: `install.sh` is restructured so that Espanso detection, stale cleanup, templates-dir creation, and launcher generation are removed from bash and replaced by a single `$VENV_CMD setup` call
-- [ ] **AC-7**: The repo `templates/` directory contains at least one bundled JSON template with a trigger that passes `espansr validate`
-- [ ] **AC-8**: `espansr setup` copies bundled templates into the user config templates dir; existing same-named files are never overwritten
-- [ ] **AC-9**: After a fresh `./install.sh` run, `espansr list` returns at least one triggered template without any manual steps
-- [ ] **AC-10**: When Espanso config is not found, `espansr status` prints platform-specific next-step guidance (see Notes for exact strings per platform)
-- [ ] **AC-11**: Adding support for a new platform requires editing only `espansr/core/platform.py` (path definitions) and optionally `install.sh` (system deps) — no other Python source files need platform-specific changes
-- [ ] **AC-12**: All new logic is covered by pytest tests; all 126 existing tests continue to pass without modification
+- [x] **AC-1**: `espansr/core/platform.py` exports a `PlatformConfig` dataclass and a `get_platform_config()` function that returns the espansr config dir path and the ordered list of Espanso candidate config dir paths for the detected platform
+- [x] **AC-2**: `espansr/core/config.py` `get_config_dir()` delegates to the platform module for path resolution — no `import platform` or direct `platform.system()` call remains in `config.py`
+- [x] **AC-3**: `espansr/integrations/espanso.py` `_get_candidate_paths()` delegates to the platform module — no `import platform` or direct `platform.system()` call remains in `espanso.py`
+- [x] **AC-4**: There is exactly one place in the Python codebase that defines each platform-specific path (espansr config dir path, each Espanso candidate dir path) — that place is `espansr/core/platform.py`
+- [x] **AC-5**: A new `espansr setup` CLI command performs: (a) ensure espansr config dir exists, (b) copy bundled templates with no-overwrite, (c) detect and persist Espanso config path, (d) clean stale files, (e) generate launcher trigger, (f) print human-readable summary of results
+- [x] **AC-6**: `install.sh` is restructured so that Espanso detection, stale cleanup, templates-dir creation, and launcher generation are removed from bash and replaced by a single `$VENV_CMD setup` call
+- [x] **AC-7**: The repo `templates/` directory contains at least one bundled JSON template with a trigger that passes `espansr validate`
+- [x] **AC-8**: `espansr setup` copies bundled templates into the user config templates dir; existing same-named files are never overwritten
+- [x] **AC-9**: After a fresh `./install.sh` run, `espansr list` returns at least one triggered template without any manual steps
+- [x] **AC-10**: When Espanso config is not found, `espansr status` prints platform-specific next-step guidance (see Notes for exact strings per platform)
+- [x] **AC-11**: Adding support for a new platform requires editing only `espansr/core/platform.py` (path definitions) and optionally `install.sh` (system deps) — no other Python source files need platform-specific changes
+- [x] **AC-12**: All new logic is covered by pytest tests; all 126 existing tests continue to pass without modification
 
 ## Affected Areas
 

@@ -1,0 +1,37 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+
+## [1.0.0] — 2026-02-28
+
+First public release.
+
+### Added
+
+- **Template Import** — `espansr import <path>` CLI command and GUI toolbar button for importing external template JSON files or directories. Strips unrecognized fields, de-duplicates names with numeric suffixes.
+- **Espanso Config Validation** — `espansr validate` CLI command with six validation rules (empty trigger, short trigger, bad prefix, unmatched placeholders, unused variables, duplicate triggers). Sync blocks on errors, proceeds with warnings. GUI surfaces validation messages in the status bar.
+- **Espanso Launcher Trigger** — `generate_launcher_file()` writes `espansr-launcher.yml` with a shell trigger to open the GUI from Espanso. WSL2-aware command construction. Configurable trigger keyword.
+- **Inline Variable Editor** — `VariableEditorWidget` with add/edit/delete rows, name validation, date-type format field, form-type multiline toggle, and live YAML preview.
+- **GUI Single-Screen Layout** — Splitter-based browser/editor layout with toolbar (Sync Now, auto-sync toggle), inline template editor, inline delete confirmation, and window geometry persistence.
+- **Cross-Platform Installer Architecture** — `PlatformConfig` dataclass as single source of truth for all platform-specific paths. `espansr setup` CLI command performs all post-install work. `install.sh` restructured to a thin bootstrap that delegates to `espansr setup`.
+- **Windows Installer** — `install.ps1` PowerShell script (5.1+ compatible) with Python version check, venv creation, and delegation to `espansr setup`.
+- **Bundled starter template** (`espansr_help.json`) copied on first install.
+- **`espansr --version`** flag prints the installed version.
+- **CI pipeline** with Ruff lint, Black format check, and pytest across Python 3.11, 3.12, 3.13.
+
+### Changed
+
+- **WSL/Platform Utility Module** — All platform detection consolidated into `espansr/core/platform.py` (`get_platform()`, `is_wsl2()`, `get_windows_username()`). Callers no longer read `/proc/version` or call `cmd.exe` directly.
+- **Espanso Path Consolidation** — `get_espanso_config_dir()` persists resolved path to config. `clean_stale_espanso_files()` removes managed files from non-canonical directories. All Espanso candidate paths defined once in `PlatformConfig`.
+- **`espansr status`** shows platform-specific guidance when Espanso is not found.
+
+## [0.1.0] — 2025-01-01
+
+### Added
+
+- Initial standalone build with template CRUD, JSON storage, Espanso YAML generation.
+- CLI interface (`sync`, `status`, `list`, `gui` commands).
+- PyQt6 GUI with template browser and editor.
+- WSL2 support for Windows-side Espanso config detection.
