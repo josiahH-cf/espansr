@@ -1,13 +1,18 @@
 """Tests for espansr.core.platform module.
 
-Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username()
+Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username(),
+        PlatformConfig, get_platform_config()
 """
 
+import os
 import subprocess
+from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 from espansr.core.platform import (
+    PlatformConfig,
     get_platform,
+    get_platform_config,
     get_windows_username,
     get_wsl_distro_name,
     is_windows,
@@ -236,20 +241,125 @@ def test_get_wsl_distro_name_returns_none_on_empty_output():
         assert get_wsl_distro_name() is None
 
 
-# ─── config.py re-export tests ───────────────────────────────────────────────
+# ─── PlatformConfig / get_platform_config() tests ────────────────────────────
 
 
-def test_config_reexports_get_platform():
-    """config.py re-exports get_platform from platform module."""
-    from espansr.core.config import get_platform as config_get_platform
+def test_platform_config_is_dataclass():
+    """PlatformConfig has the expected fields."""
+    pc = PlatformConfig(
+        platform="linux",
+        espansr_config_dir=Path("/tmp/espansr"),
+        espanso_candidate_dirs=[Path("/tmp/espanso")],
+    )
+    assert pc.platform == "linux"
+    assert pc.espansr_config_dir == Path("/tmp/espansr")
+    assert pc.espanso_candidate_dirs == [Path("/tmp/espanso")]
 
-    assert callable(config_get_platform)
-    assert config_get_platform is get_platform
+
+def test_get_platform_config_linux():
+    """get_platform_config() returns correct paths for Linux."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="linux"),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "linux"
+    assert pc.espansr_config_dir == Path.home() / ".config" / "espansr"
+    assert Path.home() / ".config" / "espanso" in pc.espanso_candidate_dirs
+    assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
 
 
-def test_config_reexports_is_windows():
-    """config.py re-exports is_windows from platform module."""
-    from espansr.core.config import is_windows as config_is_windows
+def test_get_platform_config_linux_xdg():
+    """get_platform_config() respects XDG_CONFIG_HOME on Linux."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="linux"),
+        patch.dict(os.environ, {"XDG_CONFIG_HOME": "/custom/config"}, clear=False),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "linux"
+    assert pc.espansr_config_dir == Path("/custom/config/espansr")
 
-    assert callable(config_is_windows)
-    assert config_is_windows is is_windows
+
+def test_get_platform_config_macos():
+    """get_platform_config() returns correct paths for macOS."""
+    with patch("espansr.core.platform.get_platform", return_value="macos"):
+        pc = get_platform_config()
+    assert pc.platform == "macos"
+    assert pc.espansr_config_dir == Path.home() / "Library" / "Application Support" / "espansr"
+    assert (
+        Path.home() / "Library" / "Application Support" / "espanso"
+        in pc.espanso_candidate_dirs
+    )
+    assert Path.home() / ".config" / "espanso" in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_windows():
+    """get_platform_config() returns correct paths for Windows."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="windows"),
+        patch.dict(os.environ, {"APPDATA": "/tmp/fake_appdata"}, clear=False),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "windows"
+    assert Path("/tmp/fake_appdata/espanso") in pc.espanso_candidate_dirs
+    assert Path("/tmp/fake_appdata/espansr") == pc.espansr_config_dir
+    assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_windows_no_appdata():
+    """get_platform_config() falls back when APPDATA is missing on Windows."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="windows"),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "windows"
+    assert pc.espansr_config_dir == Path.home() / "espansr"
+    # Should still have home-based fallback
+    assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_wsl2_with_username():
+    """get_platform_config() includes /mnt/c/ paths on WSL2 when username is available."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value="testuser"),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "wsl2"
+    assert pc.espansr_config_dir == Path.home() / ".config" / "espansr"
+    assert Path("/mnt/c/Users/testuser/.config/espanso") in pc.espanso_candidate_dirs
+    assert Path("/mnt/c/Users/testuser/.espanso") in pc.espanso_candidate_dirs
+    assert Path("/mnt/c/Users/testuser/AppData/Roaming/espanso") in pc.espanso_candidate_dirs
+    # Also includes Linux-style paths
+    assert Path.home() / ".config" / "espanso" in pc.espanso_candidate_dirs
+    assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_wsl2_without_username():
+    """get_platform_config() omits /mnt/c/ paths on WSL2 when username is unavailable."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value=None),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert pc.platform == "wsl2"
+    # No /mnt/c/ paths
+    assert not any(str(p).startswith("/mnt/c") for p in pc.espanso_candidate_dirs)
+    # Still includes Linux-style paths
+    assert Path.home() / ".config" / "espanso" in pc.espanso_candidate_dirs
+    assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_unknown():
+    """get_platform_config() returns sensible defaults for unknown platforms."""
+    with patch("espansr.core.platform.get_platform", return_value="unknown"):
+        pc = get_platform_config()
+    assert pc.platform == "unknown"
+    assert pc.espanso_candidate_dirs == []

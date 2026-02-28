@@ -156,12 +156,11 @@ def test_get_candidate_paths_linux(tmp_path):
 def test_get_candidate_paths_wsl2_includes_windows(tmp_path):
     """_get_candidate_paths() includes Windows-side paths on WSL2."""
     with (
-        patch("espansr.integrations.espanso.is_wsl2", return_value=True),
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
         patch(
-            "espansr.integrations.espanso.get_windows_username",
+            "espansr.core.platform.get_windows_username",
             return_value="TestUser",
         ),
-        patch("platform.system", return_value="Linux"),
         patch("pathlib.Path.home", return_value=tmp_path),
     ):
         from espansr.integrations.espanso import _get_candidate_paths
