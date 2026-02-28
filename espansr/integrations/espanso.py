@@ -14,6 +14,7 @@ import yaml
 from espansr.core.config import get_config, save_config
 from espansr.core.platform import get_windows_username, get_wsl_distro_name, is_wsl2
 from espansr.core.templates import get_template_manager
+from espansr.integrations.validate import validate_all
 
 logger = logging.getLogger(__name__)
 
@@ -297,6 +298,20 @@ def sync_to_espanso() -> bool:
         return False
 
     clean_stale_espanso_files()
+
+    # Validate before writing
+    warnings = validate_all()
+    errors = [w for w in warnings if w.severity == "error"]
+    non_errors = [w for w in warnings if w.severity != "error"]
+
+    for w in non_errors:
+        print(f"Warning [{w.template_name}]: {w.message}")
+    for w in errors:
+        print(f"Error [{w.template_name}]: {w.message}")
+
+    if errors:
+        print(f"Sync aborted: {len(errors)} validation error(s) found")
+        return False
 
     template_manager = get_template_manager()
     matches = []
