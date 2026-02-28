@@ -172,9 +172,7 @@ def test_setup_dry_run_no_copy(tmp_path):
         result = cmd_setup(_make_args(dry_run=True))
 
     assert result == 0
-    assert not (templates_dir / "espansr_help.json").exists(), (
-        "dry-run must not copy templates"
-    )
+    assert not (templates_dir / "espansr_help.json").exists(), "dry-run must not copy templates"
     mock_clean.assert_not_called()
     mock_launcher.assert_not_called()
 
@@ -271,7 +269,6 @@ def test_setup_dry_run_verbose_combined(tmp_path, capsys):
 
 def test_flags_in_help(capsys):
     """--dry-run and --verbose appear in sync and setup help text."""
-    import io
     import sys
 
     from espansr.__main__ import main
