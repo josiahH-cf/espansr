@@ -251,9 +251,7 @@ def test_platform_detection_wsl2():
 
     with (
         patch("platform.system", return_value="Linux"),
-        patch(
-            "builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")
-        ),
+        patch("builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")),
     ):
         import espansr.core.config as cfg_mod
 
@@ -269,9 +267,7 @@ def test_platform_detection_native_linux():
 
     with (
         patch("platform.system", return_value="Linux"),
-        patch(
-            "builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")
-        ),
+        patch("builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")),
     ):
         import espansr.core.config as cfg_mod
 

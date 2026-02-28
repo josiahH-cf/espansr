@@ -144,9 +144,7 @@ class Config:
 
         return cls(
             espanso=(
-                EspansoConfig(
-                    **{k: v for k, v in espanso_data.items() if k in known_espanso}
-                )
+                EspansoConfig(**{k: v for k, v in espanso_data.items() if k in known_espanso})
                 if espanso_data
                 else EspansoConfig()
             ),
