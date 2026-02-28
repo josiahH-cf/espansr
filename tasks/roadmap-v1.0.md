@@ -44,7 +44,7 @@
 
 _No active work — ready for next feature._
 
-**Next up:** Setup/platform resilience (#14) per recommended order
+**Next up:** GUI dark/light mode (#18) per recommended order
 
 ## Completed
 
@@ -179,6 +179,28 @@ _No active work — ready for next feature._
 - CI/CD with GitHub Actions (Python 3.11–3.12)
 - Governance docs (AGENTS.md)
 
+### Colored CLI Output
+- `cli_color.py` utility with ok(), warn(), fail(), info() helpers
+- Colors applied to doctor, status, validate, and setup output
+- Auto-detects TTY and NO_COLOR env
+- 7 tests in `tests/test_cli_color.py`
+- **Spec:** `/specs/cli-colored-output.md` — **Tasks:** `/tasks/cli-colored-output.md`
+
+### GUI Template Preview Pane
+- `_output_preview` QPlainTextEdit below YAML preview in template editor
+- Replaces `{{var}}` with defaults, labels (fallback), or formatted dates
+- Live updates on content and variable changes
+- 7 tests in `tests/test_gui_editor.py`
+- **Spec:** `/specs/gui-template-preview.md` — **Tasks:** `/tasks/gui-template-preview.md`
+
+### Setup and Platform Resilience
+- Bundled template path fallback to importlib.resources
+- `espansr setup --strict` returns 1 if Espanso not found
+- Bundled templates validated during setup
+- Platform config caching with @lru_cache
+- 8 tests in `tests/test_setup_resilience.py`
+- **Spec:** `/specs/setup-platform-resilience.md` — **Tasks:** `/tasks/setup-platform-resilience.md`
+
 ## Summary
 
 | # | Feature | Spec | Status |
@@ -195,12 +217,12 @@ _No active work — ready for next feature._
 | 10 | First Public Release (v1.0) | `/specs/first-public-release.md` | Complete |
 | 11 | `espansr doctor` | `/specs/cli-doctor.md` | Complete |
 | 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Complete |
-| 13 | Colored CLI output | `/specs/cli-colored-output.md` | Not started |
+| 13 | Colored CLI output | `/specs/cli-colored-output.md` | Complete |
 | 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
-| 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Not started |
+| 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Complete |
 | 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Complete |
-| 17 | GUI template preview | `/specs/gui-template-preview.md` | Not started |
+| 17 | GUI template preview | `/specs/gui-template-preview.md` | Complete |
 | 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Not started |
 | 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Not started |
 
-**v1.0 total tests: 209 passing** (as of 2026-02-28)
+**v1.0 total tests: 230 passing** (as of 2026-02-28)
