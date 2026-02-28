@@ -44,6 +44,8 @@
 
 _No active work — ready for next feature._
 
+**Next up:** Setup/platform resilience (#14) per recommended order
+
 ## Completed
 
 ### `espansr doctor` Diagnostic Command
@@ -174,7 +176,7 @@ _No active work — ready for next feature._
 | 8 | Cross-Platform Installer | `/specs/install-first-run.md` | Complete |
 | 9 | Windows Installer | `/specs/windows-installer.md` | Complete |
 | 10 | First Public Release (v1.0) | `/specs/first-public-release.md` | Complete |
-| 11 | `espansr doctor` | `/specs/cli-doctor.md` | Not started |
+| 11 | `espansr doctor` | `/specs/cli-doctor.md` | Complete |
 | 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Not started |
 | 13 | Colored CLI output | `/specs/cli-colored-output.md` | Not started |
 | 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
