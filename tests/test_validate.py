@@ -53,9 +53,7 @@ def test_error_on_empty_trigger():
     result = validate_template(t)
     errors = [w for w in result if w.severity == "error"]
     assert len(errors) >= 1
-    assert any(
-        "empty" in w.message.lower() or "trigger" in w.message.lower() for w in errors
-    )
+    assert any("empty" in w.message.lower() or "trigger" in w.message.lower() for w in errors)
 
 
 def test_error_on_short_trigger():
@@ -175,9 +173,7 @@ def test_validate_all_detects_duplicate_triggers():
         mock_mgr.return_value.iter_with_triggers.return_value = iter(templates)
         result = validate_all()
 
-    errors = [
-        w for w in result if w.severity == "error" and "duplicate" in w.message.lower()
-    ]
+    errors = [w for w in result if w.severity == "error" and "duplicate" in w.message.lower()]
     assert len(errors) >= 1
     assert any(":dup" in w.message for w in errors)
 
@@ -265,9 +261,7 @@ def test_sync_proceeds_with_warnings_only(tmp_path):
     from espansr.integrations.validate import ValidationWarning
 
     fake_warnings = [
-        ValidationWarning(
-            severity="warning", message="trigger missing prefix", template_name="t"
-        ),
+        ValidationWarning(severity="warning", message="trigger missing prefix", template_name="t"),
     ]
 
     match_dir = tmp_path / "match"

@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=65", "wheel"]
+requires = ["setuptools>=65,<76", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,16 +9,16 @@ description = "Espanso text expansion template manager"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "PyYAML>=6.0",
-    "PyQt6>=6.6",
+    "PyYAML>=6.0,<7",
+    "PyQt6>=6.6,<7",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0",
-    "pytest-qt>=4.4",
-    "ruff>=0.4",
-    "black>=24.0",
+    "pytest>=8.0,<9",
+    "pytest-qt>=4.4,<5",
+    "ruff>=0.4,<1",
+    "black>=24.0,<25",
 ]
 
 [project.scripts]
@@ -37,7 +37,9 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
-ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.black]
+line-length = 100

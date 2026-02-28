@@ -56,9 +56,7 @@ def cmd_list(args) -> int:
 
     if not triggered:
         print("No templates with triggers found.")
-        print(
-            "Add a 'trigger' field (e.g. ':foo') to a template JSON to include it in sync."
-        )
+        print("Add a 'trigger' field (e.g. ':foo') to a template JSON to include it in sync.")
         return 0
 
     print(f"{'TRIGGER':<22} TEMPLATE NAME")
@@ -143,15 +141,11 @@ def main() -> None:
     subparsers.add_parser("sync", help="Sync templates to Espanso match file")
     subparsers.add_parser("status", help="Show Espanso process status and config path")
     subparsers.add_parser("list", help="List templates with triggers")
-    subparsers.add_parser(
-        "validate", help="Validate templates for Espanso compatibility"
-    )
+    subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
-    import_parser.add_argument(
-        "path", help="Path to a JSON file or directory of JSON files"
-    )
+    import_parser.add_argument("path", help="Path to a JSON file or directory of JSON files")
     subparsers.add_parser("gui", help="Launch the GUI")
 
     args = parser.parse_args()

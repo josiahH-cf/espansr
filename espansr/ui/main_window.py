@@ -91,12 +91,8 @@ class MainWindow(QMainWindow):
         self._browser.template_selected.connect(self._editor.load_template)
         self._browser.new_template_requested.connect(self._editor.clear)
         self._editor.template_saved.connect(self._on_template_saved)
-        self._browser.status_message.connect(
-            lambda msg, ms: status_bar.showMessage(msg, ms)
-        )
-        self._editor.status_message.connect(
-            lambda msg, ms: status_bar.showMessage(msg, ms)
-        )
+        self._browser.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
+        self._editor.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
 
     def _apply_theme(self) -> None:
         """Apply the configured theme stylesheet."""
