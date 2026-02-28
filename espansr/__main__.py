@@ -5,6 +5,7 @@ Commands:
   status  — Show Espanso process status and config path
   list    — Show templates with triggers
   setup   — Run post-install setup
+  doctor  — Run diagnostic health checks
   gui     — Launch the GUI
 """
 
@@ -191,6 +192,90 @@ def cmd_import(args) -> int:
     return 1
 
 
+def cmd_doctor(args) -> int:
+    """Run diagnostic health checks and print a consolidated report.
+
+    Checks Python version, config dir, templates, Espanso config,
+    Espanso binary, launcher file, and template validation.
+    Returns 0 if no checks fail, 1 if any check is [FAIL].
+    """
+    from espansr.core.templates import get_template_manager
+    from espansr.integrations.espanso import get_match_dir
+    from espansr.integrations.validate import validate_all
+
+    has_fail = False
+
+    def _ok(msg: str) -> None:
+        print(f"[ok]   {msg}")
+
+    def _warn(msg: str) -> None:
+        print(f"[warn] {msg}")
+
+    def _fail(msg: str) -> None:
+        nonlocal has_fail
+        has_fail = True
+        print(f"[FAIL] {msg}")
+
+    # 1. Python version
+    ver = sys.version_info
+    if ver >= (3, 11):
+        _ok(f"Python {ver.major}.{ver.minor}.{ver.micro}")
+    else:
+        _fail(f"Python {ver.major}.{ver.minor}.{ver.micro} (3.11+ required)")
+
+    # 2. espansr config dir
+    config_dir = get_config_dir()
+    if config_dir.is_dir():
+        _ok(f"Config dir: {config_dir}")
+    else:
+        _fail(f"Config dir not found: {config_dir}")
+
+    # 3. Templates found
+    manager = get_template_manager()
+    triggered = list(manager.iter_with_triggers())
+    if triggered:
+        _ok(f"Templates: {len(triggered)} with triggers")
+    else:
+        _fail("No templates with triggers found")
+
+    # 4. Espanso config detected
+    espanso_dir = get_espanso_config_dir()
+    if espanso_dir:
+        _ok(f"Espanso config: {espanso_dir}")
+    else:
+        _fail("Espanso config: not found")
+
+    # 5. Espanso binary
+    espanso_bin = shutil.which("espanso")
+    platform = get_platform()
+    if espanso_bin:
+        _ok(f"Espanso binary: {espanso_bin}")
+    elif platform == "wsl2":
+        _ok("Espanso binary: Windows host (WSL2)")
+    else:
+        _fail("Espanso binary: not found")
+
+    # 6. Launcher file
+    match_dir = get_match_dir()
+    if match_dir and (match_dir / "espansr-launcher.yml").exists():
+        _ok("Launcher: espansr-launcher.yml present")
+    else:
+        _fail("Launcher: espansr-launcher.yml not found")
+
+    # 7. Template validation
+    warnings = validate_all()
+    errors = [w for w in warnings if w.severity == "error"]
+    non_errors = [w for w in warnings if w.severity != "error"]
+    if errors:
+        _fail(f"Validation: {len(errors)} error(s)")
+    elif non_errors:
+        _warn(f"Validation: {len(non_errors)} warning(s)")
+    else:
+        _ok("Validation: all templates valid")
+
+    return 1 if has_fail else 0
+
+
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
     from espansr.ui.main_window import launch
@@ -215,6 +300,7 @@ def main() -> None:
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
     subparsers.add_parser("setup", help="Run post-install setup")
+    subparsers.add_parser("doctor", help="Run diagnostic health checks")
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
@@ -230,6 +316,7 @@ def main() -> None:
         "validate": cmd_validate,
         "import": cmd_import,
         "setup": cmd_setup,
+        "doctor": cmd_doctor,
         "gui": cmd_gui,
     }
 
