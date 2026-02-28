@@ -50,6 +50,11 @@ class MainWindow(QMainWindow):
         self._sync_btn.clicked.connect(self._do_sync)
         toolbar.addWidget(self._sync_btn)
 
+        self._import_btn = QPushButton("Import")
+        self._import_btn.setToolTip("Import template(s) from a JSON file")
+        self._import_btn.clicked.connect(self._do_import)
+        toolbar.addWidget(self._import_btn)
+
         self._auto_sync_cb = QCheckBox("Auto-sync")
         self._auto_sync_cb.setChecked(self._config.espanso.auto_sync)
         self._auto_sync_cb.stateChanged.connect(self._toggle_auto_sync)
@@ -149,11 +154,27 @@ class MainWindow(QMainWindow):
         self._sync_btn.setEnabled(False)
         try:
             from espansr.integrations.espanso import sync_to_espanso
+            from espansr.integrations.validate import validate_all
+
+            # Run validation and display results
+            warnings = validate_all()
+            errors = [w for w in warnings if w.severity == "error"]
+            non_errors = [w for w in warnings if w.severity != "error"]
+
+            if errors:
+                msg = f"Sync blocked: {len(errors)} error(s) — {errors[0].message}"
+                self.statusBar().showMessage(msg, 0)  # persistent until acknowledged
+                return
+
+            if non_errors:
+                msg = f"{len(non_errors)} warning(s): {non_errors[0].message}"
+                self.statusBar().showMessage(msg, 8000)
 
             success = sync_to_espanso()
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if success:
-                self.statusBar().showMessage("Sync successful", 5000)
+                if not non_errors:
+                    self.statusBar().showMessage("Sync successful", 5000)
                 get_config_manager().update(**{"espanso.last_sync": now})
                 self._browser.refresh()
             else:
@@ -173,6 +194,45 @@ class MainWindow(QMainWindow):
         get_config_manager().update(**{"espanso.auto_sync": enabled})
 
     # ── Callbacks ───────────────────────────────────────────────────────────
+
+    def _do_import(self) -> None:
+        """Open a file dialog and import selected template JSON file(s)."""
+        from PyQt6.QtWidgets import QFileDialog
+
+        from espansr.core.templates import import_template
+
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Import Templates",
+            "",
+            "JSON Files (*.json);;All Files (*)",
+        )
+        if not paths:
+            return
+
+        from pathlib import Path
+
+        succeeded = 0
+        failed = 0
+        last_name = ""
+        for p in paths:
+            result = import_template(Path(p))
+            if result.template:
+                succeeded += 1
+                last_name = result.template.name
+            else:
+                failed += 1
+
+        self._browser.refresh()
+        if last_name:
+            self._browser.select_template_by_name(last_name)
+
+        parts = []
+        if succeeded:
+            parts.append(f"Imported {succeeded} template(s)")
+        if failed:
+            parts.append(f"{failed} failed")
+        self.statusBar().showMessage(", ".join(parts), 5000)
 
     def _on_template_saved(self, template) -> None:
         """Refresh browser after a template is saved."""
