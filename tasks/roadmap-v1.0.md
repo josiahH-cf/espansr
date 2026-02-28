@@ -1,17 +1,59 @@
-# Roadmap — Espansr v1.0
+# Roadmap — Espansr
 
-## Backlog
+## Backlog — v1.1+
 
-> Each item below requires scoping (`/specs/`) before implementation begins.
-> See the Feature Lifecycle in `/AGENTS.md`.
+> Each item has a spec in `/specs/`. See the Feature Lifecycle in `/AGENTS.md`.
 
-_Backlog empty — all planned features complete._
+### CLI Improvements
+
+| # | Feature | Spec | Est. Sessions | Priority |
+|---|---------|------|---------------|----------|
+| 10 | `espansr doctor` diagnostic command | `/specs/cli-doctor.md` | 1 | High |
+| 11 | CLI dry-run and verbose modes | `/specs/cli-dry-run-verbose.md` | 1–2 | Medium |
+| 12 | Colored CLI output | `/specs/cli-colored-output.md` | 1 | Medium |
+| 13 | Shell tab completion | `/specs/cli-tab-completion.md` | 1 | Low |
+
+### Infrastructure
+
+| # | Feature | Spec | Est. Sessions | Priority |
+|---|---------|------|---------------|----------|
+| 14 | Setup and platform resilience | `/specs/setup-platform-resilience.md` | 1–2 | High |
+
+### GUI Improvements
+
+| # | Feature | Spec | Est. Sessions | Priority |
+|---|---------|------|---------------|----------|
+| 15 | Status bar and sync feedback | `/specs/gui-status-bar-feedback.md` | 1–2 | High |
+| 16 | Template preview pane | `/specs/gui-template-preview.md` | 1 | Medium |
+| 17 | Dark/light mode with auto-detection | `/specs/gui-dark-mode.md` | 2 | Medium |
+| 18 | Keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | 1 | Low |
+
+### Recommended implementation order
+
+1. `espansr doctor` (#10) — high value, low risk, composes existing code
+2. Setup/platform resilience (#14) — infrastructure hardening before new features
+3. GUI status bar & feedback (#15) — biggest UX gap in the GUI
+4. CLI dry-run/verbose (#11) — safety net for power users
+5. Colored CLI output (#12) — polish, benefits doctor/validate/status
+6. Template preview (#16) — UX improvement
+7. Dark/light mode (#17) — theme completion
+8. Keyboard shortcuts (#18) — power user polish
+9. Tab completion (#13) — nice-to-have
 
 ## Active
 
-_No active work._
+_No active work — ready for next feature._
 
 ## Completed
+
+### `espansr doctor` Diagnostic Command
+- `cmd_doctor()` in `espansr/__main__.py` runs 7 sequential checks
+- Checks: Python version, config dir, templates, Espanso config, Espanso binary, launcher, validation
+- Status indicators: `[ok]`, `[warn]`, `[FAIL]`; exit 0 if no failures, 1 otherwise
+- WSL2-aware: missing native Espanso binary is `[ok]` on WSL2
+- Reuses existing functions — no duplicated logic
+- 12 tests in `tests/test_doctor.py`
+- **Spec:** `/specs/cli-doctor.md` — **Tasks:** `/tasks/cli-doctor.md`
 
 ### First Public Release (v1.0)
 - README polished with CI badge, platform support matrix, and complete usage guide
@@ -120,20 +162,26 @@ _No active work._
 
 ## Summary
 
-| # | Feature | Spec | Tasks | Tests | Status |
-|---|---------|------|-------|-------|--------|
-| 1 | WSL/Platform Utility | `/specs/wsl-platform-utility.md` | `/tasks/wsl-platform-utility.md` | 33 | Complete |
-| 2 | Espanso Path Consolidation | `/specs/espanso-path-consolidation.md` | `/tasks/espanso-path-consolidation.md` | 15+ | Complete |
-| 3 | GUI Single-Screen Layout | `/specs/gui-single-screen.md` | `/tasks/gui-single-screen.md` | 17 | Complete |
-| 4 | Inline Variable Editor | `/specs/variable-editor.md` | `/tasks/variable-editor.md` | 22 | Complete |
-| 5 | Espanso Launcher Trigger | `/specs/espanso-launcher-trigger.md` | `/tasks/espanso-launcher-trigger.md` | 10 | Complete |
-| 6 | Espanso Config Validation | `/specs/espanso-config-validation.md` | `/tasks/espanso-config-validation.md` | 18 | Complete |
-| 7 | Template Import | `/specs/template-import.md` | `/tasks/template-import.md` | 15 | Complete |
-| 8 | Cross-Platform Installer | `/specs/install-first-run.md` | `/tasks/install-first-run.md` | 21 | Complete |
-| — | CI Hardening | — | — | — | Complete |
-| — | Lint Cleanup | — | — | — | Complete |
-| 9 | Windows Installer | `/specs/windows-installer.md` | `/tasks/windows-installer.md` | — | Complete |
-| 10 | First Public Release | `/specs/first-public-release.md` | `/tasks/first-public-release.md` | 9 | Complete |
-| — | **Human action** | Tag v1.0.0 on GitHub | — | — | Pending |
+| # | Feature | Spec | Status |
+|---|---------|------|--------|
+| 1 | WSL/Platform Utility | `/specs/wsl-platform-utility.md` | Complete |
+| 2 | Espanso Path Consolidation | `/specs/espanso-path-consolidation.md` | Complete |
+| 3 | GUI Single-Screen Layout | `/specs/gui-single-screen.md` | Complete |
+| 4 | Inline Variable Editor | `/specs/variable-editor.md` | Complete |
+| 5 | Espanso Launcher Trigger | `/specs/espanso-launcher-trigger.md` | Complete |
+| 6 | Espanso Config Validation | `/specs/espanso-config-validation.md` | Complete |
+| 7 | Template Import | `/specs/template-import.md` | Complete |
+| 8 | Cross-Platform Installer | `/specs/install-first-run.md` | Complete |
+| 9 | Windows Installer | `/specs/windows-installer.md` | Complete |
+| 10 | First Public Release (v1.0) | `/specs/first-public-release.md` | Complete |
+| 11 | `espansr doctor` | `/specs/cli-doctor.md` | Not started |
+| 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Not started |
+| 13 | Colored CLI output | `/specs/cli-colored-output.md` | Not started |
+| 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
+| 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Not started |
+| 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Not started |
+| 17 | GUI template preview | `/specs/gui-template-preview.md` | Not started |
+| 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Not started |
+| 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Not started |
 
-**Total tests: 167 passing** (as of 2026-02-28)
+**v1.0 total tests: 167 passing** (as of 2026-02-28)
