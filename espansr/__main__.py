@@ -69,6 +69,61 @@ def cmd_list(args) -> int:
     return 0
 
 
+def cmd_validate(args) -> int:
+    """Validate templates for Espanso compatibility."""
+    from espansr.integrations.validate import validate_all
+
+    warnings = validate_all()
+    errors = [w for w in warnings if w.severity == "error"]
+    non_errors = [w for w in warnings if w.severity != "error"]
+
+    for w in non_errors:
+        print(f"Warning [{w.template_name}]: {w.message}")
+    for w in errors:
+        print(f"Error [{w.template_name}]: {w.message}")
+
+    if not warnings:
+        print("All templates valid.")
+
+    return 1 if errors else 0
+
+
+def cmd_import(args) -> int:
+    """Import template JSON file(s) from an external path."""
+    from pathlib import Path
+
+    from espansr.core.templates import import_template, import_templates
+
+    target = Path(args.path)
+
+    if target.is_dir():
+        summary = import_templates(target)
+        if summary.error:
+            print(f"Error: {summary.error}")
+            return 1
+        print(f"Imported {summary.succeeded} template(s), {summary.failed} failed.")
+        for r in summary.results:
+            if r.template:
+                suffix = " (renamed)" if r.renamed else ""
+                print(f"  + {r.template.name}{suffix}")
+            elif r.error:
+                print(f"  ! {r.error}")
+        return 1 if summary.failed and summary.succeeded == 0 else 0
+
+    if target.is_file():
+        result = import_template(target)
+        if result.template:
+            suffix = " (renamed)" if result.renamed else ""
+            print(f"Imported 1 template: {result.template.name}{suffix}")
+            return 0
+        else:
+            print(f"Error: {result.error}")
+            return 1
+
+    print(f"Error: path not found: {target}")
+    return 1
+
+
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
     from espansr.ui.main_window import launch
@@ -88,6 +143,15 @@ def main() -> None:
     subparsers.add_parser("sync", help="Sync templates to Espanso match file")
     subparsers.add_parser("status", help="Show Espanso process status and config path")
     subparsers.add_parser("list", help="List templates with triggers")
+    subparsers.add_parser(
+        "validate", help="Validate templates for Espanso compatibility"
+    )
+    import_parser = subparsers.add_parser(
+        "import", help="Import template(s) from a file or directory"
+    )
+    import_parser.add_argument(
+        "path", help="Path to a JSON file or directory of JSON files"
+    )
     subparsers.add_parser("gui", help="Launch the GUI")
 
     args = parser.parse_args()
@@ -96,6 +160,8 @@ def main() -> None:
         "sync": cmd_sync,
         "status": cmd_status,
         "list": cmd_list,
+        "validate": cmd_validate,
+        "import": cmd_import,
         "gui": cmd_gui,
     }
 
