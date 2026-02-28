@@ -4,11 +4,21 @@ Commands:
   sync    — Sync templates to Espanso match file
   status  — Show Espanso process status and config path
   list    — Show templates with triggers
+  setup   — Run post-install setup
   gui     — Launch the GUI
 """
 
 import argparse
+import shutil
 import sys
+from pathlib import Path
+
+from espansr.core.config import get_config_dir, get_templates_dir
+from espansr.integrations.espanso import (
+    clean_stale_espanso_files,
+    generate_launcher_file,
+    get_espanso_config_dir,
+)
 
 
 def cmd_sync(args) -> int:
@@ -19,12 +29,64 @@ def cmd_sync(args) -> int:
     return 0 if success else 1
 
 
+def _get_bundled_dir() -> Path:
+    """Return the path to the repo-level bundled templates directory."""
+    return Path(__file__).resolve().parent.parent / "templates"
+
+
+def cmd_setup(args) -> int:
+    """Run post-install setup: copy templates, detect Espanso, generate launcher."""
+    get_config_dir()  # ensure config dir exists
+    templates_dir = get_templates_dir()
+
+    # ── Copy bundled templates (no-overwrite) ─────────────────────────────
+    bundled_dir = _get_bundled_dir()
+    copied = 0
+    existing = 0
+    if bundled_dir.is_dir():
+        templates_dir.mkdir(parents=True, exist_ok=True)
+        for src in sorted(bundled_dir.glob("*.json")):
+            dest = templates_dir / src.name
+            if dest.exists():
+                existing += 1
+            else:
+                shutil.copy2(str(src), str(dest))
+                copied += 1
+
+    if copied:
+        print(f"Templates: copied {copied} bundled template(s) to {templates_dir}")
+    else:
+        print(f"Templates: {templates_dir} ({existing} existing, no changes)")
+
+    # ── Espanso detection and launcher ────────────────────────────────────
+    espanso_dir = get_espanso_config_dir()
+    if espanso_dir:
+        clean_stale_espanso_files()
+        generate_launcher_file()
+        print(f"Espanso config: {espanso_dir}")
+        print("Launcher: generated")
+    else:
+        from espansr.core.platform import get_platform
+
+        plat = get_platform()
+        if plat == "wsl2":
+            print(
+                "Espanso config: not found — install Espanso on Windows "
+                "(https://espanso.org), then run 'espanso start' from PowerShell"
+            )
+        else:
+            print(
+                "Espanso config: not found — install Espanso "
+                "(https://espanso.org), then run 'espanso start' to initialize"
+            )
+        print("Launcher: skipped (no Espanso config)")
+
+    return 0
+
+
 def cmd_status(args) -> int:
     """Show Espanso availability and config path."""
-    import shutil
-
     from espansr.core.platform import is_wsl2
-    from espansr.integrations.espanso import get_espanso_config_dir
 
     config_dir = get_espanso_config_dir()
     if config_dir:
@@ -142,6 +204,7 @@ def main() -> None:
     subparsers.add_parser("status", help="Show Espanso process status and config path")
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
+    subparsers.add_parser("setup", help="Run post-install setup")
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
@@ -156,6 +219,7 @@ def main() -> None:
         "list": cmd_list,
         "validate": cmd_validate,
         "import": cmd_import,
+        "setup": cmd_setup,
         "gui": cmd_gui,
     }
 

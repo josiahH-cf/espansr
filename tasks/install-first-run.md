@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 4
-- Complete: 1
-- Remaining: 3
+- Complete: 2
+- Remaining: 2
 
 ## Task List
 
@@ -39,8 +39,7 @@
 
 - **Files:** `espansr/__main__.py`, `templates/espansr_help.json` (new), `tests/test_setup.py` (new)
 - **Done when:** `espansr setup` runs successfully in a tmp dir environment, copies the bundled template, detects/skips Espanso, prints a summary; `espansr list` shows the template after setup; re-running `espansr setup` does not duplicate templates; all tests pass
-- **Criteria covered:** AC-5, AC-7, AC-8, AC-9
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Implementation details
 

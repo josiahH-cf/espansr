@@ -1,0 +1,6 @@
+{
+  "name": "Espansr Quick Help",
+  "description": "Quick reference for espansr CLI commands.",
+  "trigger": ":espansr",
+  "content": "espansr commands:\n  list       — show templates with triggers\n  sync       — sync to Espanso\n  status     — show config paths\n  validate   — check for errors\n  import     — import templates\n  gui        — launch editor\n\nConfig: ~/.config/espansr/\nSync:   espansr sync"
+}
