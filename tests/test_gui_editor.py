@@ -1,13 +1,15 @@
 """Tests for TemplateEditorWidget and TemplateBrowserWidget.
 
-Covers editor load/clear/save flows and browser new/delete/undo flows.
+Covers editor load/clear/save flows, browser new/delete/undo flows,
+and output preview pane.
 """
 
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 
-from espansr.core.templates import Template, TemplateManager
+from espansr.core.templates import Template, TemplateManager, Variable
 
 
 @pytest.fixture()
@@ -179,3 +181,90 @@ def test_browser_delete_confirmed(browser, tm, qtbot):
 
     assert tm.get("Delete Me") is None
     assert browser._current_template is None
+
+
+# ── Output Preview ──────────────────────────────────────────────────────────
+
+
+def test_preview_widget_exists(editor):
+    """Editor has a read-only output preview widget."""
+    from PyQt6.QtWidgets import QPlainTextEdit
+
+    assert hasattr(editor, "_output_preview")
+    assert isinstance(editor._output_preview, QPlainTextEdit)
+
+
+def test_preview_is_readonly(editor):
+    """Output preview is not editable."""
+    assert editor._output_preview.isReadOnly()
+
+
+def test_preview_no_variables(editor):
+    """Templates with no variables show content as-is in the preview."""
+    t = Template(name="Plain", content="Hello world", trigger=":plain")
+    editor.load_template(t)
+
+    assert editor._output_preview.toPlainText() == "Hello world"
+
+
+def test_preview_replaces_defaults(editor):
+    """Preview replaces placeholders with variable default values."""
+    t = Template(
+        name="Greet",
+        content="Hello {{name}}, welcome to {{city}}",
+        trigger=":greet",
+        variables=[
+            Variable(name="name", label="Name", default="Alice"),
+            Variable(name="city", label="City", default="Portland"),
+        ],
+    )
+    editor.load_template(t)
+
+    assert editor._output_preview.toPlainText() == "Hello Alice, welcome to Portland"
+
+
+def test_preview_uses_label_when_no_default(editor):
+    """Variables with no default value use their label as the preview value."""
+    t = Template(
+        name="Greet",
+        content="Hello {{user_name}}",
+        trigger=":greet",
+        variables=[
+            Variable(name="user_name", default=""),
+        ],
+    )
+    editor.load_template(t)
+
+    # Variable.__post_init__ auto-generates label "User Name" from "user_name"
+    assert editor._output_preview.toPlainText() == "Hello User Name"
+
+
+def test_preview_updates_on_content_edit(editor):
+    """Changing content field updates the output preview."""
+    t = Template(name="Test", content="before", trigger=":t")
+    editor.load_template(t)
+    assert editor._output_preview.toPlainText() == "before"
+
+    editor._content_edit.setPlainText("after")
+    assert editor._output_preview.toPlainText() == "after"
+
+
+def test_preview_date_variable(editor):
+    """Date-type variables show the formatted current date."""
+    t = Template(
+        name="Date",
+        content="Today is {{today}}",
+        trigger=":date",
+        variables=[
+            Variable(
+                name="today",
+                label="Today",
+                type="date",
+                params={"format": "%Y-%m-%d"},
+            ),
+        ],
+    )
+    editor.load_template(t)
+
+    expected_date = datetime.now().strftime("%Y-%m-%d")
+    assert editor._output_preview.toPlainText() == f"Today is {expected_date}"

@@ -1,9 +1,10 @@
 """Inline template editor widget for espansr.
 
-Right-panel editor with name, trigger, content, variables, and YAML preview.
-Saves new or existing templates via TemplateManager.
+Right-panel editor with name, trigger, content, variables, YAML preview,
+and output preview.  Saves new or existing templates via TemplateManager.
 """
 
+from datetime import datetime
 from typing import Optional
 
 import yaml
@@ -98,16 +99,32 @@ class TemplateEditorWidget(QWidget):
         self._yaml_preview.setMaximumHeight(200)
         layout.addWidget(self._yaml_preview)
 
+        # Output preview
+        output_label = QLabel("Output Preview:")
+        output_label.setStyleSheet("font-weight: bold;")
+        layout.addWidget(output_label)
+
+        self._output_preview = QPlainTextEdit()
+        self._output_preview.setReadOnly(True)
+        self._output_preview.setPlaceholderText(
+            "Enter content to see expanded output…"
+        )
+        self._output_preview.setMaximumHeight(200)
+        self._output_preview.setStyleSheet("background-color: #f5f5f5;")
+        layout.addWidget(self._output_preview)
+
         # Save button
         save_btn = QPushButton("Save")
         save_btn.clicked.connect(self._save)
         layout.addWidget(save_btn)
 
     def _connect_preview_signals(self) -> None:
-        """Wire field changes to YAML preview updates."""
+        """Wire field changes to YAML and output preview updates."""
         self._trigger_edit.textChanged.connect(self._update_yaml_preview)
         self._content_edit.textChanged.connect(self._update_yaml_preview)
+        self._content_edit.textChanged.connect(self._update_output_preview)
         self._variable_editor.variables_changed.connect(self._update_yaml_preview)
+        self._variable_editor.variables_changed.connect(self._update_output_preview)
 
     # ── Public API ──────────────────────────────────────────────────────────
 
@@ -119,6 +136,7 @@ class TemplateEditorWidget(QWidget):
         self._content_edit.setPlainText(template.content)
         self._variable_editor.load_variables(template.variables or [])
         self._update_yaml_preview()
+        self._update_output_preview()
 
     def clear(self) -> None:
         """Clear all fields for creating a new template."""
@@ -128,6 +146,7 @@ class TemplateEditorWidget(QWidget):
         self._content_edit.clear()
         self._variable_editor.clear()
         self._yaml_preview.clear()
+        self._output_preview.clear()
 
     # ── YAML Preview ────────────────────────────────────────────────────────
 
@@ -157,6 +176,30 @@ class TemplateEditorWidget(QWidget):
             sort_keys=False,
         )
         self._yaml_preview.setPlainText(preview)
+
+    # ── Output Preview ───────────────────────────────────────────────────────
+
+    def _update_output_preview(self) -> None:
+        """Regenerate the output preview with variables expanded."""
+        content = self._content_edit.toPlainText()
+        if not content:
+            self._output_preview.clear()
+            return
+
+        variables = self._variable_editor.get_variables()
+        result = content
+        for var in variables:
+            placeholder = "{{" + var.name + "}}"
+            if var.type == "date":
+                fmt = var.params.get("format", "%Y-%m-%d")
+                value = datetime.now().strftime(fmt)
+            elif var.default:
+                value = var.default
+            else:
+                value = var.label
+            result = result.replace(placeholder, value)
+
+        self._output_preview.setPlainText(result)
 
     # ── Internal ────────────────────────────────────────────────────────────
 
