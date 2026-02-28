@@ -32,12 +32,33 @@ def cmd_sync(args) -> int:
 
 
 def _get_bundled_dir() -> Path:
-    """Return the path to the repo-level bundled templates directory."""
-    return Path(__file__).resolve().parent.parent / "templates"
+    """Return the path to the bundled templates directory.
+
+    Prefers the repo-level ``templates/`` directory (editable installs).
+    Falls back to ``importlib.resources`` for non-editable installs.
+    """
+    repo_level = Path(__file__).resolve().parent.parent / "templates"
+    if repo_level.is_dir():
+        return repo_level
+
+    # Fallback: package data via importlib.resources (Python 3.11+)
+    from importlib.resources import files
+
+    pkg_path = files("espansr").joinpath("..", "templates")
+    return Path(str(pkg_path))
 
 
 def cmd_setup(args) -> int:
-    """Run post-install setup: copy templates, detect Espanso, generate launcher."""
+    """Run post-install setup: copy templates, detect Espanso, generate launcher.
+
+    With ``--strict``, returns 1 if Espanso config is not detected.
+    After copying templates, validates each one and prints any issues.
+    """
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.validate import validate_template
+
+    strict = getattr(args, "strict", False) if args else False
+
     get_config_dir()  # ensure config dir exists
     templates_dir = get_templates_dir()
 
@@ -60,8 +81,25 @@ def cmd_setup(args) -> int:
     else:
         print(f"Templates: {templates_dir} ({existing} existing, no changes)")
 
+    # ── Validate copied templates ─────────────────────────────────────────
+    mgr = TemplateManager(templates_dir=templates_dir)
+    all_warnings = []
+    for template in mgr.iter_with_triggers():
+        all_warnings.extend(validate_template(template))
+
+    errors = [w for w in all_warnings if w.severity == "error"]
+    non_errors = [w for w in all_warnings if w.severity != "error"]
+
+    for w in non_errors:
+        print(f"Validation: Warning [{w.template_name}]: {w.message}")
+    for w in errors:
+        print(f"Validation: Error [{w.template_name}]: {w.message}")
+    if not all_warnings:
+        print("Validation: all templates valid")
+
     # ── Espanso detection and launcher ────────────────────────────────────
     espanso_dir = get_espanso_config_dir()
+    espanso_found = bool(espanso_dir)
     if espanso_dir:
         clean_stale_espanso_files()
         generate_launcher_file()
@@ -81,6 +119,8 @@ def cmd_setup(args) -> int:
             )
         print("Launcher: skipped (no Espanso config)")
 
+    if strict and not espanso_found:
+        return 1
     return 0
 
 
@@ -299,7 +339,13 @@ def main() -> None:
     subparsers.add_parser("status", help="Show Espanso process status and config path")
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
-    subparsers.add_parser("setup", help="Run post-install setup")
+    setup_parser = subparsers.add_parser("setup", help="Run post-install setup")
+    setup_parser.add_argument(
+        "--strict",
+        action="store_true",
+        default=False,
+        help="Return exit code 1 if Espanso config is not detected",
+    )
     subparsers.add_parser("doctor", help="Run diagnostic health checks")
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
