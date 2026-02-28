@@ -32,6 +32,9 @@ Repository = "https://github.com/josiahH-cf/espansr"
 where = ["."]
 include = ["espansr*"]
 
+[tool.setuptools.package-data]
+espansr = ["../templates/*.json"]
+
 [tool.ruff]
 line-length = 100
 
