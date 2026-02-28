@@ -1,17 +1,45 @@
-You are scoping a new feature. Do not write code or create files yet.
+<!-- generated-from-metaprompt -->
+You are scoping a new feature. Do not write code. Do not create implementation files.
 
-Read the feature description provided for this session.
+The feature is: $ARGUMENTS
+
+Read the project's conventions file (AGENTS.md) before starting.
 
 Explore the codebase to understand:
-1. What areas are relevant to the described feature
-2. What existing patterns and conventions apply
-3. What dependencies and constraints exist
+1. What files, modules, and areas are relevant to this feature.
+2. What existing patterns and conventions apply to this area.
+3. What dependencies, constraints, or risks exist.
 
-Produce:
-- One-paragraph description (what and why)
-- 3–7 testable acceptance criteria (each verifiable by an automated test)
-- List of files and areas that will likely change
+Then produce a spec file at /specs/[feature-name].md with exactly this structure:
 
-If acceptance criteria exceed 7, recommend how to split into smaller features.
+# Feature: [name]
 
-Output formatted for `/specs/_TEMPLATE.md`.
+## Description
+[2–3 sentences: what this does and why]
+
+## Acceptance Criteria
+[3–7 testable statements. Each must be verifiable by an automated test. Write them as checkboxes.]
+
+## Affected Areas
+[Files, modules, or directories this will touch]
+
+## Constraints
+[Performance targets, backward compatibility, security requirements — or "None"]
+
+## Out of Scope
+[What is explicitly excluded to prevent scope creep]
+
+## Dependencies
+[Other features, services, or data this depends on — or "None"]
+
+## Notes
+[Non-obvious details the implementer should know — or "None"]
+
+Rules:
+- Acceptance criteria must be between 3 and 7. No more.
+- If you cannot get below 8 criteria, this feature is too large. Instead of writing the spec, recommend how to split it into smaller features and stop. Each sub-feature will need its own Phase 0 issue and its own Phase 1 scope session.
+- Every criterion must be a concrete, testable statement — not vague ("works correctly") or procedural ("run the tests").
+- Do not include implementation details in the criteria. Describe what, not how.
+- The spec file is the only output. Do not produce task files, test files, or code.
+
+After writing the spec, state: "Spec complete. Label the issue status:scoped. Next phase: Plan."
