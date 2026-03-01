@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 # Widget selectors that DARK_THEME covers — LIGHT_THEME must match all of them.
@@ -80,7 +79,8 @@ class TestLightThemeWidgetCoverage:
         # Should have a high-value hex color (light), not #1e1e1e-style dark
         match = re.search(r"background-color:\s*#([0-9a-fA-F]{6})", LIGHT_THEME)
         assert match, "No background-color found in LIGHT_THEME"
-        r, g, b = int(match.group(1)[:2], 16), int(match.group(1)[2:4], 16), int(match.group(1)[4:], 16)
+        hex_val = match.group(1)
+        r, g, b = int(hex_val[:2], 16), int(hex_val[2:4], 16), int(hex_val[4:], 16)
         luminance = 0.299 * r + 0.587 * g + 0.114 * b
         assert luminance > 180, f"LIGHT_THEME background is too dark (luminance={luminance:.0f})"
 
@@ -243,10 +243,12 @@ class TestThemeComboBox:
 
     def test_switching_theme_updates_stylesheet(self, window):
         """Changing the combo applies a new stylesheet."""
+        # Force a known starting point so the comparison is deterministic
+        window._theme_combo.setCurrentText("Dark")
         old_sheet = window.styleSheet()
         window._theme_combo.setCurrentText("Light")
         new_sheet = window.styleSheet()
-        # The stylesheet should change (light vs dark/auto content differs)
+        # The stylesheet should change (light vs dark content differs)
         assert old_sheet != new_sheet
 
     def test_switching_theme_updates_config(self, window):

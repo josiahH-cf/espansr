@@ -9,6 +9,7 @@ from PyQt6.QtCore import QByteArray, Qt, QTimer
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QComboBox,
     QLabel,
     QMainWindow,
     QPushButton,
@@ -62,6 +63,17 @@ class MainWindow(QMainWindow):
         self._auto_sync_cb.stateChanged.connect(self._toggle_auto_sync)
         toolbar.addWidget(self._auto_sync_cb)
 
+        # Theme selector
+        self._theme_combo = QComboBox()
+        self._theme_combo.addItems(["Auto", "Dark", "Light"])
+        self._theme_combo.setToolTip("Theme (Auto/Dark/Light)")
+        current = self._config.ui.theme.capitalize()
+        idx = self._theme_combo.findText(current)
+        if idx >= 0:
+            self._theme_combo.setCurrentIndex(idx)
+        self._theme_combo.currentTextChanged.connect(self._on_theme_changed)
+        toolbar.addWidget(self._theme_combo)
+
         # Auto-sync timer
         self._auto_sync_timer = QTimer(self)
         self._auto_sync_timer.setInterval(AUTO_SYNC_INTERVAL_MS)
@@ -107,6 +119,12 @@ class MainWindow(QMainWindow):
             font_size=self._config.ui.font_size,
         )
         self.setStyleSheet(stylesheet)
+
+    def _on_theme_changed(self, text: str) -> None:
+        """Handle theme combo box selection change."""
+        self._config.ui.theme = text.lower()
+        self._apply_theme()
+        save_config(self._config)
 
     def _restore_geometry(self) -> None:
         """Restore window geometry from config."""
