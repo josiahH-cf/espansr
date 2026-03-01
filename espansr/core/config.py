@@ -105,6 +105,9 @@ class UIConfig:
     last_template: str = ""
     expanded_folders: list = field(default_factory=list)
 
+    # Preview toggle
+    show_previews: bool = False
+
     # Template versioning
     max_template_versions: int = 10
 
