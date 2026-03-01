@@ -119,7 +119,7 @@ ruff check .
 black --check .
 ```
 
-**Expected:** All 298 tests pass, zero lint errors, zero format issues.
+**Expected:** All 333 tests pass, zero lint errors, zero format issues.
 
 ---
 
