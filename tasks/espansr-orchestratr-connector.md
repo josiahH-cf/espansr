@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 4
-- Complete: 0
-- Remaining: 4
+- Complete: 4
+- Remaining: 0
 
 ## Task List
 
@@ -15,28 +15,28 @@
 - **Files:** `tests/test_orchestratr_connector.py`
 - **Done when:** All acceptance criteria have at least one failing test
 - **Criteria covered:** All 7
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 2: Create orchestratr integration module
 
 - **Files:** `espansr/integrations/orchestratr.py`
 - **Done when:** `generate_manifest()` and `get_status_json()` pass their tests
 - **Criteria covered:** AC 1 (manifest), AC 3 (status --json), AC 5 (ready_cmd), AC 6 (passive)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 3: Wire `status --json` into CLI
 
 - **Files:** `espansr/__main__.py`
 - **Done when:** `espansr status --json` outputs valid JSON matching spec schema
 - **Criteria covered:** AC 2 (launchable), AC 3 (status --json)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 4: Wire manifest generation into `setup`
 
 - **Files:** `espansr/__main__.py`
 - **Done when:** `espansr setup` writes/regenerates `orchestratr.yml` and prints confirmation
 - **Criteria covered:** AC 7 (setup regenerates manifest)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ## Test Strategy
 
