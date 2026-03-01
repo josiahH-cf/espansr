@@ -1,6 +1,6 @@
 # Feature: Shell Tab Completion
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -8,12 +8,12 @@ Add shell completion scripts for bash and zsh so that `espansr <TAB>` completes 
 
 ## Acceptance Criteria
 
-- [ ] `espansr completions bash` prints a bash completion script to stdout
-- [ ] `espansr completions zsh` prints a zsh completion script to stdout
-- [ ] The bash completion script completes subcommand names (`sync`, `status`, `list`, `validate`, `import`, `setup`, `doctor`, `gui`, `completions`)
-- [ ] The bash completion script completes top-level flags (`--version`, `--help`)
-- [ ] `install.sh` prints a one-line hint about sourcing completions (does not auto-install)
-- [ ] The completion scripts are generated from the actual argparse parser, not hardcoded command lists
+- [x] `espansr completions bash` prints a bash completion script to stdout
+- [x] `espansr completions zsh` prints a zsh completion script to stdout
+- [x] The bash completion script completes subcommand names (`sync`, `status`, `list`, `validate`, `import`, `setup`, `doctor`, `gui`, `completions`)
+- [x] The bash completion script completes top-level flags (`--version`, `--help`)
+- [x] `install.sh` prints a one-line hint about sourcing completions (does not auto-install)
+- [x] The completion scripts are generated from the actual argparse parser, not hardcoded command lists
 
 ## Affected Areas
 

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] — 2026-03-01
+
+All v1.0 roadmap features complete. 298 tests passing.
+
+### Added
+
+- **Shell Tab Completion** — `espansr completions bash` and `espansr completions zsh` generate shell completion scripts from argparse introspection. `install.sh` prints a sourcing hint after install.
+- **`espansr doctor`** — Diagnostic command that checks Python version, config dir, templates, Espanso config, binary, launcher file, and template validation. Returns exit 0/1.
+- **CLI Dry-Run and Verbose Modes** — `espansr sync --dry-run` and `espansr setup --dry-run` preview changes without writing. `espansr setup --verbose` shows per-file detail. Flags are combinable.
+- **Colored CLI Output** — `ok()`, `warn()`, `fail()`, `info()` helpers in `cli_color.py` with TTY detection and `NO_COLOR` support. Applied to doctor, status, validate, and setup output.
+- **Setup and Platform Resilience** — Bundled template path fallback to `importlib.resources`. `espansr setup --strict` returns 1 if Espanso not found. Bundled templates validated during setup. Platform config caching with `@lru_cache`.
+- **GUI Status Bar and Sync Feedback** — Permanent status indicator showing Espanso config path. Sync result messages with template count or error details.
+- **GUI Template Preview Pane** — Live output preview that substitutes variables with defaults, labels, or formatted dates.
+- **GUI Dark/Light Mode** — Auto-detection via `QStyleHints.colorScheme()` with `QPalette` luminance fallback. Runtime theme switcher (Auto/Dark/Light) in toolbar.
+- **GUI Keyboard Shortcuts** — Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search, Delete/Ctrl+D delete. Platform-native key sequences.
+
 ## [1.0.0] — 2026-02-28
 
 First public release.

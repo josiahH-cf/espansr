@@ -18,11 +18,19 @@ A standalone GUI and CLI for managing [Espanso](https://espanso.org/) text expan
 - Browse and search your Espanso templates
 - Edit trigger strings with live YAML preview
 - Inline variable editor with date format and multiline support
+- Live template output preview with variable substitution
 - Import external template files or directories
 - Validate templates for common Espanso issues
 - Sync templates to Espanso with one click or CLI command
+- Dry-run and verbose modes for safe previews (`--dry-run`, `--verbose`)
+- Diagnostic health checks (`espansr doctor`)
+- Shell tab completion for bash and zsh
 - Auto-sync on a configurable interval
 - Launcher trigger to open espansr from Espanso itself
+- Dark/light mode with system auto-detection and runtime switching
+- Keyboard shortcuts (Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search)
+- Status bar with Espanso connection state and sync feedback
+- Colored CLI output with TTY detection and `NO_COLOR` support
 - WSL2 support: auto-detects Windows Espanso config path and restarts Espanso service after sync
 
 ## Install
@@ -65,6 +73,9 @@ python -m venv .venv
 # Sync templates to Espanso
 espansr sync
 
+# Preview sync without writing files
+espansr sync --dry-run
+
 # Show Espanso status and config path
 espansr status
 
@@ -74,11 +85,21 @@ espansr list
 # Run post-install setup (copies templates, detects Espanso)
 espansr setup
 
+# Setup with detailed output / strict mode
+espansr setup --verbose --strict
+
 # Validate templates for common issues
 espansr validate
 
 # Import a template file or directory
 espansr import <path>
+
+# Run diagnostic health checks
+espansr doctor
+
+# Enable shell tab completion
+eval "$(espansr completions bash)"   # bash
+eval "$(espansr completions zsh)"    # zsh
 
 # Launch the GUI
 espansr gui

@@ -1,23 +1,23 @@
-"""Tests for v1.0 release readiness: version strings, --version flag, CHANGELOG, README."""
+"""Tests for release readiness: version strings, --version flag, CHANGELOG, README."""
 
 import subprocess
 import sys
 from pathlib import Path
 
+from espansr import __version__
+
 ROOT = Path(__file__).resolve().parent.parent
 
 
 class TestVersionStrings:
-    """Version must be 1.0.0 in all canonical locations."""
+    """Version must be consistent in all canonical locations."""
 
     def test_pyproject_version(self):
         text = (ROOT / "pyproject.toml").read_text()
-        assert 'version = "1.0.0"' in text
+        assert f'version = "{__version__}"' in text
 
     def test_init_version(self):
-        from espansr import __version__
-
-        assert __version__ == "1.0.0"
+        assert __version__  # non-empty
 
     def test_version_flag(self):
         result = subprocess.run(
@@ -27,7 +27,7 @@ class TestVersionStrings:
             timeout=10,
         )
         assert result.returncode == 0
-        assert "espansr 1.0.0" in result.stdout
+        assert f"espansr {__version__}" in result.stdout
 
 
 class TestChangelog:
@@ -38,7 +38,7 @@ class TestChangelog:
 
     def test_changelog_has_version_heading(self):
         text = (ROOT / "CHANGELOG.md").read_text()
-        assert "## [1.0.0]" in text or "## 1.0.0" in text
+        assert f"## [{__version__}]" in text or f"## {__version__}" in text
 
     def test_changelog_mentions_key_features(self):
         text = (ROOT / "CHANGELOG.md").read_text().lower()

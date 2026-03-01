@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 5
-- Complete: 0
-- Remaining: 5
+- Complete: 5
+- Remaining: 0
 
 ## Task List
 
@@ -15,7 +15,7 @@
 - **Files:** `tests/test_completions.py`
 - **Done when:** All tests exist and fail because the `completions` subcommand and generator module do not yet exist
 - **Criteria covered:** AC-1, AC-2, AC-3, AC-4, AC-6
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 #### Tests to write
 
@@ -33,28 +33,28 @@
 - **Files:** `espansr/core/completions.py`
 - **Done when:** `build_bash_completion(parser)` and `build_zsh_completion(parser)` return valid shell scripts derived from argparse introspection
 - **Criteria covered:** AC-1, AC-2, AC-3, AC-4, AC-6
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 3: Wire CLI subcommand
 
 - **Files:** `espansr/__main__.py`
 - **Done when:** `espansr completions bash` and `espansr completions zsh` print scripts to stdout and exit 0; all tests pass
 - **Criteria covered:** AC-1, AC-2
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 4: Add install.sh hint
 
 - **Files:** `install.sh`
 - **Done when:** Installer prints a one-line hint about sourcing completions after setup; does not auto-install
 - **Criteria covered:** AC-5
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 5: Full validation and commit
 
 - **Files:** all
 - **Done when:** `pytest` passes, `ruff check .` clean, manual spot-check of `espansr completions bash|zsh`
 - **Criteria covered:** all
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ## Test Strategy
 
@@ -69,4 +69,10 @@
 
 ## Session Log
 
-<!-- Append after each session: date, completed, blockers -->
+### 2026-03-01
+- All 5 tasks completed in a single session
+- 8 tests in `tests/test_completions.py`, all passing (298 total)
+- `espansr/core/completions.py` generates bash/zsh scripts from argparse introspection
+- `espansr completions bash|zsh` subcommand wired in `__main__.py`
+- `install.sh` prints sourcing hint after install
+- Merged to main
