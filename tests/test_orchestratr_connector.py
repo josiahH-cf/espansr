@@ -5,13 +5,11 @@ WSL2 launch commands, and passive behavior when orchestratr is absent.
 """
 
 import json
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 import yaml
-
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -71,7 +69,11 @@ class TestManifestGeneration:
         config_dir = tmp_path / "espansr"
         config_dir.mkdir()
 
-        generate_manifest(config_dir)
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="linux",
+        ):
+            generate_manifest(config_dir)
 
         manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
         assert manifest["name"] == "espansr"
@@ -247,7 +249,11 @@ class TestReadyCmd:
         config_dir = tmp_path / "espansr"
         config_dir.mkdir()
 
-        generate_manifest(config_dir)
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="linux",
+        ):
+            generate_manifest(config_dir)
 
         manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
         assert "ready_cmd" in manifest
@@ -267,11 +273,15 @@ class TestPassiveBehavior:
         config_dir = tmp_path / "espansr"
         config_dir.mkdir()
 
-        generate_manifest(config_dir)
-        content_first = (config_dir / "orchestratr.yml").read_text()
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="linux",
+        ):
+            generate_manifest(config_dir)
+            content_first = (config_dir / "orchestratr.yml").read_text()
 
-        generate_manifest(config_dir)
-        content_second = (config_dir / "orchestratr.yml").read_text()
+            generate_manifest(config_dir)
+            content_second = (config_dir / "orchestratr.yml").read_text()
 
         assert content_first == content_second
 
@@ -370,7 +380,6 @@ class TestSetupIntegration:
 
     def test_setup_skips_manifest_when_current(self, tmp_path, capsys):
         """cmd_setup does not rewrite manifest when version is current."""
-        from espansr import __version__
         from espansr.__main__ import cmd_setup
 
         config_dir = tmp_path / "config" / "espansr"
@@ -413,23 +422,23 @@ class TestStatusJsonCli:
 
         config_dir, templates_dir, espanso_dir = _make_config_env(tmp_path)
 
-        args = _make_args(json_output=True)
+        args = _make_args(json=True)
 
         with (
             patch(
-                "espansr.__main__.get_config_dir",
+                "espansr.integrations.orchestratr.get_config_dir",
                 return_value=config_dir,
             ),
             patch(
-                "espansr.__main__.get_templates_dir",
+                "espansr.integrations.orchestratr.get_templates_dir",
                 return_value=templates_dir,
             ),
             patch(
-                "espansr.__main__.get_espanso_config_dir",
+                "espansr.integrations.orchestratr.get_espanso_config_dir",
                 return_value=espanso_dir,
             ),
             patch(
-                "espansr.__main__.get_config",
+                "espansr.integrations.orchestratr.get_config",
                 return_value=_make_config_stub(last_sync="2025-01-15T10:30:00Z"),
             ),
         ):
@@ -447,7 +456,7 @@ class TestStatusJsonCli:
 
         _, _, espanso_dir = _make_config_env(tmp_path)
 
-        args = _make_args(json_output=False)
+        args = _make_args(json=False)
 
         with (
             patch(
