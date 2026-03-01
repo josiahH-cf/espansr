@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 3
-- Complete: 0
-- Remaining: 3
+- Complete: 3
+- Remaining: 0
 
 ## Task List
 
@@ -15,21 +15,19 @@
 - **Files:** `espansr/ui/theme.py`, `tests/test_theme.py`
 - **Done when:** `LIGHT_THEME` has full widget coverage matching `DARK_THEME`, `detect_system_theme()` returns `"dark"` or `"light"`, and `get_theme_stylesheet("auto", ...)` resolves to a concrete stylesheet
 - **Criteria covered:** AC 1 (LIGHT_THEME fully implemented), AC 2 (system detection), AC 7 (tests)
-- **Status:** [ ] Not started
-
-### Task 2: Config default change + auto-theme wiring
+- **Status:** [x] Complete
 
 - **Files:** `espansr/core/config.py`, `tests/test_theme.py`
 - **Done when:** `UIConfig.theme` defaults to `"auto"`, explicit `"dark"` / `"light"` still work, existing test suite passes
 - **Criteria covered:** AC 3 (explicit override), AC 4 (auto default)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### Task 3: Runtime theme switcher in toolbar
 
 - **Files:** `espansr/ui/main_window.py`, `tests/test_theme.py`
 - **Done when:** A `QComboBox` in the toolbar allows switching between Auto/Dark/Light at runtime; changing it re-applies the stylesheet and persists the choice
 - **Criteria covered:** AC 5 (runtime switching), AC 6 (visual correctness)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ## Test Strategy
 
