@@ -158,7 +158,7 @@ def test_browser_delete_undo(browser, tm, qtbot):
     browser.load_templates()
     browser.select_template_by_name("Keep Me")
 
-    browser._start_delete()
+    browser.start_delete()
     assert browser._pending_delete is not None
     assert not browser._undo_row.isHidden()
 
@@ -175,7 +175,7 @@ def test_browser_delete_confirmed(browser, tm, qtbot):
     browser.load_templates()
     browser.select_template_by_name("Delete Me")
 
-    browser._start_delete()
+    browser.start_delete()
     # Simulate the timer firing immediately
     browser._finalize_delete()
 

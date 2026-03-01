@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Optional
 
 from PyQt6.QtCore import QByteArray, Qt, QTimer
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -50,11 +51,12 @@ class MainWindow(QMainWindow):
         self.addToolBar(toolbar)
 
         self._sync_btn = QPushButton("Sync Now")
+        self._sync_btn.setToolTip("Sync templates to Espanso (Ctrl+S)")
         self._sync_btn.clicked.connect(self._do_sync)
         toolbar.addWidget(self._sync_btn)
 
         self._import_btn = QPushButton("Import")
-        self._import_btn.setToolTip("Import template(s) from a JSON file")
+        self._import_btn.setToolTip("Import template(s) from a JSON file (Ctrl+I)")
         self._import_btn.clicked.connect(self._do_import)
         toolbar.addWidget(self._import_btn)
 
@@ -111,6 +113,25 @@ class MainWindow(QMainWindow):
         self._editor.template_saved.connect(self._on_template_saved)
         self._browser.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
         self._editor.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
+
+        # Keyboard shortcuts
+        self._shortcut_sync = QShortcut(QKeySequence.StandardKey.Save, self)
+        self._shortcut_sync.activated.connect(lambda: self._do_sync())
+
+        self._shortcut_new = QShortcut(QKeySequence("Ctrl+N"), self)
+        self._shortcut_new.activated.connect(lambda: self._editor.clear())
+
+        self._shortcut_import = QShortcut(QKeySequence("Ctrl+I"), self)
+        self._shortcut_import.activated.connect(lambda: self._do_import())
+
+        self._shortcut_search = QShortcut(QKeySequence.StandardKey.Find, self)
+        self._shortcut_search.activated.connect(lambda: self._browser.focus_search())
+
+        self._shortcut_delete = QShortcut(QKeySequence("Delete"), self)
+        self._shortcut_delete.activated.connect(lambda: self._browser.start_delete())
+
+        self._shortcut_delete_alt = QShortcut(QKeySequence("Ctrl+D"), self)
+        self._shortcut_delete_alt.activated.connect(lambda: self._browser.start_delete())
 
     def _apply_theme(self) -> None:
         """Apply the configured theme stylesheet."""
