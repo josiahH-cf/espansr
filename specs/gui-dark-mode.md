@@ -1,6 +1,6 @@
 # Feature: GUI System Theme Detection (Dark/Light Mode)
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -8,13 +8,13 @@ Detect the operating system's color scheme preference and apply the matching the
 
 ## Acceptance Criteria
 
-- [ ] `LIGHT_THEME` in `theme.py` is fully implemented with the same widget coverage as `DARK_THEME` (buttons, lists, scrollbars, status bar, toolbar, etc.)
-- [ ] On launch, the app detects the system color scheme via `QPalette` or `QStyleHints` and selects `"dark"` or `"light"` accordingly
-- [ ] If `config.ui.theme` is explicitly set to `"dark"` or `"light"`, the explicit setting overrides auto-detection
-- [ ] A new `config.ui.theme` value `"auto"` (the new default) means "follow the system"
-- [ ] The theme can be changed at runtime via a toolbar dropdown or menu item without restarting the app
-- [ ] All widget types render correctly in both themes (verified by visual inspection checklist)
-- [ ] Existing dark-theme tests pass; new tests verify light theme applies without error
+- [x] `LIGHT_THEME` in `theme.py` is fully implemented with the same widget coverage as `DARK_THEME` (buttons, lists, scrollbars, status bar, toolbar, etc.)
+- [x] On launch, the app detects the system color scheme via `QPalette` or `QStyleHints` and selects `"dark"` or `"light"` accordingly
+- [x] If `config.ui.theme` is explicitly set to `"dark"` or `"light"`, the explicit setting overrides auto-detection
+- [x] A new `config.ui.theme` value `"auto"` (the new default) means "follow the system"
+- [x] The theme can be changed at runtime via a toolbar dropdown or menu item without restarting the app
+- [x] All widget types render correctly in both themes (verified by visual inspection checklist)
+- [x] Existing dark-theme tests pass; new tests verify light theme applies without error
 
 ## Affected Areas
 
