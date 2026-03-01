@@ -347,6 +347,19 @@ def cmd_doctor(args) -> int:
     return 1 if has_fail else 0
 
 
+def cmd_completions(args) -> int:
+    """Print a shell completion script to stdout."""
+    from espansr.core.completions import build_bash_completion, build_zsh_completion
+
+    # Build a parser identical to the real one so the script reflects all commands.
+    parser = _build_parser()
+    if args.shell == "bash":
+        print(build_bash_completion(parser))
+    elif args.shell == "zsh":
+        print(build_zsh_completion(parser))
+    return 0
+
+
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
     from espansr.ui.main_window import launch
@@ -355,8 +368,8 @@ def cmd_gui(args) -> int:
     return 0
 
 
-def main() -> None:
-    """Entry point for the espansr CLI."""
+def _build_parser() -> argparse.ArgumentParser:
+    """Construct and return the full CLI argument parser."""
     from espansr import __version__
 
     parser = argparse.ArgumentParser(
@@ -401,7 +414,21 @@ def main() -> None:
     )
     import_parser.add_argument("path", help="Path to a JSON file or directory of JSON files")
     subparsers.add_parser("gui", help="Launch the GUI")
+    comp_parser = subparsers.add_parser(
+        "completions", help="Print shell completion script"
+    )
+    comp_parser.add_argument(
+        "shell",
+        choices=["bash", "zsh"],
+        help="Target shell (bash or zsh)",
+    )
 
+    return parser
+
+
+def main() -> None:
+    """Entry point for the espansr CLI."""
+    parser = _build_parser()
     args = parser.parse_args()
 
     handlers = {
@@ -413,6 +440,7 @@ def main() -> None:
         "setup": cmd_setup,
         "doctor": cmd_doctor,
         "gui": cmd_gui,
+        "completions": cmd_completions,
     }
 
     if args.command in handlers:
