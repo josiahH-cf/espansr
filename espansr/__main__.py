@@ -146,13 +146,39 @@ def cmd_setup(args) -> int:
             )
         print("Launcher: skipped (no Espanso config)")
 
+    # ── orchestratr manifest ──────────────────────────────────────────────
+    if not dry_run:
+        from espansr.integrations.orchestratr import (
+            generate_manifest,
+            manifest_needs_update,
+        )
+
+        config_dir_path = get_config_dir()
+        if manifest_needs_update(config_dir_path):
+            manifest_path = generate_manifest(config_dir_path)
+            print(f"orchestratr manifest: written to {manifest_path}")
+        else:
+            print("orchestratr manifest: up to date")
+    else:
+        print("[dry-run] Would check/regenerate orchestratr manifest")
+
     if strict and not espanso_found:
         return 1
     return 0
 
 
 def cmd_status(args) -> int:
-    """Show Espanso availability and config path."""
+    """Show Espanso availability and config path.
+
+    With ``--json``, outputs machine-readable JSON status for orchestratr
+    health checks instead of human-readable text.
+    """
+    if getattr(args, "json", False):
+        from espansr.integrations.orchestratr import get_status_json
+
+        print(get_status_json())
+        return 0
+
     config_dir = get_espanso_config_dir()
     if config_dir:
         print(ok(f"Espanso config: {config_dir}"))
@@ -386,7 +412,15 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Preview what would be synced without writing any files",
     )
-    subparsers.add_parser("status", help="Show Espanso process status and config path")
+    status_parser = subparsers.add_parser(
+        "status", help="Show Espanso process status and config path"
+    )
+    status_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output machine-readable JSON status for orchestratr",
+    )
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
     setup_parser = subparsers.add_parser("setup", help="Run post-install setup")
