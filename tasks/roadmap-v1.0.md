@@ -42,12 +42,19 @@
 
 ## Active
 
-**GUI keyboard shortcuts (#19)**
-- Spec: `/specs/gui-keyboard-shortcuts.md`
-- Tasks: `/tasks/gui-keyboard-shortcuts.md`
-- 3 tasks; 1 session estimated
+_No active work — ready for next feature._
+
+**Next up:** Shell tab completion (#14)
 
 ## Completed
+
+### GUI Keyboard Shortcuts
+- `QShortcut` instances: Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search, Delete/Ctrl+D delete
+- `focus_search()` and `start_delete()` exposed as public API on `TemplateBrowserWidget`
+- Toolbar tooltips include shortcut hints
+- `QKeySequence.StandardKey` for platform-native keys (Cmd on macOS)
+- 8 tests in `tests/test_gui_shortcuts.py`
+- **Spec:** `/specs/gui-keyboard-shortcuts.md` — **Tasks:** `/tasks/gui-keyboard-shortcuts.md`
 
 ### GUI System Theme Detection (Dark/Light Mode)
 - `LIGHT_THEME` fully implemented in `theme.py` (matches `DARK_THEME` widget coverage)
@@ -232,6 +239,6 @@
 | 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Complete |
 | 17 | GUI template preview | `/specs/gui-template-preview.md` | Complete |
 | 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Complete |
-| 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | In progress |
+| 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Complete |
 
 **v1.0 total tests: 230 passing** (as of 2026-02-28)
