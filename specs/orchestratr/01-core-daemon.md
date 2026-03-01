@@ -1,11 +1,11 @@
 # Feature: Core Daemon & System Tray
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
-orchestr runs as a lightweight background daemon with a system tray presence. It listens for a global leader key (default: Ctrl+Space), intercepts the subsequent chord keystroke, and dispatches the mapped action (launch app, bring to front, or send IPC message). The daemon starts at login and persists silently until the user interacts with it via the tray icon or a hotkey chord.
+orchestratr runs as a lightweight background daemon with a system tray presence. It listens for a global leader key (default: Ctrl+Space), intercepts the subsequent chord keystroke, and dispatches the mapped action (launch app, bring to front, or send IPC message). The daemon starts at login and persists silently until the user interacts with it via the tray icon or a hotkey chord.
 
 ## Acceptance Criteria
 
@@ -22,10 +22,10 @@ orchestr runs as a lightweight background daemon with a system tray presence. It
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/daemon.py` — main event loop, signal handling, lifecycle |
-| **Create** | `orchestr/tray.py` — system tray icon, context menu |
-| **Create** | `orchestr/config.py` — configuration loading, defaults |
-| **Create** | `orchestr/__main__.py` — CLI entry point (`orchestr start`, `orchestr stop`, `orchestr status`) |
+| **Create** | `orchestratr/daemon.py` — main event loop, signal handling, lifecycle |
+| **Create** | `orchestratr/tray.py` — system tray icon, context menu |
+| **Create** | `orchestratr/config.py` — configuration loading, defaults |
+| **Create** | `orchestratr/__main__.py` — CLI entry point (`orchestratr start`, `orchestratr stop`, `orchestratr status`) |
 
 ## Constraints
 
@@ -67,8 +67,8 @@ This decision should be formalized in a `/decisions/` doc before implementation 
 The leader key pattern (inspired by tmux, Vim, i3wm) avoids stealing common shortcuts:
 
 1. User presses **Ctrl+Space** (leader)
-2. Tray icon flashes or a tiny overlay appears — "orchestr listening..."
+2. Tray icon flashes or a tiny overlay appears — "orchestratr listening..."
 3. User presses **e** within 2 seconds
-4. orchestr dispatches the action mapped to chord "e" (e.g., launch espansr)
+4. orchestratr dispatches the action mapped to chord "e" (e.g., launch espansr)
 
-If the user presses an unmapped key, orchestr ignores it and cancels listening mode. The leader key itself (Ctrl+Space) is the only system-wide hotkey orchestr registers — all chords are handled internally during the listening window, avoiding broad hotkey hijacking.
+If the user presses an unmapped key, orchestratr ignores it and cancels listening mode. The leader key itself (Ctrl+Space) is the only system-wide hotkey orchestratr registers — all chords are handled internally during the listening window, avoiding broad hotkey hijacking.

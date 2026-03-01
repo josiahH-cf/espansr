@@ -1,31 +1,31 @@
 # Feature: HTTP API & IPC Protocol
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
-orchestr exposes a localhost-only HTTP API that serves two purposes: (1) the daemon's own management interface (health, status, reload), and (2) a language-agnostic connection point for registered apps. Any app in any language that can make HTTP requests can communicate with orchestr. This is the foundation for future app-to-app messaging, but v1 focuses on registration, heartbeat, and launch notification endpoints.
+orchestratr exposes a localhost-only HTTP API that serves two purposes: (1) the daemon's own management interface (health, status, reload), and (2) a language-agnostic connection point for registered apps. Any app in any language that can make HTTP requests can communicate with orchestratr. This is the foundation for future app-to-app messaging, but v1 focuses on registration, heartbeat, and launch notification endpoints.
 
 ## Acceptance Criteria
 
 - [ ] HTTP server binds to `127.0.0.1` on a configurable port (default: `9876`) — not accessible from the network
 - [ ] `GET /health` returns `{"status": "ok", "version": "<version>"}` (unauthenticated)
 - [ ] `GET /apps` returns the current app registry as JSON
-- [ ] `POST /apps/{name}/launched` allows an app to notify orchestr that it has started (for process tracking)
+- [ ] `POST /apps/{name}/launched` allows an app to notify orchestratr that it has started (for process tracking)
 - [ ] `POST /apps/{name}/ready` allows an app to signal it is fully initialized and ready
 - [ ] `POST /reload` triggers config hot-reload and returns the new registry or validation errors
 - [ ] All endpoints return JSON with consistent error format: `{"error": "<message>", "code": "<error_code>"}`
-- [ ] The API port is written to a well-known discovery file (`~/.config/orchestr/port`) so apps can find it without hardcoding
+- [ ] The API port is written to a well-known discovery file (`~/.config/orchestratr/port`) so apps can find it without hardcoding
 - [ ] Requests from non-localhost origins are rejected with 403
 
 ## Affected Areas
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/api/server.py` — HTTP server setup, middleware, routing |
-| **Create** | `orchestr/api/routes.py` — endpoint handlers |
-| **Create** | `orchestr/api/models.py` — request/response JSON schemas |
+| **Create** | `orchestratr/api/server.py` — HTTP server setup, middleware, routing |
+| **Create** | `orchestratr/api/routes.py` — endpoint handlers |
+| **Create** | `orchestratr/api/models.py` — request/response JSON schemas |
 
 ## Constraints
 
@@ -37,7 +37,7 @@ orchestr exposes a localhost-only HTTP API that serves two purposes: (1) the dae
 
 ## Out of Scope
 
-- App-to-app message routing (v2 — apps communicating through orchestr as a message bus)
+- App-to-app message routing (v2 — apps communicating through orchestratr as a message bus)
 - WebSocket / streaming connections
 - Authentication or API keys (localhost-only is sufficient for single-user desktop apps)
 - Remote access or tunneling
@@ -52,11 +52,11 @@ orchestr exposes a localhost-only HTTP API that serves two purposes: (1) the dae
 
 ### Service discovery
 
-Apps need to find orchestr's port. The recommended pattern:
+Apps need to find orchestratr's port. The recommended pattern:
 
-1. orchestr writes its port to `~/.config/orchestr/port` (a plain text file containing just the number)
+1. orchestratr writes its port to `~/.config/orchestratr/port` (a plain text file containing just the number)
 2. Apps read this file at startup to discover the API
-3. If the file doesn't exist or the port is unreachable, the app knows orchestr isn't running
+3. If the file doesn't exist or the port is unreachable, the app knows orchestratr isn't running
 
 This is simpler and more portable than mDNS, Unix sockets (not cross-platform), or named pipes.
 
@@ -66,10 +66,10 @@ This is simpler and more portable than mDNS, Unix sockets (not cross-platform), 
 App starts → reads port file → POST /apps/{name}/launched
 App initializes → POST /apps/{name}/ready
 App runs normally (no polling required)
-App shuts down → (optional) POST /apps/{name}/stopped, or orchestr detects via process tracking
+App shuts down → (optional) POST /apps/{name}/stopped, or orchestratr detects via process tracking
 ```
 
-Apps are not required to connect to orchestr — the API is opt-in. An app that doesn't call any endpoints still works fine (orchestr launches it via its command, fire-and-forget). The API enables richer integration for apps that choose to participate.
+Apps are not required to connect to orchestratr — the API is opt-in. An app that doesn't call any endpoints still works fine (orchestratr launches it via its command, fire-and-forget). The API enables richer integration for apps that choose to participate.
 
 ### Future v2 extension points
 
@@ -87,7 +87,7 @@ For convenience, a thin client library could be published for common languages:
 
 ```python
 # Python example (future)
-from orchestr import client
+from orchestratr import client
 client.notify_launched("espansr")
 client.notify_ready("espansr")
 ```

@@ -1,19 +1,19 @@
 # Feature: App Registry & Configuration
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
-The app registry is the central data store mapping chord keys to applications. It defines how apps are registered, what metadata orchestr stores about each one, and where the configuration lives on disk. The config format must be human-readable, editable by hand, and usable by the management GUI.
+The app registry is the central data store mapping chord keys to applications. It defines how apps are registered, what metadata orchestratr stores about each one, and where the configuration lives on disk. The config format must be human-readable, editable by hand, and usable by the management GUI.
 
 ## Acceptance Criteria
 
-- [ ] Configuration is stored in a single YAML file at the platform-appropriate config directory (e.g., `~/.config/orchestr/config.yml`, `%APPDATA%/orchestr/config.yml`)
+- [ ] Configuration is stored in a single YAML file at the platform-appropriate config directory (e.g., `~/.config/orchestratr/config.yml`, `%APPDATA%/orchestratr/config.yml`)
 - [ ] Each app entry has: `name`, `chord` (single key), `command` (shell string), `environment` (native/wsl), and optional `description`
 - [ ] Duplicate chord assignments are rejected with a clear error message at load time
 - [ ] Config changes are detected and hot-reloaded without restarting the daemon (file watcher or explicit reload via tray menu)
-- [ ] A `orchestr list` CLI command prints the current app registry in a readable table
+- [ ] A `orchestratr list` CLI command prints the current app registry in a readable table
 - [ ] Config file is created with sensible defaults on first run if it doesn't exist
 - [ ] Invalid config entries (missing required fields, bad YAML) produce clear error messages and do not crash the daemon
 
@@ -21,9 +21,9 @@ The app registry is the central data store mapping chord keys to applications. I
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/registry.py` — app registry data model, load/save/validate |
-| **Create** | `orchestr/watcher.py` — file watcher for config hot-reload |
-| **Modify** | `orchestr/config.py` — integrate registry into global config |
+| **Create** | `orchestratr/registry.py` — app registry data model, load/save/validate |
+| **Create** | `orchestratr/watcher.py` — file watcher for config hot-reload |
+| **Modify** | `orchestratr/config.py` — integrate registry into global config |
 
 ## Constraints
 
@@ -49,8 +49,8 @@ The app registry is the central data store mapping chord keys to applications. I
 ### Example config
 
 ```yaml
-# ~/.config/orchestr/config.yml
-orchestr:
+# ~/.config/orchestratr/config.yml
+orchestratr:
   leader_key: "ctrl+space"
   chord_timeout_ms: 2000
   log_level: info
@@ -71,7 +71,7 @@ apps:
 
 ### Environment field
 
-The `environment` field tells orchestr how to launch the app:
+The `environment` field tells orchestratr how to launch the app:
 
 - `native` — run the command directly on the host OS
 - `wsl` — wrap the command in `wsl.exe -d <distro> -- <command>` (Windows host only; on Linux, treated as `native`)

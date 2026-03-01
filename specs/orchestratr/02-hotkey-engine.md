@@ -1,7 +1,7 @@
 # Feature: Cross-Platform Hotkey Engine
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
@@ -23,11 +23,11 @@ The hotkey engine is the OS abstraction layer that registers the global leader k
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/hotkey/engine.py` — platform-agnostic interface |
-| **Create** | `orchestr/hotkey/windows.py` — Win32 implementation |
-| **Create** | `orchestr/hotkey/macos.py` — macOS implementation |
-| **Create** | `orchestr/hotkey/linux_x11.py` — X11 implementation |
-| **Create** | `orchestr/hotkey/linux_wayland.py` — Wayland implementation (may be stub with documented limitations) |
+| **Create** | `orchestratr/hotkey/engine.py` — platform-agnostic interface |
+| **Create** | `orchestratr/hotkey/windows.py` — Win32 implementation |
+| **Create** | `orchestratr/hotkey/macos.py` — macOS implementation |
+| **Create** | `orchestratr/hotkey/linux_x11.py` — X11 implementation |
+| **Create** | `orchestratr/hotkey/linux_wayland.py` — Wayland implementation (may be stub with documented limitations) |
 
 ## Constraints
 
@@ -39,7 +39,7 @@ The hotkey engine is the OS abstraction layer that registers the global leader k
 
 ## Out of Scope
 
-- Registering per-app hotkeys (orchestr registers only the leader key globally)
+- Registering per-app hotkeys (orchestratr registers only the leader key globally)
 - Remapping or intercepting arbitrary key combinations system-wide
 - Gamepad, mouse, or non-keyboard input
 - Wayland compositor plugin development
@@ -57,7 +57,7 @@ Wayland's security model intentionally prevents applications from grabbing globa
 1. **GNOME/Mutter:** `org.gnome.Shell.Extensions` D-Bus interface or a GNOME Shell extension
 2. **KDE/KWin:** `org.kde.kglobalaccel` D-Bus interface (well-supported)
 3. **Sway/wlroots:** Custom IPC or manual `swaymsg` bindings
-4. **Fallback:** Document that on unsupported Wayland compositors, the user must configure the leader key in their compositor's native keybinding settings to run `orchestr trigger` (a CLI command that simulates leader activation)
+4. **Fallback:** Document that on unsupported Wayland compositors, the user must configure the leader key in their compositor's native keybinding settings to run `orchestratr trigger` (a CLI command that simulates leader activation)
 
 This may warrant a `/decisions/` document before implementation.
 
