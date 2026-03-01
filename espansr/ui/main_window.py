@@ -37,6 +37,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Espansr")
         self._setup_ui()
         self._apply_theme()
+        self._apply_preview_state()
         self._restore_geometry()
         self._clean_stale_espanso_files()
         self._check_launcher()
@@ -64,6 +65,11 @@ class MainWindow(QMainWindow):
         self._auto_sync_cb.setChecked(self._config.espanso.auto_sync)
         self._auto_sync_cb.stateChanged.connect(self._toggle_auto_sync)
         toolbar.addWidget(self._auto_sync_cb)
+
+        # Preview toggle
+        self._preview_toggle_btn = QPushButton()
+        self._preview_toggle_btn.clicked.connect(self._toggle_preview)
+        toolbar.addWidget(self._preview_toggle_btn)
 
         # Theme selector
         self._theme_combo = QComboBox()
@@ -132,6 +138,32 @@ class MainWindow(QMainWindow):
 
         self._shortcut_delete_alt = QShortcut(QKeySequence("Ctrl+D"), self)
         self._shortcut_delete_alt.activated.connect(lambda: self._browser.start_delete())
+
+        self._shortcut_preview = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
+        self._shortcut_preview.activated.connect(lambda: self._toggle_preview())
+
+    def _apply_preview_state(self) -> None:
+        """Apply the preview visibility from config and update button."""
+        visible = self._config.ui.show_previews
+        self._editor.set_previews_visible(visible)
+        self._update_preview_button(visible)
+
+    def _toggle_preview(self) -> None:
+        """Toggle the YAML/output preview panes and persist the state."""
+        new_state = not self._config.ui.show_previews
+        self._config.ui.show_previews = new_state
+        self._editor.set_previews_visible(new_state)
+        self._update_preview_button(new_state)
+        save_config(self._config)
+
+    def _update_preview_button(self, visible: bool) -> None:
+        """Update preview toggle button text and tooltip."""
+        if visible:
+            self._preview_toggle_btn.setText("Hide Previews")
+            self._preview_toggle_btn.setToolTip("Hide YAML/output previews (Ctrl+Shift+P)")
+        else:
+            self._preview_toggle_btn.setText("Show Previews")
+            self._preview_toggle_btn.setToolTip("Show YAML/output previews (Ctrl+Shift+P)")
 
     def _apply_theme(self) -> None:
         """Apply the configured theme stylesheet."""

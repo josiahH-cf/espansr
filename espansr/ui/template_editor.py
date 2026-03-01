@@ -88,28 +88,35 @@ class TemplateEditorWidget(QWidget):
         self._variable_editor = VariableEditorWidget()
         layout.addWidget(self._variable_editor)
 
+        # Preview container (togglable)
+        self._preview_container = QWidget()
+        preview_layout = QVBoxLayout(self._preview_container)
+        preview_layout.setContentsMargins(0, 0, 0, 0)
+
         # YAML preview
         preview_label = QLabel("YAML Preview:")
         preview_label.setStyleSheet("font-weight: bold;")
-        layout.addWidget(preview_label)
+        preview_layout.addWidget(preview_label)
 
         self._yaml_preview = QPlainTextEdit()
         self._yaml_preview.setReadOnly(True)
         self._yaml_preview.setPlaceholderText("Set a trigger to see YAML preview…")
         self._yaml_preview.setMaximumHeight(200)
-        layout.addWidget(self._yaml_preview)
+        preview_layout.addWidget(self._yaml_preview)
 
         # Output preview
         output_label = QLabel("Output Preview:")
         output_label.setStyleSheet("font-weight: bold;")
-        layout.addWidget(output_label)
+        preview_layout.addWidget(output_label)
 
         self._output_preview = QPlainTextEdit()
         self._output_preview.setReadOnly(True)
         self._output_preview.setPlaceholderText("Enter content to see expanded output…")
         self._output_preview.setMaximumHeight(200)
         self._output_preview.setStyleSheet("background-color: #f5f5f5;")
-        layout.addWidget(self._output_preview)
+        preview_layout.addWidget(self._output_preview)
+
+        layout.addWidget(self._preview_container)
 
         # Save button
         save_btn = QPushButton("Save")
@@ -125,6 +132,10 @@ class TemplateEditorWidget(QWidget):
         self._variable_editor.variables_changed.connect(self._update_output_preview)
 
     # ── Public API ──────────────────────────────────────────────────────────
+
+    def set_previews_visible(self, visible: bool) -> None:
+        """Show or hide the YAML preview and output preview panes."""
+        self._preview_container.setVisible(visible)
 
     def load_template(self, template: Template) -> None:
         """Populate editor fields from a Template object."""
