@@ -68,7 +68,7 @@ class TemplateBrowserWidget(QWidget):
         self._delete_btn = QPushButton("Delete")
         self._delete_btn.setObjectName("danger")
         self._delete_btn.setToolTip("Delete selected template")
-        self._delete_btn.clicked.connect(self._start_delete)
+        self._delete_btn.clicked.connect(self.start_delete)
         header_layout.addWidget(self._delete_btn)
 
         layout.addLayout(header_layout)
@@ -116,6 +116,11 @@ class TemplateBrowserWidget(QWidget):
         """Return the currently selected template, or None."""
         return self._current_template
 
+    def focus_search(self) -> None:
+        """Set focus to the search field and select all text."""
+        self._search.setFocus()
+        self._search.selectAll()
+
     def select_template_by_name(self, name: str) -> None:
         """Programmatically select a template in the tree by name."""
 
@@ -136,7 +141,7 @@ class TemplateBrowserWidget(QWidget):
 
     # ── Delete with inline undo ─────────────────────────────────────────────
 
-    def _start_delete(self) -> None:
+    def start_delete(self) -> None:
         """Begin a timed delete — show undo row for 5 seconds."""
         if self._current_template is None:
             return
