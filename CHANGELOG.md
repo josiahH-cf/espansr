@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.1.0] — 2026-03-01
 
-All v1.0 roadmap features complete. 298 tests passing.
+Completes the v1.0 feature roadmap. 333 tests passing.
 
 ### Added
 

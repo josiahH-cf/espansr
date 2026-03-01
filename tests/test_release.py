@@ -58,7 +58,11 @@ class TestReadme:
         for platform in ["Linux", "macOS", "Windows", "WSL2"]:
             assert platform in text, f"README missing platform: {platform}"
 
-    def test_readme_dev_section(self):
+    def test_readme_links_to_dev_guide(self):
         text = (ROOT / "README.md").read_text()
+        assert "docs/DEVELOPMENT.md" in text, "README missing link to Development Guide"
+
+    def test_dev_guide_has_commands(self):
+        text = (ROOT / "docs" / "DEVELOPMENT.md").read_text()
         for cmd in ["pytest", "ruff check", "black"]:
-            assert cmd in text, f"README missing dev command: {cmd}"
+            assert cmd in text, f"DEVELOPMENT.md missing dev command: {cmd}"

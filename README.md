@@ -1,150 +1,151 @@
-# espansr
+# 🧩 espansr
 
 [![CI](https://github.com/josiahH-cf/espansr/actions/workflows/ci.yml/badge.svg)](https://github.com/josiahH-cf/espansr/actions/workflows/ci.yml)
 
-A standalone GUI and CLI for managing [Espanso](https://espanso.org/) text expansion templates.
+**Manage your [Espanso](https://espanso.org/) text expansions with a visual GUI and powerful CLI.**
 
-## Platform Support
+---
 
-| Platform | Install | CLI | GUI | Notes |
-|----------|---------|-----|-----|-------|
-| Linux | `install.sh` | Yes | Yes | Requires Python 3.11+ |
-| macOS | `install.sh` | Yes | Yes | Requires Python 3.11+ |
-| Windows | `install.ps1` | Yes | Yes | Requires Python 3.11+ in PATH |
-| WSL2 | `install.sh` | Yes | Yes | Auto-detects Windows-side Espanso config |
+## ✨ What is this?
 
-## Features
+You know how you type the same emails, code snippets, and responses over and over? [Espanso](https://espanso.org/) auto-expands those for you — type a short trigger like `:greet` and it expands into a full message.
 
-- Browse and search your Espanso templates
-- Edit trigger strings with live YAML preview
-- Inline variable editor with date format and multiline support
-- Live template output preview with variable substitution
-- Import external template files or directories
-- Validate templates for common Espanso issues
-- Sync templates to Espanso with one click or CLI command
-- Dry-run and verbose modes for safe previews (`--dry-run`, `--verbose`)
-- Diagnostic health checks (`espansr doctor`)
-- Shell tab completion for bash and zsh
-- Auto-sync on a configurable interval
-- Launcher trigger to open espansr from Espanso itself
-- Dark/light mode with system auto-detection and runtime switching
-- Keyboard shortcuts (Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search)
-- Status bar with Espanso connection state and sync feedback
-- Colored CLI output with TTY detection and `NO_COLOR` support
-- WSL2 support: auto-detects Windows Espanso config path and restarts Espanso service after sync
+**espansr** gives you a visual template manager + CLI to organize, edit, validate, and sync your text expansion templates to Espanso. No more hand-editing YAML files.
 
-## Install
+---
 
-### Linux / macOS / WSL2
+## 🚀 Quick Start
+
+### 1. Clone
 
 ```bash
+git clone https://github.com/josiahH-cf/espansr.git
+cd espansr
+```
+
+### 2. Install
+
+```bash
+# Linux / macOS / WSL2
 ./install.sh
-```
 
-Or manually:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-### Windows
-
-Requires Python 3.11+ installed and in PATH ([download](https://www.python.org/downloads/)).
-
-```powershell
+# Windows (PowerShell)
 .\install.ps1
 ```
 
-Or manually (PowerShell or Command Prompt):
+### 3. Launch
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\pip install -e .
-.\.venv\Scripts\espansr setup
+```bash
+espansr gui      # 🖥️  open the visual editor
+espansr sync     # ⌨️  or sync from the command line
 ```
 
-## Usage
+**That's it.** You're managing Espanso templates. 🎉
+
+---
+
+## 🔄 How It Works
+
+```
+┌─────────────────┐       ┌──────────┐       ┌─────────────────┐
+│  Your Templates  │──────▶│  espansr  │──────▶│  Espanso Config  │
+│  (JSON files)    │       │ GUI / CLI │       │  (YAML matches)  │
+└─────────────────┘       └──────────┘       └─────────────────┘
+                                                      │
+                                                      ▼
+                                              Type a trigger ➜
+                                              Text auto-expands ✨
+```
+
+1. **Create/edit** templates in the GUI or as JSON files
+2. **Sync** to Espanso with one click or `espansr sync`
+3. **Type** your triggers anywhere — Espanso expands them instantly
+
+---
+
+## 🖥️ GUI + ⌨️ CLI
+
+espansr works both ways — pick what fits your workflow:
+
+### GUI
+
+- Browse and search all your templates
+- Edit triggers, content, and variables visually
+- Live YAML preview — see exactly what Espanso will get
+- Dark/light mode with system auto-detection
+- One-click sync
 
 ### CLI
 
 ```bash
-# Sync templates to Espanso
-espansr sync
-
-# Preview sync without writing files
-espansr sync --dry-run
-
-# Show Espanso status and config path
-espansr status
-
-# List templates with triggers
-espansr list
-
-# Run post-install setup (copies templates, detects Espanso)
-espansr setup
-
-# Setup with detailed output / strict mode
-espansr setup --verbose --strict
-
-# Validate templates for common issues
-espansr validate
-
-# Import a template file or directory
-espansr import <path>
-
-# Run diagnostic health checks
-espansr doctor
-
-# Enable shell tab completion
-eval "$(espansr completions bash)"   # bash
-eval "$(espansr completions zsh)"    # zsh
-
-# Launch the GUI
-espansr gui
+espansr sync             # sync templates → Espanso
+espansr sync --dry-run   # preview without writing
+espansr list             # list templates and triggers
+espansr status           # check Espanso connection
+espansr validate         # check templates for issues
+espansr import file.json # import external templates
+espansr doctor           # run diagnostic checks
 ```
 
-### GUI
+📖 **Full CLI reference:** [docs/CLI.md](docs/CLI.md)
 
-```bash
-espansr gui
-```
+---
 
-## Template Format
+## 📦 Platform Support
 
-Templates are JSON files stored in `~/.config/espansr/templates/` (Linux/WSL2), `~/Library/Application Support/espansr/templates/` (macOS), or `%APPDATA%/espansr/templates/` (Windows).
+| Platform | Install | CLI | GUI | Notes |
+|----------|---------|-----|-----|-------|
+| 🐧 Linux | `./install.sh` | ✅ | ✅ | Python 3.11+ |
+| 🍎 macOS | `./install.sh` | ✅ | ✅ | Python 3.11+ |
+| 🪟 Windows | `.\install.ps1` | ✅ | ✅ | Python 3.11+ in [PATH](https://www.python.org/downloads/) |
+| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Auto-detects Windows-side Espanso |
 
-A bundled starter template (`espansr_help.json`) is automatically copied on first install via `espansr setup`.
+---
+
+## ⚡ Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🎨 Template editor | Edit triggers, content, and variables with live preview |
+| 🔄 One-click sync | Push templates to Espanso instantly |
+| ✅ Validation | Catches issues before they reach Espanso |
+| 📥 Import | Bring in external template files or directories |
+| 🩺 Doctor | Diagnostic health checks for your setup |
+| 🌙 Dark mode | Auto-detects system theme, or choose manually |
+| ⌨️ Keyboard shortcuts | Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search |
+| 🔗 orchestratr | Optional integration with [orchestratr](https://github.com/josiahH-cf/orchestratr) app launcher |
+
+---
+
+## 📖 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [CLI Reference](docs/CLI.md) | All commands, flags, and examples |
+| [Template Format](docs/TEMPLATES.md) | JSON schema, variables, storage paths |
+| [Verification Guide](docs/VERIFY.md) | Post-install checklist to confirm everything works |
+| [Changelog](CHANGELOG.md) | Version history and release notes |
+| [Development Guide](docs/DEVELOPMENT.md) | Setup, testing, project structure for contributors |
+
+---
+
+## 🛠️ Quick Template Example
 
 ```json
 {
   "name": "Greeting",
-  "content": "Hello, {{name}}!",
+  "content": "Hello, {{name}}! Thanks for reaching out.",
   "trigger": ":greet",
   "variables": [
-    {"name": "name", "label": "Name", "default": "World"}
+    { "name": "name", "label": "Name", "default": "there" }
   ]
 }
 ```
 
-The `trigger` field is the Espanso trigger string (e.g., `:greet`). Templates without a trigger are shown in the browser but excluded from Espanso sync.
+Type `:greet` anywhere → `Hello, there! Thanks for reaching out.` ✨
 
-## Schema
+---
 
-Templates use a standard JSON format with `name`, `content`, `trigger`, and `variables` fields. The `trigger` field is used for Espanso matching; other fields (`variables`, `refinements`) are preserved as-is.
+## 📄 License
 
-## Development
-
-```bash
-pip install -e .[dev]
-
-# Run tests
-pytest
-
-# Lint
-ruff check .
-
-# Format check
-black --check .
-```
+[MIT](LICENSE)
