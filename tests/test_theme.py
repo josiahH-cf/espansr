@@ -68,9 +68,7 @@ class TestLightThemeWidgetCoverage:
         from espansr.ui.theme import LIGHT_THEME
 
         # Normalize whitespace — Qt CSS is forgiving
-        assert selector in LIGHT_THEME, (
-            f"LIGHT_THEME missing selector: {selector}"
-        )
+        assert selector in LIGHT_THEME, f"LIGHT_THEME missing selector: {selector}"
 
     def test_light_theme_uses_light_background(self):
         """LIGHT_THEME uses a light background color for QMainWindow."""
@@ -221,9 +219,7 @@ class TestThemeComboBox:
             stack.enter_context(
                 _patch("espansr.integrations.espanso._get_candidate_paths", return_value=[])
             )
-            stack.enter_context(
-                _patch("espansr.ui.template_browser.get_template_manager")
-            )
+            stack.enter_context(_patch("espansr.ui.template_browser.get_template_manager"))
             window = MainWindow()
             qtbot.addWidget(window)
             yield window
