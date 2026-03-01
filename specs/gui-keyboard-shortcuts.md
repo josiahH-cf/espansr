@@ -1,6 +1,6 @@
 # Feature: GUI Keyboard Shortcuts
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -8,14 +8,14 @@ Add keyboard shortcuts for common actions in the GUI so power users can work wit
 
 ## Acceptance Criteria
 
-- [ ] `Ctrl+S` triggers "Sync Now" (same as clicking the Sync button)
-- [ ] `Ctrl+N` creates a new template (clears the editor)
-- [ ] `Ctrl+I` opens the import file dialog
-- [ ] `Ctrl+F` focuses the template search/filter field in the browser (if one exists) or the template list
-- [ ] `Delete` or `Ctrl+D` deletes the currently selected template (with the existing inline confirmation)
-- [ ] All shortcuts work regardless of which widget has focus
-- [ ] Toolbar button tooltips show the shortcut (e.g., "Sync Now (Ctrl+S)")
-- [ ] Shortcuts do not conflict with standard Qt text editing shortcuts (Ctrl+C, Ctrl+V, Ctrl+Z, etc.)
+- [x] `Ctrl+S` triggers "Sync Now" (same as clicking the Sync button)
+- [x] `Ctrl+N` creates a new template (clears the editor)
+- [x] `Ctrl+I` opens the import file dialog
+- [x] `Ctrl+F` focuses the template search/filter field in the browser (if one exists) or the template list
+- [x] `Delete` or `Ctrl+D` deletes the currently selected template (with the existing inline confirmation)
+- [x] All shortcuts work regardless of which widget has focus
+- [x] Toolbar button tooltips show the shortcut (e.g., "Sync Now (Ctrl+S)")
+- [x] Shortcuts do not conflict with standard Qt text editing shortcuts (Ctrl+C, Ctrl+V, Ctrl+Z, etc.)
 
 ## Affected Areas
 

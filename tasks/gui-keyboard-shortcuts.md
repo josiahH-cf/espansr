@@ -5,8 +5,8 @@
 ## Status
 
 - Total: 3
-- Complete: 0
-- Remaining: 3
+- Complete: 3
+- Remaining: 0
 
 ## Task List
 
@@ -15,7 +15,7 @@
 - **Files:** `tests/test_gui_shortcuts.py` (create)
 - **Done when:** `pytest tests/test_gui_shortcuts.py` runs and all tests fail with `AttributeError` or assertion errors (not import errors)
 - **Criteria covered:** All 8 acceptance criteria have at least one test
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 Tests to write:
 - `test_ctrl_s_triggers_sync` — simulate `Ctrl+S`, verify `_do_sync` fires
@@ -32,7 +32,7 @@ Tests to write:
 - **Files:** `espansr/ui/template_browser.py`
 - **Done when:** `focus_search()` and `start_delete()` are public methods; Task 1 tests that exercise these no longer fail on `AttributeError`
 - **Criteria covered:** Ctrl+F (focus search), Delete/Ctrl+D (delete selected)
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 Changes:
 - Add `focus_search(self) -> None` — sets focus to the filter `QLineEdit` and selects all text
@@ -43,7 +43,7 @@ Changes:
 - **Files:** `espansr/ui/main_window.py`
 - **Done when:** All Task 1 tests pass; `ruff check .` and `black --check .` pass; full test suite green
 - **Criteria covered:** All 8 acceptance criteria
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 Changes:
 - Import `QShortcut`, `QKeySequence` from `PyQt6.QtGui`
@@ -71,4 +71,4 @@ Changes:
 
 ## Session Log
 
-<!-- Append after each session: date, completed, blockers -->
+- **2026-03-01:** All 3 tasks complete. 8 tests passing, 290 total. Lint clean.
