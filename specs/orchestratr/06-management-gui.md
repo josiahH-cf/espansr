@@ -1,11 +1,11 @@
 # Feature: Management GUI
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
-A minimal GUI for managing the app registry and orchestr settings. Used rarely — primarily during initial setup and when adding new apps. Accessed via the system tray "Configure" menu item or a dedicated chord (e.g., leader + `?`). The GUI reads and writes the same YAML config file that can also be edited by hand.
+A minimal GUI for managing the app registry and orchestratr settings. Used rarely — primarily during initial setup and when adding new apps. Accessed via the system tray "Configure" menu item or a dedicated chord (e.g., leader + `?`). The GUI reads and writes the same YAML config file that can also be edited by hand.
 
 ## Acceptance Criteria
 
@@ -22,9 +22,9 @@ A minimal GUI for managing the app registry and orchestr settings. Used rarely �
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/gui/main_window.py` — app table, settings panel |
-| **Create** | `orchestr/gui/app_form.py` — add/edit app dialog |
-| **Create** | `orchestr/gui/key_capture.py` — custom key-capture widget for leader key setting |
+| **Create** | `orchestratr/gui/main_window.py` — app table, settings panel |
+| **Create** | `orchestratr/gui/app_form.py` — add/edit app dialog |
+| **Create** | `orchestratr/gui/key_capture.py` — custom key-capture widget for leader key setting |
 
 ## Constraints
 
@@ -37,7 +37,7 @@ A minimal GUI for managing the app registry and orchestr settings. Used rarely �
 ## Out of Scope
 
 - Drag-and-drop reordering of apps
-- Visual hotkey conflict checker (shows conflicts with system-wide shortcuts outside orchestr)
+- Visual hotkey conflict checker (shows conflicts with system-wide shortcuts outside orchestratr)
 - App-specific settings or sub-configuration panels
 - Theming or appearance customization
 - Real-time log viewer
@@ -57,7 +57,7 @@ The GUI is a **config editor with guardrails**, not an app dashboard. It should 
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ orchestr — Configuration                        [×] │
+│ orchestratr — Configuration                        [×] │
 ├─────────────────────────────────────────────────────┤
 │ Leader Key: [Ctrl+Space]  Timeout: [2000]ms         │
 ├─────────────────────────────────────────────────────┤

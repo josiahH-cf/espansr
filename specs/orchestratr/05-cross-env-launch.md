@@ -1,11 +1,11 @@
 # Feature: Cross-Environment Launching
 
 **Status:** Not started  
-**Project:** orchestr
+**Project:** orchestratr
 
 ## Description
 
-orchestr must launch apps regardless of where they live — natively on the host OS, or inside a WSL2 distribution when the daemon runs on Windows. It must also track whether a launched app is still running so it can bring an existing instance to the foreground instead of spawning duplicates. This spec covers the process spawning, environment bridging, and instance tracking mechanics.
+orchestratr must launch apps regardless of where they live — natively on the host OS, or inside a WSL2 distribution when the daemon runs on Windows. It must also track whether a launched app is still running so it can bring an existing instance to the foreground instead of spawning duplicates. This spec covers the process spawning, environment bridging, and instance tracking mechanics.
 
 ## Acceptance Criteria
 
@@ -13,20 +13,20 @@ orchestr must launch apps regardless of where they live — natively on the host
 - [ ] Apps with `environment: wsl` are launched via `wsl.exe -d <distro> -- <command>` when the daemon runs on Windows
 - [ ] Apps with `environment: wsl` are launched directly (as native) when the daemon itself runs on Linux/WSL2
 - [ ] A specific WSL distro can be targeted via `environment: wsl:Ubuntu-22.04` syntax
-- [ ] Before launching, orchestr checks if the app is already running; if so, it attempts to bring the existing window to the foreground
-- [ ] If bring-to-front fails or is unsupported, orchestr falls back to launching a new instance
+- [ ] Before launching, orchestratr checks if the app is already running; if so, it attempts to bring the existing window to the foreground
+- [ ] If bring-to-front fails or is unsupported, orchestratr falls back to launching a new instance
 - [ ] Launch failures (command not found, permission denied, WSL not available) produce a tray notification with the error message
 - [ ] Process tracking uses PID monitoring — no polling; the daemon is notified when a process exits
-- [ ] `orchestr list` shows running/stopped status for each registered app
+- [ ] `orchestratr list` shows running/stopped status for each registered app
 
 ## Affected Areas
 
 | Area | Files |
 |------|-------|
-| **Create** | `orchestr/launcher.py` — process spawning, environment detection, PID tracking |
-| **Create** | `orchestr/launcher/native.py` — native OS process spawning |
-| **Create** | `orchestr/launcher/wsl.py` — WSL2 bridge logic |
-| **Create** | `orchestr/window.py` — bring-to-front logic per platform |
+| **Create** | `orchestratr/launcher.py` — process spawning, environment detection, PID tracking |
+| **Create** | `orchestratr/launcher/native.py` — native OS process spawning |
+| **Create** | `orchestratr/launcher/wsl.py` — WSL2 bridge logic |
+| **Create** | `orchestratr/window.py` — bring-to-front logic per platform |
 
 ## Constraints
 
@@ -76,7 +76,7 @@ wsl.exe -d Ubuntu -- bash -lc "/home/user/app/.venv/bin/myapp gui"
 
 Key considerations:
 - `bash -lc` ensures the user's profile is loaded (PATH, aliases, etc.)
-- GUI apps in WSL2 require WSLg (Windows 11) or an X server — orchestr should detect and warn if display forwarding isn't available
+- GUI apps in WSL2 require WSLg (Windows 11) or an X server — orchestratr should detect and warn if display forwarding isn't available
 - The default distro is read from `wsl --list --quiet` if `environment: wsl` doesn't specify one
 
 ### Bring-to-front platforms

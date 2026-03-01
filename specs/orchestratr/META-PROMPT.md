@@ -1,8 +1,8 @@
-# Meta-Prompt: Bootstrap the orchestr Repository
+# Meta-Prompt: Bootstrap the orchestratr Repository
 
 > **Context:** You are working in a directory that contains two sibling projects:
 > - `espansr/` — an existing, complete Python+PyQt6 project (text expansion template manager)
-> - `orchestr/` — a new, empty repository that needs to be bootstrapped
+> - `orchestratr/` — a new, empty repository that needs to be bootstrapped
 >
 > Focus ONLY on these two projects. Ignore any other directories at this level.
 
@@ -10,10 +10,10 @@
 
 ## Objective
 
-Set up the `orchestr/` repository with:
+Set up the `orchestratr/` repository with:
 1. **Workflow scaffolding** — adapted from espansr's battle-tested agent workflow files
-2. **Feature specs** — copied from `espansr/specs/orchestr/` (the design work is already done)
-3. **Project identity** — a new AGENTS.md, README, and config tailored to orchestr's Go-based architecture
+2. **Feature specs** — copied from `espansr/specs/orchestratr/` (the design work is already done)
+3. **Project identity** — a new AGENTS.md, README, and config tailored to orchestratr's Go-based architecture
 
 Do NOT copy any espansr application code, tests, Python config, or espansr-specific documentation.
 
@@ -21,11 +21,11 @@ Do NOT copy any espansr application code, tests, Python config, or espansr-speci
 
 ## Step 1: Copy and adapt workflow scaffolding
 
-Copy these files from `espansr/` into `orchestr/`, then **adapt** each one as described below. Do not copy them verbatim — every file must be rewritten for orchestr's context.
+Copy these files from `espansr/` into `orchestratr/`, then **adapt** each one as described below. Do not copy them verbatim — every file must be rewritten for orchestratr's context.
 
 ### Files to copy and adapt
 
-| Source (espansr/) | Destination (orchestr/) | Adaptation needed |
+| Source (espansr/) | Destination (orchestratr/) | Adaptation needed |
 |---|---|---|
 | `CLAUDE.md` | `CLAUDE.md` | **Copy verbatim.** It's fully generic (session rules, planning refs, scope discipline). No changes needed. |
 | `CLAUDE.local.md` | `CLAUDE.local.md` | **Copy verbatim.** Empty personal-preferences stub. Add to `.gitignore`. |
@@ -48,9 +48,9 @@ Copy these files from `espansr/` into `orchestr/`, then **adapt** each one as de
 
 | File | Reason |
 |---|---|
-| `AGENTS.md` | Must be written from scratch for orchestr (see Step 2) |
+| `AGENTS.md` | Must be written from scratch for orchestratr (see Step 2) |
 | `README.md` | Must be written from scratch (see Step 3) |
-| `CHANGELOG.md` | Start fresh — orchestr has no history yet |
+| `CHANGELOG.md` | Start fresh — orchestratr has no history yet |
 | `VERIFY.md` | Espansr-specific verification checklist |
 | `pyproject.toml` | Python packaging — irrelevant to Go |
 | `install.sh` / `install.ps1` | Espansr-specific installers |
@@ -62,18 +62,18 @@ Copy these files from `espansr/` into `orchestr/`, then **adapt** each one as de
 | `specs/archive/` | Espansr's archived specs |
 | `tasks/archive/` | Espansr's archived tasks |
 | `specs/toggleable-yaml-preview.md` | Espansr feature spec |
-| `specs/espansr-orchestr-connector.md` | Stays in espansr — it's the espansr-side integration |
+| `specs/espansr-orchestratr-connector.md` | Stays in espansr — it's the espansr-side integration |
 
 ---
 
-## Step 2: Write AGENTS.md for orchestr
+## Step 2: Write AGENTS.md for orchestratr
 
-Create `orchestr/AGENTS.md` with the following content. This is the single source of truth for the project:
+Create `orchestratr/AGENTS.md` with the following content. This is the single source of truth for the project:
 
 ```markdown
 # Project
 
-- Project name: orchestr
+- Project name: orchestratr
 - Description: A system-wide hotkey launcher and app orchestrator. Background daemon with leader-key chords, localhost HTTP API, and cross-environment launching.
 - Primary language/framework: Go (single binary, cross-platform)
 - Scope: Hotkey registration, app lifecycle management, IPC via HTTP, system tray, cross-env launching (WSL2 ↔ Windows)
@@ -82,7 +82,7 @@ Create `orchestr/AGENTS.md` with the following content. This is the single sourc
 # Build
 
 - Install: `go install ./...` or `make install`
-- Build: `go build -o orchestr ./cmd/orchestr`
+- Build: `go build -o orchestratr ./cmd/orchestratr`
 - Test (all): `go test ./...`
 - Test (single): `go test ./internal/hotkey -run TestLeaderKeyCapture`
 - Lint: `golangci-lint run ./...`
@@ -91,7 +91,7 @@ Create `orchestr/AGENTS.md` with the following content. This is the single sourc
 
 # Architecture
 
-- `cmd/orchestr/` — Main binary entrypoint (daemon start, CLI commands)
+- `cmd/orchestratr/` — Main binary entrypoint (daemon start, CLI commands)
 - `internal/daemon/` — Background daemon lifecycle, single-instance lock, signal handling
 - `internal/hotkey/` — Platform-specific hotkey capture (evdev, CGEventTap, RegisterHotKey, Wayland)
 - `internal/registry/` — App registry: YAML config parsing, hot-reload, app state tracking
@@ -215,29 +215,29 @@ All agent-driven planning happens in local files (`/specs/`, `/tasks/`, `/decisi
 # Related Projects
 
 - **espansr** — Espanso template manager (Python/PyQt6). First app to be orchestrated.
-  - Connector spec: see `espansr/specs/espansr-orchestr-connector.md` in the espansr repo
-  - Provides `orchestr.yml` manifest and `espansr status --json` for health checks
+  - Connector spec: see `espansr/specs/espansr-orchestratr-connector.md` in the espansr repo
+  - Provides `orchestratr.yml` manifest and `espansr status --json` for health checks
 ```
 
 ---
 
 ## Step 3: Copy feature specs
 
-Copy the entire `espansr/specs/orchestr/` directory contents into `orchestr/specs/`:
+Copy the entire `espansr/specs/orchestratr/` directory contents into `orchestratr/specs/`:
 
 ```
-espansr/specs/orchestr/01-core-daemon.md       → orchestr/specs/01-core-daemon.md
-espansr/specs/orchestr/02-hotkey-engine.md      → orchestr/specs/02-hotkey-engine.md
-espansr/specs/orchestr/03-app-registry.md       → orchestr/specs/03-app-registry.md
-espansr/specs/orchestr/04-http-api.md           → orchestr/specs/04-http-api.md
-espansr/specs/orchestr/05-cross-env-launch.md   → orchestr/specs/05-cross-env-launch.md
-espansr/specs/orchestr/06-management-gui.md     → orchestr/specs/06-management-gui.md
-espansr/specs/orchestr/07-installer-permissions.md → orchestr/specs/07-installer-permissions.md
+espansr/specs/orchestratr/01-core-daemon.md       → orchestratr/specs/01-core-daemon.md
+espansr/specs/orchestratr/02-hotkey-engine.md      → orchestratr/specs/02-hotkey-engine.md
+espansr/specs/orchestratr/03-app-registry.md       → orchestratr/specs/03-app-registry.md
+espansr/specs/orchestratr/04-http-api.md           → orchestratr/specs/04-http-api.md
+espansr/specs/orchestratr/05-cross-env-launch.md   → orchestratr/specs/05-cross-env-launch.md
+espansr/specs/orchestratr/06-management-gui.md     → orchestratr/specs/06-management-gui.md
+espansr/specs/orchestratr/07-installer-permissions.md → orchestratr/specs/07-installer-permissions.md
 ```
 
 Do NOT copy `META-PROMPT.md` — it's this file and is for bootstrapping only.
 
-Do NOT copy `espansr/specs/espansr-orchestr-connector.md` — that belongs in espansr.
+Do NOT copy `espansr/specs/espansr-orchestratr-connector.md` — that belongs in espansr.
 
 ---
 
@@ -278,7 +278,7 @@ jobs:
         run: go test -race ./...
 
       - name: Build
-        run: go build -o orchestr ./cmd/orchestr
+        run: go build -o orchestratr ./cmd/orchestratr
 ```
 
 Create `.github/workflows/copilot-setup-steps.yml`:
@@ -320,10 +320,10 @@ jobs:
 
 ## Step 5: Write initial README
 
-Create `orchestr/README.md`:
+Create `orchestratr/README.md`:
 
 ```markdown
-# orchestr
+# orchestratr
 
 A system-wide hotkey launcher and app orchestrator.
 
@@ -364,7 +364,7 @@ See `/specs/` for the complete design:
 
 ## Related
 
-- [espansr](https://github.com/josiahH-cf/espansr) — First app to be orchestrated. See its `specs/espansr-orchestr-connector.md` for the integration spec.
+- [espansr](https://github.com/josiahH-cf/espansr) — First app to be orchestrated. See its `specs/espansr-orchestratr-connector.md` for the integration spec.
 
 ## License
 
@@ -376,12 +376,12 @@ See `/specs/` for the complete design:
 ## Step 6: Initialize Go module and scaffold
 
 ```bash
-cd orchestr/
-go mod init github.com/josiahH-cf/orchestr
-mkdir -p cmd/orchestr internal/{daemon,hotkey,registry,api,launcher,tray,gui} configs
+cd orchestratr/
+go mod init github.com/josiahH-cf/orchestratr
+mkdir -p cmd/orchestratr internal/{daemon,hotkey,registry,api,launcher,tray,gui} configs
 ```
 
-Create a minimal `cmd/orchestr/main.go`:
+Create a minimal `cmd/orchestratr/main.go`:
 
 ```go
 package main
@@ -393,14 +393,14 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("orchestr — system-wide app launcher")
-		fmt.Println("Usage: orchestr [start|stop|status|reload|version]")
+		fmt.Println("orchestratr — system-wide app launcher")
+		fmt.Println("Usage: orchestratr [start|stop|status|reload|version]")
 		os.Exit(0)
 	}
 
 	switch os.Args[1] {
 	case "version":
-		fmt.Println("orchestr v0.0.0-dev")
+		fmt.Println("orchestratr v0.0.0-dev")
 	default:
 		fmt.Fprintf(os.Stderr, "unknown command: %s\n", os.Args[1])
 		os.Exit(1)
@@ -411,7 +411,7 @@ func main() {
 Create `configs/example.yml`:
 
 ```yaml
-# orchestr configuration
+# orchestratr configuration
 leader_key: "ctrl+space"
 api_port: 9876
 
@@ -430,7 +430,7 @@ apps:
 
 ```
 # Build
-orchestr
+orchestratr
 *.exe
 /dist/
 
@@ -459,9 +459,9 @@ CLAUDE.local.md
 ## Step 8: Initial commit
 
 ```bash
-cd orchestr/
+cd orchestratr/
 git add -A
-git commit -m "Bootstrap orchestr repository
+git commit -m "Bootstrap orchestratr repository
 
 Scaffolding:
 - AGENTS.md, CLAUDE.md, workflow docs adapted from espansr
@@ -485,10 +485,10 @@ No implementation — specs only. Ready for Phase 2 (Plan)."
 
 ## Verification
 
-After running this prompt, the orchestr repo should contain:
+After running this prompt, the orchestratr repo should contain:
 
 ```
-orchestr/
+orchestratr/
 ├── .claude/
 │   ├── commands/           (14 generic workflow commands)
 │   ├── settings.json       (Go-adapted hooks)
@@ -508,11 +508,11 @@ orchestr/
 │       ├── ci.yml          (Go CI — multi-OS, multi-version)
 │       └── copilot-setup-steps.yml (Go setup)
 ├── .gitignore
-├── AGENTS.md               (orchestr-specific — Go, daemon architecture)
+├── AGENTS.md               (orchestratr-specific — Go, daemon architecture)
 ├── CLAUDE.md               (generic session rules)
 ├── CLAUDE.local.md          (gitignored personal prefs)
-├── README.md               (orchestr overview)
-├── cmd/orchestr/main.go    (minimal entrypoint)
+├── README.md               (orchestratr overview)
+├── cmd/orchestratr/main.go    (minimal entrypoint)
 ├── configs/example.yml     (example app config)
 ├── decisions/_TEMPLATE.md
 ├── go.mod
@@ -537,7 +537,7 @@ orchestr/
 └── workflow/LIFECYCLE.md
 ```
 
-**Zero espansr-specific content should exist in the orchestr repo.** The only reference to espansr should be:
+**Zero espansr-specific content should exist in the orchestratr repo.** The only reference to espansr should be:
 - `AGENTS.md` → Related Projects section (link to espansr as first orchestrated app)
 - `README.md` → Related section (link to espansr connector spec)
 - `configs/example.yml` → espansr as an example app entry
