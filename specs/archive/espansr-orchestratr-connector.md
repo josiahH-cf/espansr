@@ -9,13 +9,13 @@ espansr needs to be discoverable, launchable, and optionally queryable by orches
 
 ## Acceptance Criteria
 
-- [ ] espansr ships an `orchestratr.yml` app manifest in its config directory that orchestratr can discover
-- [ ] `espansr gui` is launchable by orchestratr and reports its PID correctly
-- [ ] `espansr status --json` outputs machine-readable status (template count, last sync, config path) for orchestratr health checks
-- [ ] When launched by orchestratr, espansr GUI responds to "bring to front" signals (X11 `_NET_ACTIVE_WINDOW`, macOS `NSApplication.activate`, Windows `SetForegroundWindow`) — existing window manager behavior, no custom IPC
-- [ ] orchestratr manifest includes a `ready_cmd` that orchestratr can poll to confirm espansr is responsive
-- [ ] If orchestratr is not installed, espansr behavior is unchanged — connector is passive
-- [ ] `espansr setup` regenerates the orchestratr manifest if it's missing or outdated
+- [x] espansr ships an `orchestratr.yml` app manifest in its config directory that orchestratr can discover
+- [x] `espansr gui` is launchable by orchestratr and reports its PID correctly
+- [x] `espansr status --json` outputs machine-readable status (template count, last sync, config path) for orchestratr health checks
+- [x] When launched by orchestratr, espansr GUI responds to "bring to front" signals (X11 `_NET_ACTIVE_WINDOW`, macOS `NSApplication.activate`, Windows `SetForegroundWindow`) — existing window manager behavior, no custom IPC
+- [x] orchestratr manifest includes a `ready_cmd` that orchestratr can poll to confirm espansr is responsive
+- [x] If orchestratr is not installed, espansr behavior is unchanged — connector is passive
+- [x] `espansr setup` regenerates the orchestratr manifest if it's missing or outdated
 
 ## Affected Areas
 

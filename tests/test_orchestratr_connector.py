@@ -145,9 +145,7 @@ class TestStatusJson:
         """status --json returns degraded status when espanso is missing."""
         from espansr.integrations.orchestratr import get_status_json
 
-        config_dir, templates_dir, _ = _make_config_env(
-            tmp_path, templates=0, espanso=False
-        )
+        config_dir, templates_dir, _ = _make_config_env(tmp_path, templates=0, espanso=False)
 
         with (
             patch(
@@ -359,9 +357,7 @@ class TestSetupIntegration:
 
         # Write an outdated manifest
         manifest_path = config_dir / "orchestratr.yml"
-        manifest_path.write_text(
-            yaml.dump({"name": "espansr", "version": "0.0.0"})
-        )
+        manifest_path.write_text(yaml.dump({"name": "espansr", "version": "0.0.0"}))
 
         with (
             patch("espansr.__main__.get_config_dir", return_value=config_dir),
