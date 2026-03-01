@@ -1,6 +1,6 @@
 # Feature: Toggleable YAML Preview
 
-**Status:** Not started
+**Status:** Complete
 
 ## Description
 
@@ -8,13 +8,13 @@ The YAML preview and output preview panels in the template editor add visual clu
 
 ## Acceptance Criteria
 
-- [ ] A toggle control (toolbar button or menu item) shows/hides the YAML preview and output preview panes
-- [ ] The toggle state persists across sessions via `config.ui.show_previews`
-- [ ] When hidden, the preview panes and their labels are fully removed from the layout (no empty space)
-- [ ] When shown, the previews restore to their previous behavior (live-updating on content/trigger/variable changes)
-- [ ] The default value for new installs is `false` (previews hidden) to keep the interface clean
-- [ ] Keyboard shortcut toggles the preview (e.g., Ctrl+P or Ctrl+Shift+P)
-- [ ] The toggle state is reflected in the toolbar tooltip or button label (e.g., "Show Previews" / "Hide Previews")
+- [x] A toggle control (toolbar button or menu item) shows/hides the YAML preview and output preview panes
+- [x] The toggle state persists across sessions via `config.ui.show_previews`
+- [x] When hidden, the preview panes and their labels are fully removed from the layout (no empty space)
+- [x] When shown, the previews restore to their previous behavior (live-updating on content/trigger/variable changes)
+- [x] The default value for new installs is `false` (previews hidden) to keep the interface clean
+- [x] Keyboard shortcut toggles the preview (e.g., Ctrl+P or Ctrl+Shift+P)
+- [x] The toggle state is reflected in the toolbar tooltip or button label (e.g., "Show Previews" / "Hide Previews")
 
 ## Affected Areas
 
