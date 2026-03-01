@@ -666,9 +666,7 @@ def detect_system_theme() -> str:
         palette = app.palette()
         window_color = palette.color(palette.ColorRole.Window)
         luminance = (
-            0.299 * window_color.red()
-            + 0.587 * window_color.green()
-            + 0.114 * window_color.blue()
+            0.299 * window_color.red() + 0.587 * window_color.green() + 0.114 * window_color.blue()
         )
         return "light" if luminance >= 128 else "dark"
     except Exception:

@@ -3,18 +3,21 @@
 Spec: /specs/gui-keyboard-shortcuts.md
 Covers: Ctrl+S sync, Ctrl+N clear, Ctrl+I import, Ctrl+F focus search,
 Delete/Ctrl+D delete, tooltip shortcut hints.
+
+Strategy: QShortcut does not reliably fire in headless test environments,
+so we verify two things per shortcut:
+  1. The key sequence is bound correctly (inspecting the QShortcut object).
+  2. Emitting the shortcut's `activated` signal calls the expected handler.
 """
 
 import contextlib
 from unittest.mock import patch
 
 import pytest
-
-from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence
 
 from espansr.core.config import Config
-from espansr.core.templates import Template, TemplateManager
+from espansr.core.templates import TemplateManager
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -73,11 +76,13 @@ def _make_window(qtbot, config, tm=None, tmp_path=None):
 
 
 def test_ctrl_s_triggers_sync(qtbot, tmp_path):
-    """Ctrl+S fires _do_sync (same as clicking the Sync button)."""
+    """Ctrl+S shortcut is bound and fires _do_sync."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_sync.key() == QKeySequence(QKeySequence.StandardKey.Save)
+
     with patch.object(window, "_do_sync") as mock_sync:
-        qtbot.keyClick(window, Qt.Key.Key_S, Qt.KeyboardModifier.ControlModifier)
+        window._shortcut_sync.activated.emit()
 
     mock_sync.assert_called_once()
 
@@ -86,11 +91,13 @@ def test_ctrl_s_triggers_sync(qtbot, tmp_path):
 
 
 def test_ctrl_n_clears_editor(qtbot, tmp_path):
-    """Ctrl+N clears the editor (creates a new template)."""
+    """Ctrl+N shortcut is bound and clears the editor."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_new.key() == QKeySequence("Ctrl+N")
+
     with patch.object(window._editor, "clear") as mock_clear:
-        qtbot.keyClick(window, Qt.Key.Key_N, Qt.KeyboardModifier.ControlModifier)
+        window._shortcut_new.activated.emit()
 
     mock_clear.assert_called_once()
 
@@ -99,11 +106,13 @@ def test_ctrl_n_clears_editor(qtbot, tmp_path):
 
 
 def test_ctrl_i_opens_import_dialog(qtbot, tmp_path):
-    """Ctrl+I triggers the import action."""
+    """Ctrl+I shortcut is bound and triggers import."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_import.key() == QKeySequence("Ctrl+I")
+
     with patch.object(window, "_do_import") as mock_import:
-        qtbot.keyClick(window, Qt.Key.Key_I, Qt.KeyboardModifier.ControlModifier)
+        window._shortcut_import.activated.emit()
 
     mock_import.assert_called_once()
 
@@ -112,11 +121,13 @@ def test_ctrl_i_opens_import_dialog(qtbot, tmp_path):
 
 
 def test_ctrl_f_focuses_search(qtbot, tmp_path):
-    """Ctrl+F focuses the browser search field."""
+    """Ctrl+F shortcut is bound and focuses the browser search field."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_search.key() == QKeySequence(QKeySequence.StandardKey.Find)
+
     with patch.object(window._browser, "focus_search") as mock_focus:
-        qtbot.keyClick(window, Qt.Key.Key_F, Qt.KeyboardModifier.ControlModifier)
+        window._shortcut_search.activated.emit()
 
     mock_focus.assert_called_once()
 
@@ -125,21 +136,25 @@ def test_ctrl_f_focuses_search(qtbot, tmp_path):
 
 
 def test_delete_triggers_delete(qtbot, tmp_path):
-    """Delete key triggers start_delete on the browser."""
+    """Delete shortcut is bound and triggers start_delete."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_delete.key() == QKeySequence("Delete")
+
     with patch.object(window._browser, "start_delete") as mock_del:
-        qtbot.keyClick(window, Qt.Key.Key_Delete)
+        window._shortcut_delete.activated.emit()
 
     mock_del.assert_called_once()
 
 
 def test_ctrl_d_triggers_delete(qtbot, tmp_path):
-    """Ctrl+D triggers start_delete on the browser."""
+    """Ctrl+D shortcut is bound and triggers start_delete."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
+    assert window._shortcut_delete_alt.key() == QKeySequence("Ctrl+D")
+
     with patch.object(window._browser, "start_delete") as mock_del:
-        qtbot.keyClick(window, Qt.Key.Key_D, Qt.KeyboardModifier.ControlModifier)
+        window._shortcut_delete_alt.activated.emit()
 
     mock_del.assert_called_once()
 
