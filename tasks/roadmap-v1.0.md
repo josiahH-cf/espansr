@@ -42,11 +42,20 @@
 
 ## Active
 
-_No active work — ready for next feature._
-
-**Next up:** GUI dark/light mode (#18) per recommended order
+**GUI keyboard shortcuts (#19)**
+- Spec: `/specs/gui-keyboard-shortcuts.md`
+- Tasks: `/tasks/gui-keyboard-shortcuts.md`
+- 3 tasks; 1 session estimated
 
 ## Completed
+
+### GUI System Theme Detection (Dark/Light Mode)
+- `LIGHT_THEME` fully implemented in `theme.py` (matches `DARK_THEME` widget coverage)
+- Auto-detection via `QStyleHints.colorScheme()` with `QPalette` luminance fallback
+- `config.ui.theme` default changed from `"dark"` to `"auto"`
+- Runtime theme switcher via toolbar `QComboBox` (Auto/Dark/Light)
+- Tests in `tests/test_theme.py`
+- **Spec:** `/specs/gui-dark-mode.md` — **Tasks:** `/tasks/gui-dark-mode.md`
 
 ### CLI Dry-Run and Verbose Modes
 - `--dry-run` flag on `espansr sync` and `espansr setup`
@@ -222,7 +231,7 @@ _No active work — ready for next feature._
 | 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Complete |
 | 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Complete |
 | 17 | GUI template preview | `/specs/gui-template-preview.md` | Complete |
-| 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Not started |
-| 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Not started |
+| 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Complete |
+| 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | In progress |
 
 **v1.0 total tests: 230 passing** (as of 2026-02-28)
