@@ -448,9 +448,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     import_parser.add_argument("path", help="Path to a JSON file or directory of JSON files")
     subparsers.add_parser("gui", help="Launch the GUI")
-    comp_parser = subparsers.add_parser(
-        "completions", help="Print shell completion script"
-    )
+    comp_parser = subparsers.add_parser("completions", help="Print shell completion script")
     comp_parser.add_argument(
         "shell",
         choices=["bash", "zsh"],
