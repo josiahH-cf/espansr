@@ -42,11 +42,21 @@
 
 ## Active
 
-_No active work — ready for next feature._
+_All v1.0 features complete. Entering documentation and release phase._
 
-**Next up:** Shell tab completion (#14)
+## Phase Complete
+
+All 19 scoped features have been implemented, tested, and merged. The backlog is empty.
 
 ## Completed
+
+### Shell Tab Completion
+- `espansr completions bash` and `espansr completions zsh` subcommands
+- Generates completion scripts from argparse introspection (not hardcoded)
+- Completes subcommand names and top-level flags (`--help`, `--version`)
+- `install.sh` prints sourcing hint after install
+- 8 tests in `tests/test_completions.py`
+- **Spec:** `/specs/cli-tab-completion.md` — **Tasks:** `/tasks/cli-tab-completion.md`
 
 ### GUI Keyboard Shortcuts
 - `QShortcut` instances: Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search, Delete/Ctrl+D delete
@@ -234,11 +244,11 @@ _No active work — ready for next feature._
 | 11 | `espansr doctor` | `/specs/cli-doctor.md` | Complete |
 | 12 | CLI dry-run & verbose | `/specs/cli-dry-run-verbose.md` | Complete |
 | 13 | Colored CLI output | `/specs/cli-colored-output.md` | Complete |
-| 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Not started |
+| 14 | Shell tab completion | `/specs/cli-tab-completion.md` | Complete |
 | 15 | Setup/platform resilience | `/specs/setup-platform-resilience.md` | Complete |
 | 16 | GUI status bar & feedback | `/specs/gui-status-bar-feedback.md` | Complete |
 | 17 | GUI template preview | `/specs/gui-template-preview.md` | Complete |
 | 18 | GUI dark/light mode | `/specs/gui-dark-mode.md` | Complete |
 | 19 | GUI keyboard shortcuts | `/specs/gui-keyboard-shortcuts.md` | Complete |
 
-**v1.0 total tests: 230 passing** (as of 2026-02-28)
+**v1.1 total tests: 298 passing** (as of 2026-03-01)
