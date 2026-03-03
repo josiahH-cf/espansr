@@ -147,20 +147,35 @@ def cmd_setup(args) -> int:
         print("Launcher: skipped (no Espanso config)")
 
     # ── orchestratr manifest ──────────────────────────────────────────────
-    if not dry_run:
-        from espansr.integrations.orchestratr import (
-            generate_manifest,
-            manifest_needs_update,
-        )
+    from espansr.integrations.orchestratr import (
+        generate_manifest,
+        manifest_needs_update,
+        resolve_orchestratr_apps_dir,
+    )
 
-        config_dir_path = get_config_dir()
-        if manifest_needs_update(config_dir_path):
-            manifest_path = generate_manifest(config_dir_path)
-            print(f"orchestratr manifest: written to {manifest_path}")
+    apps_dir = resolve_orchestratr_apps_dir()
+
+    if dry_run:
+        if apps_dir is not None:
+            manifest_path = apps_dir / "espansr.yml"
+            print(f"[dry-run] Would write orchestratr manifest to {manifest_path}")
+        else:
+            print("[dry-run] orchestratr not found — would skip app registration")
+    elif apps_dir is not None:
+        if manifest_needs_update(apps_dir):
+            manifest_path = generate_manifest(apps_dir)
+            print(f"Registered with orchestratr at {manifest_path}")
         else:
             print("orchestratr manifest: up to date")
+
+        # Clean up old manifest in espansr config dir (legacy location)
+        config_dir_path = get_config_dir()
+        old_manifest = config_dir_path / "orchestratr.yml"
+        if old_manifest.exists():
+            old_manifest.unlink()
+            print(f"  Cleaned up old manifest at {old_manifest}")
     else:
-        print("[dry-run] Would check/regenerate orchestratr manifest")
+        print("orchestratr not found — skipping app registration")
 
     if strict and not espanso_found:
         return 1

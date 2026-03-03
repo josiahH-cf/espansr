@@ -1,7 +1,7 @@
 """Tests for espansr ↔ orchestratr connector.
 
 Covers: manifest generation, status --json output, setup integration,
-WSL2 launch commands, and passive behavior when orchestratr is absent.
+flat AppEntry schema, and passive behavior when orchestratr is absent.
 """
 
 import json
@@ -47,57 +47,58 @@ def _make_config_env(tmp_path: Path, *, templates: int = 1, espanso: bool = True
 
 
 class TestManifestGeneration:
-    """orchestratr.yml is generated in the config directory."""
+    """espansr.yml is generated in the apps.d/ directory with flat schema."""
 
     def test_generate_manifest_writes_yaml(self, tmp_path):
-        """generate_manifest() creates orchestratr.yml in the config dir."""
+        """generate_manifest() creates espansr.yml in the apps.d/ dir."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
-        result = generate_manifest(config_dir)
+        result = generate_manifest(apps_dir)
 
-        manifest_path = config_dir / "orchestratr.yml"
+        manifest_path = apps_dir / "espansr.yml"
         assert manifest_path.exists()
         assert result == manifest_path
 
-    def test_manifest_content_matches_schema(self, tmp_path):
-        """Manifest contains required fields matching the orchestratr app registry schema."""
+    def test_manifest_content_matches_flat_schema(self, tmp_path):
+        """Manifest contains flat top-level fields matching orchestratr AppEntry."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
         with patch(
             "espansr.integrations.orchestratr.get_platform",
             return_value="linux",
         ):
-            generate_manifest(config_dir)
+            generate_manifest(apps_dir)
 
-        manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
         assert manifest["name"] == "espansr"
+        assert manifest["chord"] == "e"
+        assert manifest["command"] == "espansr gui"
+        assert manifest["environment"] == "native"
         assert "description" in manifest
-        assert "version" in manifest
-        assert "launch" in manifest
-        assert "command" in manifest["launch"]
         assert manifest["ready_cmd"] == "espansr status --json"
         assert manifest["ready_timeout_ms"] == 3000
-        assert "hotkey" in manifest
-        assert manifest["hotkey"]["suggested_chord"] == "e"
+        # No nested objects or version
+        assert "launch" not in manifest
+        assert "hotkey" not in manifest
+        assert "version" not in manifest
 
-    def test_manifest_version_matches_package(self, tmp_path):
-        """Manifest version field matches espansr.__version__."""
-        from espansr import __version__
+    def test_manifest_no_version_field(self, tmp_path):
+        """Manifest does not include a version field (not in orchestratr schema)."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
-        generate_manifest(config_dir)
+        generate_manifest(apps_dir)
 
-        manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
-        assert manifest["version"] == __version__
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
+        assert "version" not in manifest
 
 
 # ─── AC 3: status --json ────────────────────────────────────────────────────
@@ -244,18 +245,18 @@ class TestReadyCmd:
         """ready_cmd field is present and executable."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
         with patch(
             "espansr.integrations.orchestratr.get_platform",
             return_value="linux",
         ):
-            generate_manifest(config_dir)
+            generate_manifest(apps_dir)
 
-        manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
         assert "ready_cmd" in manifest
-        assert "espansr status --json" in manifest["ready_cmd"]
+        assert manifest["ready_cmd"] == "espansr status --json"
 
 
 # ─── AC 6: Passive behavior ─────────────────────────────────────────────────
@@ -268,18 +269,18 @@ class TestPassiveBehavior:
         """Calling generate_manifest twice produces identical output."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
         with patch(
             "espansr.integrations.orchestratr.get_platform",
             return_value="linux",
         ):
-            generate_manifest(config_dir)
-            content_first = (config_dir / "orchestratr.yml").read_text()
+            generate_manifest(apps_dir)
+            content_first = (apps_dir / "espansr.yml").read_text()
 
-            generate_manifest(config_dir)
-            content_second = (config_dir / "orchestratr.yml").read_text()
+            generate_manifest(apps_dir)
+            content_second = (apps_dir / "espansr.yml").read_text()
 
         assert content_first == content_second
 
@@ -318,7 +319,7 @@ class TestPassiveBehavior:
 
 
 class TestSetupIntegration:
-    """espansr setup regenerates the orchestratr manifest."""
+    """espansr setup registers with orchestratr via apps.d/."""
 
     def test_setup_generates_manifest(self, tmp_path, capsys):
         """cmd_setup calls manifest generation and prints confirmation."""
@@ -330,23 +331,30 @@ class TestSetupIntegration:
         bundled_dir = tmp_path / "bundled"
         bundled_dir.mkdir()
 
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
+
         with (
             patch("espansr.__main__.get_config_dir", return_value=config_dir),
             patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
             patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
             patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+            patch(
+                "espansr.integrations.orchestratr.resolve_orchestratr_apps_dir",
+                return_value=apps_dir,
+            ),
         ):
             result = cmd_setup(None)
 
         assert result == 0
-        manifest = config_dir / "orchestratr.yml"
+        manifest = apps_dir / "espansr.yml"
         assert manifest.exists()
 
         output = capsys.readouterr().out
-        assert "orchestratr" in output.lower()
+        assert "Registered with orchestratr" in output
 
     def test_setup_regenerates_outdated_manifest(self, tmp_path, capsys):
-        """cmd_setup overwrites manifest when version has changed."""
+        """cmd_setup overwrites manifest when schema has changed."""
         from espansr.__main__ import cmd_setup
 
         config_dir = tmp_path / "config" / "espansr"
@@ -355,27 +363,35 @@ class TestSetupIntegration:
         bundled_dir = tmp_path / "bundled"
         bundled_dir.mkdir()
 
-        # Write an outdated manifest
-        manifest_path = config_dir / "orchestratr.yml"
-        manifest_path.write_text(yaml.dump({"name": "espansr", "version": "0.0.0"}))
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
+
+        # Write an old nested-format manifest
+        manifest_path = apps_dir / "espansr.yml"
+        manifest_path.write_text(
+            yaml.dump({"name": "espansr", "version": "0.0.0", "launch": {"command": "espansr gui"}})
+        )
 
         with (
             patch("espansr.__main__.get_config_dir", return_value=config_dir),
             patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
             patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
             patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+            patch(
+                "espansr.integrations.orchestratr.resolve_orchestratr_apps_dir",
+                return_value=apps_dir,
+            ),
         ):
             result = cmd_setup(None)
 
         assert result == 0
         manifest = yaml.safe_load(manifest_path.read_text())
-        # Version should now match current espansr version, not "0.0.0"
-        from espansr import __version__
-
-        assert manifest["version"] == __version__
+        # Should now be flat schema — no nested objects
+        assert "chord" in manifest
+        assert "launch" not in manifest
 
     def test_setup_skips_manifest_when_current(self, tmp_path, capsys):
-        """cmd_setup does not rewrite manifest when version is current."""
+        """cmd_setup does not rewrite manifest when it matches current schema."""
         from espansr.__main__ import cmd_setup
 
         config_dir = tmp_path / "config" / "espansr"
@@ -384,11 +400,18 @@ class TestSetupIntegration:
         bundled_dir = tmp_path / "bundled"
         bundled_dir.mkdir()
 
-        # Write a current manifest
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
+
+        # Write a current flat-format manifest using a consistent platform mock
         from espansr.integrations.orchestratr import generate_manifest
 
-        generate_manifest(config_dir)
-        original_mtime = (config_dir / "orchestratr.yml").stat().st_mtime
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="linux",
+        ):
+            generate_manifest(apps_dir)
+        original_mtime = (apps_dir / "espansr.yml").stat().st_mtime
 
         import time
 
@@ -399,10 +422,18 @@ class TestSetupIntegration:
             patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
             patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
             patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+            patch(
+                "espansr.integrations.orchestratr.resolve_orchestratr_apps_dir",
+                return_value=apps_dir,
+            ),
+            patch(
+                "espansr.integrations.orchestratr.get_platform",
+                return_value="linux",
+            ),
         ):
             cmd_setup(None)
 
-        new_mtime = (config_dir / "orchestratr.yml").stat().st_mtime
+        new_mtime = (apps_dir / "espansr.yml").stat().st_mtime
         assert new_mtime == original_mtime
 
 
@@ -491,52 +522,57 @@ class TestStatusJsonCli:
 
 
 class TestWsl2Manifest:
-    """WSL2 environments produce cross-environment launch commands."""
+    """WSL2 environments produce environment: wsl with bare commands."""
 
-    def test_wsl2_manifest_uses_wsl_exe(self, tmp_path):
-        """On WSL2, launch command uses wsl.exe wrapper."""
+    def test_wsl2_manifest_has_wsl_environment(self, tmp_path):
+        """On WSL2, environment field is 'wsl'."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
-        with (
-            patch(
-                "espansr.integrations.orchestratr.get_platform",
-                return_value="wsl2",
-            ),
-            patch(
-                "espansr.integrations.orchestratr.get_wsl_distro_name",
-                return_value="Ubuntu",
-            ),
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="wsl2",
         ):
-            generate_manifest(config_dir)
+            generate_manifest(apps_dir)
 
-        manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
-        assert "wsl.exe" in manifest["launch"]["command"]
-        assert "Ubuntu" in manifest["launch"]["command"]
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
+        assert manifest["environment"] == "wsl"
 
-    def test_wsl2_ready_cmd_uses_wsl_exe(self, tmp_path):
-        """On WSL2, ready_cmd uses wsl.exe wrapper."""
+    def test_wsl2_command_is_bare(self, tmp_path):
+        """On WSL2, command is bare 'espansr gui' — not wrapped with wsl.exe."""
         from espansr.integrations.orchestratr import generate_manifest
 
-        config_dir = tmp_path / "espansr"
-        config_dir.mkdir()
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
 
-        with (
-            patch(
-                "espansr.integrations.orchestratr.get_platform",
-                return_value="wsl2",
-            ),
-            patch(
-                "espansr.integrations.orchestratr.get_wsl_distro_name",
-                return_value="Ubuntu",
-            ),
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="wsl2",
         ):
-            generate_manifest(config_dir)
+            generate_manifest(apps_dir)
 
-        manifest = yaml.safe_load((config_dir / "orchestratr.yml").read_text())
-        assert "wsl.exe" in manifest["ready_cmd"]
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
+        assert manifest["command"] == "espansr gui"
+        assert "wsl.exe" not in manifest["command"]
+
+    def test_wsl2_ready_cmd_is_bare(self, tmp_path):
+        """On WSL2, ready_cmd is bare — not wrapped with wsl.exe."""
+        from espansr.integrations.orchestratr import generate_manifest
+
+        apps_dir = tmp_path / "orchestratr" / "apps.d"
+        apps_dir.mkdir(parents=True)
+
+        with patch(
+            "espansr.integrations.orchestratr.get_platform",
+            return_value="wsl2",
+        ):
+            generate_manifest(apps_dir)
+
+        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
+        assert manifest["ready_cmd"] == "espansr status --json"
+        assert "wsl.exe" not in manifest["ready_cmd"]
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
