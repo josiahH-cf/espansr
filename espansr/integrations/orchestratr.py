@@ -8,66 +8,115 @@ a JSON status helper. espansr never imports or depends on orchestratr code.
 """
 
 import json
+import os
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
 from espansr import __version__
 from espansr.core.config import get_config, get_config_dir, get_templates_dir
-from espansr.core.platform import get_platform, get_wsl_distro_name
+from espansr.core.platform import get_platform, get_windows_username
 from espansr.integrations.espanso import get_espanso_config_dir
 
-MANIFEST_FILENAME = "orchestratr.yml"
+MANIFEST_FILENAME = "espansr.yml"
+
+# Required top-level keys for a valid flat manifest.
+_FLAT_SCHEMA_KEYS = {
+    "name", "chord", "command", "environment",
+    "description", "ready_cmd", "ready_timeout_ms",
+}
 
 
-def generate_manifest(config_dir: Path) -> Path:
-    """Generate the orchestratr app manifest in the given config directory.
+def resolve_orchestratr_apps_dir() -> Optional[Path]:
+    """Resolve the orchestratr apps.d/ directory for the current platform.
 
-    The manifest is a declarative YAML file that tells orchestratr how to
-    discover, launch, and health-check espansr. It is idempotent — calling
-    this function multiple times produces the same file.
+    Returns None if orchestratr is not installed (base directory doesn't exist).
+    Does not create directories — only orchestratr should create its own config.
+
+    Returns:
+        Path to the apps.d/ directory, or None if orchestratr is not installed.
+    """
+    platform = get_platform()
+
+    if platform == "wsl2":
+        base = _wsl2_orchestratr_base()
+    elif platform == "windows":
+        appdata = os.environ.get("APPDATA", "")
+        base = Path(appdata) / "orchestratr" if appdata else None
+    elif platform == "macos":
+        base = Path.home() / "Library" / "Application Support" / "orchestratr"
+    else:  # linux
+        xdg = os.environ.get("XDG_CONFIG_HOME")
+        config_base = Path(xdg) if xdg else Path.home() / ".config"
+        base = config_base / "orchestratr"
+
+    if base is None or not base.exists():
+        return None
+
+    return base / "apps.d"
+
+
+def _wsl2_orchestratr_base() -> Optional[Path]:
+    """Resolve the Windows-side orchestratr config directory from WSL2.
+
+    Returns:
+        Path under /mnt/c/Users/<username>/AppData/Roaming/orchestratr,
+        or None if the Windows username cannot be determined.
+    """
+    win_user = get_windows_username()
+    if not win_user:
+        return None
+    return Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/orchestratr")
+
+
+def generate_manifest(apps_dir: Path) -> Path:
+    """Generate the orchestratr app manifest in the given apps.d/ directory.
+
+    Produces a flat YAML file matching orchestratr's AppEntry schema.
+    The manifest is idempotent — calling this function multiple times
+    produces the same file.
 
     Args:
-        config_dir: The espansr config directory where the manifest is written.
+        apps_dir: The orchestratr apps.d/ directory where the manifest is written.
 
     Returns:
         The path to the written manifest file.
     """
     platform = get_platform()
-    launch_cmd = _build_launch_command(platform)
-    ready_cmd = _build_ready_command(platform)
+    environment = "wsl" if platform == "wsl2" else "native"
 
     manifest = {
         "name": "espansr",
+        "chord": "e",
+        "command": "espansr gui",
+        "environment": environment,
         "description": "Espanso template manager",
-        "version": __version__,
-        "launch": {
-            "command": launch_cmd,
-        },
-        "ready_cmd": ready_cmd,
+        "ready_cmd": "espansr status --json",
         "ready_timeout_ms": 3000,
-        "hotkey": {
-            "suggested_chord": "e",
-        },
     }
 
-    manifest_path = config_dir / MANIFEST_FILENAME
+    apps_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = apps_dir / MANIFEST_FILENAME
     with open(manifest_path, "w", encoding="utf-8") as f:
         yaml.dump(manifest, f, default_flow_style=False, sort_keys=False)
 
     return manifest_path
 
 
-def manifest_needs_update(config_dir: Path) -> bool:
+def manifest_needs_update(apps_dir: Path) -> bool:
     """Check whether the orchestratr manifest is missing or outdated.
 
+    Detects both missing manifests and old nested-format manifests that
+    need regeneration.
+
     Args:
-        config_dir: The espansr config directory containing the manifest.
+        apps_dir: The orchestratr apps.d/ directory containing the manifest.
 
     Returns:
         True if the manifest should be regenerated.
     """
-    manifest_path = config_dir / MANIFEST_FILENAME
+    manifest_path = apps_dir / MANIFEST_FILENAME
     if not manifest_path.exists():
         return True
 
@@ -75,7 +124,23 @@ def manifest_needs_update(config_dir: Path) -> bool:
         existing = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
         if not isinstance(existing, dict):
             return True
-        return existing.get("version") != __version__
+
+        # Detect old nested format: if 'launch' or 'hotkey' or 'version' keys
+        # are present, this is the old schema and needs regeneration.
+        if any(k in existing for k in ("launch", "hotkey", "version")):
+            return True
+
+        # Verify all required flat keys are present
+        if not _FLAT_SCHEMA_KEYS.issubset(existing.keys()):
+            return True
+
+        # Check content matches what we would generate
+        platform = get_platform()
+        expected_env = "wsl" if platform == "wsl2" else "native"
+        if existing.get("environment") != expected_env:
+            return True
+
+        return False
     except (yaml.YAMLError, OSError):
         return True
 
@@ -123,37 +188,3 @@ def get_status_json() -> str:
 
 # ─── Internal helpers ────────────────────────────────────────────────────────
 
-
-def _build_launch_command(platform: str) -> str:
-    """Build the launch command string for the given platform.
-
-    On WSL2, wraps the command with ``wsl.exe -d <distro>`` so that
-    orchestratr running on Windows can launch espansr inside WSL.
-
-    Args:
-        platform: One of "linux", "macos", "windows", "wsl2".
-
-    Returns:
-        The shell command string to launch espansr GUI.
-    """
-    if platform == "wsl2":
-        distro = get_wsl_distro_name() or "Ubuntu"
-        return f"wsl.exe -d {distro} -- espansr gui"
-    return "espansr gui"
-
-
-def _build_ready_command(platform: str) -> str:
-    """Build the ready_cmd string for the given platform.
-
-    On WSL2, wraps the command with ``wsl.exe -d <distro>``.
-
-    Args:
-        platform: One of "linux", "macos", "windows", "wsl2".
-
-    Returns:
-        The shell command string to check espansr readiness.
-    """
-    if platform == "wsl2":
-        distro = get_wsl_distro_name() or "Ubuntu"
-        return f"wsl.exe -d {distro} -- espansr status --json"
-    return "espansr status --json"
