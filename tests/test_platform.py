@@ -342,6 +342,7 @@ def test_get_platform_config_wsl2_without_username():
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
         patch("espansr.core.platform.get_windows_username", return_value=None),
+        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=[]),
         patch.dict(os.environ, {}, clear=False),
         patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
     ):

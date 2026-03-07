@@ -98,7 +98,13 @@ espansr doctor           # run diagnostic checks
 | 🐧 Linux | `./install.sh` | ✅ | ✅ | Python 3.11+ |
 | 🍎 macOS | `./install.sh` | ✅ | ✅ | Python 3.11+ |
 | 🪟 Windows | `.\install.ps1` | ✅ | ✅ | Python 3.11+ in [PATH](https://www.python.org/downloads/) |
-| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Auto-detects Windows-side Espanso |
+| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Requires Espanso installed/started on Windows; auto-detects Windows-side config |
+
+If WSL installation reports missing Espanso config, run:
+
+```bash
+espansr wsl-install-espanso
+```
 
 ---
 

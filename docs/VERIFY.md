@@ -30,6 +30,29 @@ espansr status
 
 **Expected:** Shows the detected Espanso config path, or a helpful message with install link if Espanso isn't found.
 
+### WSL2 Note
+
+`espansr` does not install Espanso automatically. On WSL2, install and initialize Espanso on Windows first:
+
+Preferred from WSL:
+
+```bash
+espansr wsl-install-espanso
+```
+
+Manual PowerShell fallback:
+
+```powershell
+winget install --id Espanso.Espanso -e
+espanso start
+```
+
+Then return to WSL and run:
+
+```bash
+espansr doctor
+```
+
 ## 4. List Templates
 
 ```bash

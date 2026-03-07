@@ -18,3 +18,13 @@ approval_policy = "on-request"
 [sandbox_workspace_write]
 # Enable network for package installs. Set false if dependencies are vendored.
 network_access = true
+
+# File exclusion patterns — files Codex should not modify.
+# These complement .aiignore and provide Codex-specific enforcement.
+exclude_patterns = [
+  ".env*",
+  "governance/**",
+  "workflow/STATE.json",
+  "*.pem",
+  "*.key",
+]

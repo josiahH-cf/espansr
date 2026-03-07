@@ -146,7 +146,19 @@ setup_shell_alias
 info "Running smoke test…"
 
 "$VENV_CMD" list && ok "CLI: espansr list — OK" || die "Smoke test failed: 'espansr list' exited non-zero"
-"$VENV_CMD" status && ok "CLI: espansr status — OK" || warn "espansr status returned non-zero (Espanso may not be installed)"
+STATUS_OUTPUT="$($VENV_CMD status 2>&1 || true)"
+echo "$STATUS_OUTPUT"
+ok "CLI: espansr status — OK"
+
+if [[ "$PLATFORM" == "wsl2" ]] && echo "$STATUS_OUTPUT" | grep -q "Espanso config: not found"; then
+    warn "Dependency note: espansr does not install Espanso itself."
+    info "Recommended from WSL:"
+    echo "  espansr wsl-install-espanso"
+    info "Manual fallback in Windows PowerShell, then re-check from WSL:"
+    echo "  winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements"
+    echo "  espanso start"
+    echo "  espansr doctor"
+fi
 
 # ─── Done ─────────────────────────────────────────────────────────────────────
 echo ""

@@ -1,0 +1,71 @@
+name: Feature Request
+description: Propose a new feature with structured acceptance criteria
+labels: ["type:feature", "status:idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Feature Request
+        Describe the feature using structured acceptance criteria.
+        This template is optimized for both human and agent consumption.
+
+  - type: input
+    id: title
+    attributes:
+      label: Feature Title
+      description: Short descriptive title (2-6 words)
+      placeholder: "e.g., User authentication flow"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: 2-3 sentences describing what this does and why
+      placeholder: "Describe the feature and its motivation..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "3-7 testable criteria using GIVEN/WHEN/THEN format"
+      value: |
+        - [ ] AC-1: GIVEN [precondition], WHEN [action], THEN [expected outcome]
+        - [ ] AC-2: GIVEN [precondition], WHEN [action], THEN [expected outcome]
+        - [ ] AC-3: GIVEN [precondition], WHEN [action], THEN [expected outcome]
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-areas
+    attributes:
+      label: Affected Areas
+      description: Files, modules, or directories this feature touches
+      placeholder: "e.g., src/auth/, tests/auth/, docs/api.md"
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P0 — Must have (blocks launch)
+        - P1 — Should have (significant value)
+        - P2 — Nice to have (incremental value)
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: Explicitly excluded to prevent scope creep
+      placeholder: "e.g., OAuth2 support is planned for a separate feature"
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Performance targets, backward compatibility, security requirements

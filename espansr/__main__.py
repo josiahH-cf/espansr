@@ -11,6 +11,7 @@ Commands:
 
 import argparse
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -18,10 +19,104 @@ from espansr.core.cli_color import fail, ok, warn
 from espansr.core.config import get_config_dir, get_templates_dir
 from espansr.core.platform import get_platform
 from espansr.integrations.espanso import (
+    _get_candidate_paths,
     clean_stale_espanso_files,
     generate_launcher_file,
     get_espanso_config_dir,
 )
+
+
+def _print_wsl_espanso_remediation() -> None:
+    """Print copy/paste-ready WSL steps for missing Espanso dependency."""
+    print("WSL2 note: espansr does not install Espanso automatically.")
+    print("Recommended: run the wrapper from WSL:")
+    print("  espansr wsl-install-espanso")
+    print("Or run manually in Windows PowerShell:")
+    print("  winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements")
+    print("  espanso start")
+    print("Then re-check from WSL:")
+    print("  espansr doctor")
+
+
+def cmd_wsl_install_espanso(args) -> int:
+    """Install and start Espanso on Windows host from WSL.
+
+    This command is WSL2-only. It uses PowerShell to install Espanso via winget,
+    then attempts to start Espanso using known executable locations to handle
+    PATH/session lag after install.
+    """
+    if get_platform() != "wsl2":
+        print(fail("wsl-install-espanso is only supported when running inside WSL2"))
+        return 1
+
+    script = r"""
+$ErrorActionPreference = 'Stop'
+winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements
+
+$candidates = @(
+    "$Env:LOCALAPPDATA\Programs\Espanso\espanso.exe",
+    "$Env:LOCALAPPDATA\Programs\espanso\espanso.exe",
+    "$Env:ProgramFiles\Espanso\espanso.exe",
+    "$Env:ProgramFiles(x86)\Espanso\espanso.exe",
+    "$Env:LOCALAPPDATA\Microsoft\WindowsApps\espanso.exe"
+)
+
+$espansoExe = $null
+foreach ($candidate in $candidates) {
+    if (Test-Path $candidate) {
+        $espansoExe = $candidate
+        break
+    }
+}
+
+if (-not $espansoExe) {
+    $cmd = Get-Command espanso -ErrorAction SilentlyContinue
+    if ($cmd) {
+        $espansoExe = $cmd.Source
+    }
+}
+
+if (-not $espansoExe) {
+    Write-Host "Espanso installed, but executable is not available in this PowerShell session PATH."
+    Write-Host "Open a new PowerShell and run:"
+    Write-Host "  espanso start"
+    exit 2
+}
+
+& $espansoExe start
+& $espansoExe status
+"""
+
+    print("Running Windows-side Espanso install/start from WSL...")
+    completed = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            script,
+        ],
+        text=True,
+        check=False,
+    )
+
+    if completed.returncode == 0:
+        print(ok("Espanso install/start wrapper completed"))
+        print("Next: run `espansr doctor` and `espansr setup` from WSL")
+        return 0
+
+    if completed.returncode == 2:
+        print(
+            warn(
+                "Espanso installed but startup command was not resolved in-session. "
+                "Open a new Windows PowerShell and run `espanso start`, then `espansr doctor` from WSL."
+            )
+        )
+        return 1
+
+    print(fail(f"PowerShell wrapper failed with exit code {completed.returncode}"))
+    return 1
 
 
 def cmd_sync(args) -> int:
@@ -139,6 +234,7 @@ def cmd_setup(args) -> int:
                 "Espanso config: not found — install Espanso on Windows "
                 "(https://espanso.org), then run 'espanso start' from PowerShell"
             )
+            _print_wsl_espanso_remediation()
         else:
             print(
                 "Espanso config: not found — install Espanso "
@@ -206,6 +302,7 @@ def cmd_status(args) -> int:
                     " (https://espanso.org), then run 'espanso start' from PowerShell"
                 )
             )
+            _print_wsl_espanso_remediation()
         else:
             print(
                 fail(
@@ -356,6 +453,8 @@ def cmd_doctor(args) -> int:
         _ok(f"Espanso config: {espanso_dir}")
     else:
         _fail("Espanso config: not found")
+        if get_platform() == "wsl2":
+            _warn("WSL2 dependency: Espanso must be installed and started on Windows")
 
     # 5. Espanso binary
     espanso_bin = shutil.which("espanso")
@@ -364,8 +463,21 @@ def cmd_doctor(args) -> int:
         _ok(f"Espanso binary: {espanso_bin}")
     elif platform == "wsl2":
         _ok("Espanso binary: Windows host (WSL2)")
+        _warn("WSL2 remediation: run 'espanso start' in PowerShell, then 'espansr doctor'")
     else:
         _fail("Espanso binary: not found")
+
+    # 5b. WSL candidate conflict visibility
+    if platform == "wsl2":
+        existing_candidates = [p for p in _get_candidate_paths() if p.exists()]
+        if espanso_dir:
+            _ok(f"Canonical Espanso path: {espanso_dir}")
+        if len(existing_candidates) > 1:
+            _warn("Conflict risk: multiple Espanso candidate paths detected")
+            for candidate in existing_candidates:
+                if candidate != espanso_dir:
+                    _warn(f"  Non-canonical candidate: {candidate}")
+            _warn("Recommendation: keep one active config path and rerun 'espansr doctor'")
 
     # 6. Launcher file
     match_dir = get_match_dir()
@@ -458,6 +570,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Print detailed per-file information during setup",
     )
     subparsers.add_parser("doctor", help="Run diagnostic health checks")
+    subparsers.add_parser(
+        "wsl-install-espanso",
+        help="WSL helper: install/start Espanso on Windows via PowerShell",
+    )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
@@ -486,6 +602,7 @@ def main() -> None:
         "import": cmd_import,
         "setup": cmd_setup,
         "doctor": cmd_doctor,
+        "wsl-install-espanso": cmd_wsl_install_espanso,
         "gui": cmd_gui,
         "completions": cmd_completions,
     }

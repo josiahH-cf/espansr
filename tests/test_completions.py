@@ -11,7 +11,18 @@ from unittest.mock import patch
 
 # Expected subcommands from the current parser (alphabetical for assertions)
 EXPECTED_SUBCOMMANDS = sorted(
-    ["sync", "status", "list", "validate", "import", "setup", "doctor", "gui", "completions"]
+    [
+        "sync",
+        "status",
+        "list",
+        "validate",
+        "import",
+        "setup",
+        "doctor",
+        "wsl-install-espanso",
+        "gui",
+        "completions",
+    ]
 )
 
 

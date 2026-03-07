@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "projectPhase": "8-maintain",
+  "currentFeatureId": "1-authoring-sync-baseline",
+  "currentTaskFile": "tasks/1-authoring-sync-baseline.md",
+  "testMode": "post",
+  "maintenanceLevel": "",
+  "advisoryProfile": "standard",
+  "features": {
+    "1-authoring-sync-baseline": {
+      "spec": "specs/1-authoring-sync-baseline.md",
+      "task": "tasks/1-authoring-sync-baseline.md",
+      "status": "tested"
+    }
+  },
+  "activeClaims": [],
+  "updatedAt": "2026-03-07T09:25:12-06:00"
+}

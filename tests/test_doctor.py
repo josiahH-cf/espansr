@@ -36,6 +36,7 @@ def _run_doctor(capsys, **overrides):
         "templates_dir": _config_dir / "templates",
         "espanso_config_dir": _tmp_path / "espanso",
         "match_dir": _match_dir,
+        "candidate_paths": [_tmp_path / "espanso"],
         "espanso_binary": "/usr/bin/espanso",
         "platform": "linux",
         "validate_warnings": [],
@@ -86,6 +87,10 @@ def _run_doctor(capsys, **overrides):
         patch(
             "espansr.__main__.get_platform",
             return_value=defaults["platform"],
+        ),
+        patch(
+            "espansr.__main__._get_candidate_paths",
+            return_value=defaults["candidate_paths"],
         ),
         patch(
             "espansr.integrations.validate.validate_all",
@@ -159,6 +164,50 @@ def test_doctor_espanso_binary_wsl2_ok(capsys):
     lines = output.strip().splitlines()
     binary_lines = [line for line in lines if "binary" in line.lower()]
     assert any("[ok]" in line for line in binary_lines)
+
+
+def test_doctor_wsl_missing_espanso_prints_dependency_remediation(capsys):
+    """WSL doctor output includes explicit dependency and remediation guidance."""
+    exit_code, output = _run_doctor(
+        capsys,
+        platform="wsl2",
+        espanso_config_dir=None,
+        match_dir=None,
+        launcher_exists=False,
+        espanso_binary=None,
+        candidate_paths=[],
+    )
+
+    assert exit_code == 1
+    assert "WSL2 dependency" in output
+    assert "espanso start" in output
+    assert "espansr doctor" in output
+
+
+def test_doctor_wsl_conflict_reports_non_canonical_candidates(capsys):
+    """WSL doctor reports canonical path and warns on additional candidates."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        canonical = tmp_path / "windows_cfg"
+        canonical.mkdir()
+        (canonical / "match").mkdir(parents=True)
+        ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
+        alt = tmp_path / "linux_cfg"
+        alt.mkdir()
+
+        exit_code, output = _run_doctor(
+            capsys,
+            platform="wsl2",
+            espanso_config_dir=canonical,
+            match_dir=canonical / "match",
+            candidate_paths=[canonical, alt],
+            espanso_binary=None,
+        )
+
+    assert exit_code == 0
+    assert "Canonical Espanso path" in output
+    assert "Conflict risk" in output
+    assert "Non-canonical candidate" in output
 
 
 # ─── No templates ───────────────────────────────────────────────────────────

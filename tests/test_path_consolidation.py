@@ -174,6 +174,40 @@ def test_get_candidate_paths_wsl2_includes_windows(tmp_path):
     assert tmp_path / ".config" / "espanso" in paths
 
 
+def test_get_candidate_paths_wsl2_falls_back_to_discovered_windows_users(tmp_path):
+    """When cmd.exe username lookup fails, discovered Windows profiles are still used."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value=None),
+        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=["Alice"]),
+        patch("pathlib.Path.home", return_value=tmp_path),
+    ):
+        from espansr.integrations.espanso import _get_candidate_paths
+
+        paths = _get_candidate_paths()
+
+    assert Path("/mnt/c/Users/Alice/AppData/Roaming/espanso") in paths
+    assert Path("/mnt/c/Users/Alice/.config/espanso") in paths
+    assert Path("/mnt/c/Users/Alice/.espanso") in paths
+
+
+def test_wsl_candidate_order_prefers_windows_roaming_first(tmp_path):
+    """WSL candidate order should prioritize Windows Roaming path for canonical sync."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
+        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=[]),
+        patch("pathlib.Path.home", return_value=tmp_path),
+    ):
+        from espansr.integrations.espanso import _get_candidate_paths
+
+        paths = _get_candidate_paths()
+
+    roaming = Path("/mnt/c/Users/Alice/AppData/Roaming/espanso")
+    dot_config = Path("/mnt/c/Users/Alice/.config/espanso")
+    assert paths.index(roaming) < paths.index(dot_config)
+
+
 def test_get_candidate_paths_macos(tmp_path):
     """_get_candidate_paths() returns macOS paths on Darwin."""
     with (
@@ -186,6 +220,80 @@ def test_get_candidate_paths_macos(tmp_path):
 
     assert tmp_path / "Library" / "Application Support" / "espanso" in paths
     assert tmp_path / ".config" / "espanso" in paths
+
+
+def test_get_espanso_config_dir_prefers_windows_candidate_when_wsl_persisted_linux(tmp_path):
+    """Persisted Linux path in WSL should switch to Windows-side candidate when available."""
+    from espansr.core.config import ConfigManager
+
+    linux_dir = tmp_path / ".config" / "espanso"
+    linux_dir.mkdir(parents=True)
+    windows_dir = tmp_path / "windows_espanso"
+    windows_dir.mkdir()
+
+    cm = ConfigManager(config_path=tmp_path / "config.json")
+    config = cm.config
+    config.espanso.config_path = str(linux_dir)
+
+    with (
+        patch("espansr.integrations.espanso.get_config", return_value=config),
+        patch("espansr.integrations.espanso.save_config") as mock_save,
+        patch("espansr.integrations.espanso.is_wsl2", return_value=True),
+        patch(
+            "espansr.integrations.espanso._get_candidate_paths",
+            return_value=[Path("/mnt/c/Users/Alice/AppData/Roaming/espanso"), windows_dir],
+        ),
+        patch(
+            "espansr.integrations.espanso._is_windows_side_wsl_path",
+            side_effect=lambda p: str(p).startswith("/mnt/c/Users/") or p == windows_dir,
+        ),
+    ):
+        from espansr.integrations.espanso import get_espanso_config_dir
+
+        result = get_espanso_config_dir()
+
+    assert result == windows_dir
+    assert config.espanso.config_path == str(windows_dir)
+    mock_save.assert_called_once_with(config)
+
+
+def test_clean_stale_uses_windows_canonical_and_cleans_linux_conflict(tmp_path):
+    """When canonical resolves to Windows-side path, stale Linux managed files are removed."""
+    from espansr.core.config import ConfigManager
+
+    linux_cfg = tmp_path / ".config" / "espanso"
+    linux_match = linux_cfg / "match"
+    linux_match.mkdir(parents=True)
+    (linux_match / "espansr.yml").write_text("matches: []")
+
+    windows_cfg = tmp_path / "windows_cfg"
+    windows_match = windows_cfg / "match"
+    windows_match.mkdir(parents=True)
+    (windows_match / "espansr.yml").write_text("matches: []")
+
+    cm = ConfigManager(config_path=tmp_path / "config.json")
+    config = cm.config
+    config.espanso.config_path = str(linux_cfg)
+
+    with (
+        patch("espansr.integrations.espanso.get_config", return_value=config),
+        patch("espansr.integrations.espanso.save_config"),
+        patch("espansr.integrations.espanso.is_wsl2", return_value=True),
+        patch(
+            "espansr.integrations.espanso._get_candidate_paths",
+            return_value=[windows_cfg, linux_cfg],
+        ),
+        patch(
+            "espansr.integrations.espanso._is_windows_side_wsl_path",
+            side_effect=lambda p: p == windows_cfg,
+        ),
+    ):
+        from espansr.integrations.espanso import clean_stale_espanso_files
+
+        clean_stale_espanso_files()
+
+    assert (windows_match / "espansr.yml").exists()
+    assert not (linux_match / "espansr.yml").exists()
 
 
 # ─── Stale file cleanup tests ────────────────────────────────────────────────
