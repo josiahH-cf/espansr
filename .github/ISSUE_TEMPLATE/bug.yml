@@ -1,0 +1,71 @@
+name: Bug Report
+description: Report a bug with structured reproduction steps
+labels: ["type:bug", "severity:tbd"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Bug Report
+        Provide clear reproduction steps for both human and automated diagnosis.
+
+  - type: input
+    id: title
+    attributes:
+      label: Bug Title
+      description: Short description of the bug
+      placeholder: "e.g., Login fails with special characters in password"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What's wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      description: Step-by-step instructions to reproduce
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - blocking — Prevents core functionality
+        - non-blocking — Workaround exists
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, runtime version, relevant configuration
+      placeholder: "e.g., Ubuntu 24.04, Node.js 20.11, Chrome 124"

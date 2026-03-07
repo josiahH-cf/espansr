@@ -1,0 +1,68 @@
+name: Agent Task
+description: Create a task optimized for autonomous agent execution
+labels: ["type:agent-task", "status:idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Agent Task
+        Structured task for autonomous agent execution.
+        Assign to @copilot or add to the agent backlog.
+
+  - type: input
+    id: title
+    attributes:
+      label: Task Title
+      placeholder: "e.g., Add input validation to API endpoints"
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What should the agent accomplish? (clear, concrete, testable)
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "Testable criteria using GIVEN/WHEN/THEN format"
+      value: |
+        - [ ] AC-1: GIVEN [precondition], WHEN [action], THEN [expected outcome]
+        - [ ] AC-2: GIVEN [precondition], WHEN [action], THEN [expected outcome]
+    validations:
+      required: true
+
+  - type: textarea
+    id: files-to-modify
+    attributes:
+      label: Files to Modify
+      description: List the specific files the agent should work on
+      placeholder: |
+        - src/api/validation.ts
+        - tests/api/validation.test.ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: What the agent must NOT do
+      placeholder: "e.g., Do not modify database schema. Do not add new dependencies."
+
+  - type: dropdown
+    id: assigned-model
+    attributes:
+      label: Suggested Agent
+      description: Which agent should handle this? (advisory — any agent can do any task)
+      options:
+        - claude — Tends to excel at complex reasoning, multi-file changes
+        - copilot — Tends to excel at UI work, iterative design, documentation
+        - codex — Tends to excel at batch operations, migrations, CI/CD
+        - any — No preference
+    validations:
+      required: true

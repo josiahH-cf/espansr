@@ -4,8 +4,6 @@ about: Propose a new feature for agent implementation
 labels: "type:feature, status:idea"
 ---
 
-<!-- For human use only. Agents: create /specs/ files instead of filing issues. -->
-
 ## Idea
 
 <!-- 1–3 sentences: what and why -->
@@ -16,7 +14,7 @@ labels: "type:feature, status:idea"
 
 ## Sizing Guess
 
-<!-- S / M / L / XL — if XL, consider splitting before scoping -->
+<!-- S / M / L / XL  -  if XL, consider splitting before scoping -->
 
 ## Notes
 

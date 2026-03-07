@@ -1,21 +1,14 @@
-.venv/
-__pycache__/
-*.pyc
-*.pyo
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.ruff_cache/
-*.so
+# NOTE: These contents should be appended to the existing file.
 
-# Editor
-.vscode/
-
-# Agent local config (gitignored per convention)
+# Agent personal overrides
 CLAUDE.local.md
-.claude/settings.local.json
+
+# Claude session artifacts
 .claude/plans/
 
-# Worktrees
+# Worktree scratch directories
 .trees/
+
+# Local agent permission overrides
+.vscode/
+.claude/settings.local.json

@@ -97,6 +97,31 @@ def test_setup_succeeds_without_espanso(tmp_path):
     assert result == 0
 
 
+def test_setup_wsl2_missing_espanso_prints_actionable_remediation(tmp_path, capsys):
+    """cmd_setup on WSL2 prints explicit dependency note and next-step commands."""
+    from espansr.__main__ import cmd_setup
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = _make_bundled_dir(tmp_path)
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+        patch("espansr.__main__.get_platform", return_value="wsl2"),
+    ):
+        result = cmd_setup(None)
+
+    output = capsys.readouterr().out
+    assert result == 0
+    assert "does not install Espanso automatically" in output
+    assert "winget install --id Espanso.Espanso -e" in output
+    assert "espanso start" in output
+    assert "espansr doctor" in output
+
+
 def test_setup_then_list_shows_template(tmp_path):
     """After cmd_setup, the template manager finds the copied template."""
     from espansr.__main__ import cmd_setup

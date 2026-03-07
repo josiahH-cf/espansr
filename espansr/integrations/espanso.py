@@ -106,6 +106,12 @@ def _get_candidate_paths() -> list[Path]:
     return get_platform_config().espanso_candidate_dirs
 
 
+def _is_windows_side_wsl_path(path: Path) -> bool:
+    """Return True when path points to Windows filesystem from WSL."""
+    normalized = str(path)
+    return normalized.startswith("/mnt/c/Users/")
+
+
 def get_espanso_config_dir() -> Optional[Path]:
     """Get the Espanso configuration directory.
 
@@ -125,6 +131,23 @@ def get_espanso_config_dir() -> Optional[Path]:
     if config.espanso.config_path:
         path = Path(config.espanso.config_path).expanduser()
         if path.exists():
+            # In WSL, prefer Windows-side canonical locations to avoid split
+            # state when both Linux and Windows Espanso paths exist.
+            normalized = str(path)
+            linux_style_espanso_path = normalized.endswith("/.config/espanso") or normalized.endswith(
+                "/.espanso"
+            )
+            if linux_style_espanso_path and is_wsl2() and not _is_windows_side_wsl_path(path):
+                for candidate in _get_candidate_paths():
+                    if candidate.exists() and _is_windows_side_wsl_path(candidate):
+                        logger.info(
+                            "Switching Espanso config path from %s to Windows-side %s",
+                            path,
+                            candidate,
+                        )
+                        config.espanso.config_path = str(candidate)
+                        save_config(config)
+                        return candidate
             return path
         # Persisted path is stale — clear and re-detect
         logger.warning(

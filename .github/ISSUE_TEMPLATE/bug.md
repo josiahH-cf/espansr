@@ -4,8 +4,6 @@ about: Report a defect for agent investigation
 labels: "type:bug, status:idea"
 ---
 
-<!-- For human use only. Agents: do not create issues — work in local /specs/ and /tasks/ files. -->
-
 ## What Happens
 
 <!-- Describe the incorrect behavior -->

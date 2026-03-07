@@ -12,6 +12,53 @@ from pathlib import Path
 from typing import Optional
 
 
+_RESERVED_WINDOWS_USER_DIRS = {
+    "all users",
+    "default",
+    "default user",
+    "public",
+}
+
+
+def _discover_wsl_windows_usernames() -> list[str]:
+    """Discover Windows profile names from /mnt/c/Users when running in WSL.
+
+    Returns:
+        Sorted list of likely Windows usernames. Returns empty list when
+        the directory is unavailable or unreadable.
+    """
+    users_root = Path("/mnt/c/Users")
+    if not users_root.is_dir():
+        return []
+
+    names: list[str] = []
+    try:
+        for entry in users_root.iterdir():
+            if not entry.is_dir():
+                continue
+            lowered = entry.name.lower()
+            if lowered in _RESERVED_WINDOWS_USER_DIRS:
+                continue
+            names.append(entry.name)
+    except OSError:
+        return []
+
+    return sorted(names, key=str.lower)
+
+
+def _dedupe_paths(paths: list[Path]) -> list[Path]:
+    """Deduplicate paths while preserving order."""
+    seen: set[str] = set()
+    ordered: list[Path] = []
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        ordered.append(path)
+    return ordered
+
+
 @dataclass(frozen=True)
 class PlatformConfig:
     """Platform-specific path configuration.
@@ -69,26 +116,38 @@ def get_platform_config() -> PlatformConfig:
         xdg = os.environ.get("XDG_CONFIG_HOME")
         base = Path(xdg) if xdg else Path.home() / ".config"
 
-        candidates = []
+        candidates: list[Path] = []
+        ordered_users: list[str] = []
+
         win_user = get_windows_username()
         if win_user:
+            ordered_users.append(win_user)
+
+        for discovered in _discover_wsl_windows_usernames():
+            if discovered.lower() not in {u.lower() for u in ordered_users}:
+                ordered_users.append(discovered)
+
+        for user in ordered_users:
             candidates.extend(
                 [
-                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+                    # Espanso on Windows typically uses AppData/Roaming.
+                    Path(f"/mnt/c/Users/{user}/AppData/Roaming/espanso"),
+                    Path(f"/mnt/c/Users/{user}/.config/espanso"),
+                    Path(f"/mnt/c/Users/{user}/.espanso"),
                 ]
             )
+
         candidates.extend(
             [
                 Path.home() / ".config" / "espanso",
                 Path.home() / ".espanso",
             ]
         )
+
         return PlatformConfig(
             platform=plat,
             espansr_config_dir=base / "espansr",
-            espanso_candidate_dirs=candidates,
+            espanso_candidate_dirs=_dedupe_paths(candidates),
         )
 
     if plat == "linux":
