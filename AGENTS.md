@@ -1,132 +1,92 @@
-# Project
+# AGENTS
 
-- Project name: Espansr
-- Description: A standalone Espanso text expansion template manager with CLI and GUI.
-- Primary language/framework: Python with PyQt6
-- Scope: Espanso config management, template-to-trigger sync, YAML generation
-- Non-goals: cloud APIs, multi-tenant, mobile/web, PyPI publishing
+Canonical entrypoint for all coding agents. Read this first, then follow links to detailed references.
 
-# Build
+## Overview
 
-- Install: `./install.sh` (recommended) or `pip install -e .` / `pip install -e .[dev]` for development
-- Build: `not applicable` (setuptools package, no separate build step required for local development)
-- Test (all): `pytest`
-- Test (single): `pytest path/to/test_file.py::test_name`
-- Lint: `ruff check .`
-- Format: `black .`
-- Type-check: `not applicable`
+`espansr` is a Python CLI + GUI manager for Espanso command templates, focused on fast command authoring, safe validation/sync workflows, and stable cross-platform behavior for developer productivity.
 
-# Architecture
+## Workflow Phases
 
-- `espansr/`: Main Python package and app entrypoint.
-- `espansr/core/`: Core configuration, template handling, and platform detection. `platform.py` provides `PlatformConfig` — the single source of truth for all platform-specific paths.
-- `espansr/integrations/`: Espanso sync integration.
-- `espansr/ui/`: PyQt6 user interface screens.
-- `templates/`: Bundled template JSON files copied to user config on `espansr setup` (contains `espansr_help.json` starter template).
-- `tests/`: Test suite.
+The project lifecycle follows 9 phases plus a parallel Bug Track.
 
-# Feature Lifecycle
+### Phase 1 — Scaffold Import
+- **Entry:** Run `initialization.md` meta-prompt
+- **Gate:** Empty or new project repository → **Output:** Scaffold files placed → **Next:** Phase 2
 
-1. **Ideate** — Human files a GitHub issue or describes the feature
-2. **Scope** — Agent explores the codebase and writes `/specs/[feature-name].md` using the template
-3. **Plan** — Agent decomposes the spec into `/tasks/[feature-name].md` (2–5 tasks)
-4. **Test** — Agent writes failing tests for each acceptance criterion
-5. **Implement** — Agent makes tests pass, one task per session
-6. **Review** — A different agent or human reviews the PR
+### Phase 2 — Compass
+- **Entry:** Claude: `/compass` · Copilot: `phase-2-compass.prompt.md` · Codex: `.codex/AGENTS.md`
+- **Gate:** Scaffold present → **Output:** `.specify/constitution.md` populated (themes addressed, ambiguities documented) → **Next:** Phase 3
 
-GitHub Issues are the human intake mechanism. Agents read issues but do not create, edit, or close them.
-All agent-driven planning happens in local files (`/specs/`, `/tasks/`, `/decisions/`).
+### Phase 3 — Define Features
+- **Entry:** Claude: `/define-features` · Copilot: `phase-3-define-features.prompt.md`
+- **Gate:** Constitution complete → **Output:** Feature specs in `/specs/` → **Next:** Phase 4
 
-# Conventions
+### Phase 4 — Scaffold Project
+- **Entry:** Claude: `/scaffold` · Copilot: `phase-4-scaffold.prompt.md`
+- **Gate:** Feature specs exist → **Output:** Architecture plan, `workflow/COMMANDS.md` finalized (no code) → **Next:** Phase 5
 
-- Functions and variables: standard Python `snake_case` (classes use `PascalCase`)
-- Files and directories: standard Python module naming with lowercase and `snake_case` where needed
-- Prefer explicit error handling over silent failures
-- No dead code — remove unused imports, variables, and functions
-- Every public function has a doc comment
-- No hardcoded secrets, URLs, or environment-specific values
+### Phase 5 — Fine-tune Plan
+- **Entry:** Claude: `/fine-tune` · Copilot: `phase-5-fine-tune.prompt.md`
+- **Gate:** Scaffold plan exists → **Output:** `/tasks/` files with AC, model, branch → **Next:** Phase 6
 
-# Core Code Lineage
+### Phase 6 — Code
+- **Entry:** Claude: `/implement` · Copilot: `phase-6-implement.prompt.md`
+- `/implement` is **direct single-feature execution** — use when you know which feature to build
+- **Session mode:** `/build-session` — sustained multi-feature implementation session
+- **Gate:** Task file + pre-impl tests exist → **Output:** Passing code on feature branch → **Next:** Phase 7
 
-`config.py` and `templates.py` are adapted from an earlier project and will continue to diverge.
-Do not attempt to re-merge or share them with external codebases.
-Key design decisions:
-- `EspansoConfig` is the primary config dataclass
-- Config dir is `espansr`
-- `TemplateManager` has `iter_with_triggers()` method
-- `PlatformConfig` is the single source of truth for platform-specific paths; `config.py` and `espanso.py` delegate to it via `get_platform_config()`
+### Phase 7 — Test
+- **Entry:** Claude: `/test` · Copilot: `phase-7-test.prompt.md`
+- **Gate:** Implementation on feature branch → **Output:** Test results, bug log → **Next:** Phase 7a
 
-# Testing
+### Phase 7a — Review Bot (Default Merge Path)
+- **Entry:** Claude: `/review-bot` · Copilot: `phase-7a-review-bot.prompt.md`
+- **Automatic:** `/continue` dispatches here after tests pass — no manual trigger needed
+- **On-demand:** `/review-bot` to run manually at any time
+- **Gate:** All ACs pass → **Output:** Auto-merged PR (on PASS) or findings file at `/reviews/[feature-id]-bot-findings.md` (on FAIL) → **Next:** Phase 8 or next feature (on PASS); back to Phase 6 (on FAIL)
+- **Agent:** `.github/agents/review-bot.agent.md` — prefer a different model than the implementer (advisory)
 
-- Write tests before implementation
-- Place tests under `/tests/` using `test_*.py` naming
-- For UI behavior, use `pytest-qt` and prefer deterministic widget-level tests over timing-dependent flows
-- Each acceptance criterion requires at least one test
-- Do not modify existing tests to accommodate new code — fix the implementation
-- Run the full test suite before committing
-- Tests must be deterministic — no flaky tests in the main suite
+### Phase 7b — Review & Ship (Manual Fallback)
+- **Entry:** Claude: `/review-session` · Copilot: `phase-7d-review-session.prompt.md`
+- **Optional:** `/cross-review` — second-opinion review from a different agent
+- **Use when:** Manual human review is desired (security-critical, architectural changes)
+- **Gate:** All ACs pass → **Output:** Approved PR merged → **Next:** Phase 8 or next feature
 
-# Dependencies
+### Phase 8 — Maintain
+- **Entry:** Claude: `/maintain` · Copilot: `phase-8-maintain.prompt.md`
+- **Gate:** Feature shipped → **Output:** Updated docs, compliance report → **Next:** Phase 9 or next cycle
 
-- PyYAML: required for Espanso YAML file generation
-- PyQt6: required for GUI
-- No `requests` dependency
+### Phase 9 — Operationalize
+- **Entry:** Claude: `/operationalize` · Copilot: `phase-9-operationalize.prompt.md`
+- **Gate:** Maintenance level selected → **Output:** `.github/maintenance-config.yml` + generated GitHub Actions workflows → **Next:** Ongoing (re-enterable)
+- **Interview:** Covers lint schedule, docs compliance, release publishing, dependency monitoring, security scanning, notification routing, automation depth
+- **Re-entry:** Run `/operationalize` again to update existing config — no duplication
 
-# Planning
+### Bug Track (Parallel)
+- **Entry:** Claude: `/bug` · Copilot: `phase-7b-bug.prompt.md` — invoke from any phase
+- **Fix flow:** `/bugfix` — reproduce → diagnose → fix → verify → PR
 
-- Features with more than 3 implementation steps require a written plan
-- Plans go in `/tasks/[feature-name].md` or as an ExecPlan per `/.codex/PLANS.md`
-- Plans are living documents — update progress, decisions, and surprises as work proceeds
-- A plan that cannot fit in 5 tasks indicates the feature should be split. Call this out.
-- Small-fix fast path: if a change is <= 3 files and has no behavior change, a full spec/task lifecycle is optional; still document intent in the PR and run lint + relevant tests.
+### Orchestrator
+- **Entry:** Claude: `/continue` · Copilot: `phase-10-continue.prompt.md`
+- `/continue` is the **orchestrator**, not a direct implementation command. It reads `workflow/STATE.json`, determines the next action (including bug-routing), dispatches to the appropriate phase command, and auto-advances through phases 2–9. At Phase 6 it delegates to `/implement`.
+- See `workflow/ORCHESTRATOR.md` for the loop contract
 
-# Commits
+## Quick Reference
 
-- One logical change per commit
-- Present-tense imperative subject line, under 72 characters
-- Reference the spec or task file in the commit body when applicable
-- Commit after each completed task, not after all tasks
-
-# Branches
-
-- Branch from the latest target branch immediately before starting work
-- One feature per branch
-- Delete after merge
-- Never commit directly to the target branch
-- Naming: `[type]/[slug]` (e.g., `feat/user-auth`, `fix/null-check`). Include the issue number if one exists: `feat/42-user-auth`
-
-# Worktrees
-
-- Use git worktrees for concurrent features across agents
-- Worktree root: `.trees/[branch-name]/`
-- Each worktree is isolated: agents operate only within their assigned worktree
-- Artifacts (specs, tasks, decisions) live in the main worktree and are shared read-only
-- Never switch branches inside a worktree — create a new one
-
-# Pull Requests
-
-- Link to the spec file
-- Diff under 300 lines; if larger, split the feature
-- All CI checks pass before requesting review
-- PR description states: what changed, why, how to verify
-
-# Review
-
-- Reviewable in under 15 minutes
-- Tests cover every acceptance criterion
-- No unrelated changes in the diff
-- Cross-agent review encouraged: use a different model than the one that wrote the code
-
-# Security
-
-- No secrets in code or instruction files
-- Use environment variables for all credentials
-- Sanitize all external input
-- Log security-relevant events
-
-# Agent Boundaries
-
-- Agents do not create or modify GitHub issues, labels, milestones, or projects
-- Agents do not push to main/master directly
-- Agents do not modify CI/CD workflows without explicit human instruction
-- Agents work within local files: specs, tasks, decisions, and source code
+| Section | Reference |
+|---------|-----------|
+| Advisory routing hints, branches, concurrency | `workflow/ROUTING.md` |
+| Advisory tier model and context-sensitive guidance | `workflow/ORCHESTRATOR.md → Context-Sensitive Advisory Guidance` |
+| Concurrency safety, drift detection | `workflow/CONCURRENCY.md` |
+| Build/test/lint commands, code conventions | `workflow/COMMANDS.md` |
+| Boundaries (best practices, review points, avoid patterns), bug tracking | `workflow/BOUNDARIES.md` |
+| Lifecycle phases (detailed) | `workflow/LIFECYCLE.md` |
+| Phase execution gates | `workflow/PLAYBOOK.md` |
+| Artifact ownership & contracts | `workflow/FILE_CONTRACTS.md` |
+| Failure routing & escalation | `workflow/FAILURE_ROUTING.md` |
+| Autonomous loop contract | `workflow/ORCHESTRATOR.md` |
+| Policy changes | `governance/CHANGE_PROTOCOL.md` |
+| Policy validation | `governance/POLICY_TESTS.md` |
+| File registry | `governance/REGISTRY.md` |
+| Orchestrator state | `workflow/STATE.json` |
