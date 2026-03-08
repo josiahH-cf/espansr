@@ -5,7 +5,7 @@
 # ─── Automation Depth ───
 automation:
   # Which Phase 8 level runs automatically: light | standard | deep
-  level: "[INTERVIEW-REQUIRED]"
+  level: "light"
   # Should automated maintenance create PRs for fixes or just report?
   auto_fix_mode: "report" # report | pr
   # Maximum auto-fix scope: formatting | formatting+deps | all
@@ -13,14 +13,14 @@ automation:
 
 # ─── Lint Schedule ───
 lint:
-  enabled: false
+  enabled: true
   schedule: "0 9 * * 1" # Weekly Monday 9am UTC (cron)
   mode: "advisory" # advisory | blocking
   # Commands sourced from workflow/COMMANDS.md at generation time
 
 # ─── Documentation Compliance ───
 docs:
-  enabled: false
+  enabled: true
   schedule: "0 9 1 * *" # Monthly 1st at 9am UTC
   checks:
     - readme_completeness
@@ -29,22 +29,22 @@ docs:
 
 # ─── Release Publishing ───
 release:
-  enabled: false
+  enabled: true
   trigger: "tag" # tag | manual | both
-  semver: "strict" # strict | flexible (allows pre-release labels)
+  semver: "flexible" # strict | flexible (allows pre-release labels)
   changelog: true
   # publish_targets: [] # e.g., [npm, pypi, docker, github-releases]
 
 # ─── Dependency Monitoring ───
 dependencies:
-  enabled: false
+  enabled: true
   tool: "dependabot" # dependabot | renovate | manual
-  auto_merge: "patch" # patch | minor | none
+  auto_merge: "minor" # patch | minor | none
   schedule: "weekly" # daily | weekly | monthly
 
 # ─── Security Scanning ───
 security:
-  enabled: false
+  enabled: true
   tool: "codeql" # codeql | other
   schedule: "0 9 * * 1" # Weekly Monday 9am UTC
   block_on_findings: false # true = block merges, false = advisory
@@ -52,7 +52,10 @@ security:
 # ─── Notification Routing ───
 notifications:
   # At least one channel must be configured
-  channels: []
+  channels:
+    - type: github-issue
+      labels: ["maintenance", "automated"]
+      on: ["lint", "docs", "deps", "security", "release"]
   # Example channel configurations:
   # - type: email
   #   address: "team@example.com"

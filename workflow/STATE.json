@@ -1,10 +1,11 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "8-maintain",
+  "projectPhase": "9-operationalize",
   "currentFeatureId": "1-authoring-sync-baseline",
   "currentTaskFile": "tasks/1-authoring-sync-baseline.md",
   "testMode": "post",
-  "maintenanceLevel": "",
+  "maintenanceLevel": "standard",
+  "automationLevel": "light",
   "advisoryProfile": "standard",
   "features": {
     "1-authoring-sync-baseline": {
@@ -14,5 +15,5 @@
     }
   },
   "activeClaims": [],
-  "updatedAt": "2026-03-07T09:25:12-06:00"
+  "updatedAt": "2026-03-08T05:20:38-05:00"
 }

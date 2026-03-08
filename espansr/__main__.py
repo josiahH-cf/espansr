@@ -32,10 +32,22 @@ def _print_wsl_espanso_remediation() -> None:
     print("Recommended: run the wrapper from WSL:")
     print("  espansr wsl-install-espanso")
     print("Or run manually in Windows PowerShell:")
-    print("  winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements")
+    print(
+        "  winget install --id Espanso.Espanso -e "
+        "--accept-package-agreements --accept-source-agreements"
+    )
     print("  espanso start")
     print("Then re-check from WSL:")
     print("  espansr doctor")
+
+
+def _print_wsl_install_action_required() -> None:
+    """Print minimal checklist when wrapper cannot verify a complete install."""
+    print("Action required in Windows:")
+    print("  1. If installer UI opened, complete the Espanso .exe wizard")
+    print("  2. Open a new PowerShell window")
+    print("  3. Run: espanso start")
+    print("  4. Return to WSL and run: espansr doctor")
 
 
 def cmd_wsl_install_espanso(args) -> int:
@@ -50,8 +62,14 @@ def cmd_wsl_install_espanso(args) -> int:
         return 1
 
     script = r"""
-$ErrorActionPreference = 'Stop'
-winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements
+$ErrorActionPreference = 'Continue'
+
+$installOk = $true
+try {
+    winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements
+} catch {
+    $installOk = $false
+}
 
 $candidates = @(
     "$Env:LOCALAPPDATA\Programs\Espanso\espanso.exe",
@@ -77,14 +95,42 @@ if (-not $espansoExe) {
 }
 
 if (-not $espansoExe) {
-    Write-Host "Espanso installed, but executable is not available in this PowerShell session PATH."
-    Write-Host "Open a new PowerShell and run:"
-    Write-Host "  espanso start"
+    Write-Host "ACTION_REQUIRED: Espanso executable not detected in this PowerShell session."
+    if (-not $installOk) {
+        Write-Host "winget did not report a clean install. Complete the .exe installer if prompted."
+    }
     exit 2
 }
 
-& $espansoExe start
+$startOk = $true
+try {
+    & $espansoExe start
+} catch {
+    $startOk = $false
+}
+
+$configCandidates = @(
+    "$Env:APPDATA\espanso",
+    "$Env:USERPROFILE\.config\espanso"
+)
+$configDetected = $false
+foreach ($cfg in $configCandidates) {
+    if (Test-Path $cfg) {
+        $configDetected = $true
+        break
+    }
+}
+
+if (-not $startOk -or -not $configDetected) {
+    Write-Host "ACTION_REQUIRED: Install may be partial; startup/config verification did not pass."
+    if (-not $configDetected) {
+        Write-Host "Espanso config directory was not detected yet."
+    }
+    exit 2
+}
+
 & $espansoExe status
+exit 0
 """
 
     print("Running Windows-side Espanso install/start from WSL...")
@@ -102,17 +148,13 @@ if (-not $espansoExe) {
     )
 
     if completed.returncode == 0:
-        print(ok("Espanso install/start wrapper completed"))
+        print(ok("Espanso install/start wrapper completed with verification"))
         print("Next: run `espansr doctor` and `espansr setup` from WSL")
         return 0
 
     if completed.returncode == 2:
-        print(
-            warn(
-                "Espanso installed but startup command was not resolved in-session. "
-                "Open a new Windows PowerShell and run `espanso start`, then `espansr doctor` from WSL."
-            )
-        )
+        print(warn("Espanso install wrapper finished with ACTION REQUIRED."))
+        _print_wsl_install_action_required()
         return 1
 
     print(fail(f"PowerShell wrapper failed with exit code {completed.returncode}"))
@@ -463,7 +505,9 @@ def cmd_doctor(args) -> int:
         _ok(f"Espanso binary: {espanso_bin}")
     elif platform == "wsl2":
         _ok("Espanso binary: Windows host (WSL2)")
-        _warn("WSL2 remediation: run 'espanso start' in PowerShell, then 'espansr doctor'")
+        # Only suggest remediation when Windows-side Espanso config is not detected.
+        if not espanso_dir:
+            _warn("WSL2 remediation: run 'espanso start' in PowerShell, then 'espansr doctor'")
     else:
         _fail("Espanso binary: not found")
 
