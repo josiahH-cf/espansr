@@ -15,7 +15,7 @@ jobs:
     outputs:
       docs_ok: ${{ steps.check.outputs.docs_ok }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check documentation baseline
         id: check
