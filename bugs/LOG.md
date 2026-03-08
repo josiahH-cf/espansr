@@ -10,3 +10,14 @@
 - **Status:** closed
 - **Logged:** 2026-03-07
 - **Resolved:** 2026-03-07
+
+### BUG-002: WSL install wrapper does not complete Windows Espanso setup reliably
+- **Location:** espansr/__main__.py:wsl_install_espanso (CLI flow), install.sh, install.ps1
+- **Phase:** 8-maintain (reported during /continue)
+- **Severity:** blocking
+- **Expected:** Running `espansr wsl-install-espanso` from WSL leads to a fully usable Windows Espanso install with minimal manual follow-up.
+- **Actual:** Wrapper can report installation while Windows-side setup still requires manual `.exe` installer completion and interactive steps.
+- **Fix-as-you-go:** yes
+- **Status:** closed
+- **Logged:** 2026-03-08
+- **Resolved:** 2026-03-08

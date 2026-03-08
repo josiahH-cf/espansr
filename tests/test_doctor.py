@@ -210,6 +210,28 @@ def test_doctor_wsl_conflict_reports_non_canonical_candidates(capsys):
     assert "Non-canonical candidate" in output
 
 
+def test_doctor_wsl_healthy_does_not_print_remediation_warning(capsys):
+    """Healthy WSL setup should not emit remediation warning noise."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        canonical = tmp_path / "windows_cfg"
+        canonical.mkdir()
+        (canonical / "match").mkdir(parents=True)
+        ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
+
+        exit_code, output = _run_doctor(
+            capsys,
+            platform="wsl2",
+            espanso_config_dir=canonical,
+            match_dir=canonical / "match",
+            candidate_paths=[canonical],
+            espanso_binary=None,
+        )
+
+    assert exit_code == 0
+    assert "WSL2 remediation" not in output
+
+
 # ─── No templates ───────────────────────────────────────────────────────────
 
 

@@ -77,3 +77,5 @@
 | 2026-03-07 | T-1 | run /implement for T-2 and T-3 to satisfy AC-1..AC-3 | none | [workflow/STATE.json](../workflow/STATE.json) |
 | 2026-03-07 | T-3 | run /test post and advance to review-ship | none | [workflow/STATE.json](../workflow/STATE.json) |
 | 2026-03-07 | test post pass | complete review-ship checks and move to maintain | none | [workflow/STATE.json](../workflow/STATE.json) |
+| 2026-03-08 | Phase 8 maintain pass (standard) | run /operationalize interview and generate automation config/workflows | human input required: automation preferences | [workflow/STATE.json](../workflow/STATE.json) |
+| 2026-03-08 | Phase 9 interview complete | validate generated maintenance workflows and continue in re-enterable operationalize mode | none | [workflow/STATE.json](../workflow/STATE.json) |
