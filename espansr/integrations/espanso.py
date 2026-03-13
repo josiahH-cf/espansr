@@ -112,6 +112,30 @@ def _is_windows_side_wsl_path(path: Path) -> bool:
     return normalized.startswith("/mnt/c/Users/")
 
 
+def _path_exists_safe(path: Path) -> bool:
+    """Return True if path exists, False when missing or unreadable."""
+    try:
+        return path.exists()
+    except PermissionError:
+        logger.warning("Skipping unreadable path: %s", path)
+        return False
+    except OSError as exc:
+        logger.warning("Skipping path due to OS error (%s): %s", exc, path)
+        return False
+
+
+def _is_dir_safe(path: Path) -> bool:
+    """Return True if path is a directory, False when missing or unreadable."""
+    try:
+        return path.is_dir()
+    except PermissionError:
+        logger.warning("Skipping unreadable directory path: %s", path)
+        return False
+    except OSError as exc:
+        logger.warning("Skipping directory due to OS error (%s): %s", exc, path)
+        return False
+
+
 def get_espanso_config_dir() -> Optional[Path]:
     """Get the Espanso configuration directory.
 
@@ -130,7 +154,7 @@ def get_espanso_config_dir() -> Optional[Path]:
     # Use persisted path if set and still valid
     if config.espanso.config_path:
         path = Path(config.espanso.config_path).expanduser()
-        if path.exists():
+        if _path_exists_safe(path):
             # In WSL, prefer Windows-side canonical locations to avoid split
             # state when both Linux and Windows Espanso paths exist.
             normalized = str(path)
@@ -139,7 +163,7 @@ def get_espanso_config_dir() -> Optional[Path]:
             )
             if linux_style_espanso_path and is_wsl2() and not _is_windows_side_wsl_path(path):
                 for candidate in _get_candidate_paths():
-                    if candidate.exists() and _is_windows_side_wsl_path(candidate):
+                    if _path_exists_safe(candidate) and _is_windows_side_wsl_path(candidate):
                         logger.info(
                             "Switching Espanso config path from %s to Windows-side %s",
                             path,
@@ -159,7 +183,7 @@ def get_espanso_config_dir() -> Optional[Path]:
 
     # Auto-detect from candidate paths
     for candidate in _get_candidate_paths():
-        if candidate.exists():
+        if _path_exists_safe(candidate):
             # Persist the discovered path
             config.espanso.config_path = str(candidate)
             save_config(config)
@@ -190,13 +214,13 @@ def clean_stale_espanso_files() -> None:
     for candidate in _get_candidate_paths():
         match_dir = candidate / "match"
 
-        if not match_dir.is_dir():
+        if not _is_dir_safe(match_dir):
             continue
 
         # Clean old automatr-* files from ALL directories (rebrand migration)
         for filename in _OLD_MANAGED_FILES:
             old_file = match_dir / filename
-            if old_file.exists():
+            if _path_exists_safe(old_file):
                 try:
                     old_file.unlink()
                     logger.info("Removed old file (rebrand): %s", old_file)
@@ -209,7 +233,7 @@ def clean_stale_espanso_files() -> None:
 
         for filename in _MANAGED_FILES:
             stale = match_dir / filename
-            if stale.exists():
+            if _path_exists_safe(stale):
                 try:
                     stale.unlink()
                     logger.info("Removed stale file: %s", stale)
