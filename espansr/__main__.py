@@ -513,7 +513,15 @@ def cmd_doctor(args) -> int:
 
     # 5b. WSL candidate conflict visibility
     if platform == "wsl2":
-        existing_candidates = [p for p in _get_candidate_paths() if p.exists()]
+        existing_candidates = []
+        for p in _get_candidate_paths():
+            try:
+                if p.exists():
+                    existing_candidates.append(p)
+            except PermissionError:
+                _warn(f"Skipping unreadable candidate path: {p}")
+            except OSError as exc:
+                _warn(f"Skipping candidate path due to OS error ({exc}): {p}")
         if espanso_dir:
             _ok(f"Canonical Espanso path: {espanso_dir}")
         if len(existing_candidates) > 1:
