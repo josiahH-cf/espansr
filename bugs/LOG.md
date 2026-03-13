@@ -21,3 +21,14 @@
 - **Status:** closed
 - **Logged:** 2026-03-08
 - **Resolved:** 2026-03-08
+
+### BUG-003: WSL unreadable Windows candidate path crashes doctor/GUI
+- **Location:** espansr/integrations/espanso.py:_get_candidate_paths consumers, clean_stale_espanso_files; espansr/__main__.py:cmd_doctor
+- **Phase:** 8-maintain (interactive troubleshooting)
+- **Severity:** blocking
+- **Expected:** `espansr doctor` and `espansr gui` continue startup when non-canonical candidate paths are unreadable.
+- **Actual:** `PermissionError` raised while probing `/mnt/c/Users/CodexSandboxOffline/AppData/Roaming/espanso` caused doctor/GUI failure.
+- **Fix-as-you-go:** yes
+- **Status:** closed
+- **Logged:** 2026-03-13
+- **Resolved:** 2026-03-13
