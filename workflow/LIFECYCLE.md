@@ -12,7 +12,7 @@ The project lifecycle follows 9 phases plus a parallel Bug Track. These are one-
 
 | Phase | Input | Action | Output |
 | ----- | ----- | ------ | ------ |
-| 1. Scaffold Import | Empty/new repo | Run `initialization.md` | Scaffold files placed |
+| 1. Scaffold Import | Repo after `install.sh` | Run `/initialization` | Scaffold files placed or staged, then routed into fresh init, existing-project injection, or `/update-workflow` |
 | 2. Compass | Scaffold in place | Dynamic discovery interview (`/compass`) | `.specify/constitution.md`, AGENTS.md Overview |
 | 3. Define Features | Constitution | Feature interview (`/define-features`) | Feature specs with Compass mapping |
 | 4. Scaffold Project | Feature specs | Architecture reasoning (`/scaffold`) | `workflow/COMMANDS.md` Code Conventions + Core Commands |
@@ -25,7 +25,7 @@ The project lifecycle follows 9 phases plus a parallel Bug Track. These are one-
 | 9. Operationalize | Maintenance level selected | Interview-driven automation config (`/operationalize`) — schedules, notifications, release publishing | `.github/maintenance-config.yml` + generated GitHub Actions workflows |
 | Bug Track | Any phase | Bug logging (`/bug`) + fixing (`/bugfix`) | Bug log entries, fix PRs |
 
-`/continue` is the **orchestrator** that auto-advances through phases 2–9 based on exit criteria and persisted state in `/workflow/STATE.json`. It selects the next right action — including routing to `/bugfix` for blocking bugs before continuing task work. At Phase 6, `/continue` delegates to `/implement`. Use `/implement` directly when you know which feature to build; use `/continue` when you want the orchestrator to decide.
+`/continue` is the **orchestrator** that auto-advances through phases 2–9 based on exit criteria and persisted state in `/workflow/STATE.json`. It selects the next right action — including routing to `/bugfix` for blocking bugs before continuing task work. At decision forks (multiple valid next actions), it presents a concise checklist and waits for user input before dispatching; fork behavior is modulated by `forkActivationLevel` in STATE.json (see `workflow/ORCHESTRATOR.md → Fork Activation Level`). At Phase 6, `/continue` delegates to `/implement`. Use `/implement` directly when you know which feature to build; use `/continue` when you want the orchestrator to decide.
 
 ## Feature-Level Phases (Per-Feature Lifecycle)
 

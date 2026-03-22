@@ -18,7 +18,7 @@
 | AC-2 | tests/test_feature_authoring_sync_baseline.py::test_cli_validate_and_dry_run_do_not_mutate_outputs | [x] Written (failing as expected) |
 | AC-3 | tests/test_feature_authoring_sync_baseline.py::test_setup_and_status_are_platform_aware | [x] Written (failing as expected) |
 
-## Task List
+## Tasks
 
 ### T-1: Define pre-implementation failing tests
 

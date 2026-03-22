@@ -12,3 +12,16 @@ CLAUDE.local.md
 # Local agent permission overrides
 .vscode/
 .claude/settings.local.json
+
+.workflow-bootstrap/
+# Install staging workspace
+
+# Python local environment artifacts
+.venv/
+*.egg-info/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/

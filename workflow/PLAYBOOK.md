@@ -21,9 +21,9 @@ This document defines how an agent executes work from spec to merged PR.
 | Scaffold Project | Feature specs | `workflow/COMMANDS.md` Code Conventions + Core Commands | Neither section contains `[PROJECT-SPECIFIC]` |
 | Fine-tune Plan | Architecture plan | `/tasks/[feature-id]-[slug].md` files + ordered AC/task/model/branch mappings | Every active spec has a matching task file; all ACs mapped to tasks |
 | Code | Fine-tuned specs + task files + pre-tests | Passing code on feature branch | All tasks marked Complete, tests pass |
-| Test | Implementation | Verified ACs, bug log reviewed | No blocking bugs, all ACs pass in `/test post` mode; `scripts/workflow-lint.sh` run (advisory — non-blocking; uses Suggest tier) |
+| Test | Implementation | Verified ACs, bug log reviewed | No blocking bugs, all ACs pass in `/test post` mode; launch/smoke check passes or explicitly skipped (see phase-7-test.md); `scripts/workflow-lint.sh` run (advisory — non-blocking; uses Suggest tier). Then fork detection selects review path (see `workflow/ORCHESTRATOR.md → Fork Detection`). |
 | Review Bot | Post-test pass | Auto-merged PR or findings file | All rubric categories PASS, tests PASS, lint PASS → auto-merge; any FAIL → findings file written, route back to Code |
-| Maintain | Shipped features | Maintenance mode active (level selected) | Maintenance level recorded in STATE.json; all items for selected level completed |
+| Maintain | Shipped features | Maintenance mode active (level selected) | Maintenance level recorded in STATE.json (selected via fork detection if not already set); all items for selected level completed |
 | Operationalize | Maintenance level selected + interview answers | `.github/maintenance-config.yml` + generated GitHub Actions workflows | Config file records all interview decisions; at least one workflow generated per enabled category; notification routing configured; all workflow YAML valid |
 
 ## Feature-Level Phase Contract
@@ -34,12 +34,12 @@ This document defines how an agent executes work from spec to merged PR.
 | Plan | Spec | `/tasks/[feature-id]-[slug].md` | Every criterion mapped to one or more tasks |
 | Test (`pre`) | Task file + spec | Failing tests committed | At least one failing test per criterion |
 | Implement | Failing tests + task file | Passing code commits | Task statuses updated with evidence |
-| Test (`post`) | Implemented feature + task file + spec | AC verification report + bug entries | All ACs verified or logged as bugs |
-| Bot Review | Post-test pass + spec + task file + diff | Rubric review report | All 6 rubric categories PASS, tests PASS, lint PASS |
+| Test (`post`) | Implemented feature + task file + spec | AC verification report + bug entries | All ACs verified or logged as bugs; launch/smoke check executed or explicitly skipped with reason |
+| Bot Review | Post-test pass + spec + task file + diff | Rubric review report | All 6 rubric categories PASS, tests PASS, lint PASS, launch check PASS or SKIPPED |
 | Auto-Merge (bot) | Bot review PASS | Committed, pushed, merged PR | PR squash-merged, branch deleted, feature labeled `status:done` |
 | Review (manual) | Bot review FAIL or manual override | PASS/FAIL review report | All criteria have passing test evidence |
 | PR | Review PASS (bot or manual) | Open PR with required checklist | CI and policy checks green; lint report reviewed (advisory) |
-| Merge | Approved PR | Merged branch + cleanup | Bot auto-merge or human merge approval |
+| Merge | Approved PR | Merged branch + cleanup | Bot auto-merge or human merge approval; post-merge test pass on base branch (see `workflow/CONCURRENCY.md → Automatic Git Workflow → Merge on Completion`); feature branch and worktree cleaned up |
 
 ## Definition of Done
 

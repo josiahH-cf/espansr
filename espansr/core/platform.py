@@ -11,7 +11,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-
 _RESERVED_WINDOWS_USER_DIRS = {
     "all users",
     "default",
