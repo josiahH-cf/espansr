@@ -12,7 +12,7 @@
     "1-authoring-sync-baseline": {
       "spec": "specs/1-authoring-sync-baseline.md",
       "task": "tasks/1-authoring-sync-baseline.md",
-      "status": "tested"
+      "status": "done"
     },
     "001-health-remediation-wsl-permissions-and-lint": {
       "spec": "specs/archive/health-remediation-wsl-permissions-and-lint.md",
@@ -21,5 +21,5 @@
     }
   },
   "activeClaims": [],
-  "updatedAt": "2026-03-22T06:43:50-05:00"
+  "updatedAt": "2026-03-22T06:49:28-05:00"
 }
