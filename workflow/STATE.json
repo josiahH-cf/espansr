@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "7b-review-ship",
-  "currentFeatureId": "001-health-remediation-wsl-permissions-and-lint",
-  "currentTaskFile": "tasks/001-health-remediation-wsl-permissions-and-lint.md",
+  "projectPhase": "8-maintain",
+  "currentFeatureId": "",
+  "currentTaskFile": "",
   "testMode": "post",
   "maintenanceLevel": "standard",
   "automationLevel": "light",
@@ -15,11 +15,11 @@
       "status": "tested"
     },
     "001-health-remediation-wsl-permissions-and-lint": {
-      "spec": "specs/001-health-remediation-wsl-permissions-and-lint.md",
-      "task": "tasks/001-health-remediation-wsl-permissions-and-lint.md",
-      "status": "tested"
+      "spec": "specs/archive/health-remediation-wsl-permissions-and-lint.md",
+      "task": "tasks/archive/health-remediation-wsl-permissions-and-lint.md",
+      "status": "done"
     }
   },
   "activeClaims": [],
-  "updatedAt": "2026-03-22T06:37:00-05:00"
+  "updatedAt": "2026-03-22T06:43:50-05:00"
 }

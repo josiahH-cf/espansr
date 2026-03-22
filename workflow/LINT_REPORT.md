@@ -1,9 +1,9 @@
 # Workflow Lint Report
 
-- **Generated:** 2026-03-22T11:30:46Z
+- **Generated:** 2026-03-22T11:45:36Z
 - **Project root:** `/home/josiah/R/espansr`
 - **Files scanned:** 197
-- **Total findings:** 157
+- **Total findings:** 156
 
 ## Summary
 
@@ -11,7 +11,7 @@
 |----------|-------|
 | Orphan | 2 |
 | Length | 6 |
-| EOF Newline | 9 |
+| EOF Newline | 8 |
 | Clarity | 140 |
 
 ## Orphan Detection
@@ -29,7 +29,7 @@
 | `specs/archive/manifest-schema-alignment.md` | — | **166** lines (threshold: 120) |
 | `tasks/archive/install-first-run.md` | — | **166** lines (threshold: 120) |
 | `tasks/archive/roadmap-v1.0.md` | — | **254** lines (threshold: 120) |
-| `workflow/LINT_REPORT.md` | — | **195** lines (threshold: 120) |
+| `workflow/LINT_REPORT.md` | — | **194** lines (threshold: 120) |
 | `workflow/ORCHESTRATOR.md` | — | **148** lines (threshold: 120) |
 
 ## EOF Newline
@@ -39,7 +39,6 @@
 | `./governance/REGISTRY.md` | EOF | Multiple trailing newlines |
 | `./meta-prompts/phase-4-scaffold-project.md` | EOF | Multiple trailing newlines |
 | `./meta-prompts/phase-4-scaffold.md` | EOF | Multiple trailing newlines |
-| `./tasks/001-health-remediation-wsl-permissions-and-lint.md` | EOF | Missing trailing newline |
 | `./tasks/archive/cli-colored-output.md` | EOF | Multiple trailing newlines |
 | `./tasks/archive/gui-dark-mode.md` | EOF | Multiple trailing newlines |
 | `./tasks/archive/gui-status-bar-feedback.md` | EOF | Multiple trailing newlines |
@@ -50,10 +49,6 @@
 
 | File | Line | Message |
 |------|------|---------|
-| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 7 | Line exceeds 200 characters (421 chars) |
-| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 20 | Line exceeds 200 characters (203 chars) |
-| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 21 | Line exceeds 200 characters (211 chars) |
-| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 25 | Line exceeds 200 characters (206 chars) |
 | `specs/1-authoring-sync-baseline.md` | 5 | Line exceeds 200 characters (275 chars) |
 | `specs/2-wsl-windows-path-sync-bug.md` | 5 | Line exceeds 200 characters (304 chars) |
 | `specs/3-wsl-espanso-dependency-onboarding.md` | 5 | Line exceeds 200 characters (395 chars) |
@@ -84,6 +79,10 @@
 | `specs/archive/gui-status-bar-feedback.md` | 49 | Line exceeds 200 characters (266 chars) |
 | `specs/archive/gui-template-preview.md` | 7 | Line exceeds 200 characters (239 chars) |
 | `specs/archive/gui-template-preview.md` | 50 | Line exceeds 200 characters (276 chars) |
+| `specs/archive/health-remediation-wsl-permissions-and-lint.md` | 7 | Line exceeds 200 characters (421 chars) |
+| `specs/archive/health-remediation-wsl-permissions-and-lint.md` | 20 | Line exceeds 200 characters (203 chars) |
+| `specs/archive/health-remediation-wsl-permissions-and-lint.md` | 21 | Line exceeds 200 characters (211 chars) |
+| `specs/archive/health-remediation-wsl-permissions-and-lint.md` | 25 | Line exceeds 200 characters (206 chars) |
 | `specs/archive/install-first-run.md` | 9 | Line exceeds 200 characters (444 chars) |
 | `specs/archive/install-first-run.md` | 11 | Line exceeds 200 characters (502 chars) |
 | `specs/archive/install-first-run.md` | 13 | Line exceeds 200 characters (301 chars) |
@@ -125,8 +124,6 @@
 | `specs/archive/windows-installer.md` | 81 | Line exceeds 200 characters (217 chars) |
 | `specs/archive/windows-installer.md` | 85 | Line exceeds 200 characters (223 chars) |
 | `specs/archive/wsl-platform-utility.md` | 8 | Line exceeds 200 characters (374 chars) |
-| `tasks/001-health-remediation-wsl-permissions-and-lint.md` | 43 | Line exceeds 200 characters (217 chars) |
-| `tasks/001-health-remediation-wsl-permissions-and-lint.md` | 68 | Line exceeds 200 characters (224 chars) |
 | `tasks/1-authoring-sync-baseline.md` | 68 | Line exceeds 200 characters (214 chars) |
 | `tasks/1-authoring-sync-baseline.md` | 70 | Line exceeds 200 characters (309 chars) |
 | `tasks/2-wsl-windows-path-sync-bug.md` | — | Task missing `## Tasks` section |
@@ -155,6 +152,8 @@
 | `tasks/archive/gui-status-bar-feedback.md` | 42 | Line exceeds 200 characters (214 chars) |
 | `tasks/archive/gui-status-bar-feedback.md` | 62 | Line exceeds 200 characters (257 chars) |
 | `tasks/archive/gui-template-preview.md` | — | Task missing `## Tasks` section |
+| `tasks/archive/health-remediation-wsl-permissions-and-lint.md` | 43 | Line exceeds 200 characters (217 chars) |
+| `tasks/archive/health-remediation-wsl-permissions-and-lint.md` | 68 | Line exceeds 200 characters (224 chars) |
 | `tasks/archive/install-first-run.md` | — | Task missing `## Tasks` section |
 | `tasks/archive/install-first-run.md` | 16 | Line exceeds 200 characters (348 chars) |
 | `tasks/archive/install-first-run.md` | 24 | Line exceeds 200 characters (290 chars) |
