@@ -48,6 +48,20 @@ The profile is **auto-detected** during Phase 2 (Compass) based on project compl
 
 If `advisoryProfile` is empty, treat as `standard`.
 
+### Fork Activation Level
+
+`STATE.json -> forkActivationLevel` controls when `/continue` stops for decision forks. Valid values:
+
+| Value | Behavior |
+|-------|----------|
+| `light` | Pause only for high-risk forks; auto-continue standard and low-risk forks with the recommended option |
+| `standard` | Pause for high-risk and standard-risk forks; auto-continue low-risk forks with the recommended option |
+| `active` | Pause for every fork, including low-risk confirmations |
+
+If `forkActivationLevel` is empty or missing, treat it as `standard`.
+
+Users can change it at any time by saying "switch to light forks", "switch to standard forks", or "switch to active forks".
+
 ### Advisory Tiers
 
 All suggestions in the workflow use one of three tiers. The tier determines language strength, not enforceability — all remain optional:

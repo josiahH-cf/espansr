@@ -4,7 +4,7 @@
 
 At the start of every session, before any work:
 1. Read `AGENTS.md` — project routing and phase navigation
-2. Read `workflow/STATE.json` — current project state (including `advisoryProfile` for guidance tone)
+2. Read `workflow/STATE.json` — current project state (including `advisoryProfile` for guidance tone and `forkActivationLevel` for fork sensitivity)
 3. Read `.specify/constitution.md` — project identity (if it exists)
 4. Read the active task file (if `currentTaskFile` is set in state)
 5. Read `workflow/ORCHESTRATOR.md` — loop contract for `/continue` sessions
@@ -65,6 +65,11 @@ Use these baseline principles for context discipline, commit habits, worktree us
 
 Commands are organized by workflow phase. Run `/continue` to auto-advance through phases.
 
+### Setup (Phase 1)
+
+- `/initialization` — Phase 1: detect fresh vs existing vs scaffolded repo, place or merge scaffold assets, then route to Compass or `/update-workflow`
+- `/update-workflow` — Update scaffold to latest version from local source or upstream (can be invoked at any time)
+
 ### Interview & Planning (Phases 2–5)
 
 - `/compass` — Phase 2: Dynamic discovery interview to establish project identity → outputs `.specify/constitution.md`
@@ -76,13 +81,16 @@ Commands are organized by workflow phase. Run `/continue` to auto-advance throug
 ### Build & Test (Phases 6–7)
 
 - `/implement` — Phase 6: TDD implementation from spec
+- `/build-session` — Phase 6 session mode: sustained multi-feature implementation session
 - `/test` — Phase 7: Run tests against acceptance criteria, log bugs
+- `/review-bot` — Phase 7a: Automated full-rubric review + auto-merge (default merge path)
 - `/bug` — Bug Track: Log a bug from any phase (lightweight, non-interrupting)
 - `/bugfix` — Structured bug fix: reproduce → diagnose → fix → verify → PR
 
-### Maintain & Continue (Phase 8+)
+### Maintain & Continue (Phases 8–9+)
 
 - `/maintain` — Phase 8: Documentation, compliance, standards enforcement
+- `/operationalize` — Phase 9: Interview-driven automation config (schedules, notifications, release publishing)
 - `/continue` — Orchestrator: reads project state, determines phase, auto-advances, keeps building
 
 ### Review & Ship

@@ -43,6 +43,13 @@ collect_files() {
     -not -path './.git/*' \
     -not -path './node_modules/*' \
     -not -path './.trees/*' \
+    -not -path './.venv/*' \
+    -not -path './.pytest_cache/*' \
+    -not -path './.ruff_cache/*' \
+    -not -path './.mypy_cache/*' \
+    -not -path './htmlcov/*' \
+    -not -path './*/__pycache__/*' \
+    -not -path './*.egg-info/*' \
     -not -name 'LINT_REPORT.md' \
     | sort
 }
@@ -55,23 +62,26 @@ collect_lint_md() {
   done
 }
 
-# Build a reference corpus: all text from tracked markdown files + STATE.json
-build_reference_corpus() {
-  local corpus=""
-  while IFS= read -r f; do
-    [[ -f "$f" ]] && corpus+="$(cat "$f")"$'\n'
-  done < <(find . -name '*.md' -not -path './.git/*' -not -path './node_modules/*' -not -path './.trees/*' 2>/dev/null | sort)
-  # Include STATE.json task references
-  [[ -f "workflow/STATE.json" ]] && corpus+="$(cat "workflow/STATE.json")"$'\n'
-  printf '%s' "$corpus"
+has_inbound_reference() {
+  local needle="$1"
+  local target_file="$2"
+
+  grep -R -F -l --binary-files=without-match \
+    --exclude='LINT_REPORT.md' \
+    --exclude-dir='.git' \
+    --exclude-dir='node_modules' \
+    --exclude-dir='.trees' \
+    --exclude-dir='.venv' \
+    --exclude-dir='__pycache__' \
+    --exclude-dir='*.egg-info' \
+    -- "$needle" . 2>/dev/null \
+    | grep -v -x "./${target_file}" \
+    | grep -q .
 }
 
 # ─── Check 1: Orphan Detection ───
 
 run_orphan_check() {
-  local corpus
-  corpus="$(build_reference_corpus)"
-
   local dirs=("specs" "tasks" "decisions")
   for d in "${dirs[@]}"; do
     [[ -d "$d" ]] || continue
@@ -79,8 +89,8 @@ run_orphan_check() {
       local basename
       basename="$(basename "$f")"
       [[ "$basename" == "_TEMPLATE.md" ]] && continue
-      # Check if this file is referenced anywhere in the corpus (by filename or relative path)
-      if ! echo "$corpus" | grep -qF "$basename" && ! echo "$corpus" | grep -qF "$f"; then
+      # Check if this file is referenced anywhere else by filename or relative path.
+      if ! has_inbound_reference "$basename" "$f" && ! has_inbound_reference "$f" "$f"; then
         add_finding "orphan" "$f" "—" "No inbound reference found"
       fi
     done < <(find "$d" -name '*.md' | sort)

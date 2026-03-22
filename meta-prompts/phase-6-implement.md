@@ -1,14 +1,6 @@
----
-agent: agent
-description: 'TDD implementation — make failing tests pass, one task at a time'
----
-<!-- role: derived | canonical-source: meta-prompts/phase-6-implement.md -->
-<!-- generated-from-metaprompt -->
-
-[workflow/PLAYBOOK.md](../../workflow/PLAYBOOK.md)
-[workflow/FILE_CONTRACTS.md](../../workflow/FILE_CONTRACTS.md)
-[workflow/FAILURE_ROUTING.md](../../workflow/FAILURE_ROUTING.md)
-
+<!-- role: canonical-source -->
+<!-- phase: 6 -->
+<!-- description: TDD implementation — make failing tests pass, one task at a time -->
 # Phase 6 — Code
 
 **Objective:** Implement features following TDD from fine-tuned specs and task files. Tests exist first — make them pass.

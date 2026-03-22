@@ -1,4 +1,4 @@
-<!-- role: derived | canonical-source: meta-prompts/phase-7d-review-and-ship.md -->
+<!-- role: derived | canonical-source: meta-prompts/phase-7d-review-session.md -->
 <!-- generated-from-metaprompt -->
 You are reviewing completed feature branches and preparing them for merge. You will process one feature at a time through review, and if it passes, create its pull request.
 

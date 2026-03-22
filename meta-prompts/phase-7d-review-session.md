@@ -1,13 +1,30 @@
----
-agent: agent
-description: 'Batch review and PR creation for completed features'
----
-<!-- role: derived | canonical-source: meta-prompts/phase-7d-review-session.md -->
-<!-- generated-from-metaprompt -->
+<!-- role: canonical-source -->
+<!-- slash-command: review-session -->
+<!-- description: Batch review and PR creation for completed features -->
+# Review & Ship
 
-[workflow/PLAYBOOK.md](../../workflow/PLAYBOOK.md)
-[workflow/FILE_CONTRACTS.md](../../workflow/FILE_CONTRACTS.md)
+> Reviews use the scoring rubric at `.github/REVIEW_RUBRIC.md` (6 categories: Correctness, Test Coverage, Security, Performance, Style, Documentation). PR creation uses the extended template with sections (Spec Reference, AC Evidence, Agent & Branch, Review Checklist, Bug Log). The advisory routing hints in `workflow/ROUTING.md` suggest assigning a different model for review than the one that implemented (not enforced). See `AGENTS.md → Workflow Phases`.
 
+**Standing rules for all sessions:**
+
+- Follow `AGENTS.md` and workflow contracts in `/workflow/PLAYBOOK.md`, `/workflow/FILE_CONTRACTS.md`, and `/workflow/FAILURE_ROUTING.md`.
+- Reference `.github/REVIEW_RUBRIC.md` for scoring criteria.
+- Every artifact produced (spec, task file, test, implementation, review report) is committed or written to its canonical location before moving on.
+- Fresh context means: no prior conversation carried forward. When indicated, end the current session and begin a new one.
+
+---
+
+## Review & Ship
+
+**Covers:** Review, Cross-Review, PR Create, and preparation for Human Review
+
+**Purpose:** Review completed feature branches in bulk. For each branch, verify against the spec, produce a structured report, and — if it passes — create the pull request. This session can process multiple completed features sequentially. Ideally, the reviewing agent is different from the one that built the feature.
+
+**Session inputs:** One or more feature names that are labeled `status:implemented`. Provide them one at a time or as a list.
+
+---
+
+```text
 You are reviewing completed feature branches and preparing them for merge. You will process one feature at a time through review, and if it passes, create its pull request.
 
 For each feature, work through the following:
@@ -77,3 +94,39 @@ If complete: produce a session summary:
   - Any features needing a Build session to address failures
 
 State: "All features that passed review have open PRs. Remaining items need Build sessions to address review failures. Human review can proceed on the open PRs — estimated 10 minutes per PR using the non-code checklist."
+```
+
+**Output per feature:** A PASS/FAIL review report and, if passed, an open pull request.
+
+**Output at session end:** A summary of all features reviewed and their disposition.
+
+**Human Review (not a meta-prompt):**
+Human review is human-driven. The PR's non-code checklist is designed for a reviewer who does not need to read code. The checklist covers: scope match against spec, diff size, file scope, secrets, test evidence, commit messages, cross-review status, and rollback path. Estimated time: 10 minutes per PR. On approval: merge, delete the branch, label the issue `status:done`.
+
+---
+
+## Session Flow Summary
+
+```text
+BUILD (autonomous, one feature per session)
+  Test   → Committed failing tests
+  Implement → Committed code   ↺ repeat per task
+  → Resume in fresh session if context constrained
+
+REVIEW & SHIP (batch)
+  Review → PASS/FAIL report   ↰ fail sends back to Build
+  PR Create (on pass)
+  → "Review another?" loop
+
+HUMAN
+  Merge via non-code checklist → Done
+```
+
+**File connections:**
+
+```text
+/specs/[feature-id]-[slug].md        produced by: Plan     consumed by: Build, Review & Ship
+/tasks/[feature-id]-[slug].md        produced by: Plan     consumed by: Build, Review & Ship
+/decisions/[NNNN].md                 produced by: Build    consumed by: future sessions
+PR                                   produced by: Review   consumed by: Human
+```

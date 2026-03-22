@@ -5,6 +5,7 @@ config trigger override, binary path resolution.
 """
 
 import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import yaml
@@ -26,6 +27,10 @@ def test_generate_launcher_creates_valid_yaml(tmp_path):
         ),
         patch(
             "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
             return_value=False,
         ),
         patch("shutil.which", return_value="/usr/bin/espansr"),
@@ -50,7 +55,7 @@ def test_generate_launcher_creates_valid_yaml(tmp_path):
     assert match["vars"][0]["name"] == "output"
     assert match["vars"][0]["type"] == "shell"
     assert "espansr gui" in match["vars"][0]["params"]["cmd"]
-    assert match["vars"][0]["params"]["cmd"].endswith("&")
+    assert " >/dev/null 2>&1 &" in match["vars"][0]["params"]["cmd"]
 
 
 def test_generate_launcher_uses_config_trigger(tmp_path):
@@ -67,6 +72,10 @@ def test_generate_launcher_uses_config_trigger(tmp_path):
             "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=False,
+        ),
         patch("shutil.which", return_value="/usr/bin/espansr"),
         patch("espansr.integrations.espanso.get_config") as mock_config,
     ):
@@ -81,7 +90,7 @@ def test_generate_launcher_uses_config_trigger(tmp_path):
 
 
 def test_generate_launcher_wsl2_command(tmp_path):
-    """generate_launcher_file() uses wsl.exe -d DISTRO on WSL2."""
+    """generate_launcher_file() uses PowerShell Start-Process for WSL launches."""
     match_dir = tmp_path / "match"
     match_dir.mkdir()
 
@@ -92,6 +101,10 @@ def test_generate_launcher_wsl2_command(tmp_path):
         ),
         patch(
             "espansr.integrations.espanso.is_wsl2",
+            return_value=True,
+        ),
+        patch(
+            "espansr.integrations.espanso._is_windows_side_wsl_path",
             return_value=True,
         ),
         patch(
@@ -109,10 +122,51 @@ def test_generate_launcher_wsl2_command(tmp_path):
 
     assert result is True
     data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
-    cmd = data["matches"][0]["vars"][0]["params"]["cmd"]
-    assert "wsl.exe -d Ubuntu --" in cmd
-    assert "/home/user/.venv/bin/espansr gui" in cmd
-    assert cmd.endswith("&")
+    params = data["matches"][0]["vars"][0]["params"]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "Start-Process" in cmd
+    assert "-FilePath 'wsl.exe'" in cmd
+    assert "'-d'" in cmd
+    assert "'Ubuntu'" in cmd
+    assert "'/home/user/.venv/bin/espansr'" in cmd
+    assert "'gui'" in cmd
+
+
+def test_generate_launcher_wsl2_linux_side_config_uses_posix_shell(tmp_path):
+    """WSL with Linux-side Espanso config keeps POSIX shell launcher semantics."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_wsl2",
+            return_value=True,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso._is_windows_side_wsl_path",
+            return_value=False,
+        ),
+        patch("shutil.which", return_value="/home/user/.venv/bin/espansr"),
+    ):
+        from espansr.integrations.espanso import generate_launcher_file
+
+        result = generate_launcher_file()
+
+    assert result is True
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
+    params = data["matches"][0]["vars"][0]["params"]
+    assert "shell" not in params
+    assert params["cmd"].startswith("nohup /home/user/.venv/bin/espansr gui")
+    assert params["cmd"].endswith(" >/dev/null 2>&1 &")
 
 
 def test_generate_launcher_wsl2_no_distro_name(tmp_path):
@@ -130,6 +184,10 @@ def test_generate_launcher_wsl2_no_distro_name(tmp_path):
             return_value=True,
         ),
         patch(
+            "espansr.integrations.espanso._is_windows_side_wsl_path",
+            return_value=True,
+        ),
+        patch(
             "espansr.integrations.espanso.get_wsl_distro_name",
             return_value=None,
         ),
@@ -141,9 +199,21 @@ def test_generate_launcher_wsl2_no_distro_name(tmp_path):
 
     assert result is True
     data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
-    cmd = data["matches"][0]["vars"][0]["params"]["cmd"]
-    assert "wsl.exe --" in cmd
-    assert "-d" not in cmd
+    params = data["matches"][0]["vars"][0]["params"]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "-FilePath 'wsl.exe'" in cmd
+    assert "'--'" in cmd
+    assert "'-d'" not in cmd
+
+
+def test_windows_side_wsl_path_accepts_non_c_drive_mounts():
+    """Windows-hosted WSL paths are recognized on any mounted drive letter."""
+    from espansr.integrations.espanso import _is_windows_side_wsl_path
+
+    assert _is_windows_side_wsl_path(Path("/mnt/d/Users/test/AppData/Roaming/espanso"))
+    assert _is_windows_side_wsl_path(Path("/mnt/z/tools/espanso"))
+    assert not _is_windows_side_wsl_path(Path("/home/test/.config/espanso"))
 
 
 def test_generate_launcher_returns_false_no_match_dir():
@@ -171,6 +241,10 @@ def test_generate_launcher_fallback_sys_executable(tmp_path):
             "espansr.integrations.espanso.is_wsl2",
             return_value=False,
         ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=False,
+        ),
         patch("shutil.which", return_value=None),
     ):
         from espansr.integrations.espanso import generate_launcher_file
@@ -184,6 +258,77 @@ def test_generate_launcher_fallback_sys_executable(tmp_path):
     assert "-m espansr gui" in cmd
 
 
+def test_generate_launcher_windows_command_uses_start_process(tmp_path):
+    """generate_launcher_file() uses PowerShell Start-Process on Windows."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=True,
+        ),
+        patch("shutil.which", return_value=r"C:\Program Files\espansr\espansr.exe"),
+    ):
+        from espansr.integrations.espanso import generate_launcher_file
+
+        result = generate_launcher_file()
+
+    assert result is True
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
+    params = data["matches"][0]["vars"][0]["params"]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "Start-Process" in cmd
+    assert "-FilePath 'C:\\Program Files\\espansr\\espansr.exe'" in cmd
+    assert "-ArgumentList 'gui'" in cmd
+
+
+def test_generate_launcher_windows_fallback_python_module(tmp_path):
+    """generate_launcher_file() can launch via python -m espansr on Windows."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+    fake_python = Path(r"C:\Python311\python.exe")
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=True,
+        ),
+        patch("shutil.which", return_value=None),
+        patch("sys.executable", str(fake_python)),
+    ):
+        from espansr.integrations.espanso import generate_launcher_file
+
+        result = generate_launcher_file()
+
+    assert result is True
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
+    params = data["matches"][0]["vars"][0]["params"]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "-FilePath 'C:\\Python311\\python.exe'" in cmd
+    assert "'-m'" in cmd
+    assert "'espansr'" in cmd
+    assert "'gui'" in cmd
+
+
 def test_generate_launcher_with_explicit_match_dir(tmp_path):
     """generate_launcher_file() accepts an explicit match_dir parameter."""
     match_dir = tmp_path / "custom_match"
@@ -192,6 +337,10 @@ def test_generate_launcher_with_explicit_match_dir(tmp_path):
     with (
         patch(
             "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
             return_value=False,
         ),
         patch("shutil.which", return_value="/usr/bin/espansr"),

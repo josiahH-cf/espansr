@@ -20,6 +20,8 @@ Use this matrix when autonomous execution encounters failure.
 | Blocking bug during implementation | Log via `/bug` with severity: blocking | Run `/bugfix` to attempt resolution. `/continue` will prioritize blocking bugs before the next task. | Bug requires design change or external fix |
 | Non-blocking bug during implementation | Log via `/bug` with severity: non-blocking | Continue current task. Bug is deferred to a later review cycle. | Non-blocking bug is promoted to blocking (prevents task completion) |
 | AC verification failure (Phase 7) | Re-read spec ACs, check test correctness | Log as bug, return to `/implement` | AC cannot be met with current architecture |
+| Worktree file conflict | Run `scripts/clash-check.sh` to identify overlapping files | Redesign task split or wait for conflicting worktree to merge | Overlap cannot be resolved by task reassignment |
+| Stale worktree (>24h) | Review worktree status via `scripts/setup-worktree.sh --list` | Merge or remove stale worktrees, then continue | Stale worktree has uncommitted work requiring manual triage |
 
 ## Escalation Packet
 

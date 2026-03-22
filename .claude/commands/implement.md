@@ -1,4 +1,4 @@
-<!-- role: derived | canonical-source: meta-prompts/phase-6-code.md -->
+<!-- role: derived | canonical-source: meta-prompts/phase-6-implement.md -->
 <!-- generated-from-metaprompt -->
 # Phase 6 — Code
 

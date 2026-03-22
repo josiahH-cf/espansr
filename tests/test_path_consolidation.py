@@ -531,3 +531,41 @@ def test_clean_stale_skips_nonexistent_match_dirs(tmp_path):
 
         # Should not raise
         clean_stale_espanso_files()
+
+
+def test_clean_stale_skips_inaccessible_match_dirs(tmp_path, caplog):
+    """clean_stale_espanso_files() warns and continues when match/ cannot be stat'ed."""
+    canonical = tmp_path / "canonical"
+    canonical.mkdir()
+
+    inaccessible = tmp_path / "inaccessible"
+    inaccessible.mkdir()
+
+    original_is_dir = Path.is_dir
+
+    def fake_is_dir(path: Path) -> bool:
+        if path == inaccessible / "match":
+            raise PermissionError("access denied")
+        return original_is_dir(path)
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_espanso_config_dir",
+            return_value=canonical,
+        ),
+        patch(
+            "espansr.integrations.espanso._get_candidate_paths",
+            return_value=[canonical, inaccessible],
+        ),
+        patch("pathlib.Path.is_dir", autospec=True, side_effect=fake_is_dir),
+        caplog.at_level(logging.WARNING),
+    ):
+        from espansr.integrations.espanso import clean_stale_espanso_files
+
+        clean_stale_espanso_files()
+
+    assert any(
+        "espanso match directory" in record.message.lower()
+        and "access denied" in record.message.lower()
+        for record in caplog.records
+    )
