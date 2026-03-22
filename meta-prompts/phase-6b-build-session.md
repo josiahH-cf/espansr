@@ -69,4 +69,4 @@ When all tasks are complete:
 
 **Context note:** If the feature has many tasks and context becomes constrained, it is correct to stop mid-feature and resume in a fresh session pointing at the same task file. The task file's status tracking ensures continuity.
 
-**Next:** Hand off to the Review & Ship meta-prompt (`phase-7d-review-and-ship.md`).
+**Next:** Hand off to the Review & Ship meta-prompt (`phase-7d-review-session.md`).

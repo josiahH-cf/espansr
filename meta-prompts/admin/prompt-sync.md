@@ -30,18 +30,20 @@ STEP 1  -  INVENTORY
    | 2 | compass.md | phase-2-compass.prompt.md | phase-2-compass.md |
    | 2 | compass-edit.md | phase-2b-compass-edit.prompt.md | phase-2b-compass-edit.md |
    | 3 | define-features.md | phase-3-define-features.prompt.md | phase-3-define-features.md |
-   | 4 | scaffold.md | phase-4-scaffold.prompt.md | phase-4-scaffold-project.md |
-   | 5 | fine-tune.md | phase-5-fine-tune.prompt.md | phase-5-fine-tune-plan.md |
-   | 6 | implement.md | phase-6-implement.prompt.md | phase-6-code.md |
+   | 4 | scaffold.md | phase-4-scaffold.prompt.md | phase-4-scaffold.md |
+   | 5 | fine-tune.md | phase-5-fine-tune.prompt.md | phase-5-fine-tune.md |
+   | 6 | implement.md | phase-6-implement.prompt.md | phase-6-implement.md |
    | 6 | build-session.md | phase-6b-build-session.prompt.md | phase-6b-build-session.md |
    | 7 | test.md | phase-7-test.prompt.md | phase-7-test.md |
    | 7 | bug.md | phase-7b-bug.prompt.md | phase-7b-bug.md |
    | 7 | bugfix.md | phase-7c-bugfix.prompt.md | phase-7c-bugfix.md |
-   | 7 | review-session.md | phase-7d-review-session.prompt.md | phase-7d-review-and-ship.md |
+   | 7 | review-bot.md | phase-7a-review-bot.prompt.md | phase-7a-review-bot.md |
+   | 7 | review-session.md | phase-7d-review-session.prompt.md | phase-7d-review-session.md |
    | 7 | cross-review.md | phase-7e-cross-review.prompt.md | phase-7e-cross-review.md |
    | 8 | maintain.md | phase-8-maintain.prompt.md | phase-8-maintain.md |
    | 9 | operationalize.md | phase-9-operationalize.prompt.md | phase-9-operationalize.md |
    | Orchestrator | continue.md | phase-10-continue.prompt.md | phase-10-continue.md |
+   | Admin | update-workflow.md | update-workflow.prompt.md | admin/update-workflow.md |
 
 4. Report parity:
    - Every command with a Copilot equivalent has both files present.

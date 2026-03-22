@@ -1,33 +1,25 @@
 # Workflow Lint Report
 
-- **Generated:** 2026-03-08T10:24:06Z
+- **Generated:** 2026-03-22T11:30:46Z
 - **Project root:** `/home/josiah/R/espansr`
-- **Files scanned:** 230
-- **Total findings:** 160
+- **Files scanned:** 197
+- **Total findings:** 157
 
 ## Summary
 
 | Category | Count |
 |----------|-------|
-| Orphan | 10 |
+| Orphan | 2 |
 | Length | 6 |
 | EOF Newline | 9 |
-| Clarity | 135 |
+| Clarity | 140 |
 
 ## Orphan Detection
 
 | File | Line | Message |
 |------|------|---------|
-| `specs/1-authoring-sync-baseline.md` | — | No inbound reference found |
-| `specs/2-wsl-windows-path-sync-bug.md` | — | No inbound reference found |
-| `specs/3-wsl-espanso-dependency-onboarding.md` | — | No inbound reference found |
-| `specs/4-wsl-espanso-wrapper-install.md` | — | No inbound reference found |
-| `specs/archive/install-first-run.md` | — | No inbound reference found |
-| `specs/archive/wsl-platform-utility.md` | — | No inbound reference found |
-| `tasks/1-authoring-sync-baseline.md` | — | No inbound reference found |
-| `tasks/2-wsl-windows-path-sync-bug.md` | — | No inbound reference found |
-| `tasks/3-wsl-espanso-dependency-onboarding.md` | — | No inbound reference found |
-| `tasks/4-wsl-espanso-wrapper-install.md` | — | No inbound reference found |
+| `tasks/archive/espansr-orchestratr-connector.md` | — | No inbound reference found |
+| `decisions/0001-platform-config-single-source.md` | — | No inbound reference found |
 
 ## Length Warnings
 
@@ -37,17 +29,17 @@
 | `specs/archive/manifest-schema-alignment.md` | — | **166** lines (threshold: 120) |
 | `tasks/archive/install-first-run.md` | — | **166** lines (threshold: 120) |
 | `tasks/archive/roadmap-v1.0.md` | — | **254** lines (threshold: 120) |
-| `workflow/LINT_REPORT.md` | — | **215** lines (threshold: 120) |
-| `workflow/ORCHESTRATOR.md` | — | **134** lines (threshold: 120) |
+| `workflow/LINT_REPORT.md` | — | **195** lines (threshold: 120) |
+| `workflow/ORCHESTRATOR.md` | — | **148** lines (threshold: 120) |
 
 ## EOF Newline
 
 | File | Line | Message |
 |------|------|---------|
-| `./.venv/lib/python3.12/site-packages/espansr-1.1.0.dist-info/direct_url.json` | EOF | Missing trailing newline |
-| `./.venv/lib/python3.12/site-packages/templatr-1.2.0.dist-info/direct_url.json` | EOF | Missing trailing newline |
 | `./governance/REGISTRY.md` | EOF | Multiple trailing newlines |
 | `./meta-prompts/phase-4-scaffold-project.md` | EOF | Multiple trailing newlines |
+| `./meta-prompts/phase-4-scaffold.md` | EOF | Multiple trailing newlines |
+| `./tasks/001-health-remediation-wsl-permissions-and-lint.md` | EOF | Missing trailing newline |
 | `./tasks/archive/cli-colored-output.md` | EOF | Multiple trailing newlines |
 | `./tasks/archive/gui-dark-mode.md` | EOF | Multiple trailing newlines |
 | `./tasks/archive/gui-status-bar-feedback.md` | EOF | Multiple trailing newlines |
@@ -58,6 +50,10 @@
 
 | File | Line | Message |
 |------|------|---------|
+| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 7 | Line exceeds 200 characters (421 chars) |
+| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 20 | Line exceeds 200 characters (203 chars) |
+| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 21 | Line exceeds 200 characters (211 chars) |
+| `specs/001-health-remediation-wsl-permissions-and-lint.md` | 25 | Line exceeds 200 characters (206 chars) |
 | `specs/1-authoring-sync-baseline.md` | 5 | Line exceeds 200 characters (275 chars) |
 | `specs/2-wsl-windows-path-sync-bug.md` | 5 | Line exceeds 200 characters (304 chars) |
 | `specs/3-wsl-espanso-dependency-onboarding.md` | 5 | Line exceeds 200 characters (395 chars) |
@@ -129,7 +125,8 @@
 | `specs/archive/windows-installer.md` | 81 | Line exceeds 200 characters (217 chars) |
 | `specs/archive/windows-installer.md` | 85 | Line exceeds 200 characters (223 chars) |
 | `specs/archive/wsl-platform-utility.md` | 8 | Line exceeds 200 characters (374 chars) |
-| `tasks/1-authoring-sync-baseline.md` | — | Task missing `## Tasks` section |
+| `tasks/001-health-remediation-wsl-permissions-and-lint.md` | 43 | Line exceeds 200 characters (217 chars) |
+| `tasks/001-health-remediation-wsl-permissions-and-lint.md` | 68 | Line exceeds 200 characters (224 chars) |
 | `tasks/1-authoring-sync-baseline.md` | 68 | Line exceeds 200 characters (214 chars) |
 | `tasks/1-authoring-sync-baseline.md` | 70 | Line exceeds 200 characters (309 chars) |
 | `tasks/2-wsl-windows-path-sync-bug.md` | — | Task missing `## Tasks` section |
@@ -179,7 +176,7 @@
 | `decisions/0001-platform-config-single-source.md` | 13 | Line exceeds 200 characters (212 chars) |
 | `decisions/0001-platform-config-single-source.md` | 19 | Line exceeds 200 characters (354 chars) |
 | `workflow/FILE_CONTRACTS.md` | 1–5 | No H1 heading in first 5 lines |
-| `workflow/LIFECYCLE.md` | 28 | Line exceeds 200 characters (429 chars) |
+| `workflow/LIFECYCLE.md` | 28 | Line exceeds 200 characters (679 chars) |
 | `workflow/LIFECYCLE.md` | 32 | Line exceeds 200 characters (367 chars) |
 | `workflow/LIFECYCLE.md` | 59 | Line exceeds 200 characters (202 chars) |
 | `workflow/LINT_CONTRACT.md` | 20 | Line exceeds 200 characters (213 chars) |
@@ -188,7 +185,7 @@
 | `workflow/ORCHESTRATOR.md` | 10 | Line exceeds 200 characters (311 chars) |
 | `workflow/ORCHESTRATOR.md` | 20 | Line exceeds 200 characters (218 chars) |
 | `workflow/ORCHESTRATOR.md` | 47 | Line exceeds 200 characters (276 chars) |
-| `workflow/ORCHESTRATOR.md` | 74 | Line exceeds 200 characters (255 chars) |
+| `workflow/ORCHESTRATOR.md` | 88 | Line exceeds 200 characters (255 chars) |
 | `workflow/ROUTING.md` | 7 | Line exceeds 200 characters (225 chars) |
 | `workflow/ROUTING.md` | 28 | Line exceeds 200 characters (265 chars) |
 | `.specify/constitution.md` | 1 | Line exceeds 200 characters (283 chars) |

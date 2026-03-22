@@ -5,7 +5,6 @@ These tests move AC-1..AC-3 from pre-test placeholders to executable behavior ch
 
 import argparse
 import json
-from pathlib import Path
 from unittest.mock import patch
 
 from espansr.core.templates import Template, TemplateManager, Variable

@@ -5,6 +5,7 @@ Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
 """
 
 import logging
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -15,6 +16,7 @@ from espansr.core.config import get_config, save_config
 from espansr.core.platform import (
     get_platform_config,
     get_wsl_distro_name,
+    is_windows,
     is_wsl2,
 )
 from espansr.core.templates import get_template_manager
@@ -108,8 +110,14 @@ def _get_candidate_paths() -> list[Path]:
 
 def _is_windows_side_wsl_path(path: Path) -> bool:
     """Return True when path points to Windows filesystem from WSL."""
-    normalized = str(path)
-    return normalized.startswith("/mnt/c/Users/")
+    parts = path.parts
+    return (
+        len(parts) >= 3
+        and parts[0] == "/"
+        and parts[1] == "mnt"
+        and len(parts[2]) == 1
+        and parts[2].isalpha()
+    )
 
 
 def _path_exists_safe(path: Path) -> bool:
@@ -158,8 +166,9 @@ def get_espanso_config_dir() -> Optional[Path]:
             # In WSL, prefer Windows-side canonical locations to avoid split
             # state when both Linux and Windows Espanso paths exist.
             normalized = str(path)
-            linux_style_espanso_path = normalized.endswith("/.config/espanso") or normalized.endswith(
-                "/.espanso"
+            linux_style_espanso_path = (
+                normalized.endswith("/.config/espanso")
+                or normalized.endswith("/.espanso")
             )
             if linux_style_espanso_path and is_wsl2() and not _is_windows_side_wsl_path(path):
                 for candidate in _get_candidate_paths():
@@ -224,7 +233,7 @@ def clean_stale_espanso_files() -> None:
                 try:
                     old_file.unlink()
                     logger.info("Removed old file (rebrand): %s", old_file)
-                except PermissionError as exc:
+                except OSError as exc:
                     logger.warning("Could not remove old file %s: %s", old_file, exc)
 
         # Skip canonical dir for current managed files
@@ -237,7 +246,7 @@ def clean_stale_espanso_files() -> None:
                 try:
                     stale.unlink()
                     logger.info("Removed stale file: %s", stale)
-                except PermissionError as exc:
+                except OSError as exc:
                     logger.warning("Could not remove stale file %s: %s", stale, exc)
 
 
@@ -254,6 +263,29 @@ def get_match_dir() -> Optional[Path]:
     match_dir = config_dir / "match"
     match_dir.mkdir(parents=True, exist_ok=True)
     return match_dir
+
+
+def _quote_powershell(value: str) -> str:
+    """Quote a value for use as a PowerShell single-quoted string."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _build_windows_launch_params(executable: str, args: list[str]) -> dict[str, str]:
+    """Build shell params for a detached launch via PowerShell."""
+    quoted_args = ", ".join(_quote_powershell(arg) for arg in args)
+    cmd = (
+        "Start-Process -WindowStyle Hidden "
+        f"-FilePath {_quote_powershell(executable)}"
+    )
+    if quoted_args:
+        cmd += f" -ArgumentList {quoted_args}"
+    return {"cmd": cmd, "shell": "powershell"}
+
+
+def _build_posix_launch_params(executable: str, args: list[str]) -> dict[str, str]:
+    """Build shell params for a detached launch on Unix-like shells."""
+    command = shlex.join([executable, *args])
+    return {"cmd": f"nohup {command} >/dev/null 2>&1 &"}
 
 
 def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
@@ -276,22 +308,29 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     config = get_config()
     trigger = config.espanso.launcher_trigger or ":aopen"
 
-    # Resolve binary path
+    # Resolve executable and argument vector.
     binary = shutil.which("espansr")
     if binary:
-        gui_cmd = f"{binary} gui"
+        executable = binary
+        args = ["gui"]
     else:
-        gui_cmd = f"{sys.executable} -m espansr gui"
+        executable = sys.executable
+        args = ["-m", "espansr", "gui"]
 
-    # Build platform-specific shell command
-    if is_wsl2():
+    # Build platform-specific shell command.
+    wsl_windows_host = is_wsl2() and _is_windows_side_wsl_path(match_dir.parent)
+
+    if wsl_windows_host:
         distro = get_wsl_distro_name()
+        wsl_args: list[str] = []
         if distro:
-            cmd = f"wsl.exe -d {distro} -- {gui_cmd} &"
-        else:
-            cmd = f"wsl.exe -- {gui_cmd} &"
+            wsl_args.extend(["-d", distro])
+        wsl_args.extend(["--", executable, *args])
+        shell_params = _build_windows_launch_params("wsl.exe", wsl_args)
+    elif is_windows():
+        shell_params = _build_windows_launch_params(executable, args)
     else:
-        cmd = f"{gui_cmd} &"
+        shell_params = _build_posix_launch_params(executable, args)
 
     content = {
         "matches": [
@@ -302,7 +341,7 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
                     {
                         "name": "output",
                         "type": "shell",
-                        "params": {"cmd": cmd},
+                        "params": shell_params,
                     }
                 ],
             }
