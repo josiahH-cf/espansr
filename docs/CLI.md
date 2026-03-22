@@ -35,6 +35,8 @@ espansr list
 
 Run post-install setup: copies bundled templates, detects Espanso, generates launcher and orchestratr manifest.
 
+On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
+
 ```bash
 espansr setup                     # standard setup
 espansr setup --verbose           # show per-file detail

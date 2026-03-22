@@ -51,7 +51,10 @@ Then return to WSL and run:
 
 ```bash
 espansr doctor
+espansr setup
 ```
+
+If the Espanso launcher trigger ever stops opening the GUI on WSL2, rerun `espansr setup` to regenerate the Windows-side launcher file before troubleshooting YAML manually.
 
 ## 4. List Templates
 
