@@ -132,15 +132,15 @@ def _path_exists_safe(path: Path) -> bool:
         return False
 
 
-def _is_dir_safe(path: Path) -> bool:
+def _is_dir_safe(path: Path, *, label: str = "directory path") -> bool:
     """Return True if path is a directory, False when missing or unreadable."""
     try:
         return path.is_dir()
-    except PermissionError:
-        logger.warning("Skipping unreadable directory path: %s", path)
+    except PermissionError as exc:
+        logger.warning("Skipping unreadable %s %s: %s", label, path, exc)
         return False
     except OSError as exc:
-        logger.warning("Skipping directory due to OS error (%s): %s", exc, path)
+        logger.warning("Skipping %s due to OS error (%s): %s", label, exc, path)
         return False
 
 
@@ -223,7 +223,7 @@ def clean_stale_espanso_files() -> None:
     for candidate in _get_candidate_paths():
         match_dir = candidate / "match"
 
-        if not _is_dir_safe(match_dir):
+        if not _is_dir_safe(match_dir, label="Espanso match directory"):
             continue
 
         # Clean old automatr-* files from ALL directories (rebrand migration)

@@ -1,7 +1,7 @@
-# Tasks: 001-health-remediation-wsl-permissions-and-lint
+# Tasks: health-remediation-wsl-permissions-and-lint
 
-**Feature ID:** 001-health-remediation-wsl-permissions-and-lint
-**Spec:** /specs/001-health-remediation-wsl-permissions-and-lint.md
+**Feature ID:** health-remediation-wsl-permissions-and-lint
+**Spec:** /specs/archive/health-remediation-wsl-permissions-and-lint.md
 
 ## Status
 
@@ -71,7 +71,8 @@
 
 | Date | Last Completed | Next Action | Blockers | State Link |
 |------|---------------|-------------|----------|------------|
-| 2026-03-22 | plan created | validate launcher fix and workflow hygiene updates | none | [workflow/STATE.json](../workflow/STATE.json) |
-| 2026-03-22 | T-3 | run final review and ship from branch | none | [workflow/STATE.json](../workflow/STATE.json) |
-| 2026-03-22 | review state aligned | commit and push branch for merge | none | [workflow/STATE.json](../workflow/STATE.json) |
-| 2026-03-22 | stale findings cleared | finalize commit and push for merge | none | [workflow/STATE.json](../workflow/STATE.json) |
+| 2026-03-22 | plan created | validate launcher fix and workflow hygiene updates | none | [workflow/STATE.json](../../workflow/STATE.json) |
+| 2026-03-22 | T-3 | run final review and ship from branch | none | [workflow/STATE.json](../../workflow/STATE.json) |
+| 2026-03-22 | review state aligned | commit and push branch for merge | none | [workflow/STATE.json](../../workflow/STATE.json) |
+| 2026-03-22 | stale findings cleared | finalize commit and push for merge | none | [workflow/STATE.json](../../workflow/STATE.json) |
+| 2026-03-22 | archived after merge | remain in maintain mode until the next feature is selected | none | [workflow/STATE.json](../../workflow/STATE.json) |

@@ -46,7 +46,7 @@ R found one confirmed espansr product defect and one concrete lint drift set in 
 
 ## Execution Linkage
 
-_Execution planning is authoritative in `/tasks/001-health-remediation-wsl-permissions-and-lint.md`._
+_Execution planning is authoritative in `/tasks/archive/health-remediation-wsl-permissions-and-lint.md`._
 
 - Task ordering: defined in the matching task file
 - Model assignment: defined per task in the task file
