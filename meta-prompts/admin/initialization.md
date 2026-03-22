@@ -1,261 +1,246 @@
 # Project Initialization  -  Meta-Prompt
 
-Paste this into a coding agent session at the root of any project where a scaffold source has been placed. The source may be a ZIP archive, an extracted scaffold directory, or an already-installed scaffold layout copied into a staging directory. Works with any of the three scaffold variants: template-only, metaprompts-only, or full.
+Paste this into a coding agent session at the root of any project after scaffold files have been installed or staged. This is the standard Phase 1 entrypoint for new projects, existing projects that need the workflow injected, and already-scaffolded projects that need scaffold updates.
 
-> **Updating an existing project?** Use the [Update Meta-Prompt](update.md) instead  -  it preserves your customizations while updating generated files.
+> **Update routing:** When scaffold markers are already present, `/initialization` detects scaffold-update mode and delegates to `/update-workflow`. The `/update-workflow` command can also be invoked directly at any time.
 
-> **Workflow:** This initialization covers Phase 1 (Scaffold Import) of the 8-phase agentic workflow. After initialization completes, Phase 2 (Compass) is auto-triggered to begin the project identity interview. The full lifecycle: Scaffold Import → Compass → Define Features → Scaffold Project → Fine-tune Plan → Code → Test → Maintain (+ parallel Bug Track). See `AGENTS.md → Workflow Phases` for details.
+> **Workflow:** This prompt owns Phase 1 (Scaffold Import). After Phase 1 completes, Phase 2 (Compass) should start automatically only when the constitution is missing or still placeholder-based.
 
 ---
 
 ```text
-You are initializing a project with a standard development scaffolding. A scaffold source has been placed somewhere in this project directory. Find it.
+You are initializing a project with the workflow scaffold. This is the only Phase 1 entrypoint after install. Your first job is to determine which Phase 1 mode applies before asking the developer anything.
 
 Work through the following steps in order.
 
 ---
 
-STEP 1  -  LOCATE, DETECT SOURCE KIND, DETECT VARIANT, AND INVENTORY
+STEP 1  -  READ INSTALL CONTEXT, DETECT PROJECT STATE, AND CHOOSE MODE
 
-Find the scaffold source in the project directory.
-- Prefer a ZIP archive if one exists.
-- Otherwise accept one scaffold-like directory candidate inside the project root.
-- A scaffold-like directory may be:
-  - an extracted archive layout containing `AGENTS.md`, `.claude/`, `.github/`, `workflow/`, `prompts/`, or `meta-prompts/`
-  - an installed-layout scaffold directory containing `AGENTS.md`, `.claude/commands/`, `workflow/`, or `.github/prompts/`
-- If multiple plausible sources remain after inspection, stop and ask the user which one to use.
+Check for `.workflow-bootstrap/install-context.json` first.
+- If it exists, read it before doing anything else.
+- Treat it as the installer's source of truth for whether scaffold files were copied directly or staged for later merge.
 
-If the source is a ZIP archive, extract it to a temporary location so you can inspect it before placing anything.
-If the source is a directory, inspect it in place and do not mutate it until placement is confirmed.
+Then inspect the project root for scaffold markers:
+- `workflow/LIFECYCLE.md`
+- `workflow/STATE.json`
+- `.claude/commands/initialization.md`
+- `.specify/spec-template.md`
+- `meta-prompts/admin/initialization.md`
 
-Determine the source kind:
-- ZIP archive
-- extracted archive layout
-- installed-layout scaffold directory
+Choose exactly one mode:
 
-Determine which variant this is by inspecting the normalized contents:
-- If it contains `AGENTS.md` or template roots like `.claude/`, `.github/`, `workflow/`, `.specify/`, or `governance/` → template content is present.
-- If it contains prompt files at `prompts/*.prompt.md` or `.github/prompts/*.prompt.md` → prompt content is present.
-- If it contains both → this is the full variant.
+1. **Fresh initialization mode**
+   Use this when scaffold files were copied into the project root and the repo does not already look like a built project beyond minimal bootstrap state.
 
-Build a normalized source-to-destination map before continuing:
-- Files from `prompts/*.prompt.md` map to `.github/prompts/[same filename]`
-- Files from `.github/prompts/*.prompt.md` map to `.github/prompts/[same filename]`
-- All other files keep their relative path from the source root
+2. **Existing-project injection mode**
+   Use this when scaffold markers are absent in the project root, but the repo already contains substantial project artifacts (for example: source directories, tests, manifests, CI, docs, or build scripts). If `.workflow-bootstrap/scaffold/` exists, treat it as the scaffold source to merge from.
 
-Report: "Detected source kind: [ZIP archive / extracted archive layout / installed-layout scaffold directory]. Detected scaffold variant: [template-only / metaprompts-only / full]. Contents: [N] files."
+3. **Scaffold-update mode**
+   Use this when scaffold markers already exist in the project root. If `.workflow-bootstrap/scaffold/` exists, use it as the preferred update source. Do not ask broad fresh-project setup questions in this mode.
 
-List every normalized destination file and its source path relative to the source root. Present this list and confirm: "These files will be placed in your project. Proceeding to check for conflicts."
+Report the selected mode and why in 1-3 short bullets before continuing.
 
 ---
 
-STEP 2  -  PLACE TEMPLATE FILES, RESOLVE CONFLICTS
+STEP 2  -  LOCATE THE SCAFFOLD SOURCE
 
-If the source contains template content (AGENTS.md, .claude/, .github/, etc.):
+Choose the scaffold source in this order:
+1. `.workflow-bootstrap/scaffold/` if it exists
+2. A scaffold ZIP in the project directory
+3. Another scaffold-like directory in the project root
 
-For each template file in the normalized source map (exclude any source file that maps to `.github/prompts/*.prompt.md`):
-1. Check whether a file already exists at the target path in the project.
-2. If no conflict: place the file silently.
-3. If a conflict exists: show a comparison of what differs between the existing file and the template file. Then ask one of the following based on the file type:
-   - For additive files (like .gitignore additions): "This file contains additions meant to be appended. Should I append these entries to your existing file, replace it entirely, or skip this file?"
-   - For configuration files with placeholder values (like settings.json, config.toml, copilot-setup-steps.yml): "A version of this file already exists. Should I replace it with the template version, keep your existing version, or show a side-by-side so you can decide what to merge?"
-   - For all other files: "This file already exists and differs from the template. Replace with template version, keep existing, or skip?"
-   Wait for a response before moving to the next file.
+A scaffold-like directory may be:
+- an extracted archive layout containing `AGENTS.md`, `.claude/`, `.github/`, `workflow/`, `prompts/`, or `meta-prompts/`
+- an installed-layout scaffold directory containing `AGENTS.md`, `.claude/commands/`, `workflow/`, or `.github/prompts/`
 
-After all template files are placed:
-- If the source does not contain prompt files, delete the original ZIP (if any), the temporary extraction directory (if any), and the confirmed staging source directory if it is inside the project root and is not the project root itself.
-- Commit all placed files: "Initialize project scaffolding"
+If the source is a ZIP archive, extract it to a temporary location before inspection.
 
-If the source does NOT contain template content (metaprompts-only variant), skip this step.
+Build a normalized source-to-destination map:
+- `prompts/*.prompt.md` -> `.github/prompts/[same filename]`
+- `.github/prompts/*.prompt.md` -> `.github/prompts/[same filename]`
+- all other files keep their relative destination path
 
----
+Treat prompts, meta-prompts, Claude commands, and `.codex/*` exactly like other scaffold assets:
+- if absent in the project, they should be placed
+- if present, they should be compared and handled with the same managed/protected rules as other scaffold files
 
-STEP 2b  -  INSTALL COPILOT PROMPT FILES
-
-If the source contains prompt files at `prompts/*.prompt.md` or `.github/prompts/*.prompt.md`:
-
-Copy each normalized prompt file from the source map into the project's `.github/prompts/` directory (create it if it does not exist). VS Code discovers slash commands from `.github/prompts/` in each workspace.
-
-List all installed prompt files and their slash command names (filename without .prompt.md extension).
-
-State: "Copilot prompt files installed to .github/prompts/. Type / in Copilot chat to verify they appear."
-
-Note: The Claude slash commands (.claude/commands/) are included in the template files and were already placed in Step 2 if template content was present.
-
-After prompt files are installed:
-- Delete the original ZIP (if any), the temporary extraction directory (if any), and the confirmed staging source directory if it is inside the project root and is not the project root itself.
+If no external source exists but scaffold files are already in the project root, continue using the in-repo scaffold files already present.
 
 ---
 
-STEP 3  -  CUSTOMIZE PROJECT CONVENTIONS
+STEP 3  -  CLASSIFY FILES AND BUILD A BATCHED PLAN
 
-If template content was NOT placed (metaprompts-only variant), skip Steps 3 and 4 entirely  -  jump to Step 5.
+Use these ownership rules:
 
-Open `workflow/COMMANDS.md`. It contains `[PROJECT-SPECIFIC]` placeholder values for build commands and code conventions. These are initial values — Phase 4 (Scaffold Project) will refine them based on architecture reasoning from feature specs. Collect what the developer knows now:
+**Scaffold-managed (safe to add/update automatically):**
+- `.claude/commands/*.md`
+- `.github/prompts/*.prompt.md`
+- `meta-prompts/**/*.md`
+- `workflow/LIFECYCLE.md`
+- `workflow/PLAYBOOK.md`
+- `workflow/FILE_CONTRACTS.md`
+- `workflow/FAILURE_ROUTING.md`
+- `governance/CHANGE_PROTOCOL.md`
+- `governance/POLICY_TESTS.md`
+- `governance/REGISTRY.md`
+- `specs/_TEMPLATE.md`, `tasks/_TEMPLATE.md`, `decisions/_TEMPLATE.md`
+- `.github/PULL_REQUEST_TEMPLATE.md`
+- `.github/ISSUE_TEMPLATE/*.md`
+- `.github/ISSUE_TEMPLATE/*.yml`
+- `.github/agents/*.md`
+- `.github/REVIEW_RUBRIC.md`
+- `.github/workflows/autofix.yml`
+- `.codex/PLANS.md`
+- `.codex/AGENTS.md`
+- `CLAUDE.md`
+- `CLAUDE.local.md` only if still the default stub
+- `.specify/spec-template.md`
+- `.specify/acceptance-criteria-template.md`
+- `.gitignore` as additive entries only
 
-**Project section:**
-Ask: "What is the project name and a one-line description? What is the primary language or framework?"
-(Store answers for use in Phase 2 Compass — do not fill AGENTS.md Overview yet; that is owned by the Compass phase.)
+**Protected/project-owned (never overwrite automatically):**
+- `AGENTS.md`
+- `workflow/COMMANDS.md`
+- `.specify/constitution.md`
+- `.claude/settings.json`
+- `.claude/settings.local.json`
+- `.vscode/settings.json`
+- `.github/workflows/copilot-setup-steps.yml`
+- `.codex/config.toml`
+- `.github/copilot-instructions.md`
+- `bugs/LOG.md`
 
-**Build section (→ workflow/COMMANDS.md → Core Commands):**
-Ask: "What are your project's build steps? I need each of the following  -  provide the actual values or say 'not applicable' for any that don't apply:"
-- Install
-- Build
-- Test (all)
-- Test (single file or case)
-- Lint
-- Format
-- Type-check
+**Conditional:**
+- any file not listed above
 
-**Architecture section:**
-Ask: "Describe the key directories in this project and what each one is responsible for. Aim for 5–15 lines mapping directories to responsibilities."
+Present one batched plan with four sections:
+- scaffold-managed files to add
+- scaffold-managed files to update
+- protected files to preserve
+- protected files with template changes worth reviewing
 
-**Conventions section (→ workflow/COMMANDS.md → Code Conventions):**
-Ask: "What naming conventions does this project use?"
-- Functions and variables: (e.g., camelCase, snake_case)
-- Files and directories: (e.g., kebab-case, PascalCase)
+Do not stop for one prompt per file. Only ask for confirmation once per batch unless a high-risk file needs special approval.
 
-**Workflow/Governance routing check:**
-Ask: "AGENTS.md routes to `/workflow/*.md` and `/governance/*.md`. Do you want to keep the default control-plane docs as-is, or should we tailor any sections now?"
-
-After receiving answers for each section, update `workflow/COMMANDS.md` with the provided build and convention values. Present the completed file for review.
-
-> **Note:** These are initial values. Phase 4 (Scaffold Project) refines commands and conventions based on architecture decisions derived from feature specs.
-
-Ask: "Does this look correct? Anything to adjust?"
-Iterate until confirmed.
-
-Commit: "Customize AGENTS.md for this project"
-
----
-
-STEP 4  -  CUSTOMIZE REMAINING CONFIGURATION
-
-Walk through each of the following files, but only the ones that were placed (skip any that were not placed or were kept as existing versions during conflict resolution):
-
-**.github/workflows/copilot-setup-steps.yml:**
-This file now validates scaffold contracts and runs project commands via environment variables. Using the build steps from AGENTS.md, set:
-- `INSTALL_CMD`
-- `BUILD_CMD`
-- `LINT_CMD`
-- `TEST_CMD`
-Present the updated file. Ask: "Does this match your CI environment? Adjust anything?"
-
-**.claude/settings.json:**
-Review the permissions list. Ask: "These tool permissions will be pre-approved for agent sessions. The current list covers common operations for git, npm, pip, python, node, and file management. Do these match your project's toolchain, or should any be added or removed?"
-Also review the hooks section. Ask: "The post-edit hook runs a formatter on save. What is the format command for this project?" (Use the values from AGENTS.md if already provided.)
-Ask: "The session-end Stop hook reminds you to run tests. The current reminder message is generic — would you like to customize it with your specific test command (e.g., `npm test`, `pytest`, `bun test`)?"
-If yes, update the Stop hook command to: `echo 'Remember: run [their test command] before ending this session.'`
-Update and present for confirmation.
-
-**Optional agent permission mode (local-only):**
-Ask exactly once: "Agent auto-approval (YOLO mode) can be configured for this project. The default is **option B  -  default interactive mode**. Choose a different option only if you intentionally want auto-approval:"
-
-Offer these options:
-- A) YOLO mode for both Copilot and Claude Code
-- **B) Default interactive mode (keep prompts) (default)**
-- C) Copilot YOLO only
-- D) Claude Code YOLO only
-
-If the user confirms or does not object, apply option B.
-
-After applying the selected option:
-- If option A, C, or D is selected, display this warning:
-  > ⚠️ YOLO mode is enabled. The agent will execute file edits, terminal commands, and tool calls without asking for confirmation. You can switch to Plan Mode at any time for careful review. To disable, re-run initialization and select option B (Default interactive).
-- If option B is selected, state:
-  > Default interactive mode is active. The agent will continue asking for confirmation before privileged actions.
-
-Apply by option:
-- For Copilot YOLO (A or C): ensure `.vscode/settings.json` exists and merge `"chat.agent.autoApprove": true` while preserving all other keys.
-- For Copilot default (B or D): if `.vscode/settings.json` contains `chat.agent.autoApprove`, remove only that key and preserve remaining settings.
-- For Claude YOLO (A or D):
-  1. Merge into `.vscode/settings.json`:
-     - `"claudeCode.allowDangerouslySkipPermissions": true`
-     - `"claudeCode.initialPermissionMode": "bypassPermissions"`
-  2. Create or merge `.claude/settings.local.json` with:
-     - `{ "permissions": { "defaultMode": "bypassPermissions" } }`
-  3. Ensure `.claude/settings.local.json` is gitignored.
-  4. Note: if CLI behavior differs from VS Code, the user may need to check their user-level `~/.claude/settings.json`.
-- For Claude default (B or C): remove only these keys from `.vscode/settings.json` if present:
-  - `claudeCode.allowDangerouslySkipPermissions`
-  - `claudeCode.initialPermissionMode`
-  And remove `.claude/settings.local.json` (or set its `permissions.defaultMode` to `default`).
-
-Git hygiene for all options:
-- Ensure `.gitignore` includes `.vscode/` and `.claude/settings.local.json`.
-- Do not remove those ignore entries when reverting to default mode.
-
-**.codex/config.toml:**
-Ask: "Are you using Codex? If yes, review these settings  -  otherwise I'll leave the defaults and we can move on."
-If yes, present the file and ask about model preference and sandbox configuration.
-If no, move on.
-
-Commit each file as it is confirmed: "Configure [filename] for this project"
+High-risk rule:
+- If root `AGENTS.md` already exists and differs from the scaffold version, do not overwrite it automatically.
+- Explain the collision clearly and offer only these choices:
+  - keep current `AGENTS.md`
+  - inspect a side-by-side merge
+  - replace with scaffold version explicitly
 
 ---
 
-STEP 5  -  VERIFY
+STEP 4  -  APPLY THE RIGHT PHASE 1 BEHAVIOR FOR THE CHOSEN MODE
 
-Run checks appropriate to what was installed:
+### Fresh initialization mode
 
-If template content was placed:
-1. Confirm all expected directories exist: specs/, tasks/, decisions/, workflow/, governance/
-2. Confirm AGENTS.md has no remaining placeholder brackets (no `[install step]`, `[project name]`, etc.)
-3. Confirm .gitignore includes the scaffolding entries (CLAUDE.local.md, .claude/plans/, .trees/, .vscode/, .claude/settings.local.json)
-4. Confirm all template files (specs/_TEMPLATE.md, tasks/_TEMPLATE.md, decisions/_TEMPLATE.md) are in place
-5. Confirm workflow control-plane files are in place:
-  - `workflow/LIFECYCLE.md`
-  - `workflow/PLAYBOOK.md`
-  - `workflow/FILE_CONTRACTS.md`
-  - `workflow/STATE.json`
-  - `workflow/FAILURE_ROUTING.md`
-6. Confirm governance files are in place:
-  - `governance/CHANGE_PROTOCOL.md`
-  - `governance/POLICY_TESTS.md`
-  - `governance/REGISTRY.md`
-7. Confirm `.github/workflows/copilot-setup-steps.yml` has command env values populated for this project.
-8. List any files that still contain placeholder values and ask: "These files still have placeholder values. Would you like to fill them in now, or leave them as templates?"
-9. If optional agent permission mode was configured, confirm:
-  - `.vscode/settings.json` is valid JSON and preserved existing keys
-  - `.claude/settings.local.json` is valid JSON when present
-  - Applied mode is accurately reported: Full YOLO / Copilot YOLO / Claude YOLO / Default interactive
+- Place scaffold-managed files into the project.
+- Place prompts, meta-prompts, Claude commands, and `.codex/*` using the same source map rules.
+- Keep protected files untouched unless the developer explicitly approves a replacement.
+- Use the standard Phase 1 customization flow only for information that cannot be inferred.
 
-If Copilot prompt files were installed:
-10. List the installed .prompt.md files and confirm they are in the correct VS Code prompts directory.
-11. List the available slash commands by name.
+### Existing-project injection mode
 
-If Claude commands were placed (template content included .claude/commands/):
-12. List the Claude slash commands available in .claude/commands/.
+Before asking questions, inspect the repo for evidence:
+- `package.json`, `go.mod`, `pyproject.toml`, `Cargo.toml`, `Gemfile`, `pom.xml`, `Makefile`, `justfile`
+- `.github/workflows/*.yml`
+- `README*`
+- common source/test directories
+- existing formatter/linter/test config files
 
-Report what was set up based on the detected variant:
+Infer as much as possible from that evidence:
+- primary language/framework
+- install/build/test/lint/format/type-check commands
+- key project directories and likely responsibilities
+- likely naming conventions when clear from filenames and code layout
 
-For template-only:
-  State: "Project scaffolding is in place. All conventions are configured and committed. Claude slash commands are available. The project is ready for development."
+Then present the inferred values as a compact review summary.
+- Ask only for missing, ambiguous, or low-confidence values.
+- Do not ask broad “what is this project?” questions if the repository already answers them.
+- If command values are confidently inferable, ask for confirmation instead of asking the user to retype everything.
 
-For metaprompts-only:
-  State: "Copilot prompt files are installed. Type / in Copilot chat to access workflow commands. No template scaffolding was installed."
+Apply scaffold-managed files from the staged source thoughtfully.
+- Batch protected conflicts.
+- Preserve project-owned files by default.
 
-For full:
-  State: "Project scaffolding is in place with all conventions configured. Claude slash commands and Copilot prompt files are both installed. The project is ready for development."
+### Scaffold-update mode
+
+- Delegate to `/update-workflow` (`.claude/commands/update-workflow.md` or equivalent) instead of running a fresh-project interview.
+- `/update-workflow` handles source resolution (local ZIP → local scaffold directory → upstream clone), managed/protected classification, diff review, and cleanup.
+- After `/update-workflow` completes, return here for STEP 7 (route to next phase).
+- Do not ask the Phase 1 build/convention questionnaire in this mode unless a required value is genuinely missing and cannot be inferred from the current repo.
 
 ---
 
-STEP 6  -  AUTO-INITIATE COMPASS (Phase 2)
+STEP 5  -  CUSTOMIZE ONLY THE MISSING OR UNCERTAIN PROJECT VALUES
 
-If template content was placed (scaffold includes AGENTS.md and .specify/):
+Use `workflow/COMMANDS.md` as the destination for initial Phase 1 command values.
 
-Check whether `.specify/constitution.md` exists and has its themes populated (no `[PROJECT-SPECIFIC]` placeholders remaining in covered sections).
+If values are already present or can be confidently inferred, show them and ask for confirmation.
 
-If constitution is NOT populated:
-  State: "Scaffolding complete. Now starting the Compass interview to establish your project's identity, goals, and boundaries."
-  Auto-trigger: execute the Compass command (`.claude/commands/compass.md` or equivalent). This begins a dynamic discovery interview — not a scripted checklist. The compass will:
-  1. Start broad — ask about the problem being solved, target audience, and what success looks like
-  2. Follow the signal — pursue depth where answers reveal complexity or ambiguity
-  3. Synthesize boundaries — establish what the project IS, is NOT, and what remains AMBIGUOUS
-  4. Write outputs to `.specify/constitution.md` and `AGENTS.md → Overview`
+Ask only for missing or ambiguous items in this order:
+1. missing core commands
+2. missing project language/framework identification
+3. missing architecture directory descriptions
+4. missing naming conventions
+5. missing CI command substitutions for `.github/workflows/copilot-setup-steps.yml`
+6. optional tool permission / YOLO preferences only if those files were actually placed or need review
+7. fork activation level — if `forkActivationLevel` in `workflow/STATE.json` is empty, ask:
+   "How aggressively should the workflow pause at decision forks?
+     1. Light — auto-continue at most forks; only stop for high-risk or irreversible decisions
+     2. Standard — stop at key transition points where multiple valid paths exist (recommended)
+     3. Active — stop at all decision points, including lower-stakes confirmations
+   Reply 1, 2, or 3."
+   Write the chosen value (`light`, `standard`, or `active`) to `workflow/STATE.json → forkActivationLevel`. Default to `standard` if skipped.
 
-  After Compass completes, state: "Constitution established. Run `/define-features` to translate it into a feature set, or run `/continue` to let the agent advance through remaining phases automatically."
+If the repo is already largely built, prefer:
+- “Here’s what I inferred; confirm or correct anything wrong.”
+over:
+- “Please answer the full initialization questionnaire.”
 
-If constitution IS already populated:
-  State: "Constitution already exists. Run `/continue` to resume the agentic workflow from the current phase."
+---
+
+STEP 6  -  VERIFY AND CLEAN UP
+
+Verify:
+1. scaffold-managed files expected for the chosen variant are present
+2. prompts are in `.github/prompts/`
+3. Claude commands are in `.claude/commands/`
+4. workflow control-plane files are present
+5. governance files are present
+6. protected files were preserved unless explicitly approved otherwise
+7. no placeholder values were introduced into customized files unintentionally
+8. `.workflow-bootstrap/` is gitignored when present
+
+After successful apply:
+- delete the original ZIP if one was used
+- delete any temporary extraction directory
+- delete `.workflow-bootstrap/` once it is no longer needed
+
+End with a short summary only:
+- mode used
+- scaffold-managed files added/updated
+- protected files preserved
+- protected files needing manual follow-up, if any
+- next workflow step
+
+Do not end with a long changelog.
+
+---
+
+STEP 7  -  ROUTE TO THE NEXT PHASE
+
+Check `.specify/constitution.md`.
+
+If it does not exist, or still contains Phase 2 placeholder content:
+- state: "Scaffolding complete. Starting Compass."
+- auto-trigger Compass (`.claude/commands/compass.md` or equivalent)
+
+If it already exists and is populated:
+- do not force Compass
+- state the detected current lifecycle position and direct the developer to `/continue` or the next appropriate phase
+
+If scaffold-update mode was used and the constitution is already healthy:
+- state: "Scaffold updated. Continue from the current project phase."
 ```

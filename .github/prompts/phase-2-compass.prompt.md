@@ -5,8 +5,9 @@ description: 'Adaptive interview to establish project identity and boundaries'
 <!-- role: derived | canonical-source: meta-prompts/phase-2-compass.md -->
 <!-- generated-from-metaprompt -->
 
-[AGENTS.md](../../AGENTS.md)
-
+<!-- role: canonical-source -->
+<!-- phase: 2 -->
+<!-- description: Adaptive interview to establish project identity and boundaries -->
 # Phase 2 — Compass
 
 **Objective:** Conduct an adaptive interview to establish the project's identity, goals, success criteria, and boundaries. This produces the constitution — the source of truth that all later phases reference.
@@ -79,6 +80,22 @@ At the end of the Compass interview, set `advisoryProfile` in `workflow/STATE.js
 | Complex project, many unknowns, first-time user, detailed questions asked | `detailed` |
 
 If signals are unclear, default to `standard`. The user can override at any time ("switch to concise/detailed").
+
+### Fork Activation Level Detection
+
+At the end of the Compass interview, if `forkActivationLevel` in `workflow/STATE.json` is not already set, ask the user to choose a fork activation level and set `forkActivationLevel` in `workflow/STATE.json`. Present this as a single question after the interview concludes:
+
+```
+How aggressively should the workflow pause at decision forks?
+  1. Light — auto-continue at most forks; only stop for high-risk or irreversible decisions
+  2. Standard — stop at key transition points where multiple valid paths exist (recommended)
+  3. Active — stop at all decision points, including lower-stakes confirmations
+Reply with 1, 2, or 3.
+```
+
+If the user declines to choose or the question is skipped, default to `standard`.
+
+The user can change the level at any time by saying "switch to light/standard/active forks" — the orchestrator updates `forkActivationLevel` in `workflow/STATE.json` immediately.
 
 ### Ownership Boundary
 

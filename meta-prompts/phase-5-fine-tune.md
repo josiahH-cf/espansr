@@ -1,5 +1,6 @@
-<!-- role: derived | canonical-source: meta-prompts/phase-5-fine-tune.md -->
-<!-- generated-from-metaprompt -->
+<!-- role: canonical-source -->
+<!-- phase: 5 -->
+<!-- description: Create ordered specs with ACs, model assignments, and branches -->
 # Phase 5 — Fine-tune Plan
 
 **Objective:** Finalize the build plan: order task breakdowns, write acceptance criteria, assign models, and create branch names.

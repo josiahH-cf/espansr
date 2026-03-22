@@ -1,5 +1,6 @@
-<!-- role: derived | canonical-source: meta-prompts/phase-4-scaffold.md -->
-<!-- generated-from-metaprompt -->
+<!-- role: canonical-source -->
+<!-- phase: 4 -->
+<!-- description: Reason about technical architecture — produce a plan, not code -->
 # Phase 4 — Scaffold Project
 
 **Objective:** Reason about the technical architecture needed to deliver the defined features. Produce a plan, NOT code.
@@ -54,3 +55,4 @@ Scaffold does **not** write to `AGENTS.md → Overview` (owned by Compass). Scaf
 - Multiple passes expected — iterate with the developer
 
 ## See Also
+

@@ -2,7 +2,7 @@
 agent: agent
 description: 'Reason about technical architecture — produce a plan, not code'
 ---
-<!-- role: derived | canonical-source: meta-prompts/phase-4-scaffold-project.md -->
+<!-- role: derived | canonical-source: meta-prompts/phase-4-scaffold.md -->
 <!-- generated-from-metaprompt -->
 
 [AGENTS.md](../../AGENTS.md)

@@ -2,7 +2,7 @@
 agent: agent
 description: 'Create ordered specs with ACs, model assignments, and branches'
 ---
-<!-- role: derived | canonical-source: meta-prompts/phase-5-fine-tune-plan.md -->
+<!-- role: derived | canonical-source: meta-prompts/phase-5-fine-tune.md -->
 <!-- generated-from-metaprompt -->
 
 [AGENTS.md](../../AGENTS.md)
