@@ -113,11 +113,22 @@ class UIConfig:
 
 
 @dataclass
+class RemoteConfig:
+    """Configuration for git-backed remote template sync."""
+
+    url: str = ""  # Git remote URL (empty = not configured)
+    auto_pull: bool = True  # Pull on startup before template-loading commands
+    last_pull: str = ""  # ISO timestamp of last successful pull
+    last_push: str = ""  # ISO timestamp of last successful push
+
+
+@dataclass
 class Config:
     """Main application configuration."""
 
     espanso: EspansoConfig = field(default_factory=EspansoConfig)
     ui: UIConfig = field(default_factory=UIConfig)
+    remote: RemoteConfig = field(default_factory=RemoteConfig)
 
     def to_dict(self) -> dict:
         """Convert config to dictionary."""
@@ -128,10 +139,12 @@ class Config:
         """Create config from dictionary."""
         espanso_data = data.get("espanso", {})
         ui_data = data.get("ui", {})
+        remote_data = data.get("remote", {})
 
         # Guard against unknown fields from future versions
         known_espanso = {f.name for f in EspansoConfig.__dataclass_fields__.values()}
         known_ui = {f.name for f in UIConfig.__dataclass_fields__.values()}
+        known_remote = {f.name for f in RemoteConfig.__dataclass_fields__.values()}
 
         return cls(
             espanso=(
@@ -143,6 +156,11 @@ class Config:
                 UIConfig(**{k: v for k, v in ui_data.items() if k in known_ui})
                 if ui_data
                 else UIConfig()
+            ),
+            remote=(
+                RemoteConfig(**{k: v for k, v in remote_data.items() if k in known_remote})
+                if remote_data
+                else RemoteConfig()
             ),
         )
 

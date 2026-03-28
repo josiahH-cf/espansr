@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "8-maintain",
-  "currentFeatureId": "",
-  "currentTaskFile": "",
+  "projectPhase": "7a-review-bot",
+  "currentFeatureId": "5-remote-template-sync",
+  "currentTaskFile": "tasks/5-remote-template-sync.md",
   "testMode": "post",
   "maintenanceLevel": "standard",
   "automationLevel": "light",
@@ -18,8 +18,15 @@
       "spec": "specs/archive/health-remediation-wsl-permissions-and-lint.md",
       "task": "tasks/archive/health-remediation-wsl-permissions-and-lint.md",
       "status": "done"
+    },
+    "5-remote-template-sync": {
+      "spec": "specs/5-remote-template-sync.md",
+      "task": "tasks/5-remote-template-sync.md",
+      "status": "in-progress"
     }
   },
+  "currentFeatureId": "5-remote-template-sync",
+  "currentTaskFile": "tasks/5-remote-template-sync.md",
   "activeClaims": [],
-  "updatedAt": "2026-03-22T06:49:28-05:00"
+  "updatedAt": "2026-03-28T12:00:00-05:00"
 }

@@ -161,10 +161,22 @@ exit 0
     return 1
 
 
+def _auto_pull_if_configured() -> None:
+    """Run auto-pull silently if a remote is configured."""
+    try:
+        from espansr.core.remote import RemoteManager
+
+        rm = RemoteManager()
+        rm.auto_pull()
+    except Exception:
+        pass  # auto-pull failures are non-blocking
+
+
 def cmd_sync(args) -> int:
     """Sync all triggered templates to Espanso."""
     from espansr.integrations.espanso import sync_to_espanso
 
+    _auto_pull_if_configured()
     dry_run = getattr(args, "dry_run", False) if args else False
     success = sync_to_espanso(dry_run=dry_run)
     return 0 if success else 1
@@ -372,6 +384,7 @@ def cmd_list(args) -> int:
     """List templates that have triggers defined."""
     from espansr.core.templates import get_template_manager
 
+    _auto_pull_if_configured()
     manager = get_template_manager()
     triggered = list(manager.iter_with_triggers())
 
@@ -392,6 +405,7 @@ def cmd_validate(args) -> int:
     """Validate templates for Espanso compatibility."""
     from espansr.integrations.validate import validate_all
 
+    _auto_pull_if_configured()
     warnings = validate_all()
     errors = [w for w in warnings if w.severity == "error"]
     non_errors = [w for w in warnings if w.severity != "error"]
@@ -450,6 +464,7 @@ def cmd_doctor(args) -> int:
     Espanso binary, launcher file, and template validation.
     Returns 0 if no checks fail, 1 if any check is [FAIL].
     """
+    _auto_pull_if_configured()
     from espansr.core.templates import get_template_manager
     from espansr.integrations.espanso import get_match_dir
     from espansr.integrations.validate import validate_all
@@ -567,10 +582,113 @@ def cmd_completions(args) -> int:
 
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
+    _auto_pull_if_configured()
     from espansr.ui.main_window import launch
 
     launch()
     return 0
+
+
+def cmd_remote(args) -> int:
+    """Manage remote template repository."""
+    from espansr.core.remote import GitNotFoundError, RemoteError, RemoteManager
+
+    action = getattr(args, "remote_action", None)
+    if not action:
+        print("Usage: espansr remote {set,status,remove}")
+        return 1
+
+    try:
+        rm = RemoteManager()
+
+        if action == "set":
+            url = args.url
+            rm.set_remote(url)
+            print(ok(f"Remote set to {url}"))
+            return 0
+
+        if action == "status":
+            status = rm.status()
+            if not status["url"]:
+                print("No remote configured. Run: espansr remote set <git-url>")
+                return 0
+            print(f"Remote URL:  {status['url']}")
+            if status["last_pull"]:
+                print(f"Last pull:   {status['last_pull']}")
+            if status["last_push"]:
+                print(f"Last push:   {status['last_push']}")
+            if status["dirty"]:
+                print(f"Modified:    {', '.join(status['dirty'])}")
+            else:
+                print("Modified:    (clean)")
+            return 0
+
+        if action == "remove":
+            rm.remove_remote()
+            print(ok("Remote removed. Local templates preserved."))
+            return 0
+
+    except GitNotFoundError as exc:
+        print(fail(str(exc)))
+        return 1
+    except RemoteError as exc:
+        print(fail(str(exc)))
+        return 1
+
+    return 1
+
+
+def cmd_pull(args) -> int:
+    """Pull templates from remote."""
+    from espansr.core.remote import (
+        GitNotFoundError,
+        RemoteConflictError,
+        RemoteError,
+        RemoteManager,
+    )
+
+    try:
+        rm = RemoteManager()
+        templates = getattr(args, "template", None)
+        if templates:
+            rm.pull_templates(templates)
+            print(ok(f"Pulled {len(templates)} template(s) from remote."))
+        else:
+            rm.pull()
+            print(ok("Pulled latest templates from remote."))
+        return 0
+    except RemoteConflictError as exc:
+        print(fail(f"Conflict: {exc}"))
+        return 1
+    except GitNotFoundError as exc:
+        print(fail(str(exc)))
+        return 1
+    except RemoteError as exc:
+        print(fail(str(exc)))
+        return 1
+
+
+def cmd_push(args) -> int:
+    """Push templates to remote."""
+    from espansr.core.remote import GitNotFoundError, RemoteError, RemoteManager
+
+    try:
+        rm = RemoteManager()
+        message = getattr(args, "message", None)
+        templates = getattr(args, "template", None)
+        if templates:
+            rm.push_templates(templates, message=message)
+            print(ok(f"Pushed {len(templates)} template(s) to remote."))
+        else:
+            rm.push(message=message)
+            print(ok("Pushed templates to remote."))
+        return 0
+    except GitNotFoundError as exc:
+        print(fail(str(exc)))
+        return 1
+    except RemoteError as exc:
+        print(fail(str(exc)))
+        return 1
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -638,6 +756,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Target shell (bash or zsh)",
     )
 
+    # ── Remote sync commands ──────────────────────────────────────────────
+    remote_parser = subparsers.add_parser("remote", help="Manage remote template repository")
+    remote_sub = remote_parser.add_subparsers(dest="remote_action", metavar="ACTION")
+    set_parser = remote_sub.add_parser("set", help="Set the remote git URL")
+    set_parser.add_argument("url", help="Git remote URL (SSH or HTTPS)")
+    remote_sub.add_parser("status", help="Show remote sync status")
+    remote_sub.add_parser("remove", help="Disconnect from remote (keeps local templates)")
+
+    pull_parser = subparsers.add_parser("pull", help="Pull templates from remote")
+    pull_parser.add_argument(
+        "--template",
+        action="append",
+        metavar="NAME",
+        help="Pull only specific template file(s) (repeatable)",
+    )
+
+    push_parser = subparsers.add_parser("push", help="Push templates to remote")
+    push_parser.add_argument(
+        "--template",
+        action="append",
+        metavar="NAME",
+        help="Push only specific template file(s) (repeatable)",
+    )
+    push_parser.add_argument(
+        "--message", "-m",
+        help="Custom commit message",
+    )
+
     return parser
 
 
@@ -657,6 +803,9 @@ def main() -> None:
         "wsl-install-espanso": cmd_wsl_install_espanso,
         "gui": cmd_gui,
         "completions": cmd_completions,
+        "remote": cmd_remote,
+        "pull": cmd_pull,
+        "push": cmd_push,
     }
 
     if args.command in handlers:
