@@ -1,0 +1,6 @@
+{
+  "name": "QA Documentation",
+  "description": "Documentation QA pass — reviews recent changes and updates all affected downstream docs so nothing drifts out of sync.",
+  "trigger": ":qa",
+  "content": "Review the work completed in the current context and update all relevant downstream documentation.\n\nThis is a documentation QA pass. Its purpose is to ensure that once a feature, behavior, workflow, or implementation changes, all affected docs are also updated so nothing drifts out of sync.\n\nCheck for and update all relevant downstream materials, including specs, README files, card.md, workflow docs, feature docs, decision docs, implementation notes, and any other project documentation affected by the change.\n\nRequirements:\n- Identify what changed.\n- Identify which documents are now outdated because of that change.\n- Update those documents so they accurately reflect the current state.\n- Flag anything ambiguous, conflicting, or missing.\n- Prioritize correctness, consistency, and downstream coverage."
+}

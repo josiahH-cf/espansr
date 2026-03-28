@@ -1,0 +1,6 @@
+{
+  "name": "Speechify Research Output",
+  "description": "Transform research output into a listenable long-form article for text-to-speech. Preserves all substance while optimizing for audio clarity.",
+  "trigger": ":speechify",
+  "content": "Transform the current research output into a listenable long-form article for text-to-speech use.\n\nThe result should be easy to follow while listening in the car or passively, but it must preserve all important information, nuance, and context from the source material. Do not simplify by dropping substance.\n\nIf the source includes tables, lists, comparisons, or structured data, convert them into spoken-language prose instead of removing them.\n\nRequirements:\n- Preserve all key findings, caveats, evidence, and conclusions.\n- Rewrite for audio clarity and flow.\n- Avoid awkward formatting that reads poorly in text-to-speech tools.\n- Convert dense sections into natural prose without losing information.\n- Keep the output self-contained and readable as a standalone article.\n- Do not omit details just because they were originally presented in tables or other structured formats.\n\n--- Secondary ---\n\n- Optimize the final result for phone listening and text-to-speech tools."
+}
