@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "6-code",
+  "projectPhase": "7a-review-bot",
   "currentFeatureId": "5-remote-template-sync",
   "currentTaskFile": "tasks/5-remote-template-sync.md",
-  "testMode": "implement",
+  "testMode": "post",
   "maintenanceLevel": "standard",
   "automationLevel": "light",
   "advisoryProfile": "standard",

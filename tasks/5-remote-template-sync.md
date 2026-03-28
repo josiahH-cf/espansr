@@ -6,8 +6,8 @@
 ## Status
 
 - Total: 5
-- Complete: 0
-- Remaining: 5
+- Complete: 4
+- Remaining: 1
 - Blocked: 0
 
 ## Pre-Implementation Tests
@@ -38,7 +38,7 @@
 - **Done when:** `RemoteConfig` dataclass exists with `url`, `auto_pull` (default True), `last_pull`, `last_push` fields; wired into `Config` and round-trips through `to_dict` / `from_dict`; existing configs without `remote` key still load cleanly (backward compat).
 - **Criteria covered:** AC-1 (config persistence), AC-9 (auto_pull default true)
 - **Branch:** `copilot/feat-remote-config`
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### T-2: RemoteManager core git operations
 
@@ -47,7 +47,7 @@
 - **Done when:** `RemoteManager` class implements: `check_git()` (AC-11), `init_repo()` + `set_remote()` (AC-1), `remove_remote()` (AC-3), `ensure_gitignore()` (AC-12), `status()` (AC-2), `pull()` + `pull_templates()` (AC-4, AC-5, AC-10), `push()` + `push_templates()` (AC-6, AC-7, AC-8), `auto_pull()` (AC-9). All git calls go through subprocess with proper error handling.
 - **Criteria covered:** AC-1 through AC-12
 - **Branch:** `copilot/feat-remote-manager`
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### T-3: CLI commands for remote, pull, push
 
@@ -56,7 +56,7 @@
 - **Done when:** `espansr remote set <url>`, `espansr remote status`, `espansr remote remove` subcommands exist; `espansr pull [--template NAME ...]` and `espansr push [--template NAME ...] [--message MSG]` top-level commands exist; all wire through to `RemoteManager`. Help text is clear.
 - **Criteria covered:** AC-1, AC-2, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8
 - **Branch:** `copilot/feat-remote-cli`
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### T-4: Auto-pull integration
 
@@ -65,7 +65,7 @@
 - **Done when:** Commands that load templates (`sync`, `list`, `validate`, `gui`, `doctor`) call `RemoteManager.auto_pull()` before template loading; auto-pull is silent on success, warns on failure, and is skipped when `remote.auto_pull` is false or no remote is configured.
 - **Criteria covered:** AC-9
 - **Branch:** `copilot/feat-remote-autopull`
-- **Status:** [ ] Not started
+- **Status:** [x] Complete
 
 ### T-5: Documentation update
 
@@ -103,10 +103,11 @@
 
 ## Evidence Log
 
-<!-- Append after each task completion -->
+- 2026-03-28 T-1 through T-4 — commands run: pytest (391 passed), ruff check (clean), result: pass, notes: all 14 AC tests pass
 
 ## Session Log
 
 | Date | Last Completed | Next Action | Blockers | State Link |
 |------|---------------|-------------|----------|------------|
 | 2026-03-28 | Plan created | T-1 (RemoteConfig) + T-2 (RemoteManager) in parallel | None | [workflow/STATE.json](../workflow/STATE.json) |
+| 2026-03-28 | T-1 through T-4 complete | Phase 7 test post | None | [workflow/STATE.json](../workflow/STATE.json) |
