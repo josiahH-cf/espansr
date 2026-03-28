@@ -1,18 +1,18 @@
 # Workflow Lint Report
 
-- **Generated:** 2026-03-22T11:45:36Z
+- **Generated:** 2026-03-28T09:14:05Z
 - **Project root:** `/home/josiah/R/espansr`
-- **Files scanned:** 197
-- **Total findings:** 156
+- **Files scanned:** 199
+- **Total findings:** 165
 
 ## Summary
 
 | Category | Count |
 |----------|-------|
 | Orphan | 2 |
-| Length | 6 |
+| Length | 7 |
 | EOF Newline | 8 |
-| Clarity | 140 |
+| Clarity | 148 |
 
 ## Orphan Detection
 
@@ -25,6 +25,7 @@
 
 | File | Line | Message |
 |------|------|---------|
+| `specs/5-remote-template-sync.md` | — | **149** lines (threshold: 120) |
 | `specs/archive/install-first-run.md` | — | **282** lines (threshold: 120) |
 | `specs/archive/manifest-schema-alignment.md` | — | **166** lines (threshold: 120) |
 | `tasks/archive/install-first-run.md` | — | **166** lines (threshold: 120) |
@@ -53,6 +54,8 @@
 | `specs/2-wsl-windows-path-sync-bug.md` | 5 | Line exceeds 200 characters (304 chars) |
 | `specs/3-wsl-espanso-dependency-onboarding.md` | 5 | Line exceeds 200 characters (395 chars) |
 | `specs/4-wsl-espanso-wrapper-install.md` | 5 | Line exceeds 200 characters (389 chars) |
+| `specs/5-remote-template-sync.md` | 7 | Line exceeds 200 characters (359 chars) |
+| `specs/5-remote-template-sync.md` | 143 | Line exceeds 200 characters (225 chars) |
 | `specs/archive/cli-colored-output.md` | 7 | Line exceeds 200 characters (222 chars) |
 | `specs/archive/cli-doctor.md` | 7 | Line exceeds 200 characters (303 chars) |
 | `specs/archive/cli-doctor.md` | 13 | Line exceeds 200 characters (201 chars) |
@@ -132,6 +135,12 @@
 | `tasks/3-wsl-espanso-dependency-onboarding.md` | 68 | Line exceeds 200 characters (331 chars) |
 | `tasks/4-wsl-espanso-wrapper-install.md` | — | Task missing `## Tasks` section |
 | `tasks/4-wsl-espanso-wrapper-install.md` | 68 | Line exceeds 200 characters (243 chars) |
+| `tasks/5-remote-template-sync.md` | — | Task missing `## Tasks` section |
+| `tasks/5-remote-template-sync.md` | 38 | Line exceeds 200 characters (266 chars) |
+| `tasks/5-remote-template-sync.md` | 47 | Line exceeds 200 characters (374 chars) |
+| `tasks/5-remote-template-sync.md` | 56 | Line exceeds 200 characters (289 chars) |
+| `tasks/5-remote-template-sync.md` | 65 | Line exceeds 200 characters (275 chars) |
+| `tasks/5-remote-template-sync.md` | 74 | Line exceeds 200 characters (266 chars) |
 | `tasks/archive/cli-colored-output.md` | — | Task missing `## Tasks` section |
 | `tasks/archive/cli-colored-output.md` | 23 | Line exceeds 200 characters (243 chars) |
 | `tasks/archive/cli-doctor.md` | — | Task missing `## Tasks` section |

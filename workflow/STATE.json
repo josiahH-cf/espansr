@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "7a-review-bot",
-  "currentFeatureId": "5-remote-template-sync",
-  "currentTaskFile": "tasks/5-remote-template-sync.md",
+  "projectPhase": "8-maintain",
+  "currentFeatureId": "",
+  "currentTaskFile": "",
   "testMode": "post",
   "maintenanceLevel": "standard",
   "automationLevel": "light",
@@ -22,11 +22,9 @@
     "5-remote-template-sync": {
       "spec": "specs/5-remote-template-sync.md",
       "task": "tasks/5-remote-template-sync.md",
-      "status": "in-progress"
+      "status": "done"
     }
   },
-  "currentFeatureId": "5-remote-template-sync",
-  "currentTaskFile": "tasks/5-remote-template-sync.md",
   "activeClaims": [],
-  "updatedAt": "2026-03-28T12:00:00-05:00"
+  "updatedAt": "2026-03-28T13:00:00-05:00"
 }
