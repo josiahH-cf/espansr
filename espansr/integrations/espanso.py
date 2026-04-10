@@ -110,13 +110,13 @@ def _get_candidate_paths() -> list[Path]:
 
 def _is_windows_side_wsl_path(path: Path) -> bool:
     """Return True when path points to Windows filesystem from WSL."""
-    parts = path.parts
+    normalized = str(path).replace("\\", "/")
+    parts = [part for part in normalized.split("/") if part]
     return (
-        len(parts) >= 3
-        and parts[0] == "/"
-        and parts[1] == "mnt"
-        and len(parts[2]) == 1
-        and parts[2].isalpha()
+        len(parts) >= 2
+        and parts[0] == "mnt"
+        and len(parts[1]) == 1
+        and parts[1].isalpha()
     )
 
 
@@ -273,13 +273,20 @@ def _quote_powershell(value: str) -> str:
 def _build_windows_launch_params(executable: str, args: list[str]) -> dict[str, str]:
     """Build shell params for a detached launch via PowerShell."""
     quoted_args = ", ".join(_quote_powershell(arg) for arg in args)
-    cmd = (
-        "Start-Process -WindowStyle Hidden "
-        f"-FilePath {_quote_powershell(executable)}"
-    )
+    cmd = f"Start-Process -FilePath {_quote_powershell(executable)}"
     if quoted_args:
         cmd += f" -ArgumentList {quoted_args}"
     return {"cmd": cmd, "shell": "powershell"}
+
+
+def _resolve_windows_gui_command(binary: Optional[str], python_executable: str) -> tuple[str, list[str]]:
+    """Prefer pythonw.exe on Windows so GUI launches do not open a console window."""
+    pythonw = Path(python_executable).with_name("pythonw.exe")
+    if _path_exists_safe(pythonw):
+        return str(pythonw), ["-m", "espansr", "gui"]
+    if binary:
+        return binary, ["gui"]
+    return python_executable, ["-m", "espansr", "gui"]
 
 
 def _build_posix_launch_params(executable: str, args: list[str]) -> dict[str, str]:
@@ -308,9 +315,22 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     config = get_config()
     trigger = config.espanso.launcher_trigger or ":aopen"
 
+    # WSL with a Windows-hosted Espanso config needs a Windows-side launcher,
+    # but it must still invoke the WSL executable path rather than pythonw.exe.
+    wsl_windows_host = is_wsl2() and _is_windows_side_wsl_path(match_dir.parent)
+
     # Resolve executable and argument vector.
     binary = shutil.which("espansr")
-    if binary:
+    if wsl_windows_host:
+        if binary:
+            executable = binary
+            args = ["gui"]
+        else:
+            executable = sys.executable
+            args = ["-m", "espansr", "gui"]
+    elif is_windows():
+        executable, args = _resolve_windows_gui_command(binary, sys.executable)
+    elif binary:
         executable = binary
         args = ["gui"]
     else:
@@ -318,8 +338,6 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
         args = ["-m", "espansr", "gui"]
 
     # Build platform-specific shell command.
-    wsl_windows_host = is_wsl2() and _is_windows_side_wsl_path(match_dir.parent)
-
     if wsl_windows_host:
         distro = get_wsl_distro_name()
         wsl_args: list[str] = []

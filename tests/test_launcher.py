@@ -126,6 +126,7 @@ def test_generate_launcher_wsl2_command(tmp_path):
     cmd = params["cmd"]
     assert params["shell"] == "powershell"
     assert "Start-Process" in cmd
+    assert "-WindowStyle Hidden" not in cmd
     assert "-FilePath 'wsl.exe'" in cmd
     assert "'-d'" in cmd
     assert "'Ubuntu'" in cmd
@@ -259,9 +260,10 @@ def test_generate_launcher_fallback_sys_executable(tmp_path):
 
 
 def test_generate_launcher_windows_command_uses_start_process(tmp_path):
-    """generate_launcher_file() uses PowerShell Start-Process on Windows."""
+    """Windows launcher prefers pythonw.exe so the GUI opens without a console."""
     match_dir = tmp_path / "match"
     match_dir.mkdir()
+    fake_python = Path(r"C:\Python311\python.exe")
 
     with (
         patch(
@@ -277,6 +279,8 @@ def test_generate_launcher_windows_command_uses_start_process(tmp_path):
             return_value=True,
         ),
         patch("shutil.which", return_value=r"C:\Program Files\espansr\espansr.exe"),
+        patch("sys.executable", str(fake_python)),
+        patch("espansr.integrations.espanso._path_exists_safe", return_value=True),
     ):
         from espansr.integrations.espanso import generate_launcher_file
 
@@ -288,12 +292,15 @@ def test_generate_launcher_windows_command_uses_start_process(tmp_path):
     cmd = params["cmd"]
     assert params["shell"] == "powershell"
     assert "Start-Process" in cmd
-    assert "-FilePath 'C:\\Program Files\\espansr\\espansr.exe'" in cmd
-    assert "-ArgumentList 'gui'" in cmd
+    assert "-WindowStyle Hidden" not in cmd
+    assert "-FilePath 'C:\\Python311\\pythonw.exe'" in cmd
+    assert "'-m'" in cmd
+    assert "'espansr'" in cmd
+    assert "'gui'" in cmd
 
 
 def test_generate_launcher_windows_fallback_python_module(tmp_path):
-    """generate_launcher_file() can launch via python -m espansr on Windows."""
+    """generate_launcher_file() falls back to python.exe when pythonw.exe is unavailable."""
     match_dir = tmp_path / "match"
     match_dir.mkdir()
     fake_python = Path(r"C:\Python311\python.exe")
@@ -313,6 +320,7 @@ def test_generate_launcher_windows_fallback_python_module(tmp_path):
         ),
         patch("shutil.which", return_value=None),
         patch("sys.executable", str(fake_python)),
+        patch("espansr.integrations.espanso._path_exists_safe", return_value=False),
     ):
         from espansr.integrations.espanso import generate_launcher_file
 
@@ -327,6 +335,42 @@ def test_generate_launcher_windows_fallback_python_module(tmp_path):
     assert "'-m'" in cmd
     assert "'espansr'" in cmd
     assert "'gui'" in cmd
+
+
+def test_generate_launcher_windows_falls_back_to_console_script_when_pythonw_missing(tmp_path):
+    """Windows launcher uses the console script only when pythonw.exe is unavailable."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+    fake_python = Path(r"C:\Python311\python.exe")
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=True,
+        ),
+        patch("shutil.which", return_value=r"C:\Program Files\espansr\espansr.exe"),
+        patch("sys.executable", str(fake_python)),
+        patch("espansr.integrations.espanso._path_exists_safe", return_value=False),
+    ):
+        from espansr.integrations.espanso import generate_launcher_file
+
+        result = generate_launcher_file()
+
+    assert result is True
+    data = yaml.safe_load((match_dir / "espansr-launcher.yml").read_text())
+    params = data["matches"][0]["vars"][0]["params"]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "-FilePath 'C:\\Program Files\\espansr\\espansr.exe'" in cmd
+    assert "-ArgumentList 'gui'" in cmd
 
 
 def test_generate_launcher_with_explicit_match_dir(tmp_path):

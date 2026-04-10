@@ -38,6 +38,12 @@ detect_platform() {
 PLATFORM="$(detect_platform)"
 info "Platform: $PLATFORM"
 
+if [[ "$PLATFORM" == "wsl2" ]]; then
+    info "WSL2 install target: WSL environment"
+    info "Windows PowerShell and WSL keep separate PATH, venv, and shell setup."
+    info "For a native Windows-hosted install, run .\\install.ps1 in Windows PowerShell instead."
+fi
+
 # ─── Python version check ─────────────────────────────────────────────────────
 check_python() {
     local python_bin
@@ -141,6 +147,10 @@ setup_shell_alias() {
 }
 
 setup_shell_alias
+
+if [[ "$PLATFORM" == "wsl2" ]]; then
+    info "WSL note: shell alias changes here do not add espansr to Windows PowerShell."
+fi
 
 # ─── Smoke test ──────────────────────────────────────────────────────────────
 info "Running smoke test…"

@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **WSL candidate path probing hardening** — `espansr doctor` and GUI startup no longer crash when unreadable Windows profile paths exist under `/mnt/c/Users/*`. Unreadable candidate directories are now skipped with warnings so canonical Espanso path detection continues.
 - **WSL launcher regeneration reliability** — rerunning `espansr setup` now refreshes the generated `espansr-launcher.yml` safely for Windows-hosted WSL Espanso configs, so the `:aopen` launcher trigger can recover from stale launcher output without manual YAML edits.
+- **Windows launcher console suppression** — the generated native Windows `:aopen` launcher now prefers `pythonw.exe` and no longer opens an extra console window when it starts the GUI.
+
+### Changed
+
+- **Windows vs WSL install guidance** — installer output and user docs now make it explicit that Windows PowerShell and WSL are separate environments with separate PATH, shell integration, and `espansr` installs.
 
 ## [1.1.0] — 2026-03-01
 

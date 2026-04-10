@@ -2,6 +2,10 @@
 
 espansr provides a full command-line interface for managing Espanso templates.
 
+Windows PowerShell and WSL are separate environments. PATH changes, shell
+aliases, and virtual environments created in one do not automatically apply to
+the other.
+
 ## Commands
 
 ### `espansr sync`
@@ -34,6 +38,9 @@ espansr list
 ### `espansr setup`
 
 Run post-install setup: copies bundled templates, detects Espanso, generates launcher and orchestratr manifest.
+
+On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
+available so the GUI opens without an extra console window.
 
 On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
 
@@ -71,6 +78,18 @@ espansr doctor
 ```
 
 Exit code 0 if all checks pass, 1 if any fail.
+
+### `espansr wsl-install-espanso`
+
+Install and start Windows-side Espanso from WSL2 via PowerShell.
+
+```bash
+espansr wsl-install-espanso
+```
+
+Use this only when you are intentionally running `espansr` inside WSL2. It
+does not install `espansr` into Windows PowerShell, and it does not merge WSL
+PATH or shell setup with Windows.
 
 ### `espansr completions`
 
