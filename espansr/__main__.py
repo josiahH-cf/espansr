@@ -28,6 +28,8 @@ from espansr.integrations.espanso import (
 
 def _print_wsl_espanso_remediation() -> None:
     """Print copy/paste-ready WSL steps for missing Espanso dependency."""
+    print("WSL2 note: Windows PowerShell and WSL are separate environments.")
+    print("If you want a native Windows-hosted espansr install, run .\\install.ps1 in Windows PowerShell.")
     print("WSL2 note: espansr does not install Espanso automatically.")
     print("Recommended: run the wrapper from WSL:")
     print("  espansr wsl-install-espanso")
@@ -55,7 +57,8 @@ def cmd_wsl_install_espanso(args) -> int:
 
     This command is WSL2-only. It uses PowerShell to install Espanso via winget,
     then attempts to start Espanso using known executable locations to handle
-    PATH/session lag after install.
+    PATH/session lag after install. It manages Windows-side Espanso only;
+    Windows PowerShell and WSL remain separate espansr environments.
     """
     if get_platform() != "wsl2":
         print(fail("wsl-install-espanso is only supported when running inside WSL2"))

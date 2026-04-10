@@ -60,6 +60,8 @@ function Find-Python {
 }
 
 Info "Platform: windows"
+Info "Install target: native Windows PowerShell"
+Info "Windows PowerShell and WSL are separate environments. This installer only configures Windows."
 
 $PythonBin = Find-Python
 if (-not $PythonBin) {
@@ -120,6 +122,7 @@ Info "To make 'espansr' available in all future sessions, run:"
 Write-Host ""
 Write-Host "  [Environment]::SetEnvironmentVariable('PATH', `"$VenvScripts;`" + [Environment]::GetEnvironmentVariable('PATH', 'User'), 'User')" -ForegroundColor White
 Write-Host ""
+Info "This updates the Windows user PATH only. WSL PATH and shell aliases are separate."
 Info "Then open a new terminal for the change to take effect."
 
 # ─── Smoke test ──────────────────────────────────────────────────────────────

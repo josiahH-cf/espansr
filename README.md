@@ -33,6 +33,12 @@ cd espansr
 .\install.ps1
 ```
 
+If your machine is a Windows host, prefer `.\install.ps1` from Windows PowerShell.
+Windows PowerShell and WSL are separate environments: separate virtual
+environments, separate PATH updates, and separate shell integration. Use
+`./install.sh` inside WSL only when you intentionally want a WSL-side
+`espansr` install that manages the Windows Espanso config.
+
 ### 3. Launch
 
 ```bash
@@ -97,14 +103,23 @@ espansr doctor           # run diagnostic checks
 |----------|---------|-----|-----|-------|
 | 🐧 Linux | `./install.sh` | ✅ | ✅ | Python 3.11+ |
 | 🍎 macOS | `./install.sh` | ✅ | ✅ | Python 3.11+ |
-| 🪟 Windows | `.\install.ps1` | ✅ | ✅ | Python 3.11+ in [PATH](https://www.python.org/downloads/) |
-| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Requires Espanso installed/started on Windows; auto-detects Windows-side config |
+| 🪟 Windows | `.\install.ps1` | ✅ | ✅ | Preferred path for Windows hosts |
+| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Separate WSL install; uses Windows-side Espanso |
 
 If WSL installation reports missing Espanso config, run:
 
 ```bash
 espansr wsl-install-espanso
 ```
+
+### Windows vs WSL
+
+- Windows host: run `.\install.ps1` in Windows PowerShell. This is the
+  simplest path for native Windows usage and the generated `:aopen` launcher.
+- WSL2: run `./install.sh` only if you want `espansr` inside WSL. It does not
+  share PATH, venv, or shell startup files with Windows PowerShell.
+- WSL2 still uses Windows-side Espanso. If WSL reports missing Espanso config,
+  install/start Espanso from PowerShell or use `espansr wsl-install-espanso`.
 
 ---
 

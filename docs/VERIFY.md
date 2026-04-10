@@ -14,6 +14,10 @@ A quick walkthrough to confirm everything works after install.
 .\install.ps1
 ```
 
+If your machine is a Windows host, use `.\install.ps1` from Windows
+PowerShell. WSL and Windows do not share PATH, virtual environments, or shell
+startup files.
+
 ## 2. Verify Version
 
 ```bash
@@ -33,6 +37,10 @@ espansr status
 ### WSL2 Note
 
 `espansr` does not install Espanso automatically. On WSL2, install and initialize Espanso on Windows first:
+
+If you want a native Windows-hosted `espansr` install, stop here and run
+`.\install.ps1` in Windows PowerShell instead. The WSL install path is a
+separate environment.
 
 Preferred from WSL:
 
@@ -135,6 +143,13 @@ espansr gui
 - [ ] Switch theme via the toolbar combo (Auto/Dark/Light)
 - [ ] Use keyboard shortcuts: Ctrl+S (sync), Ctrl+N (new), Ctrl+I (import), Ctrl+F (search), Delete (delete)
 - [ ] Close and reopen — window position and last template are remembered
+
+## 8a. Verify the Espanso launcher trigger
+
+On native Windows, type `:aopen` in Notepad or another app where Espanso
+already expands triggers.
+
+**Expected:** Espansr opens and no extra console window appears.
 
 ## 9. Run Tests (Developer)
 
