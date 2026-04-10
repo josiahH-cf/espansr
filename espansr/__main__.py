@@ -203,12 +203,14 @@ def _get_bundled_dir() -> Path:
 
 
 def cmd_setup(args) -> int:
-    """Run post-install setup: copy templates, detect Espanso, generate launcher.
+    """Run post-install setup: copy templates, detect Espanso, sync, and generate launcher.
 
     With ``--strict``, returns 1 if Espanso config is not detected.
     With ``--dry-run``, previews actions without making changes.
     With ``--verbose``, prints per-file detail during template copy.
     After copying templates, validates each one and prints any issues.
+    When Espanso is detected, also performs an initial sync so bundled
+    triggers become available without a separate manual sync step.
     """
     from espansr.core.templates import TemplateManager
     from espansr.integrations.validate import validate_template
@@ -279,11 +281,16 @@ def cmd_setup(args) -> int:
         if dry_run:
             print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
             print("[dry-run] Would generate launcher")
+            print("[dry-run] Would sync templates to Espanso")
         else:
+            from espansr.integrations.espanso import sync_to_espanso
+
             clean_stale_espanso_files()
             generate_launcher_file()
             print(f"Espanso config: {espanso_dir}")
             print("Launcher: generated")
+            if not sync_to_espanso():
+                print("Sync: failed — run 'espansr sync' after resolving the issues above")
     else:
         plat = get_platform()
         if plat == "wsl2":

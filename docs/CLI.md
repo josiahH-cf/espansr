@@ -37,7 +37,7 @@ espansr list
 
 ### `espansr setup`
 
-Run post-install setup: copies bundled templates, detects Espanso, generates launcher and orchestratr manifest.
+Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial sync, and generates the launcher and orchestratr manifest.
 
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.

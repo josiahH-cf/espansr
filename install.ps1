@@ -59,6 +59,64 @@ function Find-Python {
     return $null
 }
 
+function Find-Espanso {
+    $cmd = Get-Command espanso -ErrorAction SilentlyContinue
+    if ($null -ne $cmd) {
+        return $cmd.Source
+    }
+
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.CMD"),
+        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.CMD"),
+        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.exe"),
+        (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\espanso.exe")
+    )
+
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Ensure-EspansoService {
+    param([string]$EspansoBin)
+
+    Info "Checking Espanso startup registration..."
+    $checkOutput = & $EspansoBin service check 2>&1 | Out-String
+    if ($LASTEXITCODE -eq 0 -and $checkOutput -match "registered") {
+        Ok "Espanso service registered for startup"
+    }
+    else {
+        Info "Registering Espanso service for startup..."
+        & $EspansoBin service register | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Ok "Espanso service registered for startup"
+        }
+        else {
+            Warn "Could not register Espanso service for startup"
+        }
+    }
+
+    $statusOutput = & $EspansoBin service status 2>&1 | Out-String
+    if ($LASTEXITCODE -eq 0 -and $statusOutput -match "running") {
+        Ok "Espanso service running"
+    }
+    else {
+        Info "Starting Espanso service..."
+        & $EspansoBin service start | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Ok "Espanso service started"
+        }
+        else {
+            Warn "Could not start Espanso service"
+        }
+    }
+}
+
 Info "Platform: windows"
 Info "Install target: native Windows PowerShell"
 Info "Windows PowerShell and WSL are separate environments. This installer only configures Windows."
@@ -104,6 +162,14 @@ if ($LASTEXITCODE -eq 0) {
 }
 else {
     Warn "Setup completed with warnings"
+}
+
+$EspansoBin = Find-Espanso
+if ($null -ne $EspansoBin) {
+    Ensure-EspansoService -EspansoBin $EspansoBin
+}
+else {
+    Warn "Espanso binary not found — skipping startup registration check"
 }
 
 # ─── PATH setup ──────────────────────────────────────────────────────────────
