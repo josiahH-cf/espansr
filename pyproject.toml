@@ -17,7 +17,7 @@ dependencies = [
 dev = [
     "pytest>=8.0,<9",
     "pytest-qt>=4.4,<5",
-    "ruff>=0.4,<1",
+    "ruff>=0.15.10,<1",
     "black>=24.0,<25",
 ]
 
