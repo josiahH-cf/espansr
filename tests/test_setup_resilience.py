@@ -176,6 +176,7 @@ def test_setup_strict_returns_0_with_espanso(tmp_path):
         ),
         patch("espansr.__main__.clean_stale_espanso_files"),
         patch("espansr.__main__.generate_launcher_file", return_value=True),
+        patch("espansr.__main__.generate_commands_popup_file", return_value=True),
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
     ):
         result = cmd_setup(args)

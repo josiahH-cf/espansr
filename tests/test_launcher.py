@@ -58,6 +58,42 @@ def test_generate_launcher_creates_valid_yaml(tmp_path):
     assert " >/dev/null 2>&1 &" in match["vars"][0]["params"]["cmd"]
 
 
+def test_generate_commands_popup_creates_valid_yaml(tmp_path):
+    """generate_commands_popup_file() writes valid Espanso YAML for the :coms popup."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_wsl2",
+            return_value=False,
+        ),
+        patch(
+            "espansr.integrations.espanso.is_windows",
+            return_value=False,
+        ),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
+    ):
+        from espansr.integrations.espanso import generate_commands_popup_file
+
+        result = generate_commands_popup_file()
+
+    assert result is True
+
+    popup_file = match_dir / "espansr-commands.yml"
+    assert popup_file.exists()
+
+    data = yaml.safe_load(popup_file.read_text())
+    match = data["matches"][0]
+    assert match["trigger"] == ":coms"
+    assert match["replace"] == "{{output}}"
+    assert "espansr gui --view commands" in match["vars"][0]["params"]["cmd"]
+
+
 def test_generate_launcher_uses_config_trigger(tmp_path):
     """generate_launcher_file() uses launcher_trigger from config."""
     match_dir = tmp_path / "match"
@@ -403,6 +439,7 @@ def test_generate_launcher_with_explicit_match_dir(tmp_path):
 def test_managed_files_includes_launcher():
     """_MANAGED_FILES includes espansr-launcher.yml for stale cleanup."""
     assert "espansr-launcher.yml" in _MANAGED_FILES
+    assert "espansr-commands.yml" in _MANAGED_FILES
 
 
 # ─── GUI first-run tip tests ────────────────────────────────────────────────

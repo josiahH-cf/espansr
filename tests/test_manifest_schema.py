@@ -195,8 +195,7 @@ class TestResolveOrchestratrAppsDir:
 
         win_user = "testuser"
         orchestratr_dir = (
-            tmp_path / "mnt" / "c" / "Users" / win_user
-            / "AppData" / "Roaming" / "orchestratr"
+            tmp_path / "mnt" / "c" / "Users" / win_user / "AppData" / "Roaming" / "orchestratr"
         )
         orchestratr_dir.mkdir(parents=True)
 

@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Commands popup trigger** — espansr now generates an `espansr-commands.yml`
+	file with a hardcoded `:coms` trigger that opens a lightweight read-only
+	popup showing available Espanso triggers, descriptions, and output previews.
+
 ### Fixed
 
 - **WSL candidate path probing hardening** — `espansr doctor` and GUI startup no longer crash when unreadable Windows profile paths exist under `/mnt/c/Users/*`. Unreadable candidate directories are now skipped with warnings so canonical Espanso path detection continues.

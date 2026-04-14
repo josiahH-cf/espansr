@@ -30,6 +30,7 @@ def _run_doctor(capsys, **overrides):
     _match_dir.mkdir(parents=True)
     # Create a real launcher file for the healthy default
     (_match_dir / "espansr-launcher.yml").write_text("matches: []")
+    (_match_dir / "espansr-commands.yml").write_text("matches: []")
 
     defaults = {
         "config_dir": _config_dir,
@@ -42,6 +43,7 @@ def _run_doctor(capsys, **overrides):
         "validate_warnings": [],
         "triggered_templates": ["tmpl"],
         "launcher_exists": True,
+        "commands_popup_exists": True,
     }
     defaults.update(overrides)
 
@@ -50,6 +52,10 @@ def _run_doctor(capsys, **overrides):
         launcher = defaults["match_dir"] / "espansr-launcher.yml"
         if launcher.exists():
             launcher.unlink()
+    if defaults["match_dir"] and not defaults["commands_popup_exists"]:
+        popup_file = defaults["match_dir"] / "espansr-commands.yml"
+        if popup_file.exists():
+            popup_file.unlink()
 
     # Build template stub list
     class _Stub:
@@ -192,6 +198,7 @@ def test_doctor_wsl_conflict_reports_non_canonical_candidates(capsys):
         canonical.mkdir()
         (canonical / "match").mkdir(parents=True)
         ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
+        ((canonical / "match") / "espansr-commands.yml").write_text("matches: []")
         alt = tmp_path / "linux_cfg"
         alt.mkdir()
 
@@ -218,6 +225,7 @@ def test_doctor_wsl_healthy_does_not_print_remediation_warning(capsys):
         canonical.mkdir()
         (canonical / "match").mkdir(parents=True)
         ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
+        ((canonical / "match") / "espansr-commands.yml").write_text("matches: []")
 
         exit_code, output = _run_doctor(
             capsys,
@@ -304,6 +312,15 @@ def test_doctor_launcher_no_match_dir(capsys):
         launcher_exists=False,
     )
     assert exit_code == 1
+
+
+def test_doctor_reports_commands_popup_file_missing(capsys):
+    """Missing commands popup file is reported as a failing diagnostic."""
+    exit_code, output = _run_doctor(capsys, commands_popup_exists=False)
+    assert exit_code == 1
+    lines = output.strip().splitlines()
+    popup_lines = [line for line in lines if "commands popup" in line.lower()]
+    assert any("[FAIL]" in line for line in popup_lines)
 
 
 # ─── Subparser registration ────────────────────────────────────────────────

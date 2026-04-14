@@ -380,7 +380,9 @@ class TestConflictDetection:
         rm_a = RemoteManager(templates_dir=clone_a, config_manager=mgr_a)
         rm_a.set_remote(str(bare_remote))
         shared_v1 = {
-            "name": "Shared", "content": "v1", "trigger": ":s",
+            "name": "Shared",
+            "content": "v1",
+            "trigger": ":s",
         }
         (clone_a / "shared.json").write_text(
             json.dumps(shared_v1, indent=2),
@@ -399,7 +401,9 @@ class TestConflictDetection:
 
         # Both modify the same file differently
         shared_a = {
-            "name": "Shared", "content": "version-A", "trigger": ":s",
+            "name": "Shared",
+            "content": "version-A",
+            "trigger": ":s",
         }
         (clone_a / "shared.json").write_text(
             json.dumps(shared_a, indent=2),
@@ -407,7 +411,9 @@ class TestConflictDetection:
         rm_a.push()
 
         shared_b = {
-            "name": "Shared", "content": "version-B", "trigger": ":s",
+            "name": "Shared",
+            "content": "version-B",
+            "trigger": ":s",
         }
         (clone_b / "shared.json").write_text(
             json.dumps(shared_b, indent=2),
@@ -418,8 +424,13 @@ class TestConflictDetection:
             ["git", "-C", str(clone_b), "commit", "-m", "local change"],
             capture_output=True,
             check=True,
-            env={**os.environ, "GIT_AUTHOR_NAME": "test", "GIT_AUTHOR_EMAIL": "test@test.com",
-                 "GIT_COMMITTER_NAME": "test", "GIT_COMMITTER_EMAIL": "test@test.com"},
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "test",
+                "GIT_AUTHOR_EMAIL": "test@test.com",
+                "GIT_COMMITTER_NAME": "test",
+                "GIT_COMMITTER_EMAIL": "test@test.com",
+            },
         )
 
         with pytest.raises(RemoteConflictError) as exc_info:

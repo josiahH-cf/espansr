@@ -37,10 +37,13 @@ espansr list
 
 ### `espansr setup`
 
-Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial sync, and generates the launcher and orchestratr manifest.
+Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial sync, and generates the launcher, commands popup trigger, and orchestratr manifest.
 
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.
+
+The generated `:coms` popup trigger opens a lightweight read-only command
+reference showing your currently available Espanso triggers.
 
 On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
 
@@ -108,7 +111,12 @@ Launch the graphical interface.
 
 ```bash
 espansr gui
+espansr gui --view commands
 ```
+
+Use `--view commands` to open the lightweight commands popup directly instead of
+the full editor. This is the same popup launched by the generated `:coms`
+Espanso trigger.
 
 ### `espansr --version`
 

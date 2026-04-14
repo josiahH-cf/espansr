@@ -81,8 +81,7 @@ class RemoteManager:
         """Verify git is installed. Raises GitNotFoundError if not."""
         if shutil.which("git") is None:
             raise GitNotFoundError(
-                "git is required for remote sync. "
-                "Install git and ensure it is on your PATH."
+                "git is required for remote sync. " "Install git and ensure it is on your PATH."
             )
 
     def ensure_gitignore(self) -> None:
@@ -212,12 +211,17 @@ class RemoteManager:
         if local_ref.returncode != 0:
             # No local commits — just checkout the remote branch
             self._git(
-                "checkout", "-B", remote_branch,
-                f"origin/{remote_branch}", check=False,
+                "checkout",
+                "-B",
+                remote_branch,
+                f"origin/{remote_branch}",
+                check=False,
             )
             self._git(
-                "branch", f"--set-upstream-to=origin/{remote_branch}",
-                remote_branch, check=False,
+                "branch",
+                f"--set-upstream-to=origin/{remote_branch}",
+                remote_branch,
+                check=False,
             )
         else:
             # Ensure tracking is set up
@@ -290,10 +294,7 @@ class RemoteManager:
 
         # Check if there's anything to commit
         status_result = self._git("status", "--porcelain", check=False)
-        staged = [
-            line for line in status_result.stdout.strip().splitlines()
-            if line.strip()
-        ]
+        staged = [line for line in status_result.stdout.strip().splitlines() if line.strip()]
 
         if staged:
             if message is None:
@@ -310,9 +311,7 @@ class RemoteManager:
         if push_result.returncode != 0:
             stderr = push_result.stderr.strip()
             if "rejected" in stderr or "non-fast-forward" in stderr:
-                raise RemoteError(
-                    "Push rejected — remote has changes. Run 'espansr pull' first."
-                )
+                raise RemoteError("Push rejected — remote has changes. Run 'espansr pull' first.")
             raise RemoteError(f"Push failed: {stderr}")
 
         config = self._config_manager.config

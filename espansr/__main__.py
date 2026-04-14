@@ -21,6 +21,7 @@ from espansr.core.platform import get_platform
 from espansr.integrations.espanso import (
     _get_candidate_paths,
     clean_stale_espanso_files,
+    generate_commands_popup_file,
     generate_launcher_file,
     get_espanso_config_dir,
 )
@@ -29,7 +30,10 @@ from espansr.integrations.espanso import (
 def _print_wsl_espanso_remediation() -> None:
     """Print copy/paste-ready WSL steps for missing Espanso dependency."""
     print("WSL2 note: Windows PowerShell and WSL are separate environments.")
-    print("If you want a native Windows-hosted espansr install, run .\\install.ps1 in Windows PowerShell.")
+    print(
+        "If you want a native Windows-hosted espansr install, "
+        "run .\\install.ps1 in Windows PowerShell."
+    )
     print("WSL2 note: espansr does not install Espanso automatically.")
     print("Recommended: run the wrapper from WSL:")
     print("  espansr wsl-install-espanso")
@@ -281,14 +285,17 @@ def cmd_setup(args) -> int:
         if dry_run:
             print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
             print("[dry-run] Would generate launcher")
+            print("[dry-run] Would generate commands popup")
             print("[dry-run] Would sync templates to Espanso")
         else:
             from espansr.integrations.espanso import sync_to_espanso
 
             clean_stale_espanso_files()
             generate_launcher_file()
+            generate_commands_popup_file()
             print(f"Espanso config: {espanso_dir}")
             print("Launcher: generated")
+            print("Commands popup: generated")
             if not sync_to_espanso():
                 print("Sync: failed — run 'espansr sync' after resolving the issues above")
     else:
@@ -305,6 +312,7 @@ def cmd_setup(args) -> int:
                 "(https://espanso.org), then run 'espanso start' to initialize"
             )
         print("Launcher: skipped (no Espanso config)")
+        print("Commands popup: skipped (no Espanso config)")
 
     # ── orchestratr manifest ──────────────────────────────────────────────
     from espansr.integrations.orchestratr import (
@@ -563,6 +571,12 @@ def cmd_doctor(args) -> int:
     else:
         _fail("Launcher: espansr-launcher.yml not found")
 
+    # 6b. Commands popup file
+    if match_dir and (match_dir / "espansr-commands.yml").exists():
+        _ok("Commands popup: espansr-commands.yml present")
+    else:
+        _fail("Commands popup: espansr-commands.yml not found")
+
     # 7. Template validation
     warnings = validate_all()
     errors = [w for w in warnings if w.severity == "error"]
@@ -593,6 +607,12 @@ def cmd_completions(args) -> int:
 def cmd_gui(args) -> int:
     """Launch the PyQt6 GUI."""
     _auto_pull_if_configured()
+    if getattr(args, "view", "main") == "commands":
+        from espansr.ui.commands_popup import launch_commands_popup
+
+        launch_commands_popup()
+        return 0
+
     from espansr.ui.main_window import launch
 
     launch()
@@ -758,7 +778,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "import", help="Import template(s) from a file or directory"
     )
     import_parser.add_argument("path", help="Path to a JSON file or directory of JSON files")
-    subparsers.add_parser("gui", help="Launch the GUI")
+    gui_parser = subparsers.add_parser("gui", help="Launch the GUI")
+    gui_parser.add_argument(
+        "--view",
+        choices=["main", "commands"],
+        default="main",
+        help="Choose which GUI surface to launch",
+    )
     comp_parser = subparsers.add_parser("completions", help="Print shell completion script")
     comp_parser.add_argument(
         "shell",
@@ -790,7 +816,8 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Push only specific template file(s) (repeatable)",
     )
     push_parser.add_argument(
-        "--message", "-m",
+        "--message",
+        "-m",
         help="Custom commit message",
     )
 

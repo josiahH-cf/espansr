@@ -23,8 +23,13 @@ MANIFEST_FILENAME = "espansr.yml"
 
 # Required top-level keys for a valid flat manifest.
 _FLAT_SCHEMA_KEYS = {
-    "name", "chord", "command", "environment",
-    "description", "ready_cmd", "ready_timeout_ms",
+    "name",
+    "chord",
+    "command",
+    "environment",
+    "description",
+    "ready_cmd",
+    "ready_timeout_ms",
 }
 
 
@@ -187,4 +192,3 @@ def get_status_json() -> str:
 
 
 # ─── Internal helpers ────────────────────────────────────────────────────────
-

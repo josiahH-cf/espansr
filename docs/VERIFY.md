@@ -151,6 +151,14 @@ already expands triggers.
 
 **Expected:** Espansr opens and no extra console window appears.
 
+## 8b. Verify the commands popup trigger
+
+In any app where Espanso already expands triggers, type `:coms`.
+
+**Expected:** A small scrollable popup opens listing your available Espanso
+triggers with descriptions and output previews. Press `Esc` and confirm the
+popup closes immediately.
+
 ## 9. Run Tests (Developer)
 
 ```bash

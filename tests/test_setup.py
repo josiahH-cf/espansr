@@ -185,6 +185,7 @@ def test_setup_with_espanso_config(tmp_path):
         ),
         patch("espansr.__main__.clean_stale_espanso_files") as mock_clean,
         patch("espansr.__main__.generate_launcher_file", return_value=True) as mock_launcher,
+        patch("espansr.__main__.generate_commands_popup_file", return_value=True) as mock_popup,
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
     ):
         result = cmd_setup(None)
@@ -192,6 +193,7 @@ def test_setup_with_espanso_config(tmp_path):
     assert result == 0
     mock_clean.assert_called_once()
     mock_launcher.assert_called_once()
+    mock_popup.assert_called_once()
     mock_sync.assert_called_once()
 
 
@@ -215,6 +217,7 @@ def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
         ),
         patch("espansr.__main__.clean_stale_espanso_files"),
         patch("espansr.__main__.generate_launcher_file", return_value=True),
+        patch("espansr.__main__.generate_commands_popup_file", return_value=True),
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=False),
     ):
         result = cmd_setup(None)
@@ -222,6 +225,35 @@ def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
     output = capsys.readouterr().out
     assert result == 0
     assert "run 'espansr sync'" in output.lower()
+
+
+def test_setup_generates_commands_popup_when_espanso_found(tmp_path):
+    """cmd_setup generates the commands popup file when Espanso is detected."""
+    from espansr.__main__ import cmd_setup
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = _make_bundled_dir(tmp_path)
+    espanso_dir = tmp_path / "espanso"
+    espanso_dir.mkdir()
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch(
+            "espansr.__main__.get_espanso_config_dir",
+            return_value=espanso_dir,
+        ),
+        patch("espansr.__main__.clean_stale_espanso_files"),
+        patch("espansr.__main__.generate_launcher_file", return_value=True),
+        patch("espansr.__main__.generate_commands_popup_file", return_value=True) as mock_popup,
+        patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
+    ):
+        result = cmd_setup(None)
+
+    assert result == 0
+    mock_popup.assert_called_once()
 
 
 def test_setup_prints_summary(tmp_path, capsys):

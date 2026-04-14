@@ -12,6 +12,7 @@ from typing import Optional
 
 import yaml
 
+from espansr.core.command_catalog import COMMANDS_POPUP_TRIGGER
 from espansr.core.config import get_config, save_config
 from espansr.core.platform import (
     get_platform_config,
@@ -45,7 +46,10 @@ class SyncResult:
 
 
 # File names managed by espansr — only these are cleaned up
-_MANAGED_FILES = ("espansr.yml", "espansr-launcher.yml")
+LAUNCHER_FILE_NAME = "espansr-launcher.yml"
+COMMANDS_POPUP_FILE_NAME = "espansr-commands.yml"
+
+_MANAGED_FILES = ("espansr.yml", LAUNCHER_FILE_NAME, COMMANDS_POPUP_FILE_NAME)
 
 # Old file names from before the rebrand — cleaned up on sync
 _OLD_MANAGED_FILES = ("automatr-espanso.yml", "automatr-launcher.yml")
@@ -112,12 +116,7 @@ def _is_windows_side_wsl_path(path: Path) -> bool:
     """Return True when path points to Windows filesystem from WSL."""
     normalized = str(path).replace("\\", "/")
     parts = [part for part in normalized.split("/") if part]
-    return (
-        len(parts) >= 2
-        and parts[0] == "mnt"
-        and len(parts[1]) == 1
-        and parts[1].isalpha()
-    )
+    return len(parts) >= 2 and parts[0] == "mnt" and len(parts[1]) == 1 and parts[1].isalpha()
 
 
 def _path_exists_safe(path: Path) -> bool:
@@ -165,11 +164,10 @@ def get_espanso_config_dir() -> Optional[Path]:
         if _path_exists_safe(path):
             # In WSL, prefer Windows-side canonical locations to avoid split
             # state when both Linux and Windows Espanso paths exist.
-            normalized = str(path)
-            linux_style_espanso_path = (
-                normalized.endswith("/.config/espanso")
-                or normalized.endswith("/.espanso")
-            )
+            normalized = str(path).replace("\\", "/")
+            linux_style_espanso_path = normalized.endswith(
+                "/.config/espanso"
+            ) or normalized.endswith("/.espanso")
             if linux_style_espanso_path and is_wsl2() and not _is_windows_side_wsl_path(path):
                 for candidate in _get_candidate_paths():
                     if _path_exists_safe(candidate) and _is_windows_side_wsl_path(candidate):
@@ -279,14 +277,42 @@ def _build_windows_launch_params(executable: str, args: list[str]) -> dict[str, 
     return {"cmd": cmd, "shell": "powershell"}
 
 
-def _resolve_windows_gui_command(binary: Optional[str], python_executable: str) -> tuple[str, list[str]]:
+def _resolve_windows_gui_command(
+    binary: Optional[str],
+    python_executable: str,
+    extra_args: Optional[list[str]] = None,
+) -> tuple[str, list[str]]:
     """Prefer pythonw.exe on Windows so GUI launches do not open a console window."""
+    extra_args = extra_args or []
     pythonw = Path(python_executable).with_name("pythonw.exe")
     if _path_exists_safe(pythonw):
-        return str(pythonw), ["-m", "espansr", "gui"]
+        return str(pythonw), ["-m", "espansr", "gui", *extra_args]
     if binary:
-        return binary, ["gui"]
-    return python_executable, ["-m", "espansr", "gui"]
+        return binary, ["gui", *extra_args]
+    return python_executable, ["-m", "espansr", "gui", *extra_args]
+
+
+def _resolve_gui_command(
+    binary: Optional[str],
+    python_executable: str,
+    extra_args: Optional[list[str]] = None,
+    *,
+    wsl_windows_host: bool = False,
+) -> tuple[str, list[str]]:
+    """Resolve the executable and argv used to launch an espansr GUI surface."""
+    extra_args = extra_args or []
+
+    if wsl_windows_host:
+        if binary:
+            return binary, ["gui", *extra_args]
+        return python_executable, ["-m", "espansr", "gui", *extra_args]
+
+    if is_windows():
+        return _resolve_windows_gui_command(binary, python_executable, extra_args)
+
+    if binary:
+        return binary, ["gui", *extra_args]
+    return python_executable, ["-m", "espansr", "gui", *extra_args]
 
 
 def _build_posix_launch_params(executable: str, args: list[str]) -> dict[str, str]:
@@ -295,10 +321,19 @@ def _build_posix_launch_params(executable: str, args: list[str]) -> dict[str, st
     return {"cmd": f"nohup {command} >/dev/null 2>&1 &"}
 
 
-def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
-    """Generate espansr-launcher.yml with a shell trigger to launch the GUI.
+def _generate_gui_trigger_file(
+    *,
+    filename: str,
+    trigger: str,
+    gui_args: Optional[list[str]] = None,
+    match_dir: Optional[Path] = None,
+) -> bool:
+    """Generate a managed Espanso shell trigger that launches a GUI surface.
 
     Args:
+        filename: The file name written into the Espanso match directory.
+        trigger: The Espanso trigger keyword.
+        gui_args: Extra CLI args forwarded to `espansr gui`.
         match_dir: Override match directory (for testing). Uses get_match_dir() if None.
 
     Returns:
@@ -307,13 +342,12 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     import shutil
     import sys
 
+    gui_args = gui_args or []
+
     if match_dir is None:
         match_dir = get_match_dir()
     if match_dir is None:
         return False
-
-    config = get_config()
-    trigger = config.espanso.launcher_trigger or ":aopen"
 
     # WSL with a Windows-hosted Espanso config needs a Windows-side launcher,
     # but it must still invoke the WSL executable path rather than pythonw.exe.
@@ -321,21 +355,12 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
 
     # Resolve executable and argument vector.
     binary = shutil.which("espansr")
-    if wsl_windows_host:
-        if binary:
-            executable = binary
-            args = ["gui"]
-        else:
-            executable = sys.executable
-            args = ["-m", "espansr", "gui"]
-    elif is_windows():
-        executable, args = _resolve_windows_gui_command(binary, sys.executable)
-    elif binary:
-        executable = binary
-        args = ["gui"]
-    else:
-        executable = sys.executable
-        args = ["-m", "espansr", "gui"]
+    executable, args = _resolve_gui_command(
+        binary,
+        sys.executable,
+        gui_args,
+        wsl_windows_host=wsl_windows_host,
+    )
 
     # Build platform-specific shell command.
     if wsl_windows_host:
@@ -367,14 +392,35 @@ def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
     }
 
     try:
-        output_path = match_dir / "espansr-launcher.yml"
+        output_path = match_dir / filename
         with open(output_path, "w", encoding="utf-8") as f:
             yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
-        logger.info("Generated launcher trigger at %s", output_path)
+        logger.info("Generated GUI trigger at %s", output_path)
         return True
     except Exception as exc:
-        logger.warning("Failed to generate launcher file: %s", exc)
+        logger.warning("Failed to generate GUI trigger file: %s", exc)
         return False
+
+
+def generate_launcher_file(match_dir: Optional[Path] = None) -> bool:
+    """Generate espansr-launcher.yml with a shell trigger to launch the full GUI."""
+    config = get_config()
+    trigger = config.espanso.launcher_trigger or ":aopen"
+    return _generate_gui_trigger_file(
+        filename=LAUNCHER_FILE_NAME,
+        trigger=trigger,
+        match_dir=match_dir,
+    )
+
+
+def generate_commands_popup_file(match_dir: Optional[Path] = None) -> bool:
+    """Generate espansr-commands.yml with the hardcoded :coms popup trigger."""
+    return _generate_gui_trigger_file(
+        filename=COMMANDS_POPUP_FILE_NAME,
+        trigger=COMMANDS_POPUP_TRIGGER,
+        gui_args=["--view", "commands"],
+        match_dir=match_dir,
+    )
 
 
 # Tracks the number of templates written by the most recent sync_to_espanso() call.
@@ -581,6 +627,10 @@ class EspansoManager:
     def generate_launcher(self) -> bool:
         """Generate the Espanso launcher trigger file."""
         return generate_launcher_file(self.match_dir)
+
+    def generate_commands_popup(self) -> bool:
+        """Generate the Espanso commands popup trigger file."""
+        return generate_commands_popup_file(self.match_dir)
 
     def restart(self) -> bool:
         """Restart the Espanso daemon."""

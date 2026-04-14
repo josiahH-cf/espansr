@@ -310,6 +310,7 @@ def test_clean_stale_deletes_managed_files_from_noncanonical(tmp_path):
     # Create managed files in stale location
     (stale_dir / "espansr.yml").write_text("matches: []")
     (stale_dir / "espansr-launcher.yml").write_text("matches: []")
+    (stale_dir / "espansr-commands.yml").write_text("matches: []")
 
     with (
         patch(
@@ -327,6 +328,7 @@ def test_clean_stale_deletes_managed_files_from_noncanonical(tmp_path):
 
     assert not (stale_dir / "espansr.yml").exists()
     assert not (stale_dir / "espansr-launcher.yml").exists()
+    assert not (stale_dir / "espansr-commands.yml").exists()
 
 
 def test_clean_stale_preserves_canonical_files(tmp_path):
@@ -337,6 +339,7 @@ def test_clean_stale_preserves_canonical_files(tmp_path):
     # Create managed files in canonical location
     (canonical / "espansr.yml").write_text("matches: []")
     (canonical / "espansr-launcher.yml").write_text("matches: []")
+    (canonical / "espansr-commands.yml").write_text("matches: []")
 
     with (
         patch(
@@ -354,6 +357,33 @@ def test_clean_stale_preserves_canonical_files(tmp_path):
 
     assert (canonical / "espansr.yml").exists()
     assert (canonical / "espansr-launcher.yml").exists()
+    assert (canonical / "espansr-commands.yml").exists()
+
+
+def test_clean_stale_deletes_commands_popup_file_from_noncanonical(tmp_path):
+    """clean_stale_espanso_files() removes the commands popup file from stale dirs."""
+    canonical = tmp_path / "canonical" / "match"
+    canonical.mkdir(parents=True)
+
+    stale_dir = tmp_path / "stale" / "match"
+    stale_dir.mkdir(parents=True)
+    (stale_dir / "espansr-commands.yml").write_text("matches: []")
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_espanso_config_dir",
+            return_value=tmp_path / "canonical",
+        ),
+        patch(
+            "espansr.integrations.espanso._get_candidate_paths",
+            return_value=[tmp_path / "canonical", tmp_path / "stale"],
+        ),
+    ):
+        from espansr.integrations.espanso import clean_stale_espanso_files
+
+        clean_stale_espanso_files()
+
+    assert not (stale_dir / "espansr-commands.yml").exists()
 
 
 def test_clean_stale_does_not_delete_user_files(tmp_path):
