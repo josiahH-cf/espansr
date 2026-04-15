@@ -7,6 +7,7 @@ Version history is stored in _versions/ subdirectory.
 
 import json
 import re
+import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -235,6 +236,24 @@ class TemplateManager:
 
         self._prune_versions(template)
         return version
+
+    def backup_raw_file(self, path: Path, label: str = "backup") -> Optional[Path]:
+        """Copy a raw template file into _versions/ without parsing it.
+
+        This is used when a live template cannot be parsed as JSON but should be
+        preserved before a forced overwrite.
+        """
+        backup_dir = self._versions_dir / path.stem
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%dT%H%M%S%f")
+        suffix = path.suffix or ".json"
+        backup_path = backup_dir / f"{label}-{timestamp}{suffix}"
+        try:
+            shutil.copy2(path, backup_path)
+            return backup_path
+        except OSError as e:
+            print(f"Error backing up raw template file: {e}")
+            return None
 
     def list_versions(self, template: Template) -> List[TemplateVersion]:
         """List all versions for a template, sorted ascending."""
@@ -518,9 +537,211 @@ def get_template_manager() -> TemplateManager:
     return _template_manager
 
 
-def get_bundled_templates_dir() -> Path:
-    """Get the path to the bundled templates directory."""
-    return Path(__file__).parent.parent.parent / "templates"
+def get_bundled_templates_dir(anchor_path: Optional[Path | str] = None) -> Path:
+    """Get the path to the bundled templates directory.
+
+    Prefers a repo-level ``templates/`` directory when running from source and
+    falls back to packaged template data when installed from a wheel.
+    """
+    anchor = Path(anchor_path) if anchor_path is not None else Path(__file__)
+    search_root = anchor.resolve().parent
+    for parent in (search_root, *search_root.parents):
+        candidate = parent / "templates"
+        if candidate.is_dir():
+            return candidate
+
+    from importlib.resources import files
+
+    pkg_path = files("espansr").joinpath("..", "templates")
+    return Path(str(pkg_path))
+
+
+@dataclass
+class BundledTemplateStatus:
+    """Comparison result for a bundled template filename."""
+
+    filename: str
+    status: str
+    bundled_path: Path
+    local_path: Path
+    detail: str = ""
+
+
+@dataclass
+class BundledTemplateReport:
+    """Drift report between bundled templates and the local live store."""
+
+    entries: List[BundledTemplateStatus] = field(default_factory=list)
+    local_only: List[Path] = field(default_factory=list)
+    errors: List[str] = field(default_factory=list)
+
+    def has_drift(self) -> bool:
+        """Return True when bundled templates differ from the local store."""
+        return any(
+            entry.status in {"missing_local", "changed_local", "invalid_local"}
+            for entry in self.entries
+        )
+
+    def has_applyable_changes(self) -> bool:
+        """Return True when there are bundled changes that can be written safely."""
+        return any(entry.status in {"missing_local", "changed_local"} for entry in self.entries)
+
+
+@dataclass
+class BundledTemplateApplyResult:
+    """Summary of a bundled-template apply operation."""
+
+    copied: int = 0
+    updated: int = 0
+    forced: int = 0
+    skipped_invalid: List[BundledTemplateStatus] = field(default_factory=list)
+
+
+def _load_template_object(path: Path) -> Dict[str, Any]:
+    """Load a template JSON object from disk."""
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {path.name}: {exc}") from exc
+    except OSError as exc:
+        raise ValueError(f"Cannot read {path.name}: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise ValueError(f"{path.name}: expected a JSON object, got {type(data).__name__}")
+
+    return data
+
+
+def _normalize_template_object(data: Dict[str, Any]) -> str:
+    """Return a stable serialized form for semantic comparison."""
+    return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def get_bundled_template_paths(bundled_dir: Optional[Path] = None) -> Dict[str, Path]:
+    """Return bundled template paths keyed by filename."""
+    root = bundled_dir or get_bundled_templates_dir()
+    if not root.is_dir():
+        return {}
+    return {path.name: path for path in sorted(root.glob("*.json"))}
+
+
+def build_bundled_template_report(
+    templates_dir: Optional[Path] = None,
+    bundled_dir: Optional[Path] = None,
+) -> BundledTemplateReport:
+    """Compare bundled templates with the local live template store.
+
+    Only top-level JSON files are compared because bundled starter templates are
+    seeded into the root of the live templates directory.
+    """
+    local_root = templates_dir or get_templates_dir()
+    bundled_paths = get_bundled_template_paths(bundled_dir)
+    local_paths = {}
+    if local_root.exists():
+        local_paths = {path.name: path for path in sorted(local_root.glob("*.json"))}
+
+    report = BundledTemplateReport()
+    for filename, bundled_path in bundled_paths.items():
+        local_path = local_root / filename
+        if not local_path.exists():
+            report.entries.append(
+                BundledTemplateStatus(
+                    filename=filename,
+                    status="missing_local",
+                    bundled_path=bundled_path,
+                    local_path=local_path,
+                )
+            )
+            continue
+
+        try:
+            bundled_obj = _load_template_object(bundled_path)
+        except ValueError as exc:
+            report.errors.append(str(exc))
+            continue
+
+        try:
+            local_obj = _load_template_object(local_path)
+        except ValueError as exc:
+            report.entries.append(
+                BundledTemplateStatus(
+                    filename=filename,
+                    status="invalid_local",
+                    bundled_path=bundled_path,
+                    local_path=local_path,
+                    detail=str(exc),
+                )
+            )
+            continue
+
+        status = "up_to_date"
+        if _normalize_template_object(bundled_obj) != _normalize_template_object(local_obj):
+            status = "changed_local"
+
+        report.entries.append(
+            BundledTemplateStatus(
+                filename=filename,
+                status=status,
+                bundled_path=bundled_path,
+                local_path=local_path,
+            )
+        )
+
+    report.local_only = [
+        path for name, path in local_paths.items() if name not in bundled_paths
+    ]
+    report.entries.sort(key=lambda entry: entry.filename.lower())
+    report.local_only.sort(key=lambda path: path.name.lower())
+    return report
+
+
+def apply_bundled_template_report(
+    report: BundledTemplateReport,
+    manager: Optional[TemplateManager] = None,
+    dry_run: bool = False,
+    force_invalid_local: bool = False,
+) -> BundledTemplateApplyResult:
+    """Apply bundled-template changes described by *report* to the live store."""
+    if manager is None:
+        manager = get_template_manager()
+
+    result = BundledTemplateApplyResult()
+    for entry in report.entries:
+        if entry.status == "missing_local":
+            if not dry_run:
+                entry.local_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(entry.bundled_path, entry.local_path)
+            result.copied += 1
+            continue
+
+        if entry.status == "changed_local":
+            if not dry_run:
+                existing = manager.load(entry.local_path)
+                if existing is None:
+                    result.skipped_invalid.append(entry)
+                    continue
+                manager.create_version(existing, note="Backup before bundled sync")
+                shutil.copy2(entry.bundled_path, entry.local_path)
+            result.updated += 1
+            continue
+
+        if entry.status == "invalid_local":
+            if force_invalid_local:
+                if not dry_run:
+                    backup_path = manager.backup_raw_file(
+                        entry.local_path,
+                        label="invalid-backup-before-bundled-sync",
+                    )
+                    if backup_path is None:
+                        result.skipped_invalid.append(entry)
+                        continue
+                    shutil.copy2(entry.bundled_path, entry.local_path)
+                result.forced += 1
+                continue
+            result.skipped_invalid.append(entry)
+
+    return result
 
 
 # ── Template Import ─────────────────────────────────────────────────────────

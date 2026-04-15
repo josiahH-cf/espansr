@@ -18,6 +18,28 @@ espansr sync --dry-run    # preview what would be written (no changes)
 espansr sync --verbose    # show per-file detail
 ```
 
+### `espansr sync-bundled`
+
+Check whether the live espansr template store has drifted from the bundled starter templates, or apply bundled updates back into the live store.
+
+This is separate from `espansr sync`: it reconciles JSON template files in the espansr template store, not generated Espanso YAML output.
+
+```bash
+espansr sync-bundled                     # check for bundled drift
+espansr sync-bundled --verbose          # show per-template drift details
+espansr sync-bundled --apply            # copy/update bundled templates into the live store
+espansr sync-bundled --apply --dry-run  # preview bundled updates without writing
+espansr sync-bundled --apply --force    # back up and replace invalid bundled-matching local JSON
+```
+
+Behavior:
+
+- Bundled filenames in the repo/package are treated as canonical.
+- Local-only templates are reported but preserved.
+- Changed bundled-matching local templates are backed up into `_versions/` before replacement.
+- Invalid local JSON files are reported and skipped by default.
+- `--apply --force` backs up invalid bundled-matching local JSON into `_versions/` and then replaces it.
+
 ### `espansr status`
 
 Show Espanso connection status and config path.
@@ -38,6 +60,8 @@ espansr list
 ### `espansr setup`
 
 Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial sync, and generates the launcher, commands popup trigger, and orchestratr manifest.
+
+`setup` is bootstrap-only for bundled templates: it copies missing starter templates, but it does not overwrite existing live templates. Use `espansr sync-bundled --apply` if bundled starter templates change later and you want to refresh the live store.
 
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.

@@ -195,15 +195,9 @@ def _get_bundled_dir() -> Path:
     Prefers the repo-level ``templates/`` directory (editable installs).
     Falls back to ``importlib.resources`` for non-editable installs.
     """
-    repo_level = Path(__file__).resolve().parent.parent / "templates"
-    if repo_level.is_dir():
-        return repo_level
+    from espansr.core.templates import get_bundled_templates_dir
 
-    # Fallback: package data via importlib.resources (Python 3.11+)
-    from importlib.resources import files
-
-    pkg_path = files("espansr").joinpath("..", "templates")
-    return Path(str(pkg_path))
+    return get_bundled_templates_dir(__file__)
 
 
 def cmd_setup(args) -> int:
@@ -347,6 +341,107 @@ def cmd_setup(args) -> int:
 
     if strict and not espanso_found:
         return 1
+    return 0
+
+
+def _print_bundled_report(report, verbose: bool = False) -> None:
+    """Print a human-readable bundled-template drift report."""
+    status_lines = {
+        "up_to_date": "up to date",
+        "missing_local": "missing locally",
+        "changed_local": "local copy differs from bundled",
+        "invalid_local": "local copy is invalid JSON",
+    }
+
+    for entry in report.entries:
+        if entry.status == "up_to_date" and not verbose:
+            continue
+        line = status_lines.get(entry.status, entry.status)
+        if entry.detail:
+            print(f"  {entry.filename}: {line} ({entry.detail})")
+        else:
+            print(f"  {entry.filename}: {line}")
+
+    if report.local_only:
+        print("Local-only templates preserved:")
+        for path in report.local_only:
+            print(f"  {path.name}")
+
+
+def cmd_sync_bundled(args) -> int:
+    """Check or apply bundled template updates to the live template store."""
+    from espansr.core.templates import (
+        TemplateManager,
+        apply_bundled_template_report,
+        build_bundled_template_report,
+    )
+
+    apply = getattr(args, "apply", False) if args else False
+    dry_run = getattr(args, "dry_run", False) if args else False
+    force = getattr(args, "force", False) if args else False
+    verbose = getattr(args, "verbose", False) if args else False
+
+    if force and not apply:
+        print(fail("--force requires --apply"))
+        return 2
+
+    templates_dir = get_templates_dir()
+    report = build_bundled_template_report(
+        templates_dir=templates_dir,
+        bundled_dir=_get_bundled_dir(),
+    )
+
+    if report.errors:
+        for error in report.errors:
+            print(fail(error))
+        return 2
+
+    missing = sum(1 for entry in report.entries if entry.status == "missing_local")
+    changed = sum(1 for entry in report.entries if entry.status == "changed_local")
+    invalid = sum(1 for entry in report.entries if entry.status == "invalid_local")
+    up_to_date = sum(1 for entry in report.entries if entry.status == "up_to_date")
+
+    print(
+        "Bundled templates: "
+        f"{up_to_date} up to date, {missing} missing locally, "
+        f"{changed} changed locally, {invalid} invalid locally"
+    )
+    _print_bundled_report(report, verbose=verbose)
+
+    if not apply:
+        if report.has_drift():
+            return 1
+        print(ok("Bundled templates are already in sync."))
+        return 0
+
+    result = apply_bundled_template_report(
+        report,
+        manager=TemplateManager(templates_dir=templates_dir),
+        dry_run=dry_run,
+        force_invalid_local=force,
+    )
+
+    if result.copied or result.updated or result.forced:
+        prefix = "[dry-run] " if dry_run else ""
+        print(
+            f"{prefix}Bundled sync: "
+            f"{result.copied} copied, {result.updated} updated, {result.forced} forced"
+        )
+    else:
+        if dry_run:
+            print("[dry-run] Bundled sync: no bundled changes to apply")
+        else:
+            print("Bundled sync: no bundled changes to apply")
+
+    if result.skipped_invalid:
+        if force:
+            print(warn("Some invalid local template(s) could not be backed up and were skipped:"))
+        else:
+            print(warn("Skipped invalid local template(s); use --apply --force to replace them:"))
+        for entry in result.skipped_invalid:
+            print(f"  {entry.filename}")
+        return 1
+
     return 0
 
 
@@ -739,6 +834,41 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Preview what would be synced without writing any files",
     )
+    bundled_sync_parser = subparsers.add_parser(
+        "sync-bundled",
+        help="Check or apply bundled template updates to the live store",
+    )
+    bundled_sync_mode = bundled_sync_parser.add_mutually_exclusive_group()
+    bundled_sync_mode.add_argument(
+        "--check",
+        action="store_true",
+        default=False,
+        help="Report bundled drift without writing any files (default)",
+    )
+    bundled_sync_mode.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Apply bundled template updates to the live template store",
+    )
+    bundled_sync_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Preview what would be updated when used with --apply",
+    )
+    bundled_sync_parser.add_argument(
+        "--force",
+        action="store_true",
+        default=False,
+        help="With --apply, overwrite bundled-matching invalid local JSON after backing it up",
+    )
+    bundled_sync_parser.add_argument(
+        "--verbose",
+        action="store_true",
+        default=False,
+        help="Print per-template bundled drift details",
+    )
     status_parser = subparsers.add_parser(
         "status", help="Show Espanso process status and config path"
     )
@@ -831,6 +961,7 @@ def main() -> None:
 
     handlers = {
         "sync": cmd_sync,
+        "sync-bundled": cmd_sync_bundled,
         "status": cmd_status,
         "list": cmd_list,
         "validate": cmd_validate,
