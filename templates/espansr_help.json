@@ -2,5 +2,5 @@
   "name": "Espansr Quick Help",
   "description": "Quick reference for espansr CLI commands.",
   "trigger": ":espansr",
-  "content": "espansr commands:\n  list       — show templates with triggers\n  sync       — sync to Espanso\n  status     — show config paths\n  setup      — run post-install setup\n  validate   — check for errors\n  import     — import templates\n  gui        — launch editor\n\nConfig: ~/.config/espansr/\nSync:   espansr sync"
+  "content": "espansr CLI commands:\n  list       — show templates with triggers\n  sync       — sync to Espanso\n  status     — show config paths\n  setup      — run post-install setup\n  validate   — check for errors\n  import     — import templates\n  gui        — launch editor\n\nTemplate triggers:\n  :simplify  — explain in simple terms\n  :explain   — explain context comprehensively (pt 1)\n  :critique  — review for gaps and conflicts (pt 2)\n  :verify    — fresh-context verification pass\n  :meta      — context-safe meta-prompt generator\n  :qa        — documentation QA pass\n  :save      — save project state for next session\n  :defaults  — set default working style\n  :listen    — convert research to listenable article\n\nConfig: ~/.config/espansr/\nSync:   espansr sync"
 }

@@ -2,5 +2,5 @@
   "name": "Explain Like I Am Five",
   "content": "Explain what was built in very simple terms.\n\nThe goal is to give me a high-level understanding without requiring deep technical reading. Explain it like I am roughly 5 to 10 years old, but do it intelligently. Use grounded analogies that fit the actual code, system, workflow, or product rather than generic filler analogies.\n\nFocus on:\n- What was built.\n- What it does.\n- What it does not do.\n- Why it matters.\n- How the parts fit together at a high level.\n\nRequirements:\n- Keep it simple, elegant, user-centric, and objective.\n- Prefer clarity over technical completeness.\n- Avoid unnecessary jargon.\n- Use plain English.\n- Make it readable out loud.",
   "description": "Explain what was built in very simple terms using grounded analogies. High-level understanding without deep technical reading.",
-  "trigger": ":5yearsold"
+  "trigger": ":simplify"
 }

@@ -179,12 +179,55 @@ def _auto_pull_if_configured() -> None:
         pass  # auto-pull failures are non-blocking
 
 
+def _import_missing_bundled_templates(dry_run: bool = False) -> int:
+    """Copy any bundled templates that are absent from the local template store.
+
+    Only copies files with status ``missing_local``; does not overwrite local
+    edits or changed files.  Returns the number of templates imported.
+    """
+    from espansr.core.templates import (
+        TemplateManager,
+        apply_bundled_template_report,
+        build_bundled_template_report,
+    )
+
+    templates_dir = get_templates_dir()
+    report = build_bundled_template_report(
+        templates_dir=templates_dir,
+        bundled_dir=_get_bundled_dir(),
+    )
+
+    missing = [e for e in report.entries if e.status == "missing_local"]
+    if not missing:
+        return 0
+
+    # Build a report containing only the missing entries so apply doesn't
+    # touch changed or invalid local files.
+    from espansr.core.templates import BundledTemplateReport
+
+    missing_only = BundledTemplateReport(entries=missing)
+    result = apply_bundled_template_report(
+        missing_only,
+        manager=TemplateManager(templates_dir=templates_dir),
+        dry_run=dry_run,
+    )
+    return result.copied
+
+
 def cmd_sync(args) -> int:
     """Sync all triggered templates to Espanso."""
     from espansr.integrations.espanso import sync_to_espanso
 
     _auto_pull_if_configured()
     dry_run = getattr(args, "dry_run", False) if args else False
+
+    # Auto-import any new bundled templates that are missing locally so a
+    # fresh clone + pip install picks them all up without a separate command.
+    imported = _import_missing_bundled_templates(dry_run=dry_run)
+    if imported:
+        prefix = "[dry-run] " if dry_run else ""
+        print(f"{prefix}Imported {imported} new bundled template(s)")
+
     success = sync_to_espanso(dry_run=dry_run)
     return 0 if success else 1
 
