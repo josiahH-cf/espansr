@@ -90,7 +90,7 @@ def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
     ) as mock_sync:
         window._sync_btn.click()
 
-    mock_sync.assert_called_once()
+    mock_sync.assert_called_once_with(update_bundled=True)
 
 
 def test_sync_success_shows_status_message(qtbot, tmp_path):

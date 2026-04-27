@@ -10,7 +10,9 @@ the other.
 
 ### `espansr sync`
 
-Sync templates to Espanso. Writes YAML match files to the Espanso config directory.
+Sync templates to Espanso. Before writing YAML match files, this also applies
+missing or changed bundled template updates to the live template store, backing
+up changed bundled-matching local files under `_versions/`.
 
 ```bash
 espansr sync              # sync all templates
@@ -22,7 +24,10 @@ espansr sync --verbose    # show per-file detail
 
 Check whether the live espansr template store has drifted from the bundled starter templates, or apply bundled updates back into the live store.
 
-This is separate from `espansr sync`: it reconciles JSON template files in the espansr template store, not generated Espanso YAML output.
+`espansr sync` applies normal bundled updates automatically before generating
+Espanso YAML. Use `sync-bundled` when you want to inspect bundled drift directly,
+preview the local JSON updates, or force-replace invalid bundled-matching local
+JSON after backing it up.
 
 ```bash
 espansr sync-bundled                     # check for bundled drift

@@ -428,7 +428,48 @@ def generate_commands_popup_file(match_dir: Optional[Path] = None) -> bool:
 _last_sync_count: int = 0
 
 
-def sync_to_espanso(dry_run: bool = False) -> bool:
+def _sync_bundled_templates_before_espanso(
+    dry_run: bool = False,
+    templates_dir: Optional[Path] = None,
+    bundled_dir: Optional[Path] = None,
+) -> bool:
+    """Apply bundled template updates before writing Espanso output."""
+    from espansr.core.templates import sync_bundled_templates_to_live
+
+    report, result = sync_bundled_templates_to_live(
+        templates_dir=templates_dir,
+        bundled_dir=bundled_dir,
+        dry_run=dry_run,
+    )
+
+    for error in report.errors:
+        print(f"Error: {error}")
+
+    if report.errors:
+        return False
+
+    if result.copied or result.updated or result.forced:
+        prefix = "[dry-run] " if dry_run else ""
+        print(
+            f"{prefix}Bundled sync: "
+            f"{result.copied} copied, {result.updated} updated, {result.forced} forced"
+        )
+
+    if result.skipped_invalid:
+        print("Bundled sync skipped invalid local template(s); run sync-bundled --apply --force:")
+        for entry in result.skipped_invalid:
+            print(f"  {entry.filename}")
+        return False
+
+    return True
+
+
+def sync_to_espanso(
+    dry_run: bool = False,
+    update_bundled: bool = False,
+    templates_dir: Optional[Path] = None,
+    bundled_dir: Optional[Path] = None,
+) -> bool:
     """Sync templates to Espanso match file.
 
     Generates a single `espansr.yml` in the Espanso match directory
@@ -439,12 +480,25 @@ def sync_to_espanso(dry_run: bool = False) -> bool:
 
     Args:
         dry_run: If True, print what would be written without writing.
+        update_bundled: If True, apply bundled template updates to the live
+            template store before generating Espanso output.
+        templates_dir: Optional live template directory override, primarily
+            used by tests.
+        bundled_dir: Optional bundled template directory override, primarily
+            used by tests.
 
     Returns:
         True if sync was successful, False otherwise.
     """
     global _last_sync_count
     _last_sync_count = 0
+
+    if update_bundled and not _sync_bundled_templates_before_espanso(
+        dry_run=dry_run,
+        templates_dir=templates_dir,
+        bundled_dir=bundled_dir,
+    ):
+        return False
 
     match_dir = get_match_dir()
     if not match_dir:

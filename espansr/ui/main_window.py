@@ -256,7 +256,7 @@ class MainWindow(QMainWindow):
             import espansr.integrations.espanso as _espanso_mod
 
             _espanso_mod._last_sync_count = 0
-            result = sync_to_espanso()
+            result = sync_to_espanso(update_bundled=True)
             count = _espanso_mod._last_sync_count
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if result:

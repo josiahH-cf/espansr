@@ -744,6 +744,32 @@ def apply_bundled_template_report(
     return result
 
 
+def sync_bundled_templates_to_live(
+    templates_dir: Optional[Path] = None,
+    bundled_dir: Optional[Path] = None,
+    dry_run: bool = False,
+    force_invalid_local: bool = False,
+) -> tuple[BundledTemplateReport, BundledTemplateApplyResult]:
+    """Apply bundled template updates to the live template store.
+
+    Missing bundled templates are copied into the live store. Bundled-matching
+    local templates that differ are versioned before being replaced. Invalid
+    local JSON is skipped unless ``force_invalid_local`` is set.
+    """
+    local_root = templates_dir or get_templates_dir()
+    report = build_bundled_template_report(
+        templates_dir=local_root,
+        bundled_dir=bundled_dir,
+    )
+    result = apply_bundled_template_report(
+        report,
+        manager=TemplateManager(templates_dir=local_root),
+        dry_run=dry_run,
+        force_invalid_local=force_invalid_local,
+    )
+    return report, result
+
+
 # ── Template Import ─────────────────────────────────────────────────────────
 
 # Known top-level fields in the internal template schema.

@@ -4,6 +4,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import yaml
+
 
 def _make_args(**kwargs):
     """Create a simple argparse-like namespace object."""
@@ -124,8 +126,14 @@ def test_sync_bundled_apply_copies_and_updates_with_backup(tmp_path):
         exit_code = cmd_sync_bundled(_make_args(apply=True))
 
     assert exit_code == 0
-    assert json.loads((templates_dir / "shared_help.json").read_text(encoding="utf-8")) == shared_bundled
-    assert json.loads((templates_dir / "new_starter.json").read_text(encoding="utf-8")) == missing_bundled
+    assert (
+        json.loads((templates_dir / "shared_help.json").read_text(encoding="utf-8"))
+        == shared_bundled
+    )
+    assert (
+        json.loads((templates_dir / "new_starter.json").read_text(encoding="utf-8"))
+        == missing_bundled
+    )
 
     version_path = templates_dir / "_versions" / "shared_help" / "v1.json"
     assert version_path.exists()
@@ -180,9 +188,16 @@ def test_sync_bundled_force_overwrites_invalid_local_json_with_backup(tmp_path):
         exit_code = cmd_sync_bundled(_make_args(apply=True, force=True))
 
     assert exit_code == 0
-    assert json.loads((templates_dir / "broken.json").read_text(encoding="utf-8")) == bundled_data
+    assert (
+        json.loads((templates_dir / "broken.json").read_text(encoding="utf-8"))
+        == bundled_data
+    )
 
-    backups = list((templates_dir / "_versions" / "broken").glob("invalid-backup-before-bundled-sync-*.json"))
+    backups = list(
+        (templates_dir / "_versions" / "broken").glob(
+            "invalid-backup-before-bundled-sync-*.json"
+        )
+    )
     assert len(backups) == 1
     assert backups[0].read_text(encoding="utf-8") == "{not-valid-json"
 
@@ -205,6 +220,63 @@ def test_sync_bundled_force_requires_apply(tmp_path, capsys):
     output = capsys.readouterr().out
     assert exit_code == 2
     assert "requires --apply" in output
+
+
+def test_sync_to_espanso_can_apply_bundled_updates_before_writing(tmp_path):
+    """Normal sync can copy/update bundled templates before generating Espanso YAML."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    match_dir = tmp_path / "espanso" / "match"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+    match_dir.mkdir(parents=True)
+
+    verify_bundled = {
+        "name": "Verify and Falsify",
+        "content": "Review and fix issues as you find them.",
+        "trigger": ":verify",
+    }
+    meta_bundled = {
+        "name": "Meta-Prompt Generator",
+        "content": "Draft a context-safe meta-prompt.",
+        "trigger": ":meta",
+    }
+    _write_json(bundled_dir / "verify.json", verify_bundled)
+    _write_json(bundled_dir / "meta.json", meta_bundled)
+    _write_json(
+        templates_dir / "verify.json",
+        {
+            "name": "Verify and Falsify",
+            "content": "Review only.",
+            "trigger": ":verify",
+        },
+    )
+
+    manager = TemplateManager(templates_dir=templates_dir)
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager", return_value=manager),
+        patch("espansr.integrations.espanso.validate_all", return_value=[]),
+        patch("espansr.integrations.espanso.clean_stale_espanso_files"),
+    ):
+        result = sync_to_espanso(
+            update_bundled=True,
+            templates_dir=templates_dir,
+            bundled_dir=bundled_dir,
+        )
+
+    assert result is True
+    assert json.loads((templates_dir / "verify.json").read_text(encoding="utf-8")) == verify_bundled
+    assert json.loads((templates_dir / "meta.json").read_text(encoding="utf-8")) == meta_bundled
+    assert (templates_dir / "_versions" / "verify_and_falsify" / "v1.json").exists()
+
+    output = yaml.safe_load((match_dir / "espansr.yml").read_text(encoding="utf-8"))
+    matches = {entry["trigger"]: entry["replace"] for entry in output["matches"]}
+    assert matches[":meta"] == "Draft a context-safe meta-prompt."
+    assert matches[":verify"] == "Review and fix issues as you find them."
 
 
 def test_sync_bundled_help_lists_flags(capsys):

@@ -58,12 +58,14 @@ Each template is a JSON file with the following fields:
 
 ## Sync Behavior
 
-When you run `espansr sync` (or click "Sync Now" in the GUI):
+When you run `espansr sync` (or click "Sync Now" in the GUI, including auto-sync):
 
-1. Templates with a `trigger` field are converted to Espanso YAML match format
-2. The generated YAML is written to the Espanso config directory
-3. Templates without a trigger are skipped during sync
-4. Duplicate triggers and validation issues are reported before sync
+1. Missing or changed bundled templates are applied to the live template store.
+2. Changed bundled-matching live templates are backed up under `_versions/` before replacement.
+3. Templates with a `trigger` field are converted to Espanso YAML match format.
+4. The generated YAML is written to the Espanso config directory.
+5. Templates without a trigger are skipped during sync.
+6. Duplicate triggers and validation issues are reported before sync.
 
 The generated `:aopen` and `:coms` triggers live in separate managed Espanso
 files (`espansr-launcher.yml` and `espansr-commands.yml`) so they remain
@@ -71,7 +73,10 @@ available even though they are not regular template JSON files.
 
 ## Bundled Drift Reconciliation
 
-If the bundled starter set changes after your initial setup, use:
+Normal `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed
+bundled template updates before writing Espanso output.
+
+If you want to inspect or explicitly manage bundled starter drift, use:
 
 ```bash
 espansr sync-bundled
