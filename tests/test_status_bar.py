@@ -164,7 +164,7 @@ class TestSyncFeedback:
         """A successful sync shows the template count in the status bar."""
         import espansr.integrations.espanso as espanso_mod
 
-        def _mock_sync():
+        def _mock_sync(**_kwargs):
             espanso_mod._last_sync_count = 3
             return True
 

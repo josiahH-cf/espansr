@@ -232,12 +232,21 @@ class MainWindow(QMainWindow):
 
     # ── Sync ────────────────────────────────────────────────────────────────
 
-    def _do_sync(self) -> None:
+    def _do_sync(self, save_current: bool = True, update_bundled: bool = True) -> None:
         """Perform the Espanso sync and update status bar."""
         self._sync_btn.setEnabled(False)
         try:
             from espansr.integrations.espanso import sync_to_espanso
             from espansr.integrations.validate import validate_all
+
+            saved_current = False
+            if save_current and self._editor.has_unsaved_changes():
+                template = self._editor.save_current(emit_signal=False)
+                if template is None:
+                    return
+                saved_current = True
+                self._browser.refresh()
+                self._browser.select_template_by_name(template.name)
 
             # Run validation and display results
             warnings = validate_all()
@@ -256,7 +265,7 @@ class MainWindow(QMainWindow):
             import espansr.integrations.espanso as _espanso_mod
 
             _espanso_mod._last_sync_count = 0
-            result = sync_to_espanso(update_bundled=True)
+            result = sync_to_espanso(update_bundled=update_bundled and not saved_current)
             count = _espanso_mod._last_sync_count
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if result:
@@ -325,9 +334,10 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(", ".join(parts), 5000)
 
     def _on_template_saved(self, template) -> None:
-        """Refresh browser after a template is saved."""
+        """Refresh browser and Espanso output after a template is saved."""
         self._browser.refresh()
         self._browser.select_template_by_name(template.name)
+        self._do_sync(save_current=False, update_bundled=False)
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:
         """Persist splitter position when the user drags it."""

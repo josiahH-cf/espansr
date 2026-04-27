@@ -297,3 +297,15 @@ def test_sync_bundled_help_lists_flags(capsys):
     assert "--dry-run" in output
     assert "--force" in output
     assert "--verbose" in output
+
+
+def test_bundled_meta_template_has_optional_context_variable():
+    """The :meta starter prompt exposes the optional context input field."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "meta.json").read_text(encoding="utf-8"))
+
+    variables = {variable["name"]: variable for variable in data.get("variables", [])}
+    assert data["trigger"] == ":meta"
+    assert "{{context}}" in data["content"]
+    assert "context" in variables
+    assert variables["context"]["multiline"] is True

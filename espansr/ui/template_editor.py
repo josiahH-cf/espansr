@@ -157,6 +157,70 @@ class TemplateEditorWidget(QWidget):
         self._yaml_preview.clear()
         self._output_preview.clear()
 
+    def has_unsaved_changes(self) -> bool:
+        """Return True when editor fields differ from the loaded template."""
+        name = self._name_edit.text().strip()
+        trigger = self._trigger_edit.text().strip()
+        content = self._content_edit.toPlainText()
+        variables = [var.to_dict() for var in self._variable_editor.get_variables()]
+
+        if self._current_template is None:
+            return bool(name or trigger or content or variables)
+
+        return (
+            name != self._current_template.name
+            or trigger != self._current_template.trigger
+            or content != self._current_template.content
+            or variables != [var.to_dict() for var in (self._current_template.variables or [])]
+        )
+
+    def save_current(self, emit_signal: bool = True) -> Optional[Template]:
+        """Save the current editor state and return the saved template."""
+        name = self._name_edit.text().strip()
+        if not name:
+            self.status_message.emit("Template name is required", 3000)
+            return None
+
+        variable_errors = self._variable_editor.validate()
+        if variable_errors:
+            self.status_message.emit(variable_errors[0], 5000)
+            return None
+
+        trigger = self._trigger_edit.text().strip()
+        content = self._content_edit.toPlainText()
+        variables = self._variable_editor.get_variables()
+        manager = get_template_manager()
+
+        try:
+            if self._current_template is None:
+                template = Template(
+                    name=name,
+                    content=content,
+                    trigger=trigger,
+                    variables=variables,
+                )
+                if not manager.save(template):
+                    self.status_message.emit(f"Save failed for '{name}'", 5000)
+                    return None
+                self._current_template = template
+                self.status_message.emit(f"Created '{name}'", 3000)
+            else:
+                self._current_template.name = name
+                self._current_template.trigger = trigger
+                self._current_template.content = content
+                self._current_template.variables = variables
+                if not manager.save(self._current_template):
+                    self.status_message.emit(f"Save failed for '{name}'", 5000)
+                    return None
+                self.status_message.emit(f"Saved '{name}'", 3000)
+
+            if emit_signal:
+                self.template_saved.emit(self._current_template)
+            return self._current_template
+        except Exception as exc:
+            self.status_message.emit(f"Save failed: {exc}", 5000)
+            return None
+
     # ── YAML Preview ────────────────────────────────────────────────────────
 
     def _update_yaml_preview(self) -> None:
@@ -214,34 +278,4 @@ class TemplateEditorWidget(QWidget):
 
     def _save(self) -> None:
         """Save the current editor state as a new or existing template."""
-        name = self._name_edit.text().strip()
-        if not name:
-            self.status_message.emit("Template name is required", 3000)
-            return
-
-        trigger = self._trigger_edit.text().strip()
-        content = self._content_edit.toPlainText()
-        variables = self._variable_editor.get_variables()
-        manager = get_template_manager()
-
-        try:
-            if self._current_template is None:
-                template = manager.create(
-                    name=name,
-                    content=content,
-                    trigger=trigger,
-                )
-                template.variables = variables
-                manager.save(template)
-                self._current_template = template
-                self.status_message.emit(f"Created '{name}'", 3000)
-            else:
-                self._current_template.name = name
-                self._current_template.trigger = trigger
-                self._current_template.content = content
-                self._current_template.variables = variables
-                manager.save(self._current_template)
-                self.status_message.emit(f"Saved '{name}'", 3000)
-            self.template_saved.emit(self._current_template)
-        except Exception as exc:
-            self.status_message.emit(f"Save failed: {exc}", 5000)
+        self.save_current()

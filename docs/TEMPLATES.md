@@ -71,6 +71,12 @@ The generated `:aopen` and `:coms` triggers live in separate managed Espanso
 files (`espansr-launcher.yml` and `espansr-commands.yml`) so they remain
 available even though they are not regular template JSON files.
 
+In the GUI, clicking **Save** also regenerates the Espanso match file from the
+saved live templates so the edited trigger is reflected immediately. Clicking
+**Sync Now** first saves any dirty editor changes; when it saves editor changes
+as part of that sync, bundled-template refresh is skipped for that run so the
+just-saved local edit is not overwritten before Espanso sees it.
+
 ## Bundled Drift Reconciliation
 
 Normal `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed

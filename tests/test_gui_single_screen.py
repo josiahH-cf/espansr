@@ -93,6 +93,52 @@ def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
     mock_sync.assert_called_once_with(update_bundled=True)
 
 
+def test_save_triggers_sync_without_bundled_update(qtbot, tmp_path):
+    """Saving an edited template immediately regenerates Espanso output."""
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    template = manager.create(name="Meta", content="old body", trigger=":meta")
+    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window._editor.load_template(template)
+    window._editor._content_edit.setPlainText("new body")
+
+    with (
+        patch("espansr.ui.template_editor.get_template_manager", return_value=manager),
+        patch("espansr.ui.template_browser.get_template_manager", return_value=manager),
+        patch("espansr.integrations.validate.validate_all", return_value=[]),
+        patch("espansr.ui.main_window.get_config_manager"),
+        patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+    ):
+        window._editor._save()
+
+    reloaded = manager.get("Meta")
+    assert reloaded is not None
+    assert reloaded.content == "new body"
+    mock_sync.assert_called_once_with(update_bundled=False)
+
+
+def test_sync_saves_dirty_editor_before_writing(qtbot, tmp_path):
+    """Sync Now persists dirty editor state before generating Espanso YAML."""
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    template = manager.create(name="Verify", content="old body", trigger=":verify")
+    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window._editor.load_template(template)
+    window._editor._content_edit.setPlainText("new body")
+
+    with (
+        patch("espansr.ui.template_editor.get_template_manager", return_value=manager),
+        patch("espansr.ui.template_browser.get_template_manager", return_value=manager),
+        patch("espansr.integrations.validate.validate_all", return_value=[]),
+        patch("espansr.ui.main_window.get_config_manager"),
+        patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+    ):
+        window._do_sync()
+
+    reloaded = manager.get("Verify")
+    assert reloaded is not None
+    assert reloaded.content == "new body"
+    mock_sync.assert_called_once_with(update_bundled=False)
+
+
 def test_sync_success_shows_status_message(qtbot, tmp_path):
     """A successful sync shows 'Sync successful' in the status bar."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
