@@ -6,6 +6,21 @@ Canonical entrypoint for all coding agents. Read this first, then follow links t
 
 `espansr` is a Python CLI + GUI manager for Espanso command templates, focused on fast command authoring, safe validation/sync workflows, and stable cross-platform behavior for developer productivity.
 
+## Stable Maintenance Path
+
+`espansr` is public, mostly built, and normally maintained as a stable solo-maintainer project. Routine upkeep should be lightweight: when the user asks for a focused template, prompt, documentation, or small workflow correction, agents may handle it directly as Phase 8 maintenance without creating a new feature spec or task file.
+
+Routine maintenance includes:
+
+- Adding, editing, or removing bundled templates in `templates/`.
+- Updating Copilot/Claude prompts, agent instructions, or workflow wording for clarity.
+- Documentation-only updates and small corrections to existing workflow files.
+- Small non-behavioral cleanups that do not alter application features, security posture, or repository governance.
+
+For routine maintenance, the agent should read `AGENTS.md`, `workflow/STATE.json`, and the relevant canonical files before editing; inspect current git state; make focused changes; run the relevant checks from `workflow/COMMANDS.md`; summarize the diff; and, when explicitly requested and local permissions/repository state allow, commit, push, open a PR, and complete the merge path safely. If unrelated work is already present, permissions are missing, CI is unavailable, or branch protection/review policy prevents completion, stop after verification and report the required manual step.
+
+Route larger user-facing features through Phases 2-7, bugs through the Bug Track, and governance changes that alter policy/safeguards through `governance/CHANGE_PROTOCOL.md`.
+
 ## Workflow Phases
 
 The project lifecycle follows 9 phases plus a parallel Bug Track.
@@ -40,11 +55,11 @@ The project lifecycle follows 9 phases plus a parallel Bug Track.
 - **Entry:** Claude: `/test` · Copilot: `phase-7-test.prompt.md`
 - **Gate:** Implementation on feature branch → **Output:** Test results, bug log → **Next:** Phase 7a
 
-### Phase 7a — Review Bot (Default Merge Path)
+### Phase 7a — Review Bot (Default Review Path)
 - **Entry:** Claude: `/review-bot` · Copilot: `phase-7a-review-bot.prompt.md`
 - **Automatic:** `/continue` dispatches here after tests pass — no manual trigger needed
 - **On-demand:** `/review-bot` to run manually at any time
-- **Gate:** All ACs pass → **Output:** Auto-merged PR (on PASS) or findings file at `/reviews/[feature-id]-bot-findings.md` (on FAIL) → **Next:** Phase 8 or next feature (on PASS); back to Phase 6 (on FAIL)
+- **Gate:** All ACs pass → **Output:** PR merged when permissions/repository rules allow, PR ready when blocked, or findings file at `/reviews/[feature-id]-bot-findings.md` (on FAIL) → **Next:** Phase 8 or next feature after merge; back to Phase 6 on findings
 - **Agent:** `.github/agents/review-bot.agent.md` — prefer a different model than the implementer (advisory)
 
 ### Phase 7b — Review & Ship (Manual Fallback)
@@ -55,7 +70,7 @@ The project lifecycle follows 9 phases plus a parallel Bug Track.
 
 ### Phase 8 — Maintain
 - **Entry:** Claude: `/maintain` · Copilot: `phase-8-maintain.prompt.md`
-- **Gate:** Feature shipped → **Output:** Updated docs, compliance report → **Next:** Phase 9 or next cycle
+- **Gate:** Feature shipped or routine stable-maintenance request → **Output:** Focused update, verification evidence, optional PR/merge when safe → **Next:** Phase 9 when automation setup is requested, otherwise ongoing maintenance
 
 ### Phase 9 — Operationalize
 - **Entry:** Claude: `/operationalize` · Copilot: `phase-9-operationalize.prompt.md`

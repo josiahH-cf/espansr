@@ -56,7 +56,7 @@ Read the full diff of the feature branch against the target branch.
 Produce the pull request:
 - Title: concise imperative summary
 - What: one sentence
-- Why: link to /specs/[feature-id]-[slug].md
+- Why: link to /specs/[feature-id]-[slug].md for feature work, or summarize the routine maintenance request
 - Changes: logical changes grouped by area
 - Testing checklist: check each box honestly — if any cannot be checked, leave it unchecked and explain
 - Non-code checklist: same — honest checks only

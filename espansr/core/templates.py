@@ -688,9 +688,7 @@ def build_bundled_template_report(
             )
         )
 
-    report.local_only = [
-        path for name, path in local_paths.items() if name not in bundled_paths
-    ]
+    report.local_only = [path for name, path in local_paths.items() if name not in bundled_paths]
     report.entries.sort(key=lambda entry: entry.filename.lower())
     report.local_only.sort(key=lambda path: path.name.lower())
     return report

@@ -3,15 +3,15 @@
 <!-- description: Orchestrate phases deterministically using workflow/STATE.json -->
 # Continue — Deterministic Orchestrator
 
-`/continue` is the **orchestrator**, not a direct implementation command. It reads project state, determines the next action, and dispatches to the appropriate phase command (e.g., `/compass`, `/implement`, `/test`). At Phase 6 it delegates to `/implement` — it does not duplicate `/implement`'s behavior. Its unique value is **state management, phase advancement, bug-routing, and next-action selection**.
+`/continue` is the **orchestrator**, not a direct implementation command. It reads project state, determines the next action, and dispatches to the appropriate phase command (e.g., `/compass`, `/implement`, `/test`). At Phase 6 it delegates to `/implement` — it does not duplicate `/implement`'s behavior. Its unique value is **state management, phase advancement, bug-routing, and next-action selection**. In stable maintenance mode, it may also route concrete template, prompt, documentation, and small workflow requests directly through Phase 8 maintenance without creating feature specs or task files.
 
-Use `/implement` when you know exactly which feature to build. Use `/continue` when you want the orchestrator to determine and execute the next right action.
+Use `/implement` when you know exactly which feature to build. Use `/maintain` or direct assistant action for a routine maintenance request. Use `/continue` when you want the orchestrator to determine and execute the next right action.
 
 See `workflow/ORCHESTRATOR.md` for the full loop contract.
 
 ## Scope
 
-Manage project phases 2-9 only. If scaffold files are missing, stop and instruct the developer to initialize scaffold first.
+Manage project phases 2-9 only. If scaffold files are missing, stop and instruct the developer to initialize scaffold first. Routine stable-maintenance requests are in scope when the project is already in Phase 8 or has no active feature task.
 
 ## Session Bootstrap
 
@@ -52,6 +52,21 @@ If `workflow/STATE.json` is missing or invalid:
 1. Confirm scaffold roots exist: `AGENTS.md`, `.specify/`, `workflow/`.
 2. Load `workflow/STATE.json`.
 3. If missing/invalid, run one-time inference and write state.
+
+## Step 1b: Classify Direct Requests
+
+If the user supplied a concrete request, classify it before resolving an active feature:
+
+| Request Type | Route |
+|--------------|-------|
+| Template add/edit/remove, prompt edit, docs update, small workflow wording correction | Routine Phase 8 maintenance |
+| New/changed CLI or GUI behavior, integration behavior, broad refactor | Feature lifecycle |
+| Reproducible defect or regression | Bug Track |
+| Policy authority, security posture, approval rules, or governance safeguard change | Governance protocol |
+
+For routine maintenance with no active task file, do not create a feature spec or task. Read the relevant canonical files, make the focused edit, run relevant checks, and remain in `8-maintain`. If the user requested end-to-end completion and it is safe, commit, push, open a PR, and merge according to `workflow/CONCURRENCY.md → Automatic Git Workflow`.
+
+If the request is routine but `currentTaskFile` is set or `activeClaims` conflict with the target files, stop and report the conflict instead of editing.
 
 ## Step 2: Resolve Active Feature
 
@@ -144,14 +159,16 @@ Reply with option number to proceed.
 | `6-code` + `testMode=pre` | Run `/test pre` with `currentTaskFile`; on success set `testMode=implement`. |
 | `6-code` + `testMode=implement` | Check bug log (Step 2b): resolve blocking bugs via `/bugfix` first. Then run `/implement` with `currentTaskFile` until tasks complete; then set `projectPhase=7-test`, `testMode=post`. |
 | `7-test` + `testMode=post` | Run `/test post` (includes launch/smoke check — see phase-7-test.md); if all ACs pass, launch check passes or is skipped, and no blocking bugs, trigger **Fork F-2** (review path selection). Route to `7a-review-bot` or `7b-review-ship` based on user response. |
-| `7a-review-bot` | Run `/review-bot`; on PASS execute merge sequence (merge feature branch → test on base → push → cleanup; see `workflow/CONCURRENCY.md → Automatic Git Workflow`) — then trigger **Fork F-3** if incomplete task files remain (set `projectPhase=6-code`, `testMode=pre` for the chosen feature), otherwise set `projectPhase=8-maintain`. On FAIL write findings file, set `projectPhase=6-code`, `testMode=implement`. |
-| `7b-review-ship` | Run `/review-session`, `/cross-review`; on PASS execute merge sequence (merge → test → push → cleanup) — then trigger **Fork F-3** if incomplete task files remain (set `projectPhase=6-code`, `testMode=pre` for the chosen feature), otherwise set `projectPhase=8-maintain`. |
-| `8-maintain` | If `maintenanceLevel` is empty, trigger **Fork F-4** (maintenance level selection). Then run `/maintain` with selected level; when maintenance pass complete and automation not yet configured, set `projectPhase=9-operationalize`. |
+| `7a-review-bot` | Run `/review-bot`; on PASS complete commit/push/PR/merge only as far as repository state allows (see `workflow/CONCURRENCY.md → Automatic Git Workflow`). If merge completes, trigger **Fork F-3** if incomplete task files remain (set `projectPhase=6-code`, `testMode=pre` for the chosen feature), otherwise set `projectPhase=8-maintain`. If PR/merge is blocked, report the manual step and do not advance as shipped. On FAIL write findings file, set `projectPhase=6-code`, `testMode=implement`. |
+| `7b-review-ship` | Run `/review-session`, `/cross-review`; on PASS complete commit/push/PR/merge only as far as repository state allows. If merge completes, trigger **Fork F-3** if incomplete task files remain (set `projectPhase=6-code`, `testMode=pre` for the chosen feature), otherwise set `projectPhase=8-maintain`. If PR/merge is blocked, report the manual step and do not advance as shipped. |
+| `8-maintain` | For a concrete routine request, run the Phase 8 stable-maintenance flow and remain in `8-maintain`. For periodic maintenance, if `maintenanceLevel` is empty, trigger **Fork F-4**; then run `/maintain` with selected level. When periodic pass completes and automation is requested/not configured, set `projectPhase=9-operationalize`. |
 | `9-operationalize` | Run `/operationalize`; when interview complete and workflows generated, remain at `9-operationalize` (re-enterable) or return to `8-maintain` for ongoing mode. |
 
 Persist `workflow/STATE.json` after every transition.
 
 After each `/implement`, `/bugfix`, or `/test` execution, check for uncommitted changes. If changes exist and a task was completed or tests passed, commit with a conventional commit message and emit `[GIT] Committed: <message>`. See `workflow/CONCURRENCY.md → Automatic Git Workflow → Commit Cadence`.
+
+After a routine maintenance edit, check for uncommitted changes. Commit only the files touched for the routine request, and only when the user asked for completion and unrelated dirty changes are not present.
 
 When entering `6-code` for a feature, ensure a feature branch exists. In single-agent mode: `git checkout -b feat/<feature-slug>`. See `workflow/CONCURRENCY.md → Automatic Git Workflow → Branching`.
 
@@ -168,7 +185,7 @@ Stop and report clearly when:
 - A fork checklist is awaiting user response (Step 2c)
 - Human input is required
 - A blocking bug exists
-- Required artifacts are missing (`spec`, `task`, or `state` cannot be reconciled)
+- Required feature artifacts are missing (`spec`, `task`, or `state` cannot be reconciled)
 - Tests remain unresolved after two focused attempts
 - Security/privacy/destructive operations require approval
 - Transition counter reaches 10 (safety valve)
@@ -198,9 +215,10 @@ This makes `/continue` self-sustaining rather than one-shot.
 
 ## Rules
 
-- Do not skip phases.
+- Do not skip feature phases for feature work.
 - `/tasks/*.md` is the authoritative execution artifact.
 - Use `/test pre` before implementation and `/test post` after task completion.
+- Routine maintenance in Phase 8 does not require new specs/tasks when it stays within the stable-maintenance scope.
 - Never fabricate gate evidence.
 - Max 10 phase transitions per session (safety valve).
 - Fork detection (Step 2c) fires once per fork condition per feature cycle. Do not re-ask a fork unless the underlying state changes.

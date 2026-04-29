@@ -2,9 +2,13 @@
 
 <!-- One sentence: what does this PR do? -->
 
+## Type
+
+<!-- Feature / Bugfix / Routine maintenance / Governance -->
+
 ## Why
 
-<!-- Link to spec: /specs/[feature-name].md -->
+<!-- Link to spec/task for feature or bugfix work. For routine maintenance, summarize the request and why it is in scope. -->
 
 ## Changes
 
@@ -12,17 +16,17 @@
 
 ## Testing
 
-- [ ] All acceptance criteria from the spec have corresponding tests
+- [ ] All acceptance criteria from the spec have corresponding tests, or this is routine maintenance with request/check evidence instead
 - [ ] All tests pass locally
 - [ ] No existing tests were modified to accommodate new behavior
 - [ ] Linting and formatting checks pass
 
 ## Non-Code Checks
 
-- [ ] Spec acceptance criteria are all addressed (compare spec vs task completion)
+- [ ] Spec acceptance criteria are all addressed, or no spec/task is required for this routine maintenance change
 - [ ] Diff is under 300 lines
-- [ ] No files changed outside the declared scope (compare "Affected Areas" in spec vs files in diff)
-- [ ] Commit messages reference the spec or task file
+- [ ] No files changed outside the declared scope (spec Affected Areas or routine request scope)
+- [ ] Commit messages reference the spec/task file when applicable, or the routine request/affected area
 - [ ] No TODOs or placeholder text in the diff
 - [ ] No new dependencies added without justification
 - [ ] Rollback path is documented below

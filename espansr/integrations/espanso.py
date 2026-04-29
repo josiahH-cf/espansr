@@ -7,7 +7,7 @@ Supports Linux, WSL2 (auto-detects Windows Espanso config path), and macOS.
 import logging
 import shlex
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Optional
 
 import yaml
@@ -277,6 +277,13 @@ def _build_windows_launch_params(executable: str, args: list[str]) -> dict[str, 
     return {"cmd": cmd, "shell": "powershell"}
 
 
+def _resolve_windows_pythonw_path(python_executable: str) -> str:
+    """Return the sibling pythonw.exe path for Windows-style or native paths."""
+    if ":" in python_executable or "\\" in python_executable:
+        return str(PureWindowsPath(python_executable).with_name("pythonw.exe"))
+    return str(Path(python_executable).with_name("pythonw.exe"))
+
+
 def _resolve_windows_gui_command(
     binary: Optional[str],
     python_executable: str,
@@ -284,9 +291,9 @@ def _resolve_windows_gui_command(
 ) -> tuple[str, list[str]]:
     """Prefer pythonw.exe on Windows so GUI launches do not open a console window."""
     extra_args = extra_args or []
-    pythonw = Path(python_executable).with_name("pythonw.exe")
-    if _path_exists_safe(pythonw):
-        return str(pythonw), ["-m", "espansr", "gui", *extra_args]
+    pythonw = _resolve_windows_pythonw_path(python_executable)
+    if _path_exists_safe(Path(pythonw)):
+        return pythonw, ["-m", "espansr", "gui", *extra_args]
     if binary:
         return binary, ["gui", *extra_args]
     return python_executable, ["-m", "espansr", "gui", *extra_args]

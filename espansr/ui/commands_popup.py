@@ -10,8 +10,8 @@ from PyQt6.QtWidgets import (
     QApplication,
     QDialog,
     QFrame,
-    QHeaderView,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -180,9 +180,7 @@ class CommandsPopupDialog(QDialog):
         visible_lines = min(max(len(entries), 4), 12)
         header_height = self._summary_table.horizontalHeader().height()
         row_height = self._summary_table.verticalHeader().defaultSectionSize()
-        self._summary_table.setFixedHeight(
-            header_height + (row_height * visible_lines) + 6
-        )
+        self._summary_table.setFixedHeight(header_height + (row_height * visible_lines) + 6)
         self._summary_table.resizeColumnToContents(0)
 
         self._list.clear()

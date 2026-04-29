@@ -1,13 +1,22 @@
 # Orchestrator Contract
 
-The orchestrator (`/continue`) is the persistent loop that drives the project from Phase 2 through Phase 9. It is not a direct implementation command — it reads state, selects the next action (including bug-routing), dispatches to the appropriate phase command, and advances. At Phase 6 it delegates to `/implement`.
+The orchestrator (`/continue`) is the persistent loop that drives the project from Phase 2 through Phase 9. It is not a
+direct implementation command — it reads state, selects the next action (including bug-routing), dispatches to the
+appropriate phase command, and advances. At Phase 6 it delegates to `/implement`. In stable maintenance mode, routine
+template, prompt, documentation, and small workflow requests can also be handled directly as Phase 8 maintenance without
+creating feature specs or task files.
 
 ## Loop Protocol
 
 1. **Bootstrap**: Read `workflow/STATE.json` + `.specify/constitution.md` + active spec/task file
 2. **Check Claims**: Read `activeClaims` in STATE.json. If another agent has claimed work, skip those tasks and their locked files.
-3. **Check Bug Log**: If `bugs/LOG.md` exists, check for open blocking bugs on the current feature. Blocking bugs should be resolved (via `/bugfix`) before proceeding to the next task; if the bug requires a design change or is outside automated fix scope, escalate per `workflow/FAILURE_ROUTING.md`. Non-blocking bugs remain logged for a later review cycle.
-4. **Claim Work**: Identify the next unclaimed, file-disjoint unit of work. Write a claim into `STATE.json → activeClaims` with `taskFile`, `agent` (session identifier), `claimedAt` (ISO timestamp), and `lockedFiles` (files the task will modify). If no unclaimed work exists, report "nothing to claim" and stop.
+3. **Check Bug Log**: If `bugs/LOG.md` exists, check for open blocking bugs on the current feature. Blocking bugs should
+	be resolved (via `/bugfix`) before proceeding to the next task; if the bug requires a design change or is outside
+	automated fix scope, escalate per `workflow/FAILURE_ROUTING.md`. Non-blocking bugs remain logged for a later review
+	cycle.
+4. **Claim Work**: Identify the next unclaimed, file-disjoint unit of work. Write a claim into `STATE.json → activeClaims`
+	with `taskFile`, `agent` (session identifier), `claimedAt` (ISO timestamp), and `lockedFiles` (files the task will
+	modify). If no unclaimed work exists, report "nothing to claim" and stop.
 5. **Execute**: Run the command for the current phase (see dispatch table below)
 6. **Verify Gate**: Check that the phase gate is satisfied (per PLAYBOOK.md)
 7. **Release & Advance**: Remove the claim from `activeClaims`. Update STATE.json to the next phase.
@@ -17,7 +26,30 @@ The loop continues until `projectPhase` reaches `9-operationalize` and automatio
 
 ### Single-Agent Mode
 
-When only one agent is running, the claim mechanism adds no friction — `activeClaims` will be empty, and the agent simply claims and releases as it goes. The protocol is backward-compatible with single-agent workflows.
+When only one agent is running, the claim mechanism adds no friction — `activeClaims` will be empty, and the agent simply
+claims and releases as it goes. The protocol is backward-compatible with single-agent workflows.
+
+## Stable Maintenance Router
+
+When the user asks for a concrete change while `projectPhase` is `8-maintain` and no active task is set, classify the request before invoking the feature lifecycle:
+
+| Request Type | Route |
+|--------------|-------|
+| Template add/edit/remove, prompt edit, docs update, small workflow wording correction | Routine Phase 8 maintenance; no new spec/task required |
+| New or changed CLI/GUI behavior, integration behavior, broad refactor | Feature lifecycle (Phases 2-7 as needed) |
+| Reproducible defect or regression | Bug Track (`/bug` then `/bugfix`) |
+| Change to policy authority, security posture, approval rules, or governance safeguards | `governance/CHANGE_PROTOCOL.md` |
+
+Routine maintenance execution is:
+
+1. Read `AGENTS.md`, `workflow/STATE.json`, `.specify/constitution.md` if relevant, and all files that govern or are touched by the request.
+2. Inspect git state and active claims; do not include unrelated changes.
+3. Edit only the requested scope and any direct generated counterpart needed for consistency.
+4. Run relevant checks from `workflow/COMMANDS.md`.
+5. If the user requested completion and repository state permits, commit, push, open a PR, and merge using `workflow/CONCURRENCY.md → Automatic Git Workflow`.
+6. If permissions, branch protection, CI, review requirements, or unrelated dirty changes block safe completion, stop at the last safe step and report the remaining manual action.
+
+If classification is uncertain, ask one concise routing question before editing.
 
 ## Session Bootstrap
 
@@ -44,7 +76,9 @@ The orchestrator adapts advisory tone and specificity based on context signals r
 | `standard` | Balanced — brief rationale with suggestions | Default when no signal is available |
 | `detailed` | Thorough — full rationale, alternative options, learning context | New project (Phase 2–3); first feature cycle; user explicitly requests detail |
 
-The profile is **auto-detected** during Phase 2 (Compass) based on project complexity and user responses. It can be **changed at any time** by the user ("switch to concise") or updated by the orchestrator when context shifts (e.g., moving from first feature to fifth feature).
+The profile is **auto-detected** during Phase 2 (Compass) based on project complexity and user responses. It can be
+**changed at any time** by the user ("switch to concise") or updated by the orchestrator when context shifts (e.g., moving
+from first feature to fifth feature).
 
 If `advisoryProfile` is empty, treat as `standard`.
 
@@ -85,7 +119,9 @@ During `/continue` loops, after every 3rd phase transition (or at the start of a
 [ADVISORY] Profile: <profile> | Phase: <phase> | Tip: <context-relevant suggestion>
 ```
 
-This keeps the user aware of the active profile and surfaces one actionable, phase-relevant suggestion. If the user has not changed the profile and context signals suggest a shift, append: `(profile shift available — say "switch to <profile>" to change)`.
+This keeps the user aware of the active profile and surfaces one actionable, phase-relevant suggestion. If the user has
+not changed the profile and context signals suggest a shift, append:
+`(profile shift available — say "switch to <profile>" to change)`.
 
 ## Dispatch Table
 
@@ -98,14 +134,14 @@ This keeps the user aware of the active profile and surfaces one actionable, pha
 | `6-code` | `pre` | `/test pre` |
 | `6-code` | `implement` | Check bug log: resolve open blocking bugs via `/bugfix` first, then `/implement` |
 | `7-test` | `post` | `/test post` |
-| `7a-review-bot` | — | `/review-bot` → auto-merge on PASS; findings file + revert to `6-code` on FAIL |
+| `7a-review-bot` | — | `/review-bot` → merge when safe on PASS, or PR ready/manual step if blocked; findings file + revert to `6-code` on FAIL |
 | `7b-review-ship` | — | `/review-session` → `/cross-review` (manual fallback only) |
-| `8-maintain` | — | `/maintain` |
+| `8-maintain` | — | `/maintain` or direct routine maintenance request |
 | `9-operationalize` | — | `/operationalize` |
 
 ## Feature Cycling
 
-After `7a-review-bot` auto-merges a feature:
+After `7a-review-bot` merges a feature:
 - Check `/tasks/*.md` for remaining incomplete task files
 - If found: set `projectPhase=6-code`, `testMode=pre`, advance to next feature
 - If none: set `projectPhase=8-maintain`
@@ -113,6 +149,7 @@ After `7a-review-bot` auto-merges a feature:
 After `8-maintain` completes its current maintenance pass:
 - If `.github/maintenance-config.yml` does not exist or user requests automation setup: set `projectPhase=9-operationalize`
 - If automation is already configured: remain at `8-maintain` (ongoing)
+- If the user requested a routine maintenance change: remain at `8-maintain` after verification and any safe git/PR completion.
 
 After `7a-review-bot` FAILS:
 - Findings file written to `/reviews/[feature-id]-bot-findings.md`
@@ -131,6 +168,7 @@ The loop MUST stop and report when:
 - Required artifacts are missing and cannot be inferred
 - Tests fail after 2 focused fix attempts
 - Security/privacy/destructive operations need approval
+- Commit/push/PR/merge cannot be completed safely because of missing permissions, branch protection, CI/review requirements, or unrelated dirty worktree changes
 - Context is degraded (>60% utilization — compact or restart)
 
 ## Resume Protocol

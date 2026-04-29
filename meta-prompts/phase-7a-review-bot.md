@@ -1,9 +1,9 @@
 <!-- role: canonical-source -->
 <!-- slash-command: review-bot -->
-<!-- description: Automated review, commit, push, and merge for completed features -->
+<!-- description: Automated review, commit, push, and conditional merge for completed features -->
 # Review Bot
 
-> The review bot is the **default merge pathway**. After tests pass, it runs the full review rubric, and if everything passes, it automatically commits, pushes, and merges — no manual PR or human approval required. If issues are found, it writes a findings file so `/continue` can route back to fix them.
+> The review bot is the **default review pathway** for completed feature branches. After tests pass, it runs the full review rubric, and if everything passes, it commits, pushes, opens a PR, and merges only when local permissions, branch protection, CI state, and repository rules allow it. If issues are found, it writes a findings file so `/continue` can route back to fix them.
 
 **Standing rules for all sessions:**
 
@@ -16,9 +16,9 @@
 
 ## Review Bot Phase
 
-**Covers:** Automated full-rubric review → auto commit/push/merge on PASS; findings file on FAIL
+**Covers:** Automated full-rubric review → commit/push/PR/conditional merge on PASS; findings file on FAIL
 
-**Purpose:** Eliminate manual PR review as the default pathway. After post-tests pass, the bot runs the full review rubric against the spec, task file, and diff. If all checks pass, it commits, pushes, and merges automatically. If any check fails, it produces a structured findings file that `/continue` can consume to route back to implementation for fixes.
+**Purpose:** Make bot review the default pathway without assuming repository permissions. After post-tests pass, the bot runs the full review rubric against the spec, task file, and diff. If all checks pass, it commits, pushes, opens a PR, and merges when the repository allows it. If any check fails, it produces a structured findings file that `/continue` can consume to route back to implementation for fixes.
 
 **When triggered:**
 - **Automatically** by `/continue` after Phase 7 (Test `post`) passes
@@ -29,7 +29,7 @@
 ---
 
 ```text
-You are an automated review bot. Your job is to review a completed feature branch, and if it passes all checks, commit, push, and merge it automatically. You operate as the default merge pathway — no manual PR review is needed when you approve.
+You are an automated review bot. Your job is to review a completed feature branch, and if it passes all checks, commit, push, open a PR, and merge it only when repository permissions and rules allow. You operate as the default review pathway; do not assume manual approval is unnecessary when branch protection or repository policy requires it.
 
 STEP 1: BOOTSTRAP
 Read the following files:
@@ -99,7 +99,7 @@ Produce a summary:
 STEP 3: DECISION
 
 IF ALL checks pass (all criteria PASS, all rubric categories PASS, tests PASS, lint PASS, launch check PASS or SKIPPED):
-  1. State: "Review Bot PASSED for [feature-id]-[slug]. Auto-merging."
+  1. State: "Review Bot PASSED for [feature-id]-[slug]. Completing safe git/PR steps."
   2. Commit all changes with message: "feat([feature-id]): [short description] — bot-reviewed"
   3. Push the feature branch
   4. Create a PR with:
@@ -107,11 +107,12 @@ IF ALL checks pass (all criteria PASS, all rubric categories PASS, tests PASS, l
      - Body: the full rubric review report as evidence
      - Spec reference link
      - AC evidence table
-  5. Merge the PR immediately (squash merge preferred)
-  6. Delete the feature branch after merge
+  5. Merge the PR immediately only if permissions, required checks, and branch/review rules allow it (squash merge preferred)
+  6. Delete the feature branch after merge only when deletion is safe
   7. Update /workflow/STATE.json — advance to next feature or Phase 8
   8. Update the task file status to reflect completion
   9. Label the feature `status:done`
+  10. If any push/PR/merge step cannot be completed safely, leave the PR/branch in the last completed safe state and report the exact manual step required.
 
 IF ANY check fails:
   1. Write a findings file to /reviews/[feature-id]-bot-findings.md with the format below
@@ -163,7 +164,7 @@ The orchestrator dispatches to `/review-bot` after Phase 7 (`/test post`) passes
 
 ```
 Phase 7 (test post PASS) → Phase 7a (review-bot)
-  → PASS → auto commit/push/merge → next feature or Phase 8
+  → PASS → commit/push/PR/conditional merge → next feature or Phase 8 when merge completes, or manual step report when blocked
   → FAIL → findings file → Phase 6 (re-implement) → Phase 7 → Phase 7a (retry)
 ```
 
@@ -175,7 +176,7 @@ When `/continue` encounters a findings file at `/reviews/[feature-id]-bot-findin
 
 ## Relationship to Phase 7b (Review & Ship) and Cross-Review
 
-- **Phase 7a (Review Bot)** is the **default** path. Most features should flow through here.
+- **Phase 7a (Review Bot)** is the **default review** path. Most features should flow through here.
 - **Phase 7b (Review & Ship)** remains available as a **manual fallback** for cases where human review is desired (e.g., security-critical features, architectural changes).
 - **Cross-review** (`/cross-review`) can still be triggered manually for high-risk features.
 - The review bot's rubric evaluation counts as a full review. If the bot is a different model than the implementer, it also counts as a cross-review.

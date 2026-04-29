@@ -17,6 +17,9 @@
 
 Feature ID format: `[issue-id]-[slug]` (example: `42-user-auth`). Spec and task files share the same feature ID.
 
+Routine stable-maintenance requests do not create spec or task artifacts unless the change grows into feature, bugfix,
+or governance work. Their evidence belongs in the final assistant summary, commit message, and PR body.
+
 # File Contracts
 
 Machine-readable behavior starts with stable artifact contracts.
@@ -38,7 +41,7 @@ Machine-readable behavior starts with stable artifact contracts.
 | `/bugs/LOG.md` | Any agent via `/bug` | Bug discovered in any phase | BUG-NNN, description, location, phase, severity, expected, actual, status | Sequential BUG-NNN IDs, status field present |
 | `/.codex/PLANS.md` (instance copy) | Builder agent | Long-run execution only | Milestones, verification, progress | Milestones map to task IDs |
 | `/workflow/STATE.json` | Orchestrator (`/continue`) | Phase transitions and task selection | `projectPhase`, `currentFeatureId`, `currentTaskFile`, `testMode`, `maintenanceLevel`, `advisoryProfile`, `forkActivationLevel`, `activeClaims`, `updatedAt` (`schemaVersion` optional) | Valid JSON and phase/task references resolve; `maintenanceLevel` is one of `light`, `standard`, `deep`, or empty; `advisoryProfile` is one of `concise`, `standard`, `detailed`, or empty; `forkActivationLevel` is one of `light`, `standard`, `active`, or empty; `activeClaims` is an array of objects with `taskFile`, `agent`, `claimedAt`, `lockedFiles` |
-| Review report in PR body | Reviewer agent | Review phase | PASS/FAIL per criterion + scope checks + rubric scores | No unchecked criterion |
+| Review report in PR body | Reviewer agent | Review phase | PASS/FAIL per criterion + scope checks + rubric scores; for routine maintenance, request/diff/check evidence | No unchecked criterion for feature work; routine maintenance identifies request scope and verification |
 | `/reviews/[feature-id]-bot-findings.md` | Review bot agent | Bot review FAIL | Date, feature ID, verdict, rubric scores (6 categories), AC results, issues list with file:line references, re-entry instructions | All issues have category + location + fix description; links to spec, task, and rubric are valid |
 | `workflow/ROUTING.md` | Human maintainer | Agent model changes | Advisory routing hints, branch format, concurrency rules, multi-agent claim protocol | Tables present and non-empty; no enforced model-to-task bindings |
 | `workflow/COMMANDS.md` | Phase 1 initial; Scaffold (Phase 4) finalizes | Phase 1 (initial values), Phase 4 (architecture-refined) | Command table, conventions | No `[PROJECT-SPECIFIC]` after Phase 4 |
@@ -54,6 +57,7 @@ Machine-readable behavior starts with stable artifact contracts.
 - Tasks use `T-1..N` and must cite covered `AC-*` IDs.
 - Decisions referenced by ID in tasks or PR when they affect behavior.
 - `/workflow/STATE.json` `currentTaskFile` must point to an existing `/tasks/[feature-id]-[slug].md`.
+- Routine maintenance PRs may omit feature ID/spec/task links when they identify the request type, touched files, and verification evidence.
 
 ## Invalid State Conditions
 
@@ -63,8 +67,10 @@ Treat as blocking failures:
 - Any criterion has no test mapping.
 - Task status counts do not match task checklist states.
 - Out-of-scope files changed with no decision record.
-- PR missing verification or rollback sections.
+- Feature PR missing verification or rollback sections; routine maintenance PR missing request scope, verification, or rollback notes.
 - `workflow/STATE.json` points to a missing task file or invalid phase identifier.
+
+These invalid-state rules apply to feature work and active orchestrator state. They do not make a focused routine maintenance change invalid simply because no new spec/task was created.
 
 ## Specification Writing
 

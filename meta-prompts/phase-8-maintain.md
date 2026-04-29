@@ -3,9 +3,9 @@
 <!-- description: Ongoing maintenance — documentation, compliance, and standards enforcement -->
 # Phase 8 — Maintain
 
-**Objective:** Maintain project health through documentation, compliance, and standards enforcement. Maintenance is an **ongoing mode**, not a terminal "done" state.
+**Objective:** Maintain project health through focused routine updates, documentation, compliance, and standards enforcement. Maintenance is an **ongoing mode**, not a terminal "done" state.
 
-**Trigger:** Feature shipped (post-Phase 7) or periodic maintenance trigger.
+**Trigger:** Feature shipped (post-Phase 7), periodic maintenance trigger, or a concrete stable-maintenance request from the maintainer.
 
 **Entry commands:**
 - Claude: `/maintain`
@@ -25,7 +25,34 @@ On entry, select a maintenance level and record it in `/workflow/STATE.json` (`m
 
 If no level is specified, default to **Standard**.
 
+## Request Classification
+
+Before editing, classify the request:
+
+| Class | Route |
+|-------|-------|
+| Routine maintenance | Handle directly in Phase 8 |
+| Bugfix | Route through `/bug` or `/bugfix` |
+| Feature work | Route through `/define-features` / `/implement` lifecycle |
+| Governance change | Route through `governance/CHANGE_PROTOCOL.md` |
+
+Routine maintenance includes bundled template additions/edits/removals, prompt edits, documentation updates, and small workflow wording corrections. These do not require new specs or task files when they do not change application behavior, security posture, architecture, or governance safeguards.
+
 ## What Happens
+
+### Routine Stable-Maintenance Request
+
+When the user asks for a focused template, prompt, documentation, or small workflow correction:
+
+1. Read `AGENTS.md`, `workflow/STATE.json`, and the relevant canonical workflow/prompt/docs/template files.
+2. Inspect git state and avoid unrelated changes.
+3. Make only the focused edit requested.
+4. Update direct counterparts when needed for consistency, such as `meta-prompts/` plus `.github/prompts/` copies.
+5. Run relevant checks from `workflow/COMMANDS.md`; for template changes, also validate/import/sync as applicable.
+6. Summarize the diff and verification evidence.
+7. If the user requested completion and permissions/repository state allow it, commit, push, open a PR, and merge according to `workflow/CONCURRENCY.md → Automatic Git Workflow`.
+
+Stop before git completion if unrelated dirty files are present, checks fail, credentials are unavailable, CI or branch protection cannot be satisfied, or human approval is required.
 
 ### Initial Setup (first run after shipping)
 1. Select maintenance level (prompt if not provided)
@@ -57,7 +84,8 @@ Maintenance mode does not block new feature work. A project in maintenance can s
 
 ## Gate
 
-- Maintenance level selected and recorded in `STATE.json`
+- For routine maintenance: request classified, relevant context read, focused diff verified, no unrelated changes included
+- For periodic maintenance: maintenance level selected and recorded in `STATE.json`
 - README exists and reflects current project state
 - CONTRIBUTING exists with branch naming, commit format, PR requirements
 - All items for the selected level completed
@@ -66,15 +94,18 @@ Maintenance mode does not block new feature work. A project in maintenance can s
 
 ## Output
 
+- Focused routine update with verification evidence, when applicable
 - Updated documentation
 - Compliance report (scope depends on level)
 - Bug log entries for any findings
-- `STATE.json` updated: `projectPhase: "8-maintain"`, `maintenanceLevel` set
+- `STATE.json` remains or is updated to `projectPhase: "8-maintain"`; `maintenanceLevel` set for periodic passes
 
 ## Rules
 
 - Do not change application logic — maintenance only
 - Commit maintenance changes separately from feature work
+- Do not create specs/tasks for routine maintenance unless the change becomes feature work
+- Commit/push/PR/merge only when requested and safe under repository state and permissions
 - Maintenance is ongoing — never set project status to a terminal "completed" state
 
 ## See Also
