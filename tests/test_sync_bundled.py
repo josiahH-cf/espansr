@@ -188,15 +188,10 @@ def test_sync_bundled_force_overwrites_invalid_local_json_with_backup(tmp_path):
         exit_code = cmd_sync_bundled(_make_args(apply=True, force=True))
 
     assert exit_code == 0
-    assert (
-        json.loads((templates_dir / "broken.json").read_text(encoding="utf-8"))
-        == bundled_data
-    )
+    assert json.loads((templates_dir / "broken.json").read_text(encoding="utf-8")) == bundled_data
 
     backups = list(
-        (templates_dir / "_versions" / "broken").glob(
-            "invalid-backup-before-bundled-sync-*.json"
-        )
+        (templates_dir / "_versions" / "broken").glob("invalid-backup-before-bundled-sync-*.json")
     )
     assert len(backups) == 1
     assert backups[0].read_text(encoding="utf-8") == "{not-valid-json"
