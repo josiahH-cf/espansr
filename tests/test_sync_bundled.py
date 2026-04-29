@@ -299,13 +299,14 @@ def test_sync_bundled_help_lists_flags(capsys):
     assert "--verbose" in output
 
 
-def test_bundled_meta_template_has_optional_context_variable():
-    """The :meta starter prompt exposes the optional context input field."""
+def test_bundled_meta_template_has_inline_optional_input_block():
+    """The :meta starter prompt ends with an inline optional input area."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "meta.json").read_text(encoding="utf-8"))
 
     variables = {variable["name"]: variable for variable in data.get("variables", [])}
     assert data["trigger"] == ":meta"
-    assert "{{context}}" in data["content"]
-    assert "context" in variables
-    assert variables["context"]["multiline"] is True
+    assert "{{context}}" not in data["content"]
+    assert "context" not in variables
+    assert "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK." in data["content"]
+    assert data["content"].endswith("USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
