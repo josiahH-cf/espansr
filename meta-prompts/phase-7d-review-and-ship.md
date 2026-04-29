@@ -3,7 +3,7 @@
 <!-- description: Batch review and PR creation for completed features -->
 # Review & Ship
 
-> Reviews use the scoring rubric at `.github/REVIEW_RUBRIC.md` (6 categories: Correctness, Test Coverage, Security, Performance, Style, Documentation). PR creation uses the extended template with sections (Spec Reference, AC Evidence, Agent & Branch, Review Checklist, Bug Log). The advisory routing hints in `workflow/ROUTING.md` suggest assigning a different model for review than the one that implemented (not enforced). See `AGENTS.md → Workflow Phases`.
+> Reviews use the scoring rubric at `.github/REVIEW_RUBRIC.md` (6 categories: Correctness, Test Coverage, Security, Performance, Style, Documentation). PR creation uses the extended template with sections for type, scope, verification, and rollback; feature PRs include spec/task evidence, while routine maintenance PRs include request/check evidence. The advisory routing hints in `workflow/ROUTING.md` suggest assigning a different model for review than the one that implemented (not enforced). See `AGENTS.md → Workflow Phases`.
 
 **Standing rules for all sessions:**
 
@@ -73,7 +73,7 @@ Read the full diff of the feature branch against the target branch.
 Produce the pull request:
 - Title: concise imperative summary
 - What: one sentence
-- Why: link to /specs/[feature-id]-[slug].md
+- Why: link to /specs/[feature-id]-[slug].md for feature work, or summarize the routine maintenance request
 - Changes: logical changes grouped by area
 - Testing checklist: check each box honestly — if any cannot be checked, leave it unchecked and explain
 - Non-code checklist: same — honest checks only
@@ -101,7 +101,7 @@ State: "All features that passed review have open PRs. Remaining items need Buil
 **Output at session end:** A summary of all features reviewed and their disposition.
 
 **Human Review (not a meta-prompt):**
-Human review is human-driven. The PR's non-code checklist is designed for a reviewer who does not need to read code. The checklist covers: scope match against spec, diff size, file scope, secrets, test evidence, commit messages, cross-review status, and rollback path. Estimated time: 10 minutes per PR. On approval: merge, delete the branch, label the issue `status:done`.
+Human review is human-driven. The PR's non-code checklist is designed for a reviewer who does not need to read code. The checklist covers: scope match against spec or routine request, diff size, file scope, secrets, test/check evidence, commit messages, cross-review status, and rollback path. Estimated time: 10 minutes per PR. On approval: merge, delete the branch, label the issue `status:done` when an issue exists.
 
 ---
 

@@ -83,3 +83,39 @@ Worktrees share the host machine. Prevent resource conflicts:
 - **Databases**: Use separate database files per worktree (e.g., `.trees/<name>/dev.db`)
 - **Docker**: Use unique container names per worktree
 - **Temp files**: Use worktree-specific temp directories
+
+## Automatic Git Workflow
+
+Automatic git completion is conditional. Agents may commit, push, open PRs, and merge only when the user asked for completion and the repository state makes the step safe.
+
+### Branching
+
+- Feature work uses the branch naming rules in `workflow/ROUTING.md`.
+- Routine maintenance may use `agent/docs-short-description`, `agent/chore-short-description`, or `agent/feat-short-description` for bundled template additions.
+- Direct commits to `main` are only appropriate when the maintainer explicitly requested that mode and branch protections/repository policy allow it.
+
+### Commit Cadence
+
+- Commit only files that belong to the current task/request.
+- Do not include unrelated dirty worktree changes.
+- Use a conventional, scoped message where practical, for example `docs: clarify maintenance workflow`, `chore: update prompt wording`, or `feat: add :trigger bundled template`.
+- If a spec/task exists, reference it. If this is routine maintenance, reference the user request or affected area instead.
+
+### Push, PR, and Merge
+
+Proceed in this order when safe:
+
+1. Push the current branch.
+2. Open a PR using `.github/PULL_REQUEST_TEMPLATE.md`.
+3. Wait for required local/remote checks when they are available.
+4. Merge only if repository permissions and review/branch-protection rules allow it.
+5. Delete the branch only after merge succeeds and no local work would be lost.
+
+Stop and report the remaining manual step if credentials are unavailable, the remote rejects the push, CI cannot be
+observed, required human review exists, branch protection blocks merge, or unrelated changes are present.
+
+### Merge on Completion
+
+After a merge, update local base branch state and run the relevant verification command from `workflow/COMMANDS.md`
+when practical. If post-merge verification cannot run locally, record the reason and rely on remote CI only when its
+status is visible.

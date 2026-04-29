@@ -6,11 +6,11 @@ Map policy requirements to validation signals.
 
 | Requirement | Signal | Source |
 |---|---|---|
-| Spec has Feature ID and AC IDs | Pattern check in spec file | `/specs/*.md` |
-| Task file maps tasks to AC IDs | Pattern check in task file | `/tasks/*.md` |
-| Task status counts are coherent | Status/checklist consistency check | `/tasks/*.md` |
-| Every spec has matching task file | Filename/feature-id parity check | `/specs/*.md`, `/tasks/*.md` |
-| PR includes verification and rollback | PR template checklist complete | `/.github/PULL_REQUEST_TEMPLATE.md` |
+| Feature spec has Feature ID and AC IDs | Pattern check in spec file | `/specs/*.md` |
+| Feature task file maps tasks to AC IDs | Pattern check in task file | `/tasks/*.md` |
+| Feature task status counts are coherent | Status/checklist consistency check | `/tasks/*.md` |
+| Every active feature spec has matching task file | Filename/feature-id parity check | `/specs/*.md`, `/tasks/*.md` |
+| PR includes verification and rollback | PR template checklist complete; routine maintenance may use request/check evidence instead of spec/task evidence | `/.github/PULL_REQUEST_TEMPLATE.md` |
 | Constitution placeholders resolved after Compass | Fail if `[PROJECT-SPECIFIC]` remains in constitution for phase >= `3-define-features` | `/.specify/constitution.md`, `/workflow/STATE.json` |
 | AGENTS placeholders resolved after Scaffold Project | Fail if `[PROJECT-SPECIFIC]` remains in AGENTS for phase >= `5-fine-tune-plan` | `/AGENTS.md`, `/workflow/STATE.json` |
 | Build, lint, test commands are defined | No placeholder commands in AGENTS and no default CI command markers by phase >= `5-fine-tune-plan` | `/AGENTS.md`, `/.github/workflows/copilot-setup-steps.yml`, `/workflow/STATE.json` |
@@ -20,6 +20,7 @@ Map policy requirements to validation signals.
 | Modular workflow files present | ROUTING.md, COMMANDS.md, BOUNDARIES.md, FILE_CONTRACTS.md exist | `/workflow/` |
 | Workflow lint runs without error | `scripts/workflow-lint.sh` exits 0 and produces `workflow/LINT_REPORT.md` | `/workflow/LINT_REPORT.md` |
 | Lint contract present | `workflow/LINT_CONTRACT.md` exists with four check categories | `/workflow/LINT_CONTRACT.md` |
+| Routine maintenance is scoped | Diff only touches requested files and direct counterparts; final/PR evidence names request type and checks | Assistant summary / PR body |
 
 ## CI Mapping
 
@@ -31,3 +32,4 @@ Map policy requirements to validation signals.
 
 - Policy test failure means process drift, not optional warning.
 - Fix policy or artifact shape before continuing feature delivery.
+- Routine maintenance without new specs/tasks is valid when it stays inside the stable-maintenance scope defined in `AGENTS.md` and `workflow/PLAYBOOK.md`.
