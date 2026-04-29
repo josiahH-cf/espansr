@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      id-token: write
       contents: read
       pull-requests: write
       issues: write
@@ -29,12 +30,10 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            Review this PR against the project's acceptance criteria.
+            Review this PR against the project's acceptance criteria or routine maintenance request.
             Read AGENTS.md for project conventions.
             Read workflow/BOUNDARIES.md for behavioral rules.
-            For each acceptance criterion, verify:
-            1. A corresponding test exists
-            2. The test is meaningful (not a tautology)
-            3. The implementation matches the spec
-            Output a PASS/FAIL verdict per criterion.
+            For feature work, verify each acceptance criterion has meaningful tests and matches the spec.
+            For routine maintenance, verify the diff matches the request scope and includes relevant check evidence.
+            Output a PASS/FAIL verdict with blockers first.
           claude_args: "--max-turns 5"
