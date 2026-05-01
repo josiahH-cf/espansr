@@ -614,13 +614,34 @@ def _restart_espanso_wsl2() -> None:
         print("Note: Run 'espanso restart' from Windows PowerShell to reload triggers.")
 
 
+def _find_espanso_executable() -> str | None:
+    """Return the path to the Espanso executable, or None if not found.
+
+    Checks (in order):
+    1. PATH (shutil.which)
+    2. Known Windows per-user install location: %LOCALAPPDATA%/Programs/Espanso/espanso.cmd
+    """
+    import os
+    import shutil
+
+    if found := shutil.which("espanso"):
+        return found
+
+    localappdata = os.environ.get("LOCALAPPDATA", "")
+    if localappdata:
+        candidate = Path(localappdata) / "Programs" / "Espanso" / "espanso.cmd"
+        if candidate.exists():
+            return str(candidate)
+
+    return None
+
+
 def restart_espanso() -> bool:
     """Restart the Espanso daemon.
 
     Returns:
         True if restart was successful, False otherwise.
     """
-    import shutil
     import subprocess
 
     if is_wsl2():
@@ -634,9 +655,15 @@ def restart_espanso() -> bool:
         except Exception:
             pass
 
-    if shutil.which("espanso"):
+    exe = _find_espanso_executable()
+    if exe:
         try:
-            subprocess.run(["espanso", "restart"], capture_output=True, timeout=10)
+            kwargs: dict = {"capture_output": True, "timeout": 15}
+            if is_windows():
+                import subprocess as _sp
+
+                kwargs["creationflags"] = _sp.CREATE_NO_WINDOW
+            subprocess.run([exe, "restart"], **kwargs)
             return True
         except Exception:
             pass

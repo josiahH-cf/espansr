@@ -144,6 +144,7 @@ def test_sync_produces_valid_yaml_v2_match_file(tmp_path):
             return_value=match_dir,
         ),
         patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True),
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
 
@@ -188,6 +189,7 @@ def test_sync_form_variable_uses_espanso_v2_placeholder(tmp_path):
             return_value=match_dir,
         ),
         patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True),
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
         from espansr.integrations.espanso import sync_to_espanso
@@ -220,6 +222,7 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
             return_value=match_dir,
         ),
         patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True),
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
         from espansr.integrations.espanso import sync_to_espanso
@@ -297,6 +300,53 @@ def test_sync_does_not_restart_espanso_on_linux(tmp_path):
 
     assert result is True
     mock_restart.assert_not_called()
+
+
+def test_find_espanso_uses_path_when_available(tmp_path):
+    """_find_espanso_executable() returns the PATH result when espanso is on PATH."""
+    from espansr.integrations.espanso import _find_espanso_executable
+
+    fake_exe = str(tmp_path / "espanso")
+    with patch("shutil.which", return_value=fake_exe):
+        result = _find_espanso_executable()
+
+    assert result == fake_exe
+
+
+def test_find_espanso_falls_back_to_localappdata(tmp_path):
+    """_find_espanso_executable() falls back to %LOCALAPPDATA%/Programs/Espanso when not on PATH."""
+    import os
+
+    from espansr.integrations.espanso import _find_espanso_executable
+
+    # Create the expected file structure under tmp_path
+    espanso_dir = tmp_path / "Programs" / "Espanso"
+    espanso_dir.mkdir(parents=True)
+    espanso_cmd = espanso_dir / "espanso.cmd"
+    espanso_cmd.write_text("@echo off")
+
+    with (
+        patch("shutil.which", return_value=None),
+        patch.dict(os.environ, {"LOCALAPPDATA": str(tmp_path)}),
+    ):
+        result = _find_espanso_executable()
+
+    assert result == str(espanso_cmd)
+
+
+def test_find_espanso_returns_none_when_not_found(tmp_path):
+    """_find_espanso_executable() returns None when Espanso is not on PATH or LOCALAPPDATA."""
+    import os
+
+    from espansr.integrations.espanso import _find_espanso_executable
+
+    with (
+        patch("shutil.which", return_value=None),
+        patch.dict(os.environ, {"LOCALAPPDATA": str(tmp_path)}),
+    ):
+        result = _find_espanso_executable()
+
+    assert result is None
 
 
 # ─── WSL2 path detection tests ───────────────────────────────────────────────
@@ -477,6 +527,7 @@ def test_sync_cleans_old_automatr_files(tmp_path):
             "espansr.integrations.espanso._get_candidate_paths",
             return_value=[tmp_path / "espanso"],
         ),
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True),
     ):
         mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
         from espansr.integrations.espanso import sync_to_espanso
