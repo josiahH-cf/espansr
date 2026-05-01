@@ -241,6 +241,64 @@ def test_sync_returns_false_when_no_match_dir():
     assert result is False
 
 
+def test_sync_restarts_espanso_on_windows_native(tmp_path):
+    """sync_to_espanso() calls restart_espanso() on Windows native after writing YAML."""
+    from espansr.core.templates import TemplateManager
+
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "greet.json").write_text(
+        json.dumps({"name": "Greet", "content": "Hello!", "trigger": ":greet"})
+    )
+
+    match_dir = tmp_path / "espanso" / "match"
+    match_dir.mkdir(parents=True)
+
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.is_wsl2", return_value=False),
+        patch("espansr.integrations.espanso.is_windows", return_value=True),
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True) as mock_restart,
+    ):
+        mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
+        from espansr.integrations.espanso import sync_to_espanso
+
+        result = sync_to_espanso()
+
+    assert result is True
+    mock_restart.assert_called_once()
+
+
+def test_sync_does_not_restart_espanso_on_linux(tmp_path):
+    """sync_to_espanso() does not restart Espanso on Linux (relies on file watcher)."""
+    from espansr.core.templates import TemplateManager
+
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "greet.json").write_text(
+        json.dumps({"name": "Greet", "content": "Hello!", "trigger": ":greet"})
+    )
+
+    match_dir = tmp_path / "espanso" / "match"
+    match_dir.mkdir(parents=True)
+
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.is_wsl2", return_value=False),
+        patch("espansr.integrations.espanso.is_windows", return_value=False),
+        patch("espansr.integrations.espanso.restart_espanso") as mock_restart,
+    ):
+        mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
+        from espansr.integrations.espanso import sync_to_espanso
+
+        result = sync_to_espanso()
+
+    assert result is True
+    mock_restart.assert_not_called()
+
+
 # ─── WSL2 path detection tests ───────────────────────────────────────────────
 
 
@@ -363,13 +421,25 @@ def test_get_config_dir_triggers_migration(tmp_path):
     import os
 
     from espansr.core.config import get_config_dir
+    from espansr.core.platform import get_platform_config
 
     old_dir = tmp_path / "automatr-espanso"
     old_dir.mkdir()
     (old_dir / "config.json").write_text('{"migrated": true}')
 
-    with patch.dict(os.environ, {"XDG_CONFIG_HOME": str(tmp_path)}):
-        config_dir = get_config_dir()
+    # get_platform_config() is lru_cached and reads platform-specific env vars.
+    # On Windows it reads APPDATA; on Linux/WSL2 it reads XDG_CONFIG_HOME.
+    # Patch the correct variable for this platform and clear the cache so the
+    # patched value is picked up, then restore afterwards.
+    import platform as _platform_mod
+
+    env_key = "APPDATA" if _platform_mod.system() == "Windows" else "XDG_CONFIG_HOME"
+    get_platform_config.cache_clear()
+    try:
+        with patch.dict(os.environ, {env_key: str(tmp_path)}):
+            config_dir = get_config_dir()
+    finally:
+        get_platform_config.cache_clear()
 
     assert config_dir == tmp_path / "espansr"
     assert not old_dir.exists()

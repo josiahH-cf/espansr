@@ -564,9 +564,16 @@ def sync_to_espanso(
         _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
 
-        # WSL2: file writes via /mnt/c/ don't trigger Windows file watcher — restart Espanso
+        # Restart Espanso so new triggers become active immediately.
+        # WSL2: file writes via /mnt/c/ bypass the Windows file watcher — use PowerShell restart.
+        # Windows native: file-watcher polling is unreliable for newly added template files.
         if is_wsl2():
             _restart_espanso_wsl2()
+        elif is_windows():
+            if restart_espanso():
+                print("Espanso restarted successfully.")
+            else:
+                print("Note: Run 'espanso restart' from a new PowerShell window to reload triggers.")
 
         return True
     except Exception as e:
