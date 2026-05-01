@@ -85,23 +85,12 @@ The project lifecycle follows 9 phases plus a parallel Bug Track.
 ### Orchestrator
 - **Entry:** Claude: `/continue` · Copilot: `phase-10-continue.prompt.md`
 - `/continue` is the **orchestrator**, not a direct implementation command. It reads `workflow/STATE.json`, determines the next action (including bug-routing), dispatches to the appropriate phase command, and auto-advances through phases 2–9. At Phase 6 it delegates to `/implement`.
-- See `workflow/ORCHESTRATOR.md` for the loop contract
 
 ## Quick Reference
 
 | Section | Reference |
 |---------|-----------|
-| Advisory routing hints, branches, concurrency | `workflow/ROUTING.md` |
-| Advisory tier model and context-sensitive guidance | `workflow/ORCHESTRATOR.md → Context-Sensitive Advisory Guidance` |
-| Concurrency safety, drift detection | `workflow/CONCURRENCY.md` |
+| Advisory routing hints, branches | `workflow/ROUTING.md` |
 | Build/test/lint commands, code conventions | `workflow/COMMANDS.md` |
-| Boundaries (best practices, review points, avoid patterns), bug tracking | `workflow/BOUNDARIES.md` |
-| Lifecycle phases (detailed) | `workflow/LIFECYCLE.md` |
-| Phase execution gates | `workflow/PLAYBOOK.md` |
-| Artifact ownership & contracts | `workflow/FILE_CONTRACTS.md` |
-| Failure routing & escalation | `workflow/FAILURE_ROUTING.md` |
-| Autonomous loop contract | `workflow/ORCHESTRATOR.md` |
-| Policy changes | `governance/CHANGE_PROTOCOL.md` |
-| Policy validation | `governance/POLICY_TESTS.md` |
-| File registry | `governance/REGISTRY.md` |
 | Orchestrator state | `workflow/STATE.json` |
+| Archived lifecycle/governance docs | `workflow/archive/`, `meta-prompts/archive/` |

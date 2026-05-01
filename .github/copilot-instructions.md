@@ -5,8 +5,6 @@
 ## Project Standards
 
 - Read `/AGENTS.md` before starting any task
-- Follow `/workflow/PLAYBOOK.md` for phase gates and `/workflow/FILE_CONTRACTS.md` for artifact requirements
-- Follow `/workflow/FAILURE_ROUTING.md` when blocked
 - Classify each request first: routine maintenance, feature work, bugfix, or governance change
 
 ## Completions
@@ -51,6 +49,5 @@ See `workflow/ORCHESTRATOR.md` for the full loop contract.
 
 - Agent routing and branch naming: `workflow/ROUTING.md`
 - Build/test/lint commands: `workflow/COMMANDS.md`
-- Behavioral boundaries: `workflow/BOUNDARIES.md`
-- Concurrency safety: `workflow/CONCURRENCY.md`
 - Orchestrator loop: `workflow/ORCHESTRATOR.md`
+- Archived lifecycle/governance docs: `workflow/archive/`, `meta-prompts/archive/`

@@ -55,6 +55,11 @@ _MANAGED_FILES = ("espansr.yml", LAUNCHER_FILE_NAME, COMMANDS_POPUP_FILE_NAME)
 _OLD_MANAGED_FILES = ("automatr-espanso.yml", "automatr-launcher.yml")
 
 
+# ── Section 1: YAML generation ────────────────────────────────────────────────
+# Converts template data into Espanso v2 match YAML.
+# _convert_to_espanso_placeholders, _build_espanso_var_entry
+
+
 def _convert_to_espanso_placeholders(content: str, variables) -> str:
     """Convert template placeholders {{var}} to Espanso form placeholders.
 
@@ -99,6 +104,12 @@ def _build_espanso_var_entry(var) -> dict:
     if var.default:
         var_entry["params"]["default"] = var.default
     return var_entry
+
+
+# ── Section 2: Config discovery ──────────────────────────────────────────────
+# Locates the Espanso config and match directories across Windows/WSL2/Linux.
+# _get_candidate_paths, get_espanso_config_dir, clean_stale_espanso_files,
+# get_match_dir
 
 
 def _get_candidate_paths() -> list[Path]:
@@ -261,6 +272,14 @@ def get_match_dir() -> Optional[Path]:
     match_dir = config_dir / "match"
     match_dir.mkdir(parents=True, exist_ok=True)
     return match_dir
+
+
+# ── Section 3: Launcher / shell execution ─────────────────────────────────────
+# Generates the Espanso YAML trigger that launches the espansr GUI, handling
+# Windows (.pyw), WSL2 (bash -c), and POSIX differences.
+# _quote_powershell, _build_windows_launch_params, _resolve_windows_pythonw_path,
+# _resolve_windows_gui_command, _resolve_gui_command, _build_posix_launch_params,
+# _generate_gui_trigger_file, generate_launcher_file, generate_commands_popup_file
 
 
 def _quote_powershell(value: str) -> str:
@@ -471,6 +490,11 @@ def _sync_bundled_templates_before_espanso(
     return True
 
 
+# ── Section 4: Sync entrypoint ────────────────────────────────────────────────
+# Orchestrates bundled-template drift application, YAML writing, and
+# Espanso daemon restart. Public API: sync_to_espanso().
+
+
 def sync_to_espanso(
     dry_run: bool = False,
     update_bundled: bool = False,
@@ -579,6 +603,12 @@ def sync_to_espanso(
     except Exception as e:
         print(f"Error writing Espanso file: {e}")
         return False
+
+
+# ── Section 5: Process management ────────────────────────────────────────────
+# Restarts the Espanso daemon after sync. Handles WSL2 (via powershell.exe)
+# and Windows native (probes %LOCALAPPDATA%\Programs\Espanso\espanso.cmd).
+# _restart_espanso_wsl2, _find_espanso_executable, restart_espanso
 
 
 def _restart_espanso_wsl2() -> None:
