@@ -1,7 +1,8 @@
 """Shared test fixtures for espansr test suite."""
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from espansr.core.platform import get_platform, get_platform_config
 

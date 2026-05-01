@@ -7,6 +7,7 @@ git remote so templates stay consistent across machines.
 import logging
 import os
 import shutil
+import stat
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -17,6 +18,12 @@ from espansr.core.config import ConfigManager, get_config_manager
 logger = logging.getLogger(__name__)
 
 _GITIGNORE_ENTRIES = ["_versions/", "_meta/"]
+
+
+def _force_remove_readonly(func, path, exc_info):
+    """Clear read-only bit and retry — handles git object files on Windows."""
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 
 class GitNotFoundError(Exception):
@@ -147,7 +154,7 @@ class RemoteManager:
 
         git_dir = self.templates_dir / ".git"
         if git_dir.exists():
-            shutil.rmtree(git_dir)
+            shutil.rmtree(git_dir, onerror=_force_remove_readonly)
 
         gitignore = self.templates_dir / ".gitignore"
         if gitignore.exists():

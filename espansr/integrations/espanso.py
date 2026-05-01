@@ -597,7 +597,9 @@ def sync_to_espanso(
             if restart_espanso():
                 print("Espanso restarted successfully.")
             else:
-                print("Note: Run 'espanso restart' from a new PowerShell window to reload triggers.")
+                print(
+                    "Note: Run 'espanso restart' from a new PowerShell window to reload triggers."
+                )
 
         return True
     except Exception as e:

@@ -13,7 +13,7 @@ class TestVersionStrings:
     """Version must be consistent in all canonical locations."""
 
     def test_pyproject_version(self):
-        text = (ROOT / "pyproject.toml").read_text()
+        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         assert f'version = "{__version__}"' in text
 
     def test_init_version(self):
@@ -37,11 +37,11 @@ class TestChangelog:
         assert (ROOT / "CHANGELOG.md").is_file()
 
     def test_changelog_has_version_heading(self):
-        text = (ROOT / "CHANGELOG.md").read_text()
+        text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
         assert f"## [{__version__}]" in text or f"## {__version__}" in text
 
     def test_changelog_mentions_key_features(self):
-        text = (ROOT / "CHANGELOG.md").read_text().lower()
+        text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8").lower()
         for keyword in ["template import", "variable editor", "validation", "launcher"]:
             assert keyword in text, f"CHANGELOG missing mention of: {keyword}"
 
@@ -50,19 +50,19 @@ class TestReadme:
     """README.md must contain CI badge, platform matrix, and dev commands."""
 
     def test_readme_ci_badge(self):
-        text = (ROOT / "README.md").read_text()
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
         assert "actions/workflows/ci.yml" in text or "badge" in text.lower()
 
     def test_readme_platform_matrix(self):
-        text = (ROOT / "README.md").read_text()
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
         for platform in ["Linux", "macOS", "Windows", "WSL2"]:
             assert platform in text, f"README missing platform: {platform}"
 
     def test_readme_links_to_dev_guide(self):
-        text = (ROOT / "README.md").read_text()
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
         assert "docs/DEVELOPMENT.md" in text, "README missing link to Development Guide"
 
     def test_dev_guide_has_commands(self):
-        text = (ROOT / "docs" / "DEVELOPMENT.md").read_text()
+        text = (ROOT / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
         for cmd in ["pytest", "ruff check", "black"]:
             assert cmd in text, f"DEVELOPMENT.md missing dev command: {cmd}"
