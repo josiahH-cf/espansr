@@ -15,8 +15,15 @@ These values are set with initial values during Phase 1 (initialization) and fin
 | Lint | `ruff check .` |
 | Format | `black .` |
 | Type-check | `not applicable` |
-| Lint (workflow) | `scripts/workflow-lint.sh` |
+| Lint (workflow) | `scripts/workflow-lint.sh` — **skip on Windows; requires Bash (unavailable in the native Windows terminal environment)** |
 | Review Bot | `/review-bot` (Claude) or `phase-7a-review-bot.prompt.md` (Copilot) |
+
+## Environment Notes
+
+- **Host OS:** Windows (native PowerShell terminal, not WSL)
+- **Bash scripts:** `scripts/*.sh` cannot be run in this environment — skip them and note the reason in verification output
+- **Python/pytest/ruff/black:** run via `.venv/Scripts/python.exe` or the activated venv; all pass normally
+- **Git:** available natively via PowerShell
 
 ## Project Snapshot
 
