@@ -56,6 +56,11 @@ class MainWindow(QMainWindow):
         self._sync_btn.clicked.connect(self._do_sync)
         toolbar.addWidget(self._sync_btn)
 
+        self._pull_latest_btn = QPushButton("Pull Latest")
+        self._pull_latest_btn.setToolTip("Pull latest templates from remote and refresh Espanso")
+        self._pull_latest_btn.clicked.connect(self._do_pull_latest)
+        toolbar.addWidget(self._pull_latest_btn)
+
         self._import_btn = QPushButton("Import")
         self._import_btn.setToolTip("Import template(s) from a JSON file (Ctrl+I)")
         self._import_btn.clicked.connect(self._do_import)
@@ -281,6 +286,60 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"Sync error: {e}", 5000)
         finally:
             self._sync_btn.setEnabled(True)
+            self._update_espanso_status()
+
+    def _do_pull_latest(self) -> None:
+        """Pull remote templates, refresh the browser, and regenerate Espanso output."""
+        if self._editor.has_unsaved_changes():
+            self.statusBar().showMessage(
+                "Pull latest blocked: save or discard current changes first",
+                8000,
+            )
+            return
+
+        self._pull_latest_btn.setEnabled(False)
+        try:
+            from espansr.core.remote import (
+                GitNotFoundError,
+                RemoteConflictError,
+                RemoteError,
+                RemoteManager,
+            )
+            from espansr.integrations.espanso import sync_to_espanso
+
+            outcome = RemoteManager().pull_with_result()
+            self._browser.refresh()
+
+            if not sync_to_espanso(update_bundled=False):
+                self.statusBar().showMessage(
+                    "Pulled remote templates, but Espanso sync failed",
+                    8000,
+                )
+                return
+
+            if outcome.status == "changed":
+                count = len(outcome.changed_files)
+                suffix = "file" if count == 1 else "files"
+                self.statusBar().showMessage(
+                    f"Pulled latest templates ({count} {suffix} updated)",
+                    5000,
+                )
+            elif outcome.status == "up_to_date":
+                self.statusBar().showMessage("Templates already up to date", 5000)
+            elif outcome.status == "empty_remote":
+                self.statusBar().showMessage("Remote is empty; nothing to pull", 8000)
+            else:
+                self.statusBar().showMessage(f"Pull latest completed: {outcome.status}", 5000)
+        except RemoteConflictError as e:
+            self.statusBar().showMessage(f"Pull latest conflict: {e}", 0)
+        except GitNotFoundError as e:
+            self.statusBar().showMessage(str(e), 8000)
+        except RemoteError as e:
+            self.statusBar().showMessage(f"Pull latest failed: {e}", 8000)
+        except Exception as e:
+            self.statusBar().showMessage(f"Pull latest error: {e}", 8000)
+        finally:
+            self._pull_latest_btn.setEnabled(True)
             self._update_espanso_status()
 
     def _toggle_auto_sync(self, state: int) -> None:

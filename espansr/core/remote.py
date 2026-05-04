@@ -9,6 +9,7 @@ import os
 import shutil
 import stat
 import subprocess
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -36,6 +37,15 @@ class RemoteConflictError(Exception):
 
 class RemoteError(Exception):
     """General remote operation error."""
+
+
+@dataclass(frozen=True)
+class RemotePullOutcome:
+    """Detailed result from pulling remote templates."""
+
+    status: str  # "changed", "up_to_date", or "empty_remote"
+    changed_files: List[str] = field(default_factory=list)
+    branch: Optional[str] = None
 
 
 class RemoteManager:
@@ -189,10 +199,52 @@ class RemoteManager:
                 return branch
         return None
 
+    def _current_head(self) -> Optional[str]:
+        """Return the current HEAD SHA, or None when there is no local commit."""
+        result = self._git("rev-parse", "HEAD", check=False)
+        if result.returncode != 0:
+            return None
+        head = result.stdout.strip()
+        return head or None
+
+    def _changed_files_between(
+        self,
+        before_head: Optional[str],
+        after_head: Optional[str],
+    ) -> List[str]:
+        """Return files changed between two revisions, preserving git order."""
+        if after_head is None:
+            return []
+
+        if before_head is None:
+            result = self._git("ls-tree", "-r", "--name-only", after_head, check=False)
+        elif before_head != after_head:
+            result = self._git("diff", "--name-only", before_head, after_head, "--", check=False)
+        else:
+            return []
+
+        if result.returncode != 0:
+            return []
+
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
     def pull(self) -> bool:
         """Pull latest templates from remote (rebase strategy).
 
         Returns True on success.
+        Raises RemoteConflictError on merge conflicts.
+        Raises RemoteError on other failures.
+        """
+        self.pull_with_result()
+        return True
+
+    def pull_with_result(self) -> RemotePullOutcome:
+        """Pull latest templates from remote and report whether files changed.
+
+        Returns:
+            RemotePullOutcome with status "changed", "up_to_date", or
+            "empty_remote".
+
         Raises RemoteConflictError on merge conflicts.
         Raises RemoteError on other failures.
         """
@@ -211,11 +263,11 @@ class RemoteManager:
         remote_branch = self._detect_remote_branch()
         if remote_branch is None:
             # Remote is empty, nothing to pull
-            return True
+            return RemotePullOutcome(status="empty_remote")
 
         # Check if we have local commits
-        local_ref = self._git("rev-parse", "HEAD", check=False)
-        if local_ref.returncode != 0:
+        before_head = self._current_head()
+        if before_head is None:
             # No local commits — just checkout the remote branch
             self._git(
                 "checkout",
@@ -250,11 +302,21 @@ class RemoteManager:
                     )
                 raise RemoteError(f"Pull failed: {stderr or stdout}")
 
+        after_head = self._current_head()
+        changed_files = self._changed_files_between(before_head, after_head)
+
         # Update timestamp
         config = self._config_manager.config
         config.remote.last_pull = datetime.now().isoformat()
         self._config_manager.save(config)
-        return True
+
+        if changed_files:
+            return RemotePullOutcome(
+                status="changed",
+                changed_files=changed_files,
+                branch=remote_branch,
+            )
+        return RemotePullOutcome(status="up_to_date", branch=remote_branch)
 
     def pull_templates(self, template_files: List[str]) -> bool:
         """Selectively fetch specific template files from remote.

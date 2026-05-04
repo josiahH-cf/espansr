@@ -2,6 +2,7 @@
 
 Commands:
   sync    — Sync templates to Espanso match file
+  sync-down — Pull latest remote templates and refresh Espanso output
   status  — Show Espanso process status and config path
   list    — Show templates with triggers
   setup   — Run post-install setup
@@ -797,6 +798,62 @@ def cmd_pull(args) -> int:
         return 1
 
 
+def _print_sync_down_pull_outcome(outcome) -> None:
+    """Print a human-readable summary for a sync-down pull outcome."""
+    if outcome.status == "changed":
+        count = len(outcome.changed_files)
+        suffix = "file" if count == 1 else "files"
+        print(ok(f"Pulled latest templates from remote ({count} {suffix} updated)."))
+        if outcome.changed_files:
+            changed = ", ".join(outcome.changed_files[:5])
+            extra = len(outcome.changed_files) - 5
+            if extra > 0:
+                changed = f"{changed}, +{extra} more"
+            print(f"Updated: {changed}")
+        return
+
+    if outcome.status == "up_to_date":
+        print(ok("Templates are already up to date."))
+        return
+
+    if outcome.status == "empty_remote":
+        print(warn("Remote is empty; nothing to pull."))
+        return
+
+    print(warn(f"Pull completed with status: {outcome.status}"))
+
+
+def cmd_sync_down(args) -> int:
+    """Pull remote templates and refresh Espanso output."""
+    from espansr.core.remote import (
+        GitNotFoundError,
+        RemoteConflictError,
+        RemoteError,
+        RemoteManager,
+    )
+    from espansr.integrations.espanso import sync_to_espanso
+
+    try:
+        outcome = RemoteManager().pull_with_result()
+        _print_sync_down_pull_outcome(outcome)
+
+        if sync_to_espanso(update_bundled=False):
+            print(ok("Espanso output refreshed."))
+            return 0
+
+        print(fail("Pulled remote templates, but Espanso sync failed."))
+        return 1
+    except RemoteConflictError as exc:
+        print(fail(f"Conflict: {exc}"))
+        return 1
+    except GitNotFoundError as exc:
+        print(fail(str(exc)))
+        return 1
+    except RemoteError as exc:
+        print(fail(f"Sync down failed: {exc}"))
+        return 1
+
+
 def cmd_push(args) -> int:
     """Push templates to remote."""
     from espansr.core.remote import GitNotFoundError, RemoteError, RemoteManager
@@ -837,6 +894,10 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Preview what would be synced without writing any files",
+    )
+    subparsers.add_parser(
+        "sync-down",
+        help="Pull latest remote templates and refresh Espanso output",
     )
     bundled_sync_parser = subparsers.add_parser(
         "sync-bundled",
@@ -977,6 +1038,7 @@ def main() -> None:
         "completions": cmd_completions,
         "remote": cmd_remote,
         "pull": cmd_pull,
+        "sync-down": cmd_sync_down,
         "push": cmd_push,
     }
 

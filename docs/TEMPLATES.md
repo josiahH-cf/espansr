@@ -77,6 +77,27 @@ saved live templates so the edited trigger is reflected immediately. Clicking
 as part of that sync, bundled-template refresh is skipped for that run so the
 just-saved local edit is not overwritten before Espanso sees it.
 
+## Remote Sync-Down
+
+If you keep templates in a GitHub-hosted template repository, configure the
+remote once on each machine:
+
+```bash
+espansr remote set git@github.com:USER/REPO.git
+```
+
+After that, run one command to pull the latest templates and refresh Espanso:
+
+```bash
+espansr sync-down
+```
+
+The GUI also provides **Pull Latest** for the same pull-and-refresh workflow.
+It reports when templates changed, when they are already up to date, when the
+remote cannot be reached, or when a conflict needs manual Git resolution. This
+sync-down path uses the platform-specific template store listed above and the
+existing Espanso path detection for Windows, Linux, and WSL2.
+
 ## Bundled Drift Reconciliation
 
 Normal `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed

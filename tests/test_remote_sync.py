@@ -193,6 +193,64 @@ class TestPullAll:
         assert data["trigger"] == ":sig"
 
 
+class TestPullOutcome:
+    """RemoteManager.pull_with_result() reports pull status details."""
+
+    def test_pull_with_result_reports_changed_files(self, tmp_path, bare_remote):
+        """Pulling remote changes returns changed status and filenames."""
+        from espansr.core.config import Config, ConfigManager
+        from espansr.core.remote import RemoteManager
+
+        clone_a = tmp_path / "clone_a"
+        clone_a.mkdir()
+        mgr_a = ConfigManager(config_path=tmp_path / "config_a.json")
+        mgr_a.save(Config())
+        rm_a = RemoteManager(templates_dir=clone_a, config_manager=mgr_a)
+        rm_a.set_remote(str(bare_remote))
+
+        sample = {"name": "Sig", "content": "Best regards", "trigger": ":sig"}
+        (clone_a / "sig.json").write_text(json.dumps(sample, indent=2))
+        rm_a.push()
+
+        clone_b = tmp_path / "clone_b"
+        clone_b.mkdir()
+        mgr_b = ConfigManager(config_path=tmp_path / "config_b.json")
+        mgr_b.save(Config())
+        rm_b = RemoteManager(templates_dir=clone_b, config_manager=mgr_b)
+        rm_b.set_remote(str(bare_remote))
+
+        outcome = rm_b.pull_with_result()
+
+        assert outcome.status == "changed"
+        assert "sig.json" in outcome.changed_files
+
+    def test_pull_with_result_reports_up_to_date(self, tmp_path, bare_remote):
+        """A second pull with no remote changes reports up_to_date."""
+        from espansr.core.config import Config, ConfigManager
+        from espansr.core.remote import RemoteManager
+
+        clone_a = tmp_path / "clone_a"
+        clone_a.mkdir()
+        mgr_a = ConfigManager(config_path=tmp_path / "config_a.json")
+        mgr_a.save(Config())
+        rm_a = RemoteManager(templates_dir=clone_a, config_manager=mgr_a)
+        rm_a.set_remote(str(bare_remote))
+        rm_a.push()
+
+        clone_b = tmp_path / "clone_b"
+        clone_b.mkdir()
+        mgr_b = ConfigManager(config_path=tmp_path / "config_b.json")
+        mgr_b.save(Config())
+        rm_b = RemoteManager(templates_dir=clone_b, config_manager=mgr_b)
+        rm_b.set_remote(str(bare_remote))
+
+        rm_b.pull_with_result()
+        outcome = rm_b.pull_with_result()
+
+        assert outcome.status == "up_to_date"
+        assert outcome.changed_files == []
+
+
 # ---------------------------------------------------------------------------
 # AC-5: Pull specific templates
 # ---------------------------------------------------------------------------
@@ -484,3 +542,77 @@ class TestGitignore:
         content = gitignore.read_text()
         assert "_versions/" in content
         assert "_meta/" in content
+
+
+# ---------------------------------------------------------------------------
+# Explicit sync-down CLI
+# ---------------------------------------------------------------------------
+
+
+class TestSyncDownCli:
+    """espansr sync-down reports pull outcome and refreshes Espanso output."""
+
+    def test_sync_down_success_feedback(self, capsys):
+        """sync-down prints updated-file feedback and runs Espanso sync."""
+        from espansr.__main__ import cmd_sync_down
+        from espansr.core.remote import RemotePullOutcome
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+        ):
+            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
+                status="changed",
+                changed_files=["sig.json"],
+                branch="main",
+            )
+
+            code = cmd_sync_down(None)
+
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "Pulled latest templates" in out
+        assert "sig.json" in out
+        assert "Espanso output refreshed" in out
+        mock_sync.assert_called_once_with(update_bundled=False)
+
+    def test_sync_down_up_to_date_feedback(self, capsys):
+        """sync-down reports already-up-to-date state clearly."""
+        from espansr.__main__ import cmd_sync_down
+        from espansr.core.remote import RemotePullOutcome
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
+        ):
+            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
+                status="up_to_date",
+                branch="main",
+            )
+
+            code = cmd_sync_down(None)
+
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "already up to date" in out.lower()
+
+    def test_sync_down_remote_failure_feedback(self, capsys):
+        """sync-down prints fetch/reachability failures and exits non-zero."""
+        from espansr.__main__ import cmd_sync_down
+        from espansr.core.remote import RemoteError
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso") as mock_sync,
+        ):
+            mock_manager_cls.return_value.pull_with_result.side_effect = RemoteError(
+                "Failed to fetch from remote: network unavailable"
+            )
+
+            code = cmd_sync_down(None)
+
+        out = capsys.readouterr().out
+        assert code == 1
+        assert "Sync down failed" in out
+        assert "network unavailable" in out
+        mock_sync.assert_not_called()

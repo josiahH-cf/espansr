@@ -45,6 +45,32 @@ Behavior:
 - Invalid local JSON files are reported and skipped by default.
 - `--apply --force` backs up invalid bundled-matching local JSON into `_versions/` and then replaces it.
 
+### `espansr sync-down`
+
+Pull the latest template repository state from the configured Git remote, then
+refresh Espanso output from the pulled templates.
+
+```bash
+espansr remote set git@github.com:USER/REPO.git
+espansr sync-down
+```
+
+`sync-down` reports whether files were updated, templates were already up to
+date, the remote was empty, Git was unavailable, or the remote could not be
+reached. It uses the existing Git credentials on the machine and does not store
+or prompt for authentication.
+
+For lower-level remote operations:
+
+```bash
+espansr remote status
+espansr pull
+espansr push
+```
+
+Use `sync-down` for the one-action pull-and-refresh workflow. Use `push` only
+for the existing authoring workflow that publishes local template changes.
+
 ### `espansr status`
 
 Show Espanso connection status and config path.

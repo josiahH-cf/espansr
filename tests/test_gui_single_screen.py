@@ -80,6 +80,17 @@ def test_sync_button_in_toolbar(qtbot, tmp_path):
     assert "Sync" in sync_btn.text()
 
 
+def test_pull_latest_button_in_toolbar(qtbot, tmp_path):
+    """MainWindow has a 'Pull Latest' QPushButton in the toolbar."""
+    from PyQt6.QtWidgets import QPushButton
+
+    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+
+    pull_btn = window._pull_latest_btn
+    assert isinstance(pull_btn, QPushButton)
+    assert "Pull" in pull_btn.text()
+
+
 def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
     """Clicking 'Sync Now' calls sync_to_espanso() exactly once."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
@@ -91,6 +102,52 @@ def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
         window._sync_btn.click()
 
     mock_sync.assert_called_once_with(update_bundled=True)
+
+
+def test_pull_latest_calls_remote_and_sync(qtbot, tmp_path):
+    """Clicking 'Pull Latest' pulls remote templates and refreshes Espanso output."""
+    from espansr.core.remote import RemotePullOutcome
+
+    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+
+    with (
+        patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+        patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+        patch.object(window._browser, "refresh"),
+        patch.object(window, "_update_espanso_status"),
+    ):
+        mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
+            status="changed",
+            changed_files=["sig.json"],
+            branch="main",
+        )
+
+        window._pull_latest_btn.click()
+
+    mock_manager_cls.return_value.pull_with_result.assert_called_once()
+    mock_sync.assert_called_once_with(update_bundled=False)
+    assert "pulled latest" in window.statusBar().currentMessage().lower()
+
+
+def test_pull_latest_failure_shows_status_message(qtbot, tmp_path):
+    """A pull failure shows a clear status-bar error."""
+    from espansr.core.remote import RemoteError
+
+    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+
+    with (
+        patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+        patch.object(window, "_update_espanso_status"),
+    ):
+        mock_manager_cls.return_value.pull_with_result.side_effect = RemoteError(
+            "Failed to fetch from remote: network unavailable"
+        )
+
+        window._pull_latest_btn.click()
+
+    msg = window.statusBar().currentMessage().lower()
+    assert "pull latest failed" in msg
+    assert "network unavailable" in msg
 
 
 def test_save_triggers_sync_without_bundled_update(qtbot, tmp_path):
