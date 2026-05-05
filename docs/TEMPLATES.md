@@ -24,7 +24,7 @@ template files:
 - `:coms` opens a lightweight popup showing your available triggers
 
 The bundled starter set also includes reusable AI workflow prompts such as
-`:goal`, `:meta`, `:verify`, and `:project-scaffold`. Use `:espansr` for the
+`:goal`, `:meta`, `:hide-ai`, `:verify`, and `:project-scaffold`. Use `:espansr` for the
 current quick reference list.
 
 ## Schema
