@@ -221,7 +221,7 @@ class MainWindow(QMainWindow):
             trigger = self._config.espanso.launcher_trigger or ":aopen"
             self.statusBar().showMessage(
                 f"Tip: Type '{trigger}' anywhere after syncing to launch this GUI. "
-                f"Run 'espansr sync' or use install.sh to enable it.",
+                f"Run 'espansr publish' or use install.sh to enable it.",
                 8000,
             )
 

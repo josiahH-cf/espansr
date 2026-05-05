@@ -474,15 +474,20 @@ def _sync_bundled_templates_before_espanso(
     if report.errors:
         return False
 
-    if result.copied or result.updated or result.forced:
+    if result.copied or result.updated or result.migrated or result.retired or result.forced:
         prefix = "[dry-run] " if dry_run else ""
         print(
             f"{prefix}Bundled sync: "
-            f"{result.copied} copied, {result.updated} updated, {result.forced} forced"
+            f"{result.copied} copied, {result.updated} updated, "
+            f"{result.migrated} migrated, {result.retired} retired, "
+            f"{result.forced} forced"
         )
 
     if result.skipped_invalid:
-        print("Bundled sync skipped invalid local template(s); run sync-bundled --apply --force:")
+        print(
+            "Bundled sync skipped invalid local template(s); "
+            "run 'espansr starters --apply --force':"
+        )
         for entry in result.skipped_invalid:
             print(f"  {entry.filename}")
         return False

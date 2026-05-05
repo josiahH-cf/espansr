@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "projectPhase": "8-maintain",
-  "currentFeatureId": "",
-  "currentTaskFile": "",
+  "projectPhase": "7a-review-bot",
+  "currentFeatureId": "7-template-workflow-sync-redesign",
+  "currentTaskFile": "tasks/7-template-workflow-sync-redesign.md",
   "testMode": "post",
   "maintenanceLevel": "standard",
   "automationLevel": "light",
@@ -23,8 +23,13 @@
       "spec": "specs/5-remote-template-sync.md",
       "task": "tasks/5-remote-template-sync.md",
       "status": "done"
+    },
+    "7-template-workflow-sync-redesign": {
+      "spec": "specs/7-template-workflow-sync-redesign.md",
+      "task": "tasks/7-template-workflow-sync-redesign.md",
+      "status": "implemented"
     }
   },
   "activeClaims": [],
-  "updatedAt": "2026-03-28T13:00:00-05:00"
+  "updatedAt": "2026-05-05T23:59:00-05:00"
 }

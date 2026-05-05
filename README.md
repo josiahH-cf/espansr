@@ -43,7 +43,7 @@ environments, separate PATH updates, and separate shell integration. Use
 
 ```bash
 espansr gui      # 🖥️  open the visual editor
-espansr sync     # ⌨️  or sync from the command line
+espansr publish  # ⌨️  or publish from the command line
 ```
 
 **That's it.** You're managing Espanso templates. 🎉
@@ -64,7 +64,7 @@ espansr sync     # ⌨️  or sync from the command line
 ```
 
 1. **Create/edit** templates in the GUI or as JSON files
-2. **Sync** to Espanso with one click or `espansr sync`
+2. **Publish** to Espanso with one click or `espansr publish`
 3. **Type** your triggers anywhere — Espanso expands them instantly
 
 ---
@@ -79,19 +79,24 @@ espansr works both ways — pick what fits your workflow:
 - Edit triggers, content, and variables visually
 - Live YAML preview — see exactly what Espanso will get
 - Dark/light mode with system auto-detection
-- One-click sync
+- One-click publish
 
 ### CLI
 
 ```bash
-espansr sync             # sync templates → Espanso
-espansr sync --dry-run   # preview without writing
+espansr publish          # publish local templates → Espanso
+espansr publish --dry-run # preview without writing
+espansr pull             # pull remote templates, then refresh Espanso
+espansr push             # push local templates to the remote
+espansr starters         # inspect bundled starter drift
 espansr list             # list templates and triggers
 espansr status           # check Espanso connection
 espansr validate         # check templates for issues
 espansr import file.json # import external templates
 espansr doctor           # run diagnostic checks
 ```
+
+Legacy aliases remain available: `espansr sync` for `publish`, `espansr sync-down` for `pull`, and `espansr sync-bundled` for `starters`.
 
 📖 **Full CLI reference:** [docs/CLI.md](docs/CLI.md)
 
@@ -128,7 +133,7 @@ espansr wsl-install-espanso
 | Feature | Description |
 |---------|-------------|
 | 🎨 Template editor | Edit triggers, content, and variables with live preview |
-| 🔄 One-click sync | Push templates to Espanso instantly |
+| 🔄 One-click publish | Write templates to Espanso instantly |
 | ✅ Validation | Catches issues before they reach Espanso |
 | 📥 Import | Bring in external template files or directories |
 | 🩺 Doctor | Diagnostic health checks for your setup |

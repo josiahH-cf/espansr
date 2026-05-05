@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 import yaml
 
+INLINE_CONTEXT_FOOTER = "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n"
+
 
 def _make_args(**kwargs):
     """Create a simple argparse-like namespace object."""
@@ -141,6 +143,129 @@ def test_sync_bundled_apply_copies_and_updates_with_backup(tmp_path):
     assert version_data["template_data"]["content"] == "local edit"
 
 
+def test_sync_bundled_apply_migrates_renamed_starter_with_backup(tmp_path, capsys):
+    """AC-6: old starter files are backed up before a renamed starter replaces them."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    plain_bundled = {
+        "name": "Plain-English Explanation",
+        "content": "new bundled prompt",
+        "trigger": ":plain",
+        "replaces": [":simplify"],
+    }
+    old_local = {
+        "name": "Explain Like I Am Five",
+        "content": "local edited prompt",
+        "trigger": ":simplify",
+    }
+    _write_json(bundled_dir / "plain.json", plain_bundled)
+    _write_json(templates_dir / "dumb.json", old_local)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "migrated" in output.lower()
+    assert json.loads((templates_dir / "plain.json").read_text(encoding="utf-8")) == plain_bundled
+    assert not (templates_dir / "dumb.json").exists()
+
+    version_path = templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json"
+    assert version_path.exists()
+    version_data = json.loads(version_path.read_text(encoding="utf-8"))
+    assert version_data["template_data"] == old_local
+
+
+def test_sync_bundled_apply_retires_old_starter_when_new_exists(tmp_path, capsys):
+    """AC-6: old renamed starters are backed up and removed even after migration."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    plain_bundled = {
+        "name": "Plain-English Explanation",
+        "content": "new bundled prompt",
+        "trigger": ":plain",
+        "replaces": [":simplify"],
+    }
+    old_local = {
+        "name": "Explain Like I Am Five",
+        "content": "old bundled prompt still present",
+        "trigger": ":simplify",
+    }
+    _write_json(bundled_dir / "plain.json", plain_bundled)
+    _write_json(templates_dir / "plain.json", plain_bundled)
+    _write_json(templates_dir / "dumb.json", old_local)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "retired" in output.lower()
+    assert json.loads((templates_dir / "plain.json").read_text(encoding="utf-8")) == plain_bundled
+    assert not (templates_dir / "dumb.json").exists()
+
+    version_path = templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json"
+    assert version_path.exists()
+    version_data = json.loads(version_path.read_text(encoding="utf-8"))
+    assert version_data["template_data"] == old_local
+
+
+def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
+    """AC-6: renamed starter migration stops before overwriting a custom trigger."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "plain.json",
+        {
+            "name": "Plain-English Explanation",
+            "content": "new bundled prompt",
+            "trigger": ":plain",
+            "replaces": [":simplify"],
+        },
+    )
+    _write_json(
+        templates_dir / "dumb.json",
+        {"name": "Explain Like I Am Five", "content": "old bundled prompt", "trigger": ":simplify"},
+    )
+    _write_json(
+        templates_dir / "custom_plain.json",
+        {"name": "Custom Plain", "content": "mine", "trigger": ":plain"},
+    )
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 2
+    assert "trigger collision" in output.lower()
+    assert not (templates_dir / "plain.json").exists()
+    assert (templates_dir / "dumb.json").exists()
+
+
 def test_sync_bundled_apply_skips_invalid_local_json(tmp_path, capsys):
     """Apply mode refuses to overwrite invalid local bundled files automatically."""
     from espansr.__main__ import cmd_sync_bundled
@@ -274,6 +399,92 @@ def test_sync_to_espanso_can_apply_bundled_updates_before_writing(tmp_path):
     assert matches[":verify"] == "Review and fix issues as you find them."
 
 
+def test_sync_to_espanso_blocks_renamed_trigger_collision_before_writing(tmp_path):
+    """AC-6: sync stops before writing Espanso YAML when starter migration collides."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    match_dir = tmp_path / "espanso" / "match"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+    match_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "plain.json",
+        {
+            "name": "Plain-English Explanation",
+            "content": "new bundled prompt",
+            "trigger": ":plain",
+            "replaces": [":simplify"],
+        },
+    )
+    _write_json(
+        templates_dir / "dumb.json",
+        {"name": "Explain Like I Am Five", "content": "old bundled prompt", "trigger": ":simplify"},
+    )
+    _write_json(
+        templates_dir / "custom_plain.json",
+        {"name": "Custom Plain", "content": "mine", "trigger": ":plain"},
+    )
+
+    manager = TemplateManager(templates_dir=templates_dir)
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager", return_value=manager),
+        patch("espansr.integrations.espanso.validate_all", return_value=[]),
+        patch("espansr.integrations.espanso.clean_stale_espanso_files"),
+    ):
+        result = sync_to_espanso(
+            update_bundled=True,
+            templates_dir=templates_dir,
+            bundled_dir=bundled_dir,
+        )
+
+    assert result is False
+    assert not (match_dir / "espansr.yml").exists()
+    assert not (templates_dir / "plain.json").exists()
+    assert (templates_dir / "dumb.json").exists()
+
+
+def test_sync_to_espanso_invalid_bundled_hint_uses_starters_command(tmp_path, capsys):
+    """Runtime bundled-sync failure guidance points to the primary starters lane."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    match_dir = tmp_path / "espanso" / "match"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+    match_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "broken.json",
+        {"name": "Broken", "content": "bundled", "trigger": ":broken"},
+    )
+    (templates_dir / "broken.json").write_text("{not-valid-json", encoding="utf-8")
+
+    manager = TemplateManager(templates_dir=templates_dir)
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager", return_value=manager),
+        patch("espansr.integrations.espanso.validate_all", return_value=[]),
+        patch("espansr.integrations.espanso.clean_stale_espanso_files"),
+    ):
+        result = sync_to_espanso(
+            update_bundled=True,
+            templates_dir=templates_dir,
+            bundled_dir=bundled_dir,
+        )
+
+    output = capsys.readouterr().out
+    assert result is False
+    assert "espansr starters --apply --force" in output
+    assert "sync-bundled --apply --force" not in output
+
+
 def test_sync_bundled_help_lists_flags(capsys):
     """sync-bundled exposes the expected check/apply CLI flags."""
     import sys
@@ -304,20 +515,170 @@ def test_bundled_meta_template_has_inline_optional_input_block():
     assert "{{context}}" not in data["content"]
     assert "context" not in variables
     assert "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK." in data["content"]
-    assert data["content"].endswith("USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+    assert data["content"].endswith(INLINE_CONTEXT_FOOTER)
 
 
-def test_bundled_project_scaffold_template_contract():
-    """The project scaffold prompt preserves its core alignment guardrails."""
+def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
+    """Context-bearing starter prompts use inline notes instead of popup variables."""
     repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads(
-        (repo_root / "templates" / "project_scaffold.json").read_text(encoding="utf-8")
-    )
+    templates_dir = repo_root / "templates"
+    expected = {
+        "goal_clarifier.json": (),
+        "meta.json": ("context",),
+        "project_init.json": (),
+        "feature_new.json": ("feature_idea",),
+        "feature_next.json": ("direction",),
+    }
+
+    for filename, removed_variable_names in expected.items():
+        data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
+        content = data["content"]
+        variables = {variable["name"]: variable for variable in data.get("variables", [])}
+
+        assert content.endswith(INLINE_CONTEXT_FOOTER), filename
+        assert "USER CONTEXT, PROJECT IDEA" not in content
+        for variable_name in removed_variable_names:
+            assert f"{{{{{variable_name}}}}}" not in content
+            assert variable_name not in variables
+
+
+def test_bundled_prompt_taxonomy_and_renamed_triggers():
+    """AC-2: bundled prompts expose the redesigned trigger taxonomy and metadata."""
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates"
+    expected = {
+        "plain.json": (
+            ":plain",
+            "explanation",
+            "plain-summary",
+            [":gaps", ":verify"],
+            [":simplify"],
+        ),
+        "gaps.json": (
+            ":gaps",
+            "analysis",
+            "gap-review",
+            [":principles", ":reality", ":verify"],
+            [":critique"],
+        ),
+        "principles.json": (
+            ":principles",
+            "analysis",
+            "first-principles",
+            [":reality", ":verify"],
+            [":fp"],
+        ),
+        "project_init.json": (
+            ":project-init",
+            "workflow",
+            "project-setup",
+            [":feature-init", ":feature-new"],
+            [":project-scaffold"],
+        ),
+        "feature_init.json": (
+            ":feature-init",
+            "workflow",
+            "feature-loop-setup",
+            [":feature-new"],
+            [":scaffold-feature-process"],
+        ),
+        "feature_new.json": (
+            ":feature-new",
+            "workflow",
+            "feature-scope",
+            [":feature-next"],
+            [":feature-scope"],
+        ),
+        "feature_next.json": (
+            ":feature-next",
+            "workflow",
+            "feature-advance",
+            [":verify", ":docs-qa", ":save"],
+            [":continue"],
+        ),
+        "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
+        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save", ":verify"], [":qa"]),
+    }
+    retired_files = {
+        "dumb.json",
+        "explain_gaps_comprehensively_pt_2.json",
+        "first_principles_analysis.json",
+        "project_scaffold.json",
+        "scaffold_feature_process.json",
+        "feature_scope.json",
+        "feature_continue.json",
+        "hide_ai.json",
+        "qa_docs.json",
+    }
+
+    existing_files = {path.name for path in templates_dir.glob("*.json")}
+    assert retired_files.isdisjoint(existing_files)
+
+    for path in templates_dir.glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert data["description"]
+        assert data["category"]
+        assert data["stage"]
+        assert "next_triggers" in data
+
+    for filename, (trigger, category, stage, next_triggers, replaces) in expected.items():
+        data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
+
+        assert data["trigger"] == trigger
+        assert data["description"]
+        assert data["category"] == category
+        assert data["stage"] == stage
+        assert data["next_triggers"] == next_triggers
+        assert data["replaces"] == replaces
+
+
+def test_bundled_quick_help_uses_renamed_triggers():
+    """AC-3: :espansr quick help lists the new prompt chain without stale triggers."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    for trigger in [
+        ":plain",
+        ":explain",
+        ":gaps",
+        ":principles",
+        ":verify",
+        ":sanitize",
+        ":goal",
+        ":project-init",
+        ":feature-init",
+        ":feature-new",
+        ":feature-next",
+        ":docs-qa",
+        ":save",
+    ]:
+        assert trigger in content
+
+    for stale_trigger in [
+        ":simplify",
+        ":critique",
+        ":fp",
+        ":hide-ai",
+        ":qa",
+        ":project-scaffold",
+        ":scaffold-feature-process",
+        ":feature-scope",
+        ":continue",
+    ]:
+        assert stale_trigger not in content
+
+
+def test_bundled_project_init_template_contract():
+    """The project init prompt preserves its core alignment guardrails."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "project_init.json").read_text(encoding="utf-8"))
 
     content = data["content"]
     variables = {variable["name"]: variable for variable in data.get("variables", [])}
 
-    assert data["trigger"] == ":project-scaffold"
+    assert data["trigger"] == ":project-init"
+    assert data["replaces"] == [":project-scaffold"]
     assert variables == {}
     assert "Ask only one round of questions before producing the scaffold" in content
     assert "mark it as `[TBD]`" in content
@@ -328,5 +689,5 @@ def test_bundled_project_scaffold_template_contract():
     assert ".github/copilot-instructions.md" in content
     assert "docs/architecture.md" in content
     assert "docs/interfaces.md" in content
-    assert "USER CONTEXT, PROJECT IDEA, OR NOTES BELOW. IGNORE IF BLANK." in content
-    assert content.endswith("USER CONTEXT, PROJECT IDEA, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+    assert "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK." in content
+    assert content.endswith(INLINE_CONTEXT_FOOTER)

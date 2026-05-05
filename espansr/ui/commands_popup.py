@@ -61,11 +61,21 @@ class CommandRowWidget(QFrame):
         self._name_label.setFont(name_font)
         header.addWidget(self._name_label, 1)
 
+        self._workflow_label = QLabel(entry.workflow_label)
+        self._workflow_label.setMargin(4)
+        self._workflow_label.setFrameShape(QFrame.Shape.Box)
+        header.addWidget(self._workflow_label, 0)
+
         layout.addLayout(header)
 
         self._description_label = QLabel(entry.description)
         self._description_label.setWordWrap(True)
         layout.addWidget(self._description_label)
+
+        self._next_label = QLabel(entry.next_label)
+        self._next_label.setWordWrap(True)
+        self._next_label.setVisible(bool(entry.next_label))
+        layout.addWidget(self._next_label)
 
         preview_title = QLabel("Output Preview")
         preview_font = QFont(preview_title.font())
@@ -129,8 +139,8 @@ class CommandsPopupDialog(QDialog):
         layout.addWidget(self._summary_label)
 
         self._summary_table = QTableWidget()
-        self._summary_table.setColumnCount(2)
-        self._summary_table.setHorizontalHeaderLabels(["Command", "Description"])
+        self._summary_table.setColumnCount(3)
+        self._summary_table.setHorizontalHeaderLabels(["Command", "Workflow", "Description"])
         self._summary_table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._summary_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._summary_table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
@@ -145,7 +155,10 @@ class CommandsPopupDialog(QDialog):
             0, QHeaderView.ResizeMode.ResizeToContents
         )
         self._summary_table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeMode.Stretch
+            1, QHeaderView.ResizeMode.ResizeToContents
+        )
+        self._summary_table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeMode.Stretch
         )
         self._summary_table.cellClicked.connect(self._scroll_to_entry_row)
         layout.addWidget(self._summary_table)
@@ -172,10 +185,13 @@ class CommandsPopupDialog(QDialog):
             trigger_item = QTableWidgetItem(entry.trigger)
             trigger_item.setFont(fixed_font)
             trigger_item.setToolTip(entry.trigger)
+            workflow_item = QTableWidgetItem(entry.workflow_label)
+            workflow_item.setToolTip(entry.next_label or entry.workflow_label)
             description_item = QTableWidgetItem(entry.description)
             description_item.setToolTip(entry.description)
             self._summary_table.setItem(row, 0, trigger_item)
-            self._summary_table.setItem(row, 1, description_item)
+            self._summary_table.setItem(row, 1, workflow_item)
+            self._summary_table.setItem(row, 2, description_item)
 
         visible_lines = min(max(len(entries), 4), 12)
         header_height = self._summary_table.horizontalHeader().height()

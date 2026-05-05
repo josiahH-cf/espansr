@@ -7,6 +7,7 @@ Tests use temporary git repos to verify real git operations.
 import json
 import os
 import subprocess
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -616,3 +617,74 @@ class TestSyncDownCli:
         assert "Sync down failed" in out
         assert "network unavailable" in out
         mock_sync.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Redesigned public command lanes
+# ---------------------------------------------------------------------------
+
+
+class TestSyncCommandLanes:
+    """Public CLI lanes separate publish, pull, push, starters, and remote setup."""
+
+    def test_publish_runs_local_espanso_publish(self):
+        """publish writes local templates to Espanso without invoking remote pull."""
+        import argparse
+
+        from espansr.__main__ import cmd_publish
+
+        with (
+            patch("espansr.__main__._get_bundled_dir", return_value=Path("bundled")),
+            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+            patch("espansr.__main__._auto_pull_if_configured") as mock_auto_pull,
+        ):
+            code = cmd_publish(argparse.Namespace(dry_run=True))
+
+        assert code == 0
+        mock_auto_pull.assert_not_called()
+        mock_sync.assert_called_once_with(
+            dry_run=True,
+            update_bundled=True,
+            bundled_dir=Path("bundled"),
+        )
+
+    def test_pull_refreshes_espanso_output_after_remote_pull(self, capsys):
+        """pull is the daily remote-down lane: pull remote, then refresh Espanso."""
+        import argparse
+
+        from espansr.__main__ import cmd_pull
+        from espansr.core.remote import RemotePullOutcome
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+        ):
+            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
+                status="changed",
+                changed_files=["sig.json"],
+                branch="main",
+            )
+
+            code = cmd_pull(argparse.Namespace(template=None))
+
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "Pulled latest templates" in out
+        assert "Espanso output refreshed" in out
+        mock_sync.assert_called_once_with(update_bundled=False)
+
+    def test_top_level_help_lists_source_of_truth_lanes(self, capsys):
+        """Top-level help exposes the redesigned public command lanes."""
+        import sys
+
+        from espansr.__main__ import main
+
+        with patch.object(sys, "argv", ["espansr", "--help"]):
+            try:
+                main()
+            except SystemExit:
+                pass
+
+        output = capsys.readouterr().out
+        for command in ["publish", "pull", "push", "starters", "remote"]:
+            assert command in output
