@@ -305,3 +305,28 @@ def test_bundled_meta_template_has_inline_optional_input_block():
     assert "context" not in variables
     assert "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK." in data["content"]
     assert data["content"].endswith("USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+
+
+def test_bundled_project_scaffold_template_contract():
+    """The project scaffold prompt preserves its core alignment guardrails."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads(
+        (repo_root / "templates" / "project_scaffold.json").read_text(encoding="utf-8")
+    )
+
+    content = data["content"]
+    variables = {variable["name"]: variable for variable in data.get("variables", [])}
+
+    assert data["trigger"] == ":project-scaffold"
+    assert variables == {}
+    assert "Ask only one round of questions before producing the scaffold" in content
+    assert "mark it as `[TBD]`" in content
+    assert "read the current file first" in content
+    assert "merge carefully instead of replacing blindly" in content
+    assert "AGENTS.md" in content
+    assert "CLAUDE.md" in content
+    assert ".github/copilot-instructions.md" in content
+    assert "docs/architecture.md" in content
+    assert "docs/interfaces.md" in content
+    assert "USER CONTEXT, PROJECT IDEA, OR NOTES BELOW. IGNORE IF BLANK." in content
+    assert content.endswith("USER CONTEXT, PROJECT IDEA, OR NOTES BELOW. IGNORE IF BLANK.\n\n")

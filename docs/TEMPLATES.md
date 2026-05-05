@@ -23,6 +23,10 @@ template files:
 - `:aopen` launches the full espansr editor
 - `:coms` opens a lightweight popup showing your available triggers
 
+The bundled starter set also includes reusable AI workflow prompts such as
+`:goal`, `:meta`, `:verify`, and `:project-scaffold`. Use `:espansr` for the
+current quick reference list.
+
 ## Schema
 
 Each template is a JSON file with the following fields:
