@@ -29,7 +29,5 @@ def _mock_restart_espanso():
     restart_espanso itself; this autouse fixture is a no-op for those tests
     and stops accidental real Espanso invocations in every other test.
     """
-    with patch(
-        "espansr.integrations.espanso.restart_espanso", return_value=True
-    ):
+    with patch("espansr.integrations.espanso.restart_espanso", return_value=True):
         yield
