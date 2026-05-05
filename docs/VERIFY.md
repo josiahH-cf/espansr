@@ -80,21 +80,21 @@ espansr validate
 
 **Expected:** `All templates valid.` (or specific warnings/errors if templates have issues).
 
-## 6. Sync to Espanso
+## 6. Publish to Espanso
 
 ```bash
-espansr sync
+espansr publish
 ```
 
-**Expected:** Prints sync summary. If Espanso is installed, the match file is updated.
+**Expected:** Prints publish/sync summary. If Espanso is installed, the match file is updated.
 
-## 6a. Sync Dry-Run
+## 6a. Publish Dry-Run
 
 ```bash
-espansr sync --dry-run
+espansr publish --dry-run
 ```
 
-**Expected:** Prints what would be synced without writing any files.
+**Expected:** Prints what would be published without writing any files.
 
 ## 7. Import a Template
 

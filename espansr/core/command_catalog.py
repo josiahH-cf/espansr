@@ -30,6 +30,22 @@ class CommandCatalogEntry:
     description: str
     preview: str
     source: str
+    category: str = ""
+    stage: str = ""
+    next_triggers: tuple[str, ...] = ()
+
+    @property
+    def workflow_label(self) -> str:
+        """Return the compact category/stage label shown in discovery surfaces."""
+        parts = [part for part in (self.category, self.stage) if part]
+        return " / ".join(parts) if parts else self.source
+
+    @property
+    def next_label(self) -> str:
+        """Return a compact next-step hint for workflow-aware prompts."""
+        if not self.next_triggers:
+            return ""
+        return "Next: " + ", ".join(self.next_triggers)
 
 
 def _placeholder_value(var) -> str:
@@ -74,6 +90,9 @@ def _iter_template_entries(template_manager: TemplateManager) -> Iterable[Comman
             description=(template.description or template.name).strip(),
             preview=_build_template_preview(template),
             source="template",
+            category=template.category or "template",
+            stage=template.stage or "custom",
+            next_triggers=tuple(template.next_triggers or []),
         )
 
 
@@ -87,6 +106,8 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             description=LAUNCHER_DESCRIPTION,
             preview=LAUNCHER_PREVIEW,
             source="system",
+            category="system",
+            stage="launcher",
         ),
         CommandCatalogEntry(
             trigger=COMMANDS_POPUP_TRIGGER,
@@ -94,6 +115,8 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             description=COMMANDS_POPUP_DESCRIPTION,
             preview=COMMANDS_POPUP_PREVIEW,
             source="system",
+            category="system",
+            stage="reference",
         ),
     ]
 

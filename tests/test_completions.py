@@ -13,6 +13,13 @@ from unittest.mock import patch
 EXPECTED_SUBCOMMANDS = sorted(
     [
         "sync",
+        "publish",
+        "pull",
+        "push",
+        "starters",
+        "remote",
+        "sync-down",
+        "sync-bundled",
         "status",
         "list",
         "validate",

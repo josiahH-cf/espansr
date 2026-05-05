@@ -39,6 +39,42 @@ def test_gui_editor_roundtrip_persists_and_previews(tmp_path):
     assert reloaded.render({"name": "Josiah"}) == "Hello Josiah from espansr"
 
 
+def test_template_workflow_metadata_roundtrip(tmp_path):
+    """AC-1: workflow metadata survives template save/load/version paths."""
+    manager = TemplateManager(templates_dir=tmp_path)
+    template = Template(
+        name="Workflow Step",
+        description="A workflow-aware prompt.",
+        content="Next: {{topic}}",
+        trigger=":workflow-step",
+        category="workflow",
+        stage="plan",
+        variables=[Variable(name="topic", default="metadata")],
+        refinements=["Keep scope bounded."],
+        next_triggers=[":workflow-next"],
+        replaces=[":old-workflow-step"],
+        deprecated=True,
+    )
+
+    assert manager.save(template)
+    loaded = manager.get("Workflow Step")
+
+    assert loaded is not None
+    assert loaded.category == "workflow"
+    assert loaded.stage == "plan"
+    assert loaded.next_triggers == [":workflow-next"]
+    assert loaded.replaces == [":old-workflow-step"]
+    assert loaded.deprecated is True
+
+    version = manager.create_version(loaded, note="metadata checkpoint")
+    assert version is not None
+    assert version.template_data["category"] == "workflow"
+    assert version.template_data["stage"] == "plan"
+    assert version.template_data["next_triggers"] == [":workflow-next"]
+    assert version.template_data["replaces"] == [":old-workflow-step"]
+    assert version.template_data["deprecated"] is True
+
+
 def test_cli_validate_and_dry_run_do_not_mutate_outputs(tmp_path):
     """AC-2: validate reports issues and sync dry-run does not write output files."""
     from espansr.integrations.espanso import sync_to_espanso

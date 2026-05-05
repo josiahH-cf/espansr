@@ -55,6 +55,79 @@ def test_import_strips_unknown_fields(tmp_path):
     assert "id" not in saved_data
 
 
+def test_import_preserves_workflow_metadata(tmp_path):
+    """Supported workflow metadata survives import while unknown fields are stripped."""
+    from espansr.core.templates import import_template
+
+    src = _write_json(
+        tmp_path / "src" / "workflow.json",
+        {
+            "name": "Workflow Prompt",
+            "description": "A workflow-aware prompt.",
+            "content": "Continue with {{topic}}",
+            "trigger": ":workflow",
+            "category": "workflow",
+            "stage": "plan",
+            "next_triggers": [":workflow-next"],
+            "replaces": [":old-workflow"],
+            "deprecated": True,
+            "author": "someone",
+        },
+    )
+    mgr = TemplateManager(templates_dir=tmp_path / "templates")
+    result = import_template(src, mgr)
+
+    assert result.template is not None
+    assert result.template.category == "workflow"
+    assert result.template.stage == "plan"
+    assert result.template.next_triggers == [":workflow-next"]
+    assert result.template.replaces == [":old-workflow"]
+    assert result.template.deprecated is True
+
+    saved_data = json.loads(result.template._path.read_text())
+    assert saved_data["category"] == "workflow"
+    assert saved_data["stage"] == "plan"
+    assert saved_data["next_triggers"] == [":workflow-next"]
+    assert saved_data["replaces"] == [":old-workflow"]
+    assert saved_data["deprecated"] is True
+    assert "author" not in saved_data
+
+
+def test_import_normalizes_malformed_workflow_metadata(tmp_path):
+    """Malformed workflow metadata is normalized before saving imported templates."""
+    from espansr.core.templates import import_template
+
+    src = _write_json(
+        tmp_path / "src" / "workflow_bad_metadata.json",
+        {
+            "name": "Workflow Bad Metadata",
+            "content": "Continue",
+            "trigger": ":workflow-bad",
+            "category": {"bad": "shape"},
+            "stage": ["plan"],
+            "next_triggers": ":workflow-next",
+            "replaces": [":old-workflow", 7, None, ""],
+            "deprecated": "false",
+        },
+    )
+    mgr = TemplateManager(templates_dir=tmp_path / "templates")
+    result = import_template(src, mgr)
+
+    assert result.template is not None
+    assert result.template.category == ""
+    assert result.template.stage == ""
+    assert result.template.next_triggers == [":workflow-next"]
+    assert result.template.replaces == [":old-workflow", "7"]
+    assert result.template.deprecated is False
+
+    saved_data = json.loads(result.template._path.read_text())
+    assert "category" not in saved_data
+    assert "stage" not in saved_data
+    assert saved_data["next_triggers"] == [":workflow-next"]
+    assert saved_data["replaces"] == [":old-workflow", "7"]
+    assert "deprecated" not in saved_data
+
+
 # ─── import_template — variable mapping ──────────────────────────────────────
 
 

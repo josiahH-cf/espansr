@@ -24,8 +24,9 @@ template files:
 - `:coms` opens a lightweight popup showing your available triggers
 
 The bundled starter set also includes reusable AI workflow prompts such as
-`:goal`, `:meta`, `:hide-ai`, `:verify`, and `:project-scaffold`. Use `:espansr` for the
-current quick reference list.
+`:goal`, `:project-init`, `:feature-init`, `:feature-new`, `:feature-next`,
+`:verify`, `:docs-qa`, `:save`, `:plain`, `:gaps`, `:principles`, `:meta`,
+and `:sanitize`. Use `:espansr` for the current quick reference list.
 
 ## Schema
 
@@ -34,8 +35,14 @@ Each template is a JSON file with the following fields:
 ```json
 {
   "name": "Greeting",
+  "description": "Friendly greeting with a configurable name.",
   "content": "Hello, {{name}}!",
   "trigger": ":greet",
+  "category": "utility",
+  "stage": "draft",
+  "next_triggers": [":review"],
+  "replaces": [],
+  "deprecated": false,
   "variables": [
     {"name": "name", "label": "Name", "default": "World"}
   ]
@@ -47,9 +54,19 @@ Each template is a JSON file with the following fields:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `name` | string | Yes | Display name for the template |
+| `description` | string | No | Short user-facing summary shown in command discovery surfaces. |
 | `content` | string | Yes | The expansion text. Use `{{variable_name}}` for placeholders. |
 | `trigger` | string | No | Espanso trigger string (e.g., `:greet`). Templates without a trigger are shown in the browser but excluded from sync. |
+| `category` | string | No | Workflow or library grouping used by prompt discovery surfaces. |
+| `stage` | string | No | Optional position within a workflow chain, such as `goal`, `plan`, `review`, or `archive`. |
+| `next_triggers` | array | No | Suggested follow-up triggers that naturally continue the workflow. |
+| `replaces` | array | No | Previous bundled trigger names or template identifiers replaced by this template during migration planning. |
+| `deprecated` | boolean | No | Marks a template as intentionally retired while preserving migration context. |
 | `variables` | array | No | List of variable definitions for placeholders in `content`. |
+
+Workflow metadata fields are optional for user templates, but bundled workflow
+prompts should include enough metadata for `:coms`, quick help, documentation,
+and migration checks to present a coherent prompt chain.
 
 ### Variable Fields
 
@@ -60,9 +77,9 @@ Each template is a JSON file with the following fields:
 | `default` | string | No | Default value for the variable |
 | `type` | string | No | Variable type: `"date"` enables date format field, `"form"` enables multiline |
 
-## Sync Behavior
+## Publish Behavior
 
-When you run `espansr sync` (or click "Sync Now" in the GUI, including auto-sync):
+When you run `espansr publish` (or the legacy alias `espansr sync`) or click "Sync Now" in the GUI, including auto-sync:
 
 1. Missing or changed bundled templates are applied to the live template store.
 2. Changed bundled-matching live templates are backed up under `_versions/` before replacement.
@@ -81,7 +98,7 @@ saved live templates so the edited trigger is reflected immediately. Clicking
 as part of that sync, bundled-template refresh is skipped for that run so the
 just-saved local edit is not overwritten before Espanso sees it.
 
-## Remote Sync-Down
+## Remote Pull and Push
 
 If you keep templates in a GitHub-hosted template repository, configure the
 remote once on each machine:
@@ -93,32 +110,35 @@ espansr remote set git@github.com:USER/REPO.git
 After that, run one command to pull the latest templates and refresh Espanso:
 
 ```bash
-espansr sync-down
+espansr pull
 ```
 
 The GUI also provides **Pull Latest** for the same pull-and-refresh workflow.
 It reports when templates changed, when they are already up to date, when the
 remote cannot be reached, or when a conflict needs manual Git resolution. This
-sync-down path uses the platform-specific template store listed above and the
+pull path uses the platform-specific template store listed above and the
 existing Espanso path detection for Windows, Linux, and WSL2.
+
+Use `espansr push` when your local live template store is the source of truth and you want to send template JSON changes to the configured Git remote. `espansr sync-down` remains available as a legacy alias for the pull-and-refresh workflow.
 
 ## Bundled Drift Reconciliation
 
-Normal `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed
+Normal `espansr publish`, legacy `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed
 bundled template updates before writing Espanso output.
 
 If you want to inspect or explicitly manage bundled starter drift, use:
 
 ```bash
-espansr sync-bundled
-espansr sync-bundled --apply
-espansr sync-bundled --apply --force
+espansr starters
+espansr starters --apply
+espansr starters --apply --force
 ```
 
-`espansr sync-bundled` compares bundled starter filenames against the live template store.
+`espansr starters` compares bundled starter filenames against the live template store. `espansr sync-bundled` remains available as a legacy alias.
 
 - Missing bundled files are reported and can be copied back into the live store with `--apply`.
 - Changed bundled-matching live templates are reported and, when applied, backed up into `_versions/` before replacement.
+- Renamed bundled starter files are migrated to their new filename when no custom trigger collision exists.
 - Local-only templates that do not belong to the bundled starter set are preserved.
 - Invalid local JSON is reported and skipped by default.
 - `--apply --force` backs up invalid bundled-matching local files under `_versions/` and then replaces them with the bundled copy.

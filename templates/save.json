@@ -2,5 +2,8 @@
   "name": "Save Project State",
   "description": "Save current task and project state for clean session resumption. Workflow-agnostic — detects project structure and updates all relevant state-tracking artifacts.",
   "trigger": ":save",
+  "category": "maintenance",
+  "stage": "session-save",
+  "next_triggers": [],
   "content": "Save the current task and project state so I can return in a later session with minimal lost context.\n\nDetermine the relevant workflow, project structure, and state-tracking files based on the current project or workspace. Do not assume a specific workflow — adapt to whatever is present.\n\nUpdate the current project state, session information, and any relevant supporting files such as README, card.md, workflow notes, or other state-tracking documents. Capture current progress, key decisions, open questions, blockers, next steps, and anything else needed for a clean restart.\n\nExplicitly prepare the project so I can continue this exact task in my next session. The goal is that when I come back, the model can quickly understand what I was doing, what matters, and what should happen next."
 }

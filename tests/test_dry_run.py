@@ -201,6 +201,29 @@ def test_setup_dry_run_prints_plan(tmp_path, capsys):
     assert "espansr_help.json" in output or "template" in output.lower()
 
 
+def test_setup_dry_run_with_espanso_uses_publish_language(tmp_path, capsys):
+    """setup --dry-run describes Espanso output with the primary publish lane."""
+    from espansr.__main__ import cmd_setup
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = _make_bundled_dir(tmp_path)
+    espanso_dir = tmp_path / "espanso"
+    espanso_dir.mkdir()
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=espanso_dir),
+    ):
+        cmd_setup(_make_args(dry_run=True))
+
+    output = capsys.readouterr().out
+    assert "would publish templates to espanso" in output.lower()
+    assert "would sync templates to espanso" not in output.lower()
+
+
 # ─── setup --verbose ─────────────────────────────────────────────────────────
 
 

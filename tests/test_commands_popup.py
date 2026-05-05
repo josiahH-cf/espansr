@@ -7,7 +7,7 @@ from PyQt6.QtCore import Qt
 
 from espansr.core.command_catalog import COMMANDS_POPUP_TRIGGER, CommandCatalogEntry
 from espansr.core.config import Config
-from espansr.core.templates import TemplateManager
+from espansr.core.templates import Template, TemplateManager
 
 
 def test_build_command_catalog_includes_template_and_system_triggers(tmp_path):
@@ -37,6 +37,35 @@ def test_build_command_catalog_includes_template_and_system_triggers(tmp_path):
     greeting = next(entry for entry in entries if entry.trigger == ":greet")
     assert greeting.description == "Friendly greeting"
     assert "Hello [Name]" in greeting.preview
+    assert greeting.category == "template"
+    assert greeting.stage == "custom"
+
+
+def test_build_command_catalog_exposes_workflow_metadata(tmp_path):
+    """AC-3: catalog entries preserve template category, stage, and chain hints."""
+    from espansr.core.command_catalog import build_command_catalog
+
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    manager.save(
+        Template(
+            name="Feature New",
+            description="Scope one feature idea.",
+            content="Scope {{idea}}",
+            trigger=":feature-new",
+            category="workflow",
+            stage="feature-scope",
+            next_triggers=[":feature-next"],
+        )
+    )
+
+    entries = build_command_catalog(template_manager=manager, config=Config())
+    feature_entry = next(entry for entry in entries if entry.trigger == ":feature-new")
+
+    assert feature_entry.category == "workflow"
+    assert feature_entry.stage == "feature-scope"
+    assert feature_entry.next_triggers == (":feature-next",)
+    assert feature_entry.workflow_label == "workflow / feature-scope"
+    assert feature_entry.next_label == "Next: :feature-next"
 
 
 def test_commands_popup_dialog_renders_entries(qtbot):
@@ -50,6 +79,9 @@ def test_commands_popup_dialog_renders_entries(qtbot):
             description="First command",
             preview="alpha output",
             source="template",
+            category="workflow",
+            stage="feature-scope",
+            next_triggers=(":beta",),
         ),
         CommandCatalogEntry(
             trigger=":beta",
@@ -57,6 +89,8 @@ def test_commands_popup_dialog_renders_entries(qtbot):
             description="Second command",
             preview="beta output",
             source="system",
+            category="system",
+            stage="reference",
         ),
     ]
 
@@ -66,14 +100,18 @@ def test_commands_popup_dialog_renders_entries(qtbot):
 
     assert dialog._list.count() == 2
     assert dialog._summary_table.rowCount() == 2
-    assert dialog._summary_table.columnCount() == 2
+    assert dialog._summary_table.columnCount() == 3
     assert dialog._summary_table.horizontalHeaderItem(0).text() == "Command"
-    assert dialog._summary_table.horizontalHeaderItem(1).text() == "Description"
+    assert dialog._summary_table.horizontalHeaderItem(1).text() == "Workflow"
+    assert dialog._summary_table.horizontalHeaderItem(2).text() == "Description"
     assert dialog._summary_table.item(0, 0).text() == ":alpha"
-    assert dialog._summary_table.item(0, 1).text() == "First command"
+    assert dialog._summary_table.item(0, 1).text() == "workflow / feature-scope"
+    assert dialog._summary_table.item(0, 2).text() == "First command"
     first_widget = dialog._list.itemWidget(dialog._list.item(0))
     assert isinstance(first_widget, CommandRowWidget)
     assert first_widget._trigger_label.text() == ":alpha"
+    assert first_widget._workflow_label.text() == "workflow / feature-scope"
+    assert first_widget._next_label.text() == "Next: :beta"
     assert first_widget._preview_text.toPlainText() == "alpha output"
 
 

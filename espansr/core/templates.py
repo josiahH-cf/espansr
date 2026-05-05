@@ -84,8 +84,13 @@ class Template:
     content: str
     description: str = ""
     trigger: str = ""  # Espanso trigger (e.g., ":review")
+    category: str = ""
+    stage: str = ""
     variables: List[Variable] = field(default_factory=list)
     refinements: List[str] = field(default_factory=list)
+    next_triggers: List[str] = field(default_factory=list)
+    replaces: List[str] = field(default_factory=list)
+    deprecated: bool = False
 
     # Internal: path to the JSON file (set when loaded from disk)
     _path: Optional[Path] = field(default=None, repr=False)
@@ -107,10 +112,20 @@ class Template:
             d["description"] = self.description
         if self.trigger:
             d["trigger"] = self.trigger
+        if self.category:
+            d["category"] = self.category
+        if self.stage:
+            d["stage"] = self.stage
         if self.variables:
             d["variables"] = [v.to_dict() for v in self.variables]
         if self.refinements:
             d["refinements"] = self.refinements
+        if self.next_triggers:
+            d["next_triggers"] = self.next_triggers
+        if self.replaces:
+            d["replaces"] = self.replaces
+        if self.deprecated:
+            d["deprecated"] = True
         return d
 
     @classmethod
@@ -122,8 +137,13 @@ class Template:
             content=data.get("content", ""),
             description=data.get("description", ""),
             trigger=data.get("trigger", ""),
+            category=_coerce_optional_string(data.get("category", "")),
+            stage=_coerce_optional_string(data.get("stage", "")),
             variables=variables,
-            refinements=data.get("refinements", []),
+            refinements=_coerce_string_list(data.get("refinements", [])),
+            next_triggers=_coerce_string_list(data.get("next_triggers", [])),
+            replaces=_coerce_string_list(data.get("replaces", [])),
+            deprecated=_coerce_bool(data.get("deprecated", False)),
             _path=path,
         )
 
@@ -149,6 +169,35 @@ class Template:
         result = re.sub(r"\{\{[^}]+\}\}", "", result)
 
         return result
+
+
+def _coerce_optional_string(value: Any) -> str:
+    """Return a stable string for optional template metadata."""
+    if value is None or value == "":
+        return ""
+    if isinstance(value, (dict, list)):
+        return ""
+    return str(value)
+
+
+def _coerce_string_list(value: Any) -> List[str]:
+    """Return a clean list of strings from optional template metadata."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in (None, "")]
+    return []
+
+
+def _coerce_bool(value: Any) -> bool:
+    """Return a conservative boolean for optional template metadata."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+    return False
 
 
 @dataclass
@@ -565,6 +614,7 @@ class BundledTemplateStatus:
     bundled_path: Path
     local_path: Path
     detail: str = ""
+    target_path: Optional[Path] = None
 
 
 @dataclass
@@ -578,13 +628,23 @@ class BundledTemplateReport:
     def has_drift(self) -> bool:
         """Return True when bundled templates differ from the local store."""
         return any(
-            entry.status in {"missing_local", "changed_local", "invalid_local"}
+            entry.status
+            in {
+                "missing_local",
+                "changed_local",
+                "invalid_local",
+                "renamed_local",
+                "retired_local",
+            }
             for entry in self.entries
         )
 
     def has_applyable_changes(self) -> bool:
         """Return True when there are bundled changes that can be written safely."""
-        return any(entry.status in {"missing_local", "changed_local"} for entry in self.entries)
+        return any(
+            entry.status in {"missing_local", "changed_local", "renamed_local", "retired_local"}
+            for entry in self.entries
+        )
 
 
 @dataclass
@@ -593,8 +653,23 @@ class BundledTemplateApplyResult:
 
     copied: int = 0
     updated: int = 0
+    migrated: int = 0
+    retired: int = 0
     forced: int = 0
     skipped_invalid: List[BundledTemplateStatus] = field(default_factory=list)
+
+
+_RENAMED_BUNDLED_TEMPLATE_FILES = {
+    "plain.json": ("dumb.json",),
+    "gaps.json": ("explain_gaps_comprehensively_pt_2.json",),
+    "principles.json": ("first_principles_analysis.json",),
+    "project_init.json": ("project_scaffold.json",),
+    "feature_init.json": ("scaffold_feature_process.json",),
+    "feature_new.json": ("feature_scope.json",),
+    "feature_next.json": ("feature_continue.json",),
+    "sanitize.json": ("hide_ai.json",),
+    "docs_qa.json": ("qa_docs.json",),
+}
 
 
 def _load_template_object(path: Path) -> Dict[str, Any]:
@@ -616,6 +691,51 @@ def _load_template_object(path: Path) -> Dict[str, Any]:
 def _normalize_template_object(data: Dict[str, Any]) -> str:
     """Return a stable serialized form for semantic comparison."""
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _collect_local_trigger_owners(local_paths: Dict[str, Path]) -> Dict[str, List[Path]]:
+    """Return local JSON files grouped by trigger, skipping unreadable files."""
+    owners: Dict[str, List[Path]] = {}
+    for path in local_paths.values():
+        try:
+            data = _load_template_object(path)
+        except ValueError:
+            continue
+
+        trigger = _coerce_optional_string(data.get("trigger", ""))
+        if trigger:
+            owners.setdefault(trigger, []).append(path)
+    return owners
+
+
+def _renamed_trigger_collisions(
+    trigger: str,
+    new_filename: str,
+    old_filenames: tuple[str, ...],
+    local_trigger_owners: Dict[str, List[Path]],
+) -> List[Path]:
+    """Return local files that already own a renamed starter trigger."""
+    allowed_names = {new_filename, *old_filenames}
+    return [
+        path for path in local_trigger_owners.get(trigger, []) if path.name not in allowed_names
+    ]
+
+
+def _retired_bundled_template_status(
+    filename: str,
+    bundled_path: Path,
+    old_local_path: Path,
+    target_path: Path,
+) -> BundledTemplateStatus:
+    """Return a status entry for an old renamed starter that should be retired."""
+    return BundledTemplateStatus(
+        filename=old_local_path.name,
+        status="retired_local",
+        bundled_path=bundled_path,
+        local_path=old_local_path,
+        target_path=target_path,
+        detail=f"replaced by {filename}",
+    )
 
 
 def get_bundled_template_paths(bundled_dir: Optional[Path] = None) -> Dict[str, Path]:
@@ -640,11 +760,70 @@ def build_bundled_template_report(
     local_paths = {}
     if local_root.exists():
         local_paths = {path.name: path for path in sorted(local_root.glob("*.json"))}
+    local_trigger_owners = _collect_local_trigger_owners(local_paths)
+    renamed_filenames = {
+        old_filename
+        for filename in bundled_paths
+        for old_filename in _RENAMED_BUNDLED_TEMPLATE_FILES.get(filename, ())
+    }
 
     report = BundledTemplateReport()
     for filename, bundled_path in bundled_paths.items():
         local_path = local_root / filename
+        try:
+            bundled_obj = _load_template_object(bundled_path)
+        except ValueError as exc:
+            report.errors.append(str(exc))
+            continue
+
+        old_filenames = _RENAMED_BUNDLED_TEMPLATE_FILES.get(filename, ())
+        old_local_path = next(
+            (local_root / old for old in old_filenames if old in local_paths), None
+        )
         if not local_path.exists():
+            if old_local_path is not None:
+                trigger = _coerce_optional_string(bundled_obj.get("trigger", ""))
+                collisions = _renamed_trigger_collisions(
+                    trigger,
+                    filename,
+                    old_filenames,
+                    local_trigger_owners,
+                )
+                if collisions:
+                    collision_names = ", ".join(path.name for path in collisions)
+                    report.errors.append(
+                        f"Trigger collision for {trigger}: {collision_names} already uses "
+                        f"the renamed bundled trigger for {filename}"
+                    )
+                    continue
+
+                try:
+                    _load_template_object(old_local_path)
+                except ValueError as exc:
+                    report.entries.append(
+                        BundledTemplateStatus(
+                            filename=filename,
+                            status="invalid_local",
+                            bundled_path=bundled_path,
+                            local_path=old_local_path,
+                            target_path=local_path,
+                            detail=f"renamed starter source {old_local_path.name}: {exc}",
+                        )
+                    )
+                    continue
+
+                report.entries.append(
+                    BundledTemplateStatus(
+                        filename=filename,
+                        status="renamed_local",
+                        bundled_path=bundled_path,
+                        local_path=old_local_path,
+                        target_path=local_path,
+                        detail=f"from {old_local_path.name}",
+                    )
+                )
+                continue
+
             report.entries.append(
                 BundledTemplateStatus(
                     filename=filename,
@@ -653,12 +832,6 @@ def build_bundled_template_report(
                     local_path=local_path,
                 )
             )
-            continue
-
-        try:
-            bundled_obj = _load_template_object(bundled_path)
-        except ValueError as exc:
-            report.errors.append(str(exc))
             continue
 
         try:
@@ -673,6 +846,15 @@ def build_bundled_template_report(
                     detail=str(exc),
                 )
             )
+            if old_local_path is not None:
+                report.entries.append(
+                    _retired_bundled_template_status(
+                        filename,
+                        bundled_path,
+                        old_local_path,
+                        local_path,
+                    )
+                )
             continue
 
         status = "up_to_date"
@@ -687,8 +869,20 @@ def build_bundled_template_report(
                 local_path=local_path,
             )
         )
+        if old_local_path is not None:
+            report.entries.append(
+                _retired_bundled_template_status(
+                    filename,
+                    bundled_path,
+                    old_local_path,
+                    local_path,
+                )
+            )
 
-    report.local_only = [path for name, path in local_paths.items() if name not in bundled_paths]
+    managed_filenames = set(bundled_paths) | renamed_filenames
+    report.local_only = [
+        path for name, path in local_paths.items() if name not in managed_filenames
+    ]
     report.entries.sort(key=lambda entry: entry.filename.lower())
     report.local_only.sort(key=lambda path: path.name.lower())
     return report
@@ -724,8 +918,45 @@ def apply_bundled_template_report(
             result.updated += 1
             continue
 
+        if entry.status == "renamed_local":
+            target_path = entry.target_path or entry.local_path
+            if not dry_run:
+                existing = manager.load(entry.local_path)
+                if existing is None:
+                    result.skipped_invalid.append(entry)
+                    continue
+                manager.create_version(
+                    existing, note=f"Backup before bundled rename to {entry.filename}"
+                )
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                entry.local_path.unlink()
+                shutil.copy2(entry.bundled_path, target_path)
+            result.migrated += 1
+            continue
+
+        if entry.status == "retired_local":
+            if not dry_run:
+                existing = manager.load(entry.local_path)
+                if existing is not None:
+                    manager.create_version(
+                        existing,
+                        note="Backup before retiring renamed bundled starter",
+                    )
+                else:
+                    backup_path = manager.backup_raw_file(
+                        entry.local_path,
+                        label="retired-backup-before-bundled-sync",
+                    )
+                    if backup_path is None:
+                        result.skipped_invalid.append(entry)
+                        continue
+                entry.local_path.unlink(missing_ok=True)
+            result.retired += 1
+            continue
+
         if entry.status == "invalid_local":
             if force_invalid_local:
+                target_path = entry.target_path or entry.local_path
                 if not dry_run:
                     backup_path = manager.backup_raw_file(
                         entry.local_path,
@@ -734,7 +965,10 @@ def apply_bundled_template_report(
                     if backup_path is None:
                         result.skipped_invalid.append(entry)
                         continue
-                    shutil.copy2(entry.bundled_path, entry.local_path)
+                    if entry.local_path != target_path:
+                        entry.local_path.unlink(missing_ok=True)
+                        target_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(entry.bundled_path, target_path)
                 result.forced += 1
                 continue
             result.skipped_invalid.append(entry)
@@ -776,8 +1010,13 @@ _KNOWN_TEMPLATE_FIELDS = {
     "content",
     "description",
     "trigger",
+    "category",
+    "stage",
     "variables",
     "refinements",
+    "next_triggers",
+    "replaces",
+    "deprecated",
 }
 
 # Known fields in the internal Variable schema.

@@ -224,7 +224,7 @@ def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
 
     output = capsys.readouterr().out
     assert result == 0
-    assert "run 'espansr sync'" in output.lower()
+    assert "run 'espansr publish'" in output.lower()
 
 
 def test_setup_generates_commands_popup_when_espanso_found(tmp_path):

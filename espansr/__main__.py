@@ -1,13 +1,12 @@
 """CLI entry point for espansr.
 
 Commands:
-  sync    — Sync templates to Espanso match file
-  sync-down — Pull latest remote templates and refresh Espanso output
-  status  — Show Espanso process status and config path
-  list    — Show templates with triggers
-  setup   — Run post-install setup
-  doctor  — Run diagnostic health checks
-  gui     — Launch the GUI
+    publish  — Publish local templates to Espanso output
+    pull     — Pull remote templates and refresh Espanso output
+    push     — Push local templates to the configured remote
+    starters — Check or apply bundled starter templates
+    remote   — Manage remote configuration
+    sync     — Legacy alias for publish
 """
 
 import argparse
@@ -180,11 +179,10 @@ def _auto_pull_if_configured() -> None:
         pass  # auto-pull failures are non-blocking
 
 
-def cmd_sync(args) -> int:
-    """Sync all triggered templates to Espanso."""
+def cmd_publish(args) -> int:
+    """Publish local triggered templates to Espanso output."""
     from espansr.integrations.espanso import sync_to_espanso
 
-    _auto_pull_if_configured()
     dry_run = getattr(args, "dry_run", False) if args else False
     success = sync_to_espanso(
         dry_run=dry_run,
@@ -192,6 +190,11 @@ def cmd_sync(args) -> int:
         bundled_dir=_get_bundled_dir(),
     )
     return 0 if success else 1
+
+
+def cmd_sync(args) -> int:
+    """Legacy alias for publishing local templates to Espanso output."""
+    return cmd_publish(args)
 
 
 def _get_bundled_dir() -> Path:
@@ -285,7 +288,7 @@ def cmd_setup(args) -> int:
             print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
             print("[dry-run] Would generate launcher")
             print("[dry-run] Would generate commands popup")
-            print("[dry-run] Would sync templates to Espanso")
+            print("[dry-run] Would publish templates to Espanso")
         else:
             from espansr.integrations.espanso import sync_to_espanso
 
@@ -296,7 +299,7 @@ def cmd_setup(args) -> int:
             print("Launcher: generated")
             print("Commands popup: generated")
             if not sync_to_espanso():
-                print("Sync: failed — run 'espansr sync' after resolving the issues above")
+                print("Publish: failed — run 'espansr publish' after resolving the issues above")
     else:
         plat = get_platform()
         if plat == "wsl2":
@@ -355,6 +358,8 @@ def _print_bundled_report(report, verbose: bool = False) -> None:
         "up_to_date": "up to date",
         "missing_local": "missing locally",
         "changed_local": "local copy differs from bundled",
+        "renamed_local": "old bundled starter will be migrated",
+        "retired_local": "old bundled starter will be retired",
         "invalid_local": "local copy is invalid JSON",
     }
 
@@ -403,13 +408,17 @@ def cmd_sync_bundled(args) -> int:
 
     missing = sum(1 for entry in report.entries if entry.status == "missing_local")
     changed = sum(1 for entry in report.entries if entry.status == "changed_local")
+    renamed = sum(1 for entry in report.entries if entry.status == "renamed_local")
+    retired = sum(1 for entry in report.entries if entry.status == "retired_local")
     invalid = sum(1 for entry in report.entries if entry.status == "invalid_local")
     up_to_date = sum(1 for entry in report.entries if entry.status == "up_to_date")
 
     print(
         "Bundled templates: "
         f"{up_to_date} up to date, {missing} missing locally, "
-        f"{changed} changed locally, {invalid} invalid locally"
+        f"{changed} changed locally, {renamed} renamed starter(s), "
+        f"{retired} retired starter(s), "
+        f"{invalid} invalid locally"
     )
     _print_bundled_report(report, verbose=verbose)
 
@@ -426,11 +435,13 @@ def cmd_sync_bundled(args) -> int:
         force_invalid_local=force,
     )
 
-    if result.copied or result.updated or result.forced:
+    if result.copied or result.updated or result.migrated or result.retired or result.forced:
         prefix = "[dry-run] " if dry_run else ""
         print(
             f"{prefix}Bundled sync: "
-            f"{result.copied} copied, {result.updated} updated, {result.forced} forced"
+            f"{result.copied} copied, {result.updated} updated, "
+            f"{result.migrated} migrated, {result.retired} retired, "
+            f"{result.forced} forced"
         )
     else:
         if dry_run:
@@ -769,13 +780,14 @@ def cmd_remote(args) -> int:
 
 
 def cmd_pull(args) -> int:
-    """Pull templates from remote."""
+    """Pull remote templates and refresh Espanso output."""
     from espansr.core.remote import (
         GitNotFoundError,
         RemoteConflictError,
         RemoteError,
         RemoteManager,
     )
+    from espansr.integrations.espanso import sync_to_espanso
 
     try:
         rm = RemoteManager()
@@ -784,9 +796,15 @@ def cmd_pull(args) -> int:
             rm.pull_templates(templates)
             print(ok(f"Pulled {len(templates)} template(s) from remote."))
         else:
-            rm.pull()
-            print(ok("Pulled latest templates from remote."))
-        return 0
+            outcome = rm.pull_with_result()
+            _print_sync_down_pull_outcome(outcome)
+
+        if sync_to_espanso(update_bundled=False):
+            print(ok("Espanso output refreshed."))
+            return 0
+
+        print(fail("Pulled remote templates, but Espanso sync failed."))
+        return 1
     except RemoteConflictError as exc:
         print(fail(f"Conflict: {exc}"))
         return 1
@@ -888,52 +906,72 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"espansr {__version__}")
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    sync_parser = subparsers.add_parser("sync", help="Sync templates to Espanso match file")
-    sync_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help="Preview what would be synced without writing any files",
+    def add_publish_flags(command_parser: argparse.ArgumentParser) -> None:
+        command_parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            default=False,
+            help="Preview what would be published without writing any files",
+        )
+
+    def add_starter_flags(command_parser: argparse.ArgumentParser) -> None:
+        starter_mode = command_parser.add_mutually_exclusive_group()
+        starter_mode.add_argument(
+            "--check",
+            action="store_true",
+            default=False,
+            help="Report bundled starter drift without writing any files (default)",
+        )
+        starter_mode.add_argument(
+            "--apply",
+            action="store_true",
+            default=False,
+            help="Apply bundled starter updates to the live template store",
+        )
+        command_parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            default=False,
+            help="Preview what would be updated when used with --apply",
+        )
+        command_parser.add_argument(
+            "--force",
+            action="store_true",
+            default=False,
+            help="With --apply, overwrite bundled-matching invalid local JSON after backup",
+        )
+        command_parser.add_argument(
+            "--verbose",
+            action="store_true",
+            default=False,
+            help="Print per-template bundled starter details",
+        )
+
+    publish_parser = subparsers.add_parser(
+        "publish",
+        help="Publish local templates to Espanso output",
     )
+    add_publish_flags(publish_parser)
+
+    sync_parser = subparsers.add_parser(
+        "sync",
+        help="Legacy alias for publish",
+    )
+    add_publish_flags(sync_parser)
     subparsers.add_parser(
         "sync-down",
-        help="Pull latest remote templates and refresh Espanso output",
+        help="Legacy alias for pull",
     )
     bundled_sync_parser = subparsers.add_parser(
         "sync-bundled",
-        help="Check or apply bundled template updates to the live store",
+        help="Legacy alias for starters",
     )
-    bundled_sync_mode = bundled_sync_parser.add_mutually_exclusive_group()
-    bundled_sync_mode.add_argument(
-        "--check",
-        action="store_true",
-        default=False,
-        help="Report bundled drift without writing any files (default)",
+    add_starter_flags(bundled_sync_parser)
+    starters_parser = subparsers.add_parser(
+        "starters",
+        help="Check or apply bundled starter templates",
     )
-    bundled_sync_mode.add_argument(
-        "--apply",
-        action="store_true",
-        default=False,
-        help="Apply bundled template updates to the live template store",
-    )
-    bundled_sync_parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        default=False,
-        help="Preview what would be updated when used with --apply",
-    )
-    bundled_sync_parser.add_argument(
-        "--force",
-        action="store_true",
-        default=False,
-        help="With --apply, overwrite bundled-matching invalid local JSON after backing it up",
-    )
-    bundled_sync_parser.add_argument(
-        "--verbose",
-        action="store_true",
-        default=False,
-        help="Print per-template bundled drift details",
-    )
+    add_starter_flags(starters_parser)
     status_parser = subparsers.add_parser(
         "status", help="Show Espanso process status and config path"
     )
@@ -995,7 +1033,10 @@ def _build_parser() -> argparse.ArgumentParser:
     remote_sub.add_parser("status", help="Show remote sync status")
     remote_sub.add_parser("remove", help="Disconnect from remote (keeps local templates)")
 
-    pull_parser = subparsers.add_parser("pull", help="Pull templates from remote")
+    pull_parser = subparsers.add_parser(
+        "pull",
+        help="Pull remote templates and publish them to Espanso output",
+    )
     pull_parser.add_argument(
         "--template",
         action="append",
@@ -1003,7 +1044,7 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Pull only specific template file(s) (repeatable)",
     )
 
-    push_parser = subparsers.add_parser("push", help="Push templates to remote")
+    push_parser = subparsers.add_parser("push", help="Push local templates to remote")
     push_parser.add_argument(
         "--template",
         action="append",
@@ -1025,8 +1066,10 @@ def main() -> None:
     args = parser.parse_args()
 
     handlers = {
+        "publish": cmd_publish,
         "sync": cmd_sync,
         "sync-bundled": cmd_sync_bundled,
+        "starters": cmd_sync_bundled,
         "status": cmd_status,
         "list": cmd_list,
         "validate": cmd_validate,
