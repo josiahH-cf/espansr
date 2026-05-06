@@ -26,7 +26,8 @@ template files:
 The bundled starter set also includes reusable AI workflow prompts such as
 `:goal`, `:project-init`, `:feature-init`, `:feature-new`, `:feature-next`,
 `:verify`, `:docs-qa`, `:save`, `:plain`, `:gaps`, `:principles`, `:meta`,
-and `:sanitize`. Use `:espansr` for the current quick reference list.
+`:context`, `:template-builder`, and `:sanitize`. Use `:espansr` for the
+current quick reference list.
 
 ## Schema
 

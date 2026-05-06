@@ -31,6 +31,10 @@ class GitNotFoundError(Exception):
     """Raised when git is not installed or not on PATH."""
 
 
+class GitTimeoutError(Exception):
+    """Raised when a git operation exceeds its timeout."""
+
+
 class RemoteConflictError(Exception):
     """Raised when a pull encounters merge conflicts."""
 
@@ -68,17 +72,32 @@ class RemoteManager:
     # Helpers
     # ------------------------------------------------------------------
 
-    def _git(self, *args: str, check: bool = True) -> subprocess.CompletedProcess:
-        """Run a git command inside the templates directory."""
+    def _git(
+        self,
+        *args: str,
+        check: bool = True,
+        timeout: int = 30,
+    ) -> subprocess.CompletedProcess:
+        """Run a git command inside the templates directory.
+
+        Raises GitTimeoutError if the command does not complete within *timeout* seconds.
+        """
         cmd = ["git", "-C", str(self.templates_dir), *args]
         env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-        return subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            check=check,
-            env=env,
-        )
+        try:
+            return subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=check,
+                env=env,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            raise GitTimeoutError(
+                f"git {' '.join(args)} timed out after {timeout}s — "
+                "check your network connection or remote URL"
+            )
 
     def _is_git_repo(self) -> bool:
         return (self.templates_dir / ".git").exists()

@@ -525,6 +525,8 @@ def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
     expected = {
         "goal_clarifier.json": (),
         "meta.json": ("context",),
+        "context.json": (),
+        "template_builder.json": (),
         "project_init.json": (),
         "feature_new.json": ("feature_idea",),
         "feature_next.json": ("direction",),
@@ -596,6 +598,14 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [":verify", ":docs-qa", ":save"],
             [":continue"],
         ),
+        "context.json": (":context", "prompting", "context-reset", [":meta", ":verify"], []),
+        "template_builder.json": (
+            ":template-builder",
+            "prompting",
+            "template-authoring",
+            [":verify", ":context"],
+            [],
+        ),
         "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
         "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save", ":verify"], [":qa"]),
     }
@@ -645,6 +655,8 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":principles",
         ":verify",
         ":sanitize",
+        ":context",
+        ":template-builder",
         ":goal",
         ":project-init",
         ":feature-init",
