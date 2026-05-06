@@ -234,6 +234,42 @@ def test_sync_succeeds_with_no_triggered_templates(tmp_path):
     assert not (match_dir / "espansr.yml").exists()
 
 
+def test_sync_removes_stale_managed_yaml_when_no_triggered_templates(tmp_path):
+    """sync_to_espanso() removes stale managed output when all triggers are gone."""
+    from espansr.core.templates import TemplateManager
+
+    templates_dir = tmp_path / "templates"
+    templates_dir.mkdir()
+    (templates_dir / "plain.json").write_text(
+        json.dumps({"name": "Plain", "content": "content", "trigger": ""})
+    )
+
+    match_dir = tmp_path / "espanso" / "match"
+    match_dir.mkdir(parents=True)
+    output_file = match_dir / "espansr.yml"
+    output_file.write_text(
+        yaml.safe_dump({"matches": [{"trigger": ":old", "replace": "old"}]}),
+        encoding="utf-8",
+    )
+
+    with (
+        patch(
+            "espansr.integrations.espanso.get_match_dir",
+            return_value=match_dir,
+        ),
+        patch("espansr.integrations.espanso.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.espanso.is_windows", return_value=False),
+        patch("espansr.integrations.espanso.is_wsl2", return_value=False),
+    ):
+        mock_mgr.return_value = TemplateManager(templates_dir=templates_dir)
+        from espansr.integrations.espanso import sync_to_espanso
+
+        result = sync_to_espanso()
+
+    assert result is True
+    assert not output_file.exists()
+
+
 def test_sync_returns_false_when_no_match_dir():
     """sync_to_espanso() returns False when Espanso config dir not found."""
     with patch("espansr.integrations.espanso.get_match_dir", return_value=None):

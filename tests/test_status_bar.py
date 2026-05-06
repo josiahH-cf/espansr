@@ -1,8 +1,8 @@
-"""Tests for GUI persistent status bar and sync feedback.
+"""Tests for GUI persistent status bar and publish feedback.
 
 Spec: /specs/gui-status-bar-feedback.md
 Covers: SyncResult dataclass, permanent Espanso status indicator,
-sync count feedback in status bar.
+publish count feedback in status bar.
 """
 
 import contextlib
@@ -154,14 +154,14 @@ class TestEspansoStatusIndicator:
         assert window._espanso_status.text().startswith("Espanso:")
 
 
-# ── Sync feedback with template count ────────────────────────────────────────
+# ── Publish feedback with template count ─────────────────────────────────────
 
 
 class TestSyncFeedback:
-    """Tests for richer sync feedback in the status bar."""
+    """Tests for richer publish feedback in the status bar."""
 
     def test_sync_success_shows_count(self, qtbot, tmp_path):
-        """A successful sync shows the template count in the status bar."""
+        """A successful publish shows the template count in the status bar."""
         import espansr.integrations.espanso as espanso_mod
 
         def _mock_sync(**_kwargs):
@@ -181,10 +181,10 @@ class TestSyncFeedback:
 
         msg = window.statusBar().currentMessage()
         assert "3" in msg
-        assert "synced" in msg.lower()
+        assert "published" in msg.lower()
 
     def test_sync_blocked_shows_error_count(self, qtbot, tmp_path):
-        """A blocked sync shows the error count in the status bar."""
+        """A blocked publish shows the error count in the status bar."""
         from espansr.integrations.validate import ValidationWarning
 
         window = _make_window(qtbot, Config(), tmp_path=tmp_path)
@@ -205,7 +205,7 @@ class TestSyncFeedback:
         assert "2" in msg
 
     def test_espanso_status_updates_after_sync(self, qtbot, tmp_path):
-        """The permanent indicator refreshes after a sync."""
+        """The permanent indicator refreshes after publish."""
         window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
         with (

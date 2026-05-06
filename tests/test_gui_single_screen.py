@@ -1,6 +1,6 @@
 """Tests for the single-screen GUI layout (Issue #3).
 
-Covers: toolbar sync button, sync_to_espanso() call, geometry persistence,
+Covers: toolbar publish button, sync_to_espanso() call, geometry persistence,
 and last_template restore on startup.
 """
 
@@ -66,18 +66,18 @@ def _make_window(qtbot, config, tm=None, match_dir=None, tmp_path=None):
     return window
 
 
-# ── Toolbar: Sync Now button ─────────────────────────────────────────────────
+# ── Toolbar: Publish button ──────────────────────────────────────────────────
 
 
-def test_sync_button_in_toolbar(qtbot, tmp_path):
-    """MainWindow has a 'Sync Now' QPushButton in the toolbar."""
+def test_publish_button_in_toolbar(qtbot, tmp_path):
+    """MainWindow has a 'Publish' QPushButton in the toolbar."""
     from PyQt6.QtWidgets import QPushButton
 
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     sync_btn = window._sync_btn
     assert isinstance(sync_btn, QPushButton)
-    assert "Sync" in sync_btn.text()
+    assert "Publish" in sync_btn.text()
 
 
 def test_pull_latest_button_in_toolbar(qtbot, tmp_path):
@@ -92,7 +92,7 @@ def test_pull_latest_button_in_toolbar(qtbot, tmp_path):
 
 
 def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
-    """Clicking 'Sync Now' calls sync_to_espanso() exactly once."""
+    """Clicking Publish calls sync_to_espanso() exactly once."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     with patch(
@@ -174,7 +174,7 @@ def test_save_triggers_sync_without_bundled_update(qtbot, tmp_path):
 
 
 def test_sync_saves_dirty_editor_before_writing(qtbot, tmp_path):
-    """Sync Now persists dirty editor state before generating Espanso YAML."""
+    """Publish persists dirty editor state before generating Espanso YAML."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     template = manager.create(name="Verify", content="old body", trigger=":verify")
     window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
@@ -197,7 +197,7 @@ def test_sync_saves_dirty_editor_before_writing(qtbot, tmp_path):
 
 
 def test_sync_success_shows_status_message(qtbot, tmp_path):
-    """A successful sync shows 'Sync successful' in the status bar."""
+    """A successful publish shows a success message in the status bar."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     with (
@@ -213,7 +213,7 @@ def test_sync_success_shows_status_message(qtbot, tmp_path):
 
 
 def test_sync_failure_shows_status_message(qtbot, tmp_path):
-    """A failed sync shows a failure message in the status bar."""
+    """A failed publish shows a failure message in the status bar."""
     window = _make_window(qtbot, Config(), tmp_path=tmp_path)
 
     with patch(
@@ -223,6 +223,26 @@ def test_sync_failure_shows_status_message(qtbot, tmp_path):
         window._sync_btn.click()
 
     assert "fail" in window.statusBar().currentMessage().lower()
+
+
+def test_delete_publishes_remaining_templates(qtbot, tmp_path):
+    """Deleting after the undo window publishes the remaining templates."""
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    manager.create(name="Delete Me", content="old body", trigger=":delete")
+    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window._browser.select_template_by_name("Delete Me")
+
+    with (
+        patch("espansr.ui.template_browser.get_template_manager", return_value=manager),
+        patch("espansr.integrations.validate.validate_all", return_value=[]),
+        patch("espansr.ui.main_window.get_config_manager"),
+        patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
+    ):
+        window._browser.start_delete()
+        window._browser._finalize_delete()
+
+    assert manager.get("Delete Me") is None
+    mock_sync.assert_called_once_with(update_bundled=False)
 
 
 # ── Geometry persistence ─────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ EXPECTED_SUBCOMMANDS = sorted(
         "pull",
         "push",
         "starters",
+        "retire",
         "remote",
         "sync-down",
         "sync-bundled",

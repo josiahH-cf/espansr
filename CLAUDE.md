@@ -7,14 +7,14 @@ At the start of every session, before any work:
 2. Read `workflow/STATE.json` — current project state (including `advisoryProfile` for guidance tone and `forkActivationLevel` for fork sensitivity)
 3. Read `.specify/constitution.md` — project identity (if it exists)
 4. Read the active task file (if `currentTaskFile` is set in state)
-5. Read `workflow/ORCHESTRATOR.md` — loop contract for `/continue` sessions
+5. For `/continue` sessions, read `workflow/archive/ORCHESTRATOR.md` as the historical loop contract reference
 
 This ensures context is grounded in reality, not memory from previous sessions.
-Advisory guidance adapts to `advisoryProfile` — see `workflow/ORCHESTRATOR.md → Context-Sensitive Advisory Guidance`.
+Advisory guidance adapts to `advisoryProfile`; the detailed historical model is in `workflow/archive/ORCHESTRATOR.md`.
 
 Strictly follow the rules in ./AGENTS.md for all project conventions, routing, commands, and boundaries.
 
-Canonical workflow policy lives in `AGENTS.md`, `/workflow/*.md`, and `/governance/*.md`.
+Canonical workflow policy lives in `AGENTS.md`, active `/workflow/*.md` files, and `/governance/*.md`.
 This file is an adapter for Claude-specific session mechanics and command references.
 
 ## Context Discipline
@@ -32,7 +32,7 @@ This file is an adapter for Claude-specific session mechanics and command refere
 
 ## Testing
 
-- Follow `/workflow/PLAYBOOK.md` and `/workflow/FILE_CONTRACTS.md` for phase gates and evidence
+- Follow `AGENTS.md` and `workflow/COMMANDS.md` for routine maintenance checks. Archived phase-gate references live under `workflow/archive/`.
 - Use a subagent for test verification when the test suite is large
 
 ## Implementation
@@ -58,7 +58,7 @@ Use these baseline principles for context discipline, commit habits, worktree us
 
 ## Escalation
 
-- Use `/workflow/FAILURE_ROUTING.md` for retry, model-switch, and escalation paths
+- Use `workflow/archive/FAILURE_ROUTING.md` for historical retry, model-switch, and escalation paths
 - If policy docs conflict, follow precedence in `AGENTS.md`
 
 ## Claude-Specific Commands

@@ -28,11 +28,13 @@ class TemplateBrowserWidget(QWidget):
     Emits:
         template_selected(Template): Fired when a template is clicked.
         new_template_requested(): Fired when "New" is clicked.
+        template_deleted(Template): Fired after a template is deleted from disk.
         status_message(str, int): Fired with a message and duration (ms).
     """
 
     template_selected = pyqtSignal(object)
     new_template_requested = pyqtSignal()
+    template_deleted = pyqtSignal(object)
     status_message = pyqtSignal(str, int)
 
     def __init__(self, parent: Optional[QWidget] = None):
@@ -179,7 +181,8 @@ class TemplateBrowserWidget(QWidget):
         if manager.delete(template):
             self._current_template = None
             self.load_templates()
-            self.status_message.emit(f"Deleted '{template.name}'", 3000)
+            self.status_message.emit(f"Deleted '{template.name}'; publishing changes", 3000)
+            self.template_deleted.emit(template)
         else:
             self.status_message.emit(f"Failed to delete '{template.name}'", 5000)
 

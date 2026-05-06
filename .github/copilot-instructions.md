@@ -43,11 +43,12 @@ At the start of every session:
 3. If a task is active, read the task file from `/tasks/`
 4. If no task is active and the request is routine, use the Phase 8 stable maintenance path
 
-See `workflow/ORCHESTRATOR.md` for the full loop contract.
+For `/continue` loop details, see the historical reference at
+`workflow/archive/ORCHESTRATOR.md`.
 
 ## Key References
 
 - Agent routing and branch naming: `workflow/ROUTING.md`
 - Build/test/lint commands: `workflow/COMMANDS.md`
-- Orchestrator loop: `workflow/ORCHESTRATOR.md`
+- Orchestrator loop reference: `workflow/archive/ORCHESTRATOR.md`
 - Archived lifecycle/governance docs: `workflow/archive/`, `meta-prompts/archive/`

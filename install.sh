@@ -176,7 +176,7 @@ echo -e "${GREEN}╔════════════════════
 echo -e "${GREEN}║   espansr installed successfully!   ║${NC}"
 echo -e "${GREEN}╚══════════════════════════════════════════════╝${NC}"
 echo ""
-echo "  CLI:  espansr sync / status / list"
+echo "  CLI:  espansr publish / status / list / doctor"
 echo "  GUI:  espansr gui"
 echo "  Bin:  $VENV_CMD"
 echo ""

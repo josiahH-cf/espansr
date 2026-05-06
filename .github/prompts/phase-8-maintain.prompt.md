@@ -6,8 +6,7 @@ description: 'Ongoing maintenance — documentation, compliance, and standards e
 <!-- generated-from-metaprompt -->
 
 [AGENTS.md](../../AGENTS.md)
-[workflow/PLAYBOOK.md](../../workflow/PLAYBOOK.md)
-[workflow/FILE_CONTRACTS.md](../../workflow/FILE_CONTRACTS.md)
+[workflow/COMMANDS.md](../../workflow/COMMANDS.md)
 
 # Phase 8 — Maintain
 
@@ -56,17 +55,17 @@ When the user asks for a focused template, prompt, documentation, or small workf
 2. Inspect git state and avoid unrelated changes.
 3. Make only the focused edit requested.
 4. Update direct counterparts when needed for consistency, such as `meta-prompts/` plus `.github/prompts/` copies.
-5. Run relevant checks from `workflow/COMMANDS.md`; for template changes, also validate/import/sync as applicable.
+5. Run relevant checks from `workflow/COMMANDS.md`; for template changes, also validate/import/publish as applicable.
 6. Summarize the diff and verification evidence.
-7. If the user requested completion and permissions/repository state allow it, commit, push, open a PR, and merge according to `workflow/CONCURRENCY.md → Automatic Git Workflow`.
+7. If the user requested completion and permissions/repository state allow it, commit, push, open a PR, and merge. Use `workflow/archive/CONCURRENCY.md` only as a historical deep reference when needed.
 
 Stop before git completion if unrelated dirty files are present, checks fail, credentials are unavailable, CI or branch protection cannot be satisfied, or human approval is required.
 
 ### Initial Setup (first run after shipping)
 1. Select maintenance level (prompt if not provided)
-2. Generate README from constitution + feature specs
-3. Generate CONTRIBUTING from AGENTS.md conventions
-4. Produce release notes from implemented features
+2. Update README only if current behavior or install flow changed
+3. Update CONTRIBUTING only if contributor workflow changed
+4. Produce release notes from shipped changes
 5. Run security baseline check
 
 ### Ongoing (periodic)

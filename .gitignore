@@ -21,6 +21,8 @@ CLAUDE.local.md
 *.egg-info/
 **/__pycache__/
 .pytest_cache/
+.tmp_pytest/
+pytest-cache-files-*/
 .ruff_cache/
 .mypy_cache/
 .coverage

@@ -1,7 +1,7 @@
 """Tests for GUI keyboard shortcuts.
 
 Spec: /specs/gui-keyboard-shortcuts.md
-Covers: Ctrl+S sync, Ctrl+N clear, Ctrl+I import, Ctrl+F focus search,
+Covers: Ctrl+S publish, Ctrl+N clear, Ctrl+I import, Ctrl+F focus search,
 Delete/Ctrl+D delete, tooltip shortcut hints.
 
 Strategy: QShortcut does not reliably fire in headless test environments,
@@ -72,7 +72,7 @@ def _make_window(qtbot, config, tm=None, tmp_path=None):
     return window
 
 
-# ── Ctrl+S — Sync Now ────────────────────────────────────────────────────────
+# ── Ctrl+S — Publish ─────────────────────────────────────────────────────────
 
 
 def test_ctrl_s_triggers_sync(qtbot, tmp_path):

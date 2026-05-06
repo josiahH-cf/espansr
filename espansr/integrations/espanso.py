@@ -573,11 +573,37 @@ def sync_to_espanso(
 
         matches.append(match_entry)
 
-    if not matches:
-        print("No templates with triggers found")
-        return True
-
     output_path = match_dir / "espansr.yml"
+
+    if not matches:
+        if dry_run:
+            print(f"[dry-run] No templates with triggers found; would leave {output_path} empty")
+            return True
+
+        removed_stale_output = False
+        try:
+            if output_path.exists():
+                output_path.unlink()
+                removed_stale_output = True
+        except OSError as e:
+            print(f"Error removing Espanso file: {e}")
+            return False
+
+        if removed_stale_output:
+            print(f"No templates with triggers found; removed {output_path}")
+            if is_wsl2():
+                _restart_espanso_wsl2()
+            elif is_windows():
+                if restart_espanso():
+                    print("Espanso restarted successfully.")
+                else:
+                    print(
+                        "Note: Run 'espanso restart' from a new PowerShell window "
+                        "to reload triggers."
+                    )
+        else:
+            print("No templates with triggers found")
+        return True
 
     if dry_run:
         print(f"[dry-run] Would write {len(matches)} trigger(s) to {output_path}")
@@ -630,7 +656,8 @@ def _restart_espanso_wsl2() -> None:
                 "-Command",
                 "cd C:/; espanso service stop",
             ],
-            capture_output=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=10,
         )
         result = subprocess.run(
@@ -640,7 +667,8 @@ def _restart_espanso_wsl2() -> None:
                 "-Command",
                 "cd C:/; Start-Process espanso -ArgumentList 'service','start' -WindowStyle Hidden",
             ],
-            capture_output=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             timeout=10,
         )
         if result.returncode == 0:
@@ -685,7 +713,8 @@ def restart_espanso() -> bool:
         try:
             subprocess.run(
                 ["powershell.exe", "-Command", "espanso restart"],
-                capture_output=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 timeout=10,
             )
             return True
@@ -695,7 +724,11 @@ def restart_espanso() -> bool:
     exe = _find_espanso_executable()
     if exe:
         try:
-            kwargs: dict = {"capture_output": True, "timeout": 15}
+            kwargs: dict = {
+                "stdout": subprocess.DEVNULL,
+                "stderr": subprocess.DEVNULL,
+                "timeout": 15,
+            }
             if is_windows():
                 import subprocess as _sp
 

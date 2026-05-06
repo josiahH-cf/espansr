@@ -27,6 +27,8 @@ build/
 __pycache__/
 *.pyc
 .pytest_cache/
+.tmp_pytest/
+pytest-cache-files-*/
 coverage/
 
 # Git internals

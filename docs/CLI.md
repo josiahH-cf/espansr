@@ -16,6 +16,7 @@ The daily command lanes are:
 | Pull | `espansr pull` | Configured Git remote | Pulls remote templates, then writes Espanso YAML output |
 | Push | `espansr push` | Local live templates | Commits and pushes template JSON to the remote |
 | Starters | `espansr starters` | Bundled starter templates | Checks or applies bundled starter updates |
+| Retire | `espansr retire TARGET` | Local live templates | Backs up, deletes, then refreshes Espanso YAML output |
 | Remote | `espansr remote ...` | Remote configuration | Sets, reports, or removes the Git remote |
 
 `espansr sync`, `espansr sync-down`, and `espansr sync-bundled` remain available as legacy aliases for `publish`, `pull`, and `starters` respectively.
@@ -92,6 +93,28 @@ espansr push --message "Update signature template"
 
 Use `push` when the local template store is the source of truth and you want to share those template JSON files with other machines through Git.
 
+### `espansr retire`
+
+Back up and delete one local template, then publish the remaining templates to
+Espanso with bundled-template updates disabled for that run.
+
+`TARGET` resolves by exact trigger, exact template name, exact filename, or exact
+relative path under the live template directory. Ambiguous targets are rejected;
+use a relative path when two folders contain the same filename.
+
+```bash
+espansr retire :sig
+espansr retire sig.json
+espansr retire snippets/sig.json
+espansr retire "Email Signature"
+espansr retire :sig --dry-run
+```
+
+Retirement preserves a local backup under `_versions/` where possible. It only
+updates espansr-managed Espanso output; unmanaged Espanso YAML files are left
+alone. If the retired template was the last triggered template, stale
+`espansr.yml` output is removed.
+
 ### `espansr remote`
 
 Configure or inspect the Git remote used by `pull` and `push`.
@@ -121,7 +144,7 @@ espansr list
 
 ### `espansr setup`
 
-Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial sync, and generates the launcher, commands popup trigger, and orchestratr manifest.
+Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial publish, and generates the launcher, commands popup trigger, and orchestratr manifest.
 
 `setup` is bootstrap-only for bundled templates: it copies missing starter templates, but it does not overwrite existing live templates. Use `espansr starters --apply` if bundled starter templates change later and you want to refresh the live store.
 
@@ -214,7 +237,7 @@ espansr --version
 
 ## Global Behavior
 
-- **`--dry-run`** — Available on `publish`, `sync`, `starters`, `sync-bundled`, and `setup`. Previews changes without writing files.
+- **`--dry-run`** — Available on `publish`, `sync`, `retire`, `starters`, `sync-bundled`, and `setup`. Previews changes without writing files.
 - **`--verbose`** — Available on `starters`, `sync-bundled`, and `setup`. Shows per-file detail.
 - **`--strict`** — Available on `setup`. Returns exit code 1 if Espanso is not detected.
 - **Colored output** — CLI output uses colors when connected to a TTY. Respects the `NO_COLOR` environment variable.

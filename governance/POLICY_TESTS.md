@@ -1,35 +1,35 @@
 # Policy Tests
 
-Map policy requirements to validation signals.
+Map active policy expectations to validation signals. These checks are intended
+to keep the repository coherent without making routine maintenance depend on
+archived lifecycle scaffolding.
 
 ## Required Checks
 
 | Requirement | Signal | Source |
 |---|---|---|
-| Feature spec has Feature ID and AC IDs | Pattern check in spec file | `/specs/*.md` |
-| Feature task file maps tasks to AC IDs | Pattern check in task file | `/tasks/*.md` |
-| Feature task status counts are coherent | Status/checklist consistency check | `/tasks/*.md` |
-| Every active feature spec has matching task file | Filename/feature-id parity check | `/specs/*.md`, `/tasks/*.md` |
-| PR includes verification and rollback | PR template checklist complete; routine maintenance may use request/check evidence instead of spec/task evidence | `/.github/PULL_REQUEST_TEMPLATE.md` |
-| Constitution placeholders resolved after Compass | Fail if `[PROJECT-SPECIFIC]` remains in constitution for phase >= `3-define-features` | `/.specify/constitution.md`, `/workflow/STATE.json` |
-| AGENTS placeholders resolved after Scaffold Project | Fail if `[PROJECT-SPECIFIC]` remains in AGENTS for phase >= `5-fine-tune-plan` | `/AGENTS.md`, `/workflow/STATE.json` |
-| Build, lint, test commands are defined | No placeholder commands in AGENTS and no default CI command markers by phase >= `5-fine-tune-plan` | `/AGENTS.md`, `/.github/workflows/copilot-setup-steps.yml`, `/workflow/STATE.json` |
-| Continue state is valid | `workflow/STATE.json` parses and points to existing task file | `/workflow/STATE.json` |
-| Adapter files do not redefine canon | Adapter references AGENTS/workflow docs | `/CLAUDE.md`, `/.github/copilot-instructions.md` |
-| AGENTS.md links resolve | Every markdown link in AGENTS.md points to an existing file | `/AGENTS.md` |
-| Modular workflow files present | ROUTING.md, COMMANDS.md, BOUNDARIES.md, FILE_CONTRACTS.md exist | `/workflow/` |
-| Workflow lint runs without error | `scripts/workflow-lint.sh` exits 0 and produces `workflow/LINT_REPORT.md` | `/workflow/LINT_REPORT.md` |
-| Lint contract present | `workflow/LINT_CONTRACT.md` exists with four check categories | `/workflow/LINT_CONTRACT.md` |
+| Stable maintenance path is documented | `AGENTS.md` describes routine template/docs/prompt cleanup without new specs/tasks | `/AGENTS.md` |
+| Active workflow files exist | `STATE.json`, `COMMANDS.md`, and `ROUTING.md` are present and linked from `AGENTS.md` | `/workflow/` |
+| Continue state is valid | `workflow/STATE.json` parses and points to an existing task file when `currentTaskFile` is set | `/workflow/STATE.json` |
+| Build, lint, and test commands are defined | Commands are concrete and match project tooling | `/workflow/COMMANDS.md` |
+| Adapter files do not redefine canon | Adapters reference `AGENTS.md` and active workflow docs instead of inventing separate policy | `/CLAUDE.md`, `/.github/copilot-instructions.md` |
+| PR includes verification and rollback guidance | PR template checklist covers verification; routine maintenance may use request/check evidence instead of spec/task evidence | `/.github/PULL_REQUEST_TEMPLATE.md` |
+| Constitution placeholders resolved | Fail if `[PROJECT-SPECIFIC]` remains in constitution for active work | `/.specify/constitution.md` |
+| Archived workflow links are explicit | References to archived lifecycle files use `workflow/archive/...` paths | `/workflow/`, `/governance/`, adapters |
+| Workflow lint is non-destructive when available | `scripts/workflow-lint.sh` exists; skip on native Windows per `workflow/COMMANDS.md` | `/scripts/workflow-lint.sh`, `/workflow/COMMANDS.md` |
 | Routine maintenance is scoped | Diff only touches requested files and direct counterparts; final/PR evidence names request type and checks | Assistant summary / PR body |
 
 ## CI Mapping
 
-- Run structural checks before language-specific checks.
-- Run build/lint/test checks using AGENTS command values.
-- Block merge on any failed policy test.
+- Run language-specific checks from `workflow/COMMANDS.md`.
+- Run policy or workflow lint only where its environment is available.
+- Treat routine maintenance as valid without new specs/tasks when it stays
+  inside the stable-maintenance scope defined in `AGENTS.md`.
 
 ## Failure Semantics
 
-- Policy test failure means process drift, not optional warning.
-- Fix policy or artifact shape before continuing feature delivery.
-- Routine maintenance without new specs/tasks is valid when it stays inside the stable-maintenance scope defined in `AGENTS.md` and `workflow/PLAYBOOK.md`.
+- Policy test failure means repository drift, not an optional warning.
+- Fix policy references or artifact shape before relying on an affected
+  workflow gate.
+- Archived lifecycle files are retained as historical references unless the
+  maintainer explicitly requests archival deletion or restoration.

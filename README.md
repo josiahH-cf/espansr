@@ -1,161 +1,145 @@
-# 🧩 espansr
+# espansr
 
 [![CI](https://github.com/josiahH-cf/espansr/actions/workflows/ci.yml/badge.svg)](https://github.com/josiahH-cf/espansr/actions/workflows/ci.yml)
 
-**Manage your [Espanso](https://espanso.org/) text expansions with a visual GUI and powerful CLI.**
+`espansr` is a local-first GUI and CLI manager for [Espanso](https://espanso.org/) text expansion templates. It stores editable templates as JSON, validates them, and publishes managed Espanso YAML output.
 
----
+The project is installed from this repository. A PyPI or pipx install path is not documented here because the repository currently provides script-based source installs.
 
-## ✨ What is this?
-
-You know how you type the same emails, code snippets, and responses over and over? [Espanso](https://espanso.org/) auto-expands those for you — type a short trigger like `:greet` and it expands into a full message.
-
-**espansr** gives you a visual template manager + CLI to organize, edit, validate, and sync your text expansion templates to Espanso. No more hand-editing YAML files.
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone
+## Quick Start
 
 ```bash
 git clone https://github.com/josiahH-cf/espansr.git
 cd espansr
 ```
 
-### 2. Install
+Install with the script for the environment where you want to run `espansr`:
 
 ```bash
-# Linux / macOS / WSL2
+# Linux / macOS / intentional WSL-side install
 ./install.sh
 
-# Windows (PowerShell)
+# Windows host install from PowerShell
 .\install.ps1
 ```
 
-If your machine is a Windows host, prefer `.\install.ps1` from Windows PowerShell.
-Windows PowerShell and WSL are separate environments: separate virtual
-environments, separate PATH updates, and separate shell integration. Use
-`./install.sh` inside WSL only when you intentionally want a WSL-side
-`espansr` install that manages the Windows Espanso config.
+Windows PowerShell and WSL are separate environments. If your machine is a Windows host, use `.\install.ps1` unless you intentionally want a WSL-side `espansr` install that manages Windows-side Espanso config files.
 
-### 3. Launch
+First use:
 
 ```bash
-espansr gui      # 🖥️  open the visual editor
-espansr publish  # ⌨️  or publish from the command line
+espansr doctor
+espansr gui
+espansr publish
 ```
 
-**That's it.** You're managing Espanso templates. 🎉
+After setup, type `:aopen` anywhere Espanso expands text to open the editor, or type `:coms` to open the command popup.
 
----
+## What espansr Manages
 
-## 🔄 How It Works
+`espansr` manages:
 
-```
-┌─────────────────┐       ┌──────────┐       ┌─────────────────┐
-│  Your Templates  │──────▶│  espansr  │──────▶│  Espanso Config  │
-│  (JSON files)    │       │ GUI / CLI │       │  (YAML matches)  │
-└─────────────────┘       └──────────┘       └─────────────────┘
-                                                      │
-                                                      ▼
-                                              Type a trigger ➜
-                                              Text auto-expands ✨
-```
+- Live template JSON files in your platform-specific `espansr` config directory.
+- Bundled starter templates copied from this repository on setup.
+- Managed Espanso files named `espansr.yml`, `espansr-launcher.yml`, and `espansr-commands.yml`.
+- Optional Git-backed template sync through `espansr remote`, `pull`, and `push`.
 
-1. **Create/edit** templates in the GUI or as JSON files
-2. **Publish** to Espanso with one click or `espansr publish`
-3. **Type** your triggers anywhere — Espanso expands them instantly
+`espansr` does not replace Espanso, manage arbitrary Espanso YAML, or delete unmanaged Espanso files.
 
----
+## Template Lifecycle
 
-## 🖥️ GUI + ⌨️ CLI
-
-espansr works both ways — pick what fits your workflow:
-
-### GUI
-
-- Browse and search all your templates
-- Edit triggers, content, and variables visually
-- Live YAML preview — see exactly what Espanso will get
-- Dark/light mode with system auto-detection
-- One-click publish
-
-### CLI
+Create or edit templates with `espansr gui`, or import JSON with:
 
 ```bash
-espansr publish          # publish local templates → Espanso
-espansr publish --dry-run # preview without writing
-espansr pull             # pull remote templates, then refresh Espanso
-espansr push             # push local templates to the remote
+espansr import file.json
+```
+
+Validate templates before publishing:
+
+```bash
+espansr validate
+```
+
+Publish local templates to Espanso:
+
+```bash
+espansr publish
+espansr publish --dry-run
+```
+
+Sync template JSON across machines with an existing Git remote:
+
+```bash
+espansr remote set git@github.com:USER/REPO.git
+espansr pull
+espansr push
+```
+
+Inspect or apply bundled starter updates:
+
+```bash
+espansr starters
+espansr starters --apply
+```
+
+Retire a template and refresh managed Espanso output:
+
+```bash
+espansr retire :trigger
+espansr retire template_file.json --dry-run
+```
+
+Legacy aliases remain available for compatibility: `espansr sync` for `publish`, `espansr sync-down` for `pull`, and `espansr sync-bundled` for `starters`.
+
+## Common Commands
+
+```bash
+espansr gui              # open the visual editor
+espansr publish          # write managed Espanso YAML
+espansr pull             # pull remote templates, then publish locally
+espansr push             # push local JSON templates to the remote
 espansr starters         # inspect bundled starter drift
-espansr list             # list templates and triggers
-espansr status           # check Espanso connection
-espansr validate         # check templates for issues
-espansr import file.json # import external templates
-espansr doctor           # run diagnostic checks
+espansr retire TARGET    # back up, delete, and publish after retirement
+espansr list             # list templates with triggers
+espansr status           # show Espanso connection details
+espansr validate         # check template issues
+espansr doctor           # run setup diagnostics
 ```
 
-Legacy aliases remain available: `espansr sync` for `publish`, `espansr sync-down` for `pull`, and `espansr sync-bundled` for `starters`.
+See [docs/CLI.md](docs/CLI.md) for all commands and flags.
 
-📖 **Full CLI reference:** [docs/CLI.md](docs/CLI.md)
-
----
-
-## 📦 Platform Support
+## Platform Support
 
 | Platform | Install | CLI | GUI | Notes |
 |----------|---------|-----|-----|-------|
-| 🐧 Linux | `./install.sh` | ✅ | ✅ | Python 3.11+ |
-| 🍎 macOS | `./install.sh` | ✅ | ✅ | Python 3.11+ |
-| 🪟 Windows | `.\install.ps1` | ✅ | ✅ | Preferred path for Windows hosts |
-| 🐧 WSL2 | `./install.sh` | ✅ | ✅ | Separate WSL install; uses Windows-side Espanso |
+| Linux | `./install.sh` | yes | yes | Python 3.11+ |
+| macOS | `./install.sh` | yes | yes | Python 3.11+ |
+| Windows | `.\install.ps1` | yes | yes | Preferred for Windows hosts |
+| WSL2 | `./install.sh` | yes | yes | Separate WSL install; uses Windows-side Espanso |
 
-If WSL installation reports missing Espanso config, run:
+If a WSL install cannot find Espanso, install and start Espanso on Windows first or run:
 
 ```bash
 espansr wsl-install-espanso
 ```
 
-### Windows vs WSL
+## GUI Notes
 
-- Windows host: run `.\install.ps1` in Windows PowerShell. This is the
-  simplest path for native Windows usage and the generated `:aopen` launcher.
-- WSL2: run `./install.sh` only if you want `espansr` inside WSL. It does not
-  share PATH, venv, or shell startup files with Windows PowerShell.
-- WSL2 still uses Windows-side Espanso. If WSL reports missing Espanso config,
-  install/start Espanso from PowerShell or use `espansr wsl-install-espanso`.
+The GUI includes template browsing, editing, variable editing, previews, import, remote pull, and publishing. `Ctrl+S` publishes, `Ctrl+N` creates a new template, `Ctrl+I` imports, `Ctrl+F` searches, and `Delete` starts the delete-with-undo flow.
 
----
+Deleting a template from the GUI backs it up locally, removes the JSON file after the undo window, and publishes the remaining templates so managed Espanso output no longer contains the retired trigger.
 
-## ⚡ Key Features
+## Documentation
 
-| Feature | Description |
-|---------|-------------|
-| 🎨 Template editor | Edit triggers, content, and variables with live preview |
-| 🔄 One-click publish | Write templates to Espanso instantly |
-| ✅ Validation | Catches issues before they reach Espanso |
-| 📥 Import | Bring in external template files or directories |
-| 🩺 Doctor | Diagnostic health checks for your setup |
-| 🌙 Dark mode | Auto-detects system theme, or choose manually |
-| ⌨️ Keyboard shortcuts | Ctrl+S sync, Ctrl+N new, Ctrl+I import, Ctrl+F search |
-| 🔗 orchestratr | Optional integration with [orchestratr](https://github.com/josiahH-cf/orchestratr) app launcher |
+| Document | Purpose |
+|----------|---------|
+| [docs/CLI.md](docs/CLI.md) | Command reference |
+| [docs/TEMPLATES.md](docs/TEMPLATES.md) | Template schema and lifecycle details |
+| [docs/VERIFY.md](docs/VERIFY.md) | Post-install and release verification checklist |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Contributor setup and checks |
+| [CHANGELOG.md](CHANGELOG.md) | Release notes |
 
----
-
-## 📖 Documentation
-
-| Document | Description |
-|----------|-------------|
-| [CLI Reference](docs/CLI.md) | All commands, flags, and examples |
-| [Template Format](docs/TEMPLATES.md) | JSON schema, variables, storage paths |
-| [Verification Guide](docs/VERIFY.md) | Post-install checklist to confirm everything works |
-| [Changelog](CHANGELOG.md) | Version history and release notes |
-| [Development Guide](docs/DEVELOPMENT.md) | Setup, testing, project structure for contributors |
-
----
-
-## 🛠️ Quick Template Example
+## Template Example
 
 ```json
 {
@@ -168,10 +152,12 @@ espansr wsl-install-espanso
 }
 ```
 
-Type `:greet` anywhere → `Hello, there! Thanks for reaching out.` ✨
+Typing `:greet` expands through Espanso after `espansr publish`.
 
----
+## Development
 
-## 📄 License
+Contributor setup, tests, linting, and formatting are documented in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
+
+## License
 
 [MIT](LICENSE)

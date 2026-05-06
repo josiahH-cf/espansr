@@ -82,38 +82,89 @@ function Find-Espanso {
     return $null
 }
 
+# Run a command in a background job and wait up to $TimeoutSec seconds.
+# Returns a PSCustomObject with Output (string), ExitCode (int), TimedOut (bool).
+function Invoke-WithTimeout {
+    param(
+        [scriptblock]$ScriptBlock,
+        [object[]]$ArgumentList = @(),
+        [int]$TimeoutSec = 10
+    )
+    $job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
+    $finished = Wait-Job -Job $job -Timeout $TimeoutSec
+    if ($null -eq $finished) {
+        # Timed out — collect whatever output arrived, then clean up
+        Remove-Job -Job $job -Force
+        return [PSCustomObject]@{ Output = ""; ExitCode = -1; TimedOut = $true }
+    }
+    $output = Receive-Job -Job $job 2>&1 | Out-String
+    Remove-Job -Job $job -Force
+    return [PSCustomObject]@{ Output = $output; ExitCode = 0; TimedOut = $false }
+}
+
 function Ensure-EspansoService {
     param([string]$EspansoBin)
+    # $script:EspansoJustStarted is set in the outer scope so the smoke test can add a grace period.
 
+    # ── Registration check ────────────────────────────────────────────────
     Info "Checking Espanso startup registration..."
-    $checkOutput = & $EspansoBin service check 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $checkOutput -match "registered") {
+    $checkResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
+        param([string]$Bin)
+        & $Bin service check 2>&1
+    }
+    if ($checkResult.TimedOut) {
+        Warn "Espanso service check timed out — skipping registration step"
+    }
+    elseif ($checkResult.Output -match "registered") {
         Ok "Espanso service registered for startup"
     }
     else {
         Info "Registering Espanso service for startup..."
-        & $EspansoBin service register | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Ok "Espanso service registered for startup"
+        $regResult = Invoke-WithTimeout -TimeoutSec 10 -ArgumentList $EspansoBin -ScriptBlock {
+            param([string]$Bin)
+            & $Bin service register 2>&1
+        }
+        if ($regResult.TimedOut) {
+            Warn "Espanso service register timed out — may need to run 'espanso service register' manually"
         }
         else {
-            Warn "Could not register Espanso service for startup"
+            Ok "Espanso service registered for startup"
         }
     }
 
-    $statusOutput = & $EspansoBin service status 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $statusOutput -match "running") {
+    # ── Status check ──────────────────────────────────────────────────────
+    $statusResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
+        param([string]$Bin)
+        & $Bin service status 2>&1
+    }
+    if (-not $statusResult.TimedOut -and $statusResult.Output -match "running") {
         Ok "Espanso service running"
+        return
+    }
+
+    # ── Fire-and-forget start + poll ──────────────────────────────────────
+    Info "Starting Espanso service..."
+    Start-Process -FilePath $EspansoBin -ArgumentList "service", "start" -WindowStyle Hidden
+    $script:EspansoJustStarted = $true
+
+    $started = $false
+    for ($i = 0; $i -lt 3; $i++) {
+        Start-Sleep -Seconds 2
+        $pollResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
+            param([string]$Bin)
+            & $Bin service status 2>&1
+        }
+        if (-not $pollResult.TimedOut -and $pollResult.Output -match "running") {
+            $started = $true
+            break
+        }
+    }
+
+    if ($started) {
+        Ok "Espanso service started"
     }
     else {
-        Info "Starting Espanso service..."
-        & $EspansoBin service start | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-            Ok "Espanso service started"
-        }
-        else {
-            Warn "Could not start Espanso service"
-        }
+        Warn "Espanso service start initiated — may take a moment to complete"
     }
 }
 
@@ -165,6 +216,7 @@ else {
 }
 
 $EspansoBin = Find-Espanso
+$EspansoJustStarted = $false
 if ($null -ne $EspansoBin) {
     Ensure-EspansoService -EspansoBin $EspansoBin
 }
@@ -193,6 +245,11 @@ Info "Then open a new terminal for the change to take effect."
 
 # ─── Smoke test ──────────────────────────────────────────────────────────────
 
+if ($EspansoJustStarted) {
+    Info "Waiting for Espanso service to settle..."
+    Start-Sleep -Seconds 2
+}
+
 Info "Running smoke test..."
 
 & $VenvCmd list
@@ -218,7 +275,7 @@ Write-Host "+================================================+" -ForegroundColor
 Write-Host "|   espansr installed successfully!               |" -ForegroundColor Green
 Write-Host "+================================================+" -ForegroundColor Green
 Write-Host ""
-Write-Host "  CLI:  espansr sync / status / list"
+Write-Host "  CLI:  espansr publish / status / list / doctor"
 Write-Host "  GUI:  espansr gui"
 Write-Host "  Bin:  $VenvCmd"
 Write-Host ""

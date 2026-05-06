@@ -25,7 +25,7 @@ The table below captures model strengths as non-binding suggestions. Use these a
 
 ### Advisory Tier Reference
 
-All advisory language in the workflow follows a three-tier model. Tier selection is context-sensitive — it adapts based on `STATE.json → advisoryProfile` and the current phase. See `workflow/ORCHESTRATOR.md → Context-Sensitive Advisory Guidance` for the full model.
+All advisory language in the workflow follows a three-tier model. Tier selection is context-sensitive — it adapts based on `STATE.json → advisoryProfile` and the current phase. See `workflow/archive/ORCHESTRATOR.md → Context-Sensitive Advisory Guidance` for the historical full model.
 
 | Tier | Prefix | Meaning |
 |------|--------|---------|
@@ -64,7 +64,7 @@ When assigning tasks for parallel execution:
 1. Verify no file overlap between tasks (check `Files:` fields in task files)
 2. If overlap exists, reassign to a single agent or redesign the split
 3. Run `scripts/clash-check.sh` after worktree creation to detect existing conflicts
-4. See `workflow/CONCURRENCY.md` for full concurrency safety reference
+4. See `workflow/archive/CONCURRENCY.md` for the historical full concurrency safety reference
 
 ## Multi-Agent `/continue` Coordination
 
@@ -78,4 +78,4 @@ When `/continue` is invoked in multiple tools simultaneously, each agent follows
 
 If no unclaimed work exists, the agent reports "nothing to claim" rather than duplicating.
 
-See `workflow/ORCHESTRATOR.md` for the full claim-based loop contract.
+See `workflow/archive/ORCHESTRATOR.md` for the historical full claim-based loop contract.

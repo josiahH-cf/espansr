@@ -62,7 +62,7 @@ Each template is a JSON file with the following fields:
 | `stage` | string | No | Optional position within a workflow chain, such as `goal`, `plan`, `review`, or `archive`. |
 | `next_triggers` | array | No | Suggested follow-up triggers that naturally continue the workflow. |
 | `replaces` | array | No | Previous bundled trigger names or template identifiers replaced by this template during migration planning. |
-| `deprecated` | boolean | No | Marks a template as intentionally retired while preserving migration context. |
+| `deprecated` | boolean | No | Migration metadata for bundled templates. Current publish behavior does not skip a template only because this field is true. |
 | `variables` | array | No | List of variable definitions for placeholders in `content`. |
 
 Workflow metadata fields are optional for user templates, but bundled workflow
@@ -78,16 +78,27 @@ and migration checks to present a coherent prompt chain.
 | `default` | string | No | Default value for the variable |
 | `type` | string | No | Variable type: `"date"` enables date format field, `"form"` enables multiline |
 
+## Creating Templates
+
+Create templates with the GUI **New** and **Save** actions, by importing a JSON
+file with `espansr import`, or by adding a JSON file that follows the schema
+above to the live template directory.
+
+Bundled helper prompts such as `:template-builder` can help draft template JSON,
+but the saved file still needs to validate with `espansr validate`.
+
 ## Publish Behavior
 
-When you run `espansr publish` (or the legacy alias `espansr sync`) or click "Sync Now" in the GUI, including auto-sync:
+When you run `espansr publish` (or the legacy alias `espansr sync`) or click
+**Publish** in the GUI, including auto-publish:
 
 1. Missing or changed bundled templates are applied to the live template store.
 2. Changed bundled-matching live templates are backed up under `_versions/` before replacement.
 3. Templates with a `trigger` field are converted to Espanso YAML match format.
 4. The generated YAML is written to the Espanso config directory.
-5. Templates without a trigger are skipped during sync.
-6. Duplicate triggers and validation issues are reported before sync.
+5. Templates without a trigger are skipped during publish.
+6. Duplicate triggers and validation issues are reported before publish.
+7. If no triggered templates remain, stale managed `espansr.yml` output is removed.
 
 The generated `:aopen` and `:coms` triggers live in separate managed Espanso
 files (`espansr-launcher.yml` and `espansr-commands.yml`) so they remain
@@ -95,8 +106,8 @@ available even though they are not regular template JSON files.
 
 In the GUI, clicking **Save** also regenerates the Espanso match file from the
 saved live templates so the edited trigger is reflected immediately. Clicking
-**Sync Now** first saves any dirty editor changes; when it saves editor changes
-as part of that sync, bundled-template refresh is skipped for that run so the
+**Publish** first saves any dirty editor changes; when it saves editor changes
+as part of that publish, bundled-template refresh is skipped for that run so the
 just-saved local edit is not overwritten before Espanso sees it.
 
 ## Remote Pull and Push
@@ -124,8 +135,9 @@ Use `espansr push` when your local live template store is the source of truth an
 
 ## Bundled Drift Reconciliation
 
-Normal `espansr publish`, legacy `espansr sync`, GUI Sync Now, and GUI auto-sync apply missing or changed
-bundled template updates before writing Espanso output.
+Normal `espansr publish`, legacy `espansr sync`, GUI Publish, and GUI
+auto-publish apply missing or changed bundled template updates before writing
+Espanso output.
 
 If you want to inspect or explicitly manage bundled starter drift, use:
 
@@ -143,6 +155,26 @@ espansr starters --apply --force
 - Local-only templates that do not belong to the bundled starter set are preserved.
 - Invalid local JSON is reported and skipped by default.
 - `--apply --force` backs up invalid bundled-matching local files under `_versions/` and then replaces them with the bundled copy.
+
+## Retiring Templates
+
+Retire a live template with the GUI delete flow or the CLI:
+
+```bash
+espansr retire :trigger
+espansr retire template_file.json --dry-run
+```
+
+`espansr retire TARGET` resolves an exact trigger, template name, filename, or
+relative path. It backs up the matching template under `_versions/`, deletes the
+live JSON file, and publishes the remaining triggered templates with bundled
+updates disabled for that run.
+
+GUI delete follows the same lifecycle after the undo window closes: the JSON
+file is backed up and removed, then the remaining templates are published.
+
+Retirement only updates espansr-managed Espanso output. It does not delete
+unmanaged Espanso YAML files.
 
 ## Importing Templates
 

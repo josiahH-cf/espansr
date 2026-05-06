@@ -51,8 +51,8 @@ class MainWindow(QMainWindow):
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
 
-        self._sync_btn = QPushButton("Sync Now")
-        self._sync_btn.setToolTip("Sync templates to Espanso (Ctrl+S)")
+        self._sync_btn = QPushButton("Publish")
+        self._sync_btn.setToolTip("Publish templates to Espanso (Ctrl+S)")
         self._sync_btn.clicked.connect(self._do_sync)
         toolbar.addWidget(self._sync_btn)
 
@@ -66,7 +66,8 @@ class MainWindow(QMainWindow):
         self._import_btn.clicked.connect(self._do_import)
         toolbar.addWidget(self._import_btn)
 
-        self._auto_sync_cb = QCheckBox("Auto-sync")
+        self._auto_sync_cb = QCheckBox("Auto-publish")
+        self._auto_sync_cb.setToolTip("Publish template changes to Espanso on a timer")
         self._auto_sync_cb.setChecked(self._config.espanso.auto_sync)
         self._auto_sync_cb.stateChanged.connect(self._toggle_auto_sync)
         toolbar.addWidget(self._auto_sync_cb)
@@ -121,6 +122,7 @@ class MainWindow(QMainWindow):
         # Wire signals
         self._browser.template_selected.connect(self._editor.load_template)
         self._browser.new_template_requested.connect(self._editor.clear)
+        self._browser.template_deleted.connect(self._on_template_deleted)
         self._editor.template_saved.connect(self._on_template_saved)
         self._browser.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
         self._editor.status_message.connect(lambda msg, ms: status_bar.showMessage(msg, ms))
@@ -220,7 +222,7 @@ class MainWindow(QMainWindow):
         if not launcher.exists():
             trigger = self._config.espanso.launcher_trigger or ":aopen"
             self.statusBar().showMessage(
-                f"Tip: Type '{trigger}' anywhere after syncing to launch this GUI. "
+                f"Tip: Type '{trigger}' anywhere after publishing to launch this GUI. "
                 f"Run 'espansr publish' or use install.sh to enable it.",
                 8000,
             )
@@ -235,10 +237,10 @@ class MainWindow(QMainWindow):
         else:
             self._espanso_status.setText("Espanso: not found")
 
-    # ── Sync ────────────────────────────────────────────────────────────────
+    # ── Publish ─────────────────────────────────────────────────────────────
 
     def _do_sync(self, save_current: bool = True, update_bundled: bool = True) -> None:
-        """Perform the Espanso sync and update status bar."""
+        """Publish templates to Espanso and update the status bar."""
         self._sync_btn.setEnabled(False)
         try:
             from espansr.integrations.espanso import sync_to_espanso
@@ -259,7 +261,7 @@ class MainWindow(QMainWindow):
             non_errors = [w for w in warnings if w.severity != "error"]
 
             if errors:
-                msg = f"Sync blocked: {len(errors)} error(s) — {errors[0].message}"
+                msg = f"Publish blocked: {len(errors)} error(s) — {errors[0].message}"
                 self.statusBar().showMessage(msg, 0)  # persistent until acknowledged
                 return
 
@@ -275,15 +277,18 @@ class MainWindow(QMainWindow):
             now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             if result:
                 if count:
-                    self.statusBar().showMessage(f"Synced {count} template(s) to Espanso", 5000)
+                    self.statusBar().showMessage(
+                        f"Published {count} template(s) to Espanso",
+                        5000,
+                    )
                 elif not non_errors:
-                    self.statusBar().showMessage("Sync successful", 5000)
+                    self.statusBar().showMessage("Publish successful", 5000)
                 get_config_manager().update(**{"espanso.last_sync": now})
                 self._browser.refresh()
             else:
-                self.statusBar().showMessage("Sync failed", 5000)
+                self.statusBar().showMessage("Publish failed", 5000)
         except Exception as e:
-            self.statusBar().showMessage(f"Sync error: {e}", 5000)
+            self.statusBar().showMessage(f"Publish error: {e}", 5000)
         finally:
             self._sync_btn.setEnabled(True)
             self._update_espanso_status()
@@ -396,6 +401,11 @@ class MainWindow(QMainWindow):
         """Refresh browser and Espanso output after a template is saved."""
         self._browser.refresh()
         self._browser.select_template_by_name(template.name)
+        self._do_sync(save_current=False, update_bundled=False)
+
+    def _on_template_deleted(self, template) -> None:
+        """Clear deleted template state and publish the remaining templates."""
+        self._editor.clear()
         self._do_sync(save_current=False, update_bundled=False)
 
     def _on_splitter_moved(self, pos: int, index: int) -> None:

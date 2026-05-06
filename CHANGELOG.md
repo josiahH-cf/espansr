@@ -11,22 +11,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Commands popup trigger** — espansr now generates an `espansr-commands.yml`
 	file with a hardcoded `:coms` trigger that opens a lightweight read-only
 	popup showing available Espanso triggers, descriptions, and output previews.
+- **Template retirement command** — `espansr retire TARGET` backs up a live
+	template, deletes the JSON file, and refreshes managed Espanso output.
 
 ### Fixed
 
+- **Retired-template local cleanup** — publishing now removes stale managed
+	`espansr.yml` output when no triggered templates remain.
+- **GUI delete publishing** — deleting a template from the GUI now publishes the
+	remaining templates after the undo window closes.
+- **Windows installer compatibility** — `install.ps1` no longer uses
+	PowerShell 7-only syntax while declaring PowerShell 5.1 support.
 - **WSL candidate path probing hardening** — `espansr doctor` and GUI startup no longer crash when unreadable Windows profile paths exist under `/mnt/c/Users/*`. Unreadable candidate directories are now skipped with warnings so canonical Espanso path detection continues.
 - **WSL launcher regeneration reliability** — rerunning `espansr setup` now refreshes the generated `espansr-launcher.yml` safely for Windows-hosted WSL Espanso configs, so the `:aopen` launcher trigger can recover from stale launcher output without manual YAML edits.
 - **Windows launcher console suppression** — the generated native Windows `:aopen` launcher now prefers `pythonw.exe` and no longer opens an extra console window when it starts the GUI.
-- **First-sync install gap** — `espansr setup` now performs an initial sync when Espanso is detected, so bundled triggers like `:verify` are available immediately after install instead of waiting for a manual save/sync cycle.
+- **First-publish install gap** — `espansr setup` now performs an initial publish when Espanso is detected, so bundled triggers like `:verify` are available immediately after install instead of waiting for a manual save/publish cycle.
 
 ### Changed
 
 - **Windows vs WSL install guidance** — installer output and user docs now make it explicit that Windows PowerShell and WSL are separate environments with separate PATH, shell integration, and `espansr` installs.
 - **Windows installer startup check** — `install.ps1` now verifies Espanso startup registration and starts the service when possible, so native Windows installs do not rely on an implicit prior Espanso boot configuration.
+- **Publish-first wording** — README, verification docs, installers, and quick
+	help now present `publish` as the primary local Espanso output command and
+	keep `sync` only as legacy compatibility wording.
 
 ## [1.1.0] — 2026-03-01
 
-Completes the v1.0 feature roadmap. 333 tests passing.
+Completes the v1.0 feature roadmap with the test suite passing.
 
 ### Added
 

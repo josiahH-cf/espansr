@@ -86,7 +86,7 @@ espansr validate
 espansr publish
 ```
 
-**Expected:** Prints publish/sync summary. If Espanso is installed, the match file is updated.
+**Expected:** Prints a publish summary. If Espanso is installed, the managed match file is updated.
 
 ## 6a. Publish Dry-Run
 
@@ -115,7 +115,15 @@ espansr doctor
 
 **Expected:** Prints a diagnostic report with `[ok]`, `[warn]`, or `[FAIL]` for each check (Python version, config dir, templates, Espanso config, binary, launcher, validation). Exit code 0 if no failures.
 
-## 7b. Tab Completion
+## 7b. Retire Dry-Run
+
+```bash
+espansr retire :test --dry-run
+```
+
+**Expected:** Prints that the template would be backed up, deleted, and published without removing the JSON file.
+
+## 7c. Tab Completion
 
 ```bash
 espansr completions bash
@@ -137,11 +145,12 @@ espansr gui
 - [ ] Edit a trigger and click Save
 - [ ] See the YAML preview update live
 - [ ] Add/edit/delete a variable in the variable editor
-- [ ] Click "Sync Now" in the toolbar
-- [ ] See the status bar update after sync (e.g., "Synced N template(s) to Espanso")
+- [ ] Click "Publish" in the toolbar
+- [ ] See the status bar update after publish (e.g., "Published N template(s) to Espanso")
 - [ ] See the template output preview below the YAML preview
 - [ ] Switch theme via the toolbar combo (Auto/Dark/Light)
-- [ ] Use keyboard shortcuts: Ctrl+S (sync), Ctrl+N (new), Ctrl+I (import), Ctrl+F (search), Delete (delete)
+- [ ] Use keyboard shortcuts: Ctrl+S (publish), Ctrl+N (new), Ctrl+I (import), Ctrl+F (search), Delete (delete)
+- [ ] Delete a test template, wait for the undo window to close, and confirm the status bar publishes the remaining templates
 - [ ] Close and reopen — window position and last template are remembered
 
 ## 8a. Verify the Espanso launcher trigger
@@ -168,8 +177,8 @@ ruff check .
 black --check .
 ```
 
-**Expected:** All 333 tests pass, zero lint errors, zero format issues.
+**Expected:** All tests pass, with zero lint errors and zero format issues.
 
 ---
 
-**All steps pass? You're good to go.** 🎉
+**All steps pass? You're good to go.**

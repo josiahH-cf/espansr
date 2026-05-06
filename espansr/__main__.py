@@ -5,6 +5,7 @@ Commands:
     pull     — Pull remote templates and refresh Espanso output
     push     — Push local templates to the configured remote
     starters — Check or apply bundled starter templates
+    retire   — Back up and delete a local template, then refresh Espanso output
     remote   — Manage remote configuration
     sync     — Legacy alias for publish
 """
@@ -13,6 +14,7 @@ import argparse
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from espansr.core.cli_color import fail, ok, warn
@@ -586,6 +588,138 @@ def cmd_import(args) -> int:
     return 1
 
 
+@dataclass(frozen=True)
+class _RetireMatch:
+    """A resolved retire target."""
+
+    path: Path
+    template: object | None
+    matched_by: str
+
+
+def _iter_live_template_paths(templates_dir: Path) -> list[Path]:
+    """Return live template JSON paths, excluding version/history metadata."""
+    if not templates_dir.exists():
+        return []
+    return [
+        path
+        for path in sorted(templates_dir.glob("**/*.json"))
+        if "_versions" not in path.parts and "_meta" not in path.parts
+    ]
+
+
+def _relative_template_path(path: Path, templates_dir: Path) -> str:
+    """Return a user-facing template path relative to the live template root."""
+    try:
+        return path.relative_to(templates_dir).as_posix()
+    except ValueError:
+        return path.name
+
+
+def _resolve_retire_target(manager, target: str) -> list[_RetireMatch]:
+    """Resolve a retire target by exact trigger, filename/path, or template name."""
+    normalized = target.strip()
+    normalized_path = normalized.replace("\\", "/")
+    templates_dir = manager.templates_dir
+    matches: list[_RetireMatch] = []
+    seen_paths: set[Path] = set()
+
+    def add(path: Path, template: object | None, matched_by: str) -> None:
+        resolved = path.resolve()
+        if resolved in seen_paths:
+            return
+        seen_paths.add(resolved)
+        matches.append(_RetireMatch(path=path, template=template, matched_by=matched_by))
+
+    for path in _iter_live_template_paths(templates_dir):
+        relative = _relative_template_path(path, templates_dir)
+        if path.name == normalized or relative == normalized_path:
+            add(path, manager.load(path), "filename")
+
+    for template in manager.list_all():
+        path = getattr(template, "_path", None)
+        if path is None:
+            continue
+        if getattr(template, "trigger", "") == normalized:
+            add(path, template, "trigger")
+        elif getattr(template, "name", "") == normalized:
+            add(path, template, "name")
+
+    return matches
+
+
+def _describe_retire_match(match: _RetireMatch, templates_dir: Path) -> str:
+    """Return concise detail for retire command output."""
+    path = _relative_template_path(match.path, templates_dir)
+    template = match.template
+    if template is None:
+        return f"{path} (matched by {match.matched_by})"
+
+    name = getattr(template, "name", path)
+    trigger = getattr(template, "trigger", "")
+    if trigger:
+        return f"{name} [{trigger}] at {path} (matched by {match.matched_by})"
+    return f"{name} at {path} (matched by {match.matched_by})"
+
+
+def cmd_retire(args) -> int:
+    """Back up and delete a live template, then refresh Espanso output."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    target = getattr(args, "target", "").strip()
+    dry_run = getattr(args, "dry_run", False)
+    if not target:
+        print(fail("retire requires a trigger, filename, path, or template name"))
+        return 2
+
+    templates_dir = get_templates_dir()
+    manager = TemplateManager(templates_dir=templates_dir)
+    matches = _resolve_retire_target(manager, target)
+
+    if not matches:
+        print(fail(f"No template found for retire target: {target}"))
+        return 1
+
+    if len(matches) > 1:
+        print(fail(f"Retire target is ambiguous: {target}"))
+        for match in matches:
+            print(f"  {_describe_retire_match(match, templates_dir)}")
+        print("Use an exact relative path or filename.")
+        return 2
+
+    match = matches[0]
+    description = _describe_retire_match(match, templates_dir)
+
+    if dry_run:
+        print(f"[dry-run] Would back up and delete {description}")
+        print("[dry-run] Would publish templates to Espanso")
+        return 0
+
+    if match.template is not None:
+        if not manager.delete(match.template, note="Backup before retire"):
+            print(fail(f"Could not retire {description}"))
+            return 1
+    else:
+        backup_path = manager.backup_raw_file(match.path, label="retire-backup")
+        if backup_path is None:
+            print(fail(f"Could not back up {description}"))
+            return 1
+        try:
+            match.path.unlink()
+        except OSError as exc:
+            print(fail(f"Could not delete {description}: {exc}"))
+            return 1
+
+    print(ok(f"Retired {description}"))
+    if sync_to_espanso(update_bundled=False):
+        print(ok("Espanso output refreshed."))
+        return 0
+
+    print(fail("Template retired, but Espanso output refresh failed. Run 'espansr publish'."))
+    return 1
+
+
 def cmd_doctor(args) -> int:
     """Run diagnostic health checks and print a consolidated report.
 
@@ -983,6 +1117,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     subparsers.add_parser("list", help="List templates with triggers")
     subparsers.add_parser("validate", help="Validate templates for Espanso compatibility")
+    retire_parser = subparsers.add_parser(
+        "retire",
+        help="Back up and delete a local template, then publish the remaining templates",
+    )
+    retire_parser.add_argument("target", help="Exact trigger, filename, path, or template name")
+    retire_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="Preview the retirement without deleting or publishing",
+    )
     setup_parser = subparsers.add_parser("setup", help="Run post-install setup")
     setup_parser.add_argument(
         "--strict",
@@ -1073,6 +1218,7 @@ def main() -> None:
         "status": cmd_status,
         "list": cmd_list,
         "validate": cmd_validate,
+        "retire": cmd_retire,
         "import": cmd_import,
         "setup": cmd_setup,
         "doctor": cmd_doctor,

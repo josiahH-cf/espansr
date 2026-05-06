@@ -459,12 +459,20 @@ class TemplateManager:
             print(f"Error saving template: {e}")
             return False
 
-    def delete(self, template: Template) -> bool:
-        """Delete a template from disk."""
+    def delete(
+        self,
+        template: Template,
+        *,
+        create_backup: bool = True,
+        note: str = "Backup before delete",
+    ) -> bool:
+        """Delete a template from disk, preserving a version snapshot by default."""
         if not template._path or not template._path.exists():
             return False
 
         try:
+            if create_backup and self.create_version(template, note=note) is None:
+                return False
             template._path.unlink()
             return True
         except OSError as e:
