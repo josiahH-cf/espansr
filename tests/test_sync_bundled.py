@@ -556,6 +556,13 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [":gaps", ":verify"],
             [":simplify"],
         ),
+        "visual_workflow.json": (
+            ":visual",
+            "explanation",
+            "visual-workflow",
+            [":verify", ":docs-qa"],
+            [],
+        ),
         "gaps.json": (
             ":gaps",
             "analysis",
@@ -651,6 +658,7 @@ def test_bundled_quick_help_uses_renamed_triggers():
     for trigger in [
         ":plain",
         ":explain",
+        ":visual",
         ":gaps",
         ":principles",
         ":verify",
