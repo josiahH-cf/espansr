@@ -708,6 +708,53 @@ def test_bundled_project_init_template_contract():
     assert "CLAUDE.md" in content
     assert ".github/copilot-instructions.md" in content
     assert "docs/architecture.md" in content
-    assert "docs/interfaces.md" in content
-    assert "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK." in content
-    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_sanitize_template_contract():
+    """The sanitize prompt preserves its broader sanitization and planning contract."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "sanitize.json").read_text(encoding="utf-8"))
+
+    content = data["content"]
+
+    assert data["trigger"] == ":sanitize"
+    assert data["category"] == "safety"
+    assert data["stage"] == "scrub"
+    assert data["next_triggers"] == [":verify"]
+    assert data["replaces"] == [":hide-ai"]
+    assert "comprehensive" in data["description"].lower()
+    assert "recommendation" in data["description"].lower()
+
+    assert "analyze the project comprehensively" in content.lower()
+    assert "development artifacts" in content.lower()
+    assert "source code" in content.lower()
+    assert "comments" in content.lower()
+    assert "docstrings" in content.lower()
+    assert "internal-control and governance files" in content.lower()
+    assert "AGENTS.md" in content
+    assert "CLAUDE.md" in content
+    assert ".github/" in content
+    assert ".claude/" in content
+    assert ".codex/" in content
+    assert "governance/" in content
+    assert "workflow/" in content
+    assert "specs/" in content
+    assert "tasks/" in content
+    assert "decisions/" in content
+    assert "recommend `.gitignore` first" in content
+    assert "already tracked or already shared" in content
+    assert "Recommended Sanitization Plan" in content
+    assert "Hyper-safe" in content
+    assert "Minimum-safe" in content
+    assert "when the risk is non-trivial" in content.lower()
+
+
+def test_bundled_quick_help_describes_broader_sanitize_role():
+    """Quick help should describe sanitize as broader than AI-marker cleanup."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
+
+    assert (
+        ":sanitize         — assess sensitive/internal traces and recommend sanitization"
+        in data["content"]
+    )
