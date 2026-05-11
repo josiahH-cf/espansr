@@ -668,13 +668,24 @@ class BundledTemplateApplyResult:
 
 
 _RENAMED_BUNDLED_TEMPLATE_FILES = {
-    "plain.json": ("dumb.json",),
+    "explain_context_comprehensively.json": (
+        "plain.json",
+        "dumb.json",
+        "principles.json",
+        "first_principles_analysis.json",
+        "reality_audit.json",
+    ),
     "gaps.json": ("explain_gaps_comprehensively_pt_2.json",),
-    "principles.json": ("first_principles_analysis.json",),
-    "project_init.json": ("project_scaffold.json",),
-    "feature_init.json": ("scaffold_feature_process.json",),
-    "feature_new.json": ("feature_scope.json",),
-    "feature_next.json": ("feature_continue.json",),
+    "feat.json": (
+        "project_init.json",
+        "feature_init.json",
+        "feature_new.json",
+        "feature_next.json",
+        "project_scaffold.json",
+        "scaffold_feature_process.json",
+        "feature_scope.json",
+        "feature_continue.json",
+    ),
     "sanitize.json": ("hide_ai.json",),
     "docs_qa.json": ("qa_docs.json",),
 }
@@ -785,9 +796,8 @@ def build_bundled_template_report(
             continue
 
         old_filenames = _RENAMED_BUNDLED_TEMPLATE_FILES.get(filename, ())
-        old_local_path = next(
-            (local_root / old for old in old_filenames if old in local_paths), None
-        )
+        old_local_paths = [local_root / old for old in old_filenames if old in local_paths]
+        old_local_path = old_local_paths[0] if old_local_paths else None
         if not local_path.exists():
             if old_local_path is not None:
                 trigger = _coerce_optional_string(bundled_obj.get("trigger", ""))
@@ -830,6 +840,15 @@ def build_bundled_template_report(
                         detail=f"from {old_local_path.name}",
                     )
                 )
+                for retired_path in old_local_paths[1:]:
+                    report.entries.append(
+                        _retired_bundled_template_status(
+                            filename,
+                            bundled_path,
+                            retired_path,
+                            local_path,
+                        )
+                    )
                 continue
 
             report.entries.append(
@@ -854,12 +873,12 @@ def build_bundled_template_report(
                     detail=str(exc),
                 )
             )
-            if old_local_path is not None:
+            for retired_path in old_local_paths:
                 report.entries.append(
                     _retired_bundled_template_status(
                         filename,
                         bundled_path,
-                        old_local_path,
+                        retired_path,
                         local_path,
                     )
                 )
@@ -877,12 +896,12 @@ def build_bundled_template_report(
                 local_path=local_path,
             )
         )
-        if old_local_path is not None:
+        for retired_path in old_local_paths:
             report.entries.append(
                 _retired_bundled_template_status(
                     filename,
                     bundled_path,
-                    old_local_path,
+                    retired_path,
                     local_path,
                 )
             )

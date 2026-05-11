@@ -5,6 +5,6 @@
   "trigger": ":gaps",
   "category": "analysis",
   "stage": "gap-review",
-  "next_triggers": [":principles", ":reality", ":verify"],
+  "next_triggers": [":verify"],
   "replaces": [":critique"]
 }

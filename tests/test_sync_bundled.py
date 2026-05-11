@@ -152,19 +152,19 @@ def test_sync_bundled_apply_migrates_renamed_starter_with_backup(tmp_path, capsy
     bundled_dir.mkdir(parents=True)
     templates_dir.mkdir(parents=True)
 
-    plain_bundled = {
-        "name": "Plain-English Explanation",
+    bundled_template = {
+        "name": "Sanitize Context",
         "content": "new bundled prompt",
-        "trigger": ":plain",
-        "replaces": [":simplify"],
+        "trigger": ":sanitize",
+        "replaces": [":hide-ai"],
     }
     old_local = {
-        "name": "Explain Like I Am Five",
+        "name": "Hide AI Metadata",
         "content": "local edited prompt",
-        "trigger": ":simplify",
+        "trigger": ":hide-ai",
     }
-    _write_json(bundled_dir / "plain.json", plain_bundled)
-    _write_json(templates_dir / "dumb.json", old_local)
+    _write_json(bundled_dir / "sanitize.json", bundled_template)
+    _write_json(templates_dir / "hide_ai.json", old_local)
 
     with (
         patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
@@ -175,10 +175,11 @@ def test_sync_bundled_apply_migrates_renamed_starter_with_backup(tmp_path, capsy
     output = capsys.readouterr().out
     assert exit_code == 0
     assert "migrated" in output.lower()
-    assert json.loads((templates_dir / "plain.json").read_text(encoding="utf-8")) == plain_bundled
-    assert not (templates_dir / "dumb.json").exists()
+    actual_template = json.loads((templates_dir / "sanitize.json").read_text(encoding="utf-8"))
+    assert actual_template == bundled_template
+    assert not (templates_dir / "hide_ai.json").exists()
 
-    version_path = templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json"
+    version_path = templates_dir / "_versions" / "hide_ai_metadata" / "v1.json"
     assert version_path.exists()
     version_data = json.loads(version_path.read_text(encoding="utf-8"))
     assert version_data["template_data"] == old_local
@@ -193,20 +194,20 @@ def test_sync_bundled_apply_retires_old_starter_when_new_exists(tmp_path, capsys
     bundled_dir.mkdir(parents=True)
     templates_dir.mkdir(parents=True)
 
-    plain_bundled = {
-        "name": "Plain-English Explanation",
+    bundled_template = {
+        "name": "Sanitize Context",
         "content": "new bundled prompt",
-        "trigger": ":plain",
-        "replaces": [":simplify"],
+        "trigger": ":sanitize",
+        "replaces": [":hide-ai"],
     }
     old_local = {
-        "name": "Explain Like I Am Five",
+        "name": "Hide AI Metadata",
         "content": "old bundled prompt still present",
-        "trigger": ":simplify",
+        "trigger": ":hide-ai",
     }
-    _write_json(bundled_dir / "plain.json", plain_bundled)
-    _write_json(templates_dir / "plain.json", plain_bundled)
-    _write_json(templates_dir / "dumb.json", old_local)
+    _write_json(bundled_dir / "sanitize.json", bundled_template)
+    _write_json(templates_dir / "sanitize.json", bundled_template)
+    _write_json(templates_dir / "hide_ai.json", old_local)
 
     with (
         patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
@@ -217,13 +218,138 @@ def test_sync_bundled_apply_retires_old_starter_when_new_exists(tmp_path, capsys
     output = capsys.readouterr().out
     assert exit_code == 0
     assert "retired" in output.lower()
-    assert json.loads((templates_dir / "plain.json").read_text(encoding="utf-8")) == plain_bundled
-    assert not (templates_dir / "dumb.json").exists()
+    actual_template = json.loads((templates_dir / "sanitize.json").read_text(encoding="utf-8"))
+    assert actual_template == bundled_template
+    assert not (templates_dir / "hide_ai.json").exists()
 
-    version_path = templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json"
+    version_path = templates_dir / "_versions" / "hide_ai_metadata" / "v1.json"
     assert version_path.exists()
     version_data = json.loads(version_path.read_text(encoding="utf-8"))
     assert version_data["template_data"] == old_local
+
+
+def test_sync_bundled_apply_retires_deleted_analysis_starters(tmp_path, capsys):
+    """Deleted analysis starters retire into the surviving explain prompt."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    bundled_template = {
+        "name": "Explain Context",
+        "content": "new explain prompt",
+        "trigger": ":explain",
+    }
+    old_templates = {
+        "plain.json": {
+            "name": "Plain-English Explanation",
+            "content": "old plain prompt",
+            "trigger": ":plain",
+        },
+        "dumb.json": {
+            "name": "Explain Like I Am Five",
+            "content": "older plain prompt",
+            "trigger": ":simplify",
+        },
+        "principles.json": {
+            "name": "First-Principles Analysis",
+            "content": "old principles prompt",
+            "trigger": ":principles",
+        },
+        "first_principles_analysis.json": {
+            "name": "First Principles Analysis",
+            "content": "older principles prompt",
+            "trigger": ":fp",
+        },
+        "reality_audit.json": {
+            "name": "Reality Audit",
+            "content": "old reality prompt",
+            "trigger": ":reality",
+        },
+    }
+    _write_json(bundled_dir / "explain_context_comprehensively.json", bundled_template)
+    _write_json(templates_dir / "explain_context_comprehensively.json", bundled_template)
+    for filename, data in old_templates.items():
+        _write_json(templates_dir / filename, data)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "retired" in output.lower()
+    assert json.loads(
+        (templates_dir / "explain_context_comprehensively.json").read_text(encoding="utf-8")
+    ) == bundled_template
+    for filename in old_templates:
+        assert not (templates_dir / filename).exists()
+
+    assert (templates_dir / "_versions" / "plainenglish_explanation" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "firstprinciples_analysis" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "first_principles_analysis" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "reality_audit" / "v1.json").exists()
+
+
+def test_sync_bundled_apply_consolidates_feature_switcher_starters(tmp_path, capsys):
+    """Old project/feature starter prompts retire into the single feat switcher."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    bundled_template = {
+        "name": "Feature Switcher",
+        "content": "single switcher prompt",
+        "trigger": ":feat",
+        "replaces": [":project-init", ":feature-new", ":feature-next"],
+    }
+    old_templates = {
+        "project_init.json": {
+            "name": "Project Init",
+            "content": "old project prompt",
+            "trigger": ":project-init",
+        },
+        "feature_new.json": {
+            "name": "Feature New",
+            "content": "old new-feature prompt",
+            "trigger": ":feature-new",
+        },
+        "feature_next.json": {
+            "name": "Feature Next",
+            "content": "old next-feature prompt",
+            "trigger": ":feature-next",
+        },
+    }
+    _write_json(bundled_dir / "feat.json", bundled_template)
+    for filename, data in old_templates.items():
+        _write_json(templates_dir / filename, data)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "migrated" in output.lower()
+    assert "retired" in output.lower()
+    actual_template = json.loads((templates_dir / "feat.json").read_text(encoding="utf-8"))
+    assert actual_template == bundled_template
+    for filename in old_templates:
+        assert not (templates_dir / filename).exists()
+
+    assert (templates_dir / "_versions" / "project_init" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "feature_new" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "feature_next" / "v1.json").exists()
 
 
 def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
@@ -236,21 +362,21 @@ def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
     templates_dir.mkdir(parents=True)
 
     _write_json(
-        bundled_dir / "plain.json",
+        bundled_dir / "sanitize.json",
         {
-            "name": "Plain-English Explanation",
+            "name": "Sanitize Context",
             "content": "new bundled prompt",
-            "trigger": ":plain",
-            "replaces": [":simplify"],
+            "trigger": ":sanitize",
+            "replaces": [":hide-ai"],
         },
     )
     _write_json(
-        templates_dir / "dumb.json",
-        {"name": "Explain Like I Am Five", "content": "old bundled prompt", "trigger": ":simplify"},
+        templates_dir / "hide_ai.json",
+        {"name": "Hide AI Metadata", "content": "old bundled prompt", "trigger": ":hide-ai"},
     )
     _write_json(
-        templates_dir / "custom_plain.json",
-        {"name": "Custom Plain", "content": "mine", "trigger": ":plain"},
+        templates_dir / "custom_sanitize.json",
+        {"name": "Custom Sanitize", "content": "mine", "trigger": ":sanitize"},
     )
 
     with (
@@ -262,8 +388,8 @@ def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
     output = capsys.readouterr().out
     assert exit_code == 2
     assert "trigger collision" in output.lower()
-    assert not (templates_dir / "plain.json").exists()
-    assert (templates_dir / "dumb.json").exists()
+    assert not (templates_dir / "sanitize.json").exists()
+    assert (templates_dir / "hide_ai.json").exists()
 
 
 def test_sync_bundled_apply_skips_invalid_local_json(tmp_path, capsys):
@@ -412,21 +538,21 @@ def test_sync_to_espanso_blocks_renamed_trigger_collision_before_writing(tmp_pat
     match_dir.mkdir(parents=True)
 
     _write_json(
-        bundled_dir / "plain.json",
+        bundled_dir / "sanitize.json",
         {
-            "name": "Plain-English Explanation",
+            "name": "Sanitize Context",
             "content": "new bundled prompt",
-            "trigger": ":plain",
-            "replaces": [":simplify"],
+            "trigger": ":sanitize",
+            "replaces": [":hide-ai"],
         },
     )
     _write_json(
-        templates_dir / "dumb.json",
-        {"name": "Explain Like I Am Five", "content": "old bundled prompt", "trigger": ":simplify"},
+        templates_dir / "hide_ai.json",
+        {"name": "Hide AI Metadata", "content": "old bundled prompt", "trigger": ":hide-ai"},
     )
     _write_json(
-        templates_dir / "custom_plain.json",
-        {"name": "Custom Plain", "content": "mine", "trigger": ":plain"},
+        templates_dir / "custom_sanitize.json",
+        {"name": "Custom Sanitize", "content": "mine", "trigger": ":sanitize"},
     )
 
     manager = TemplateManager(templates_dir=templates_dir)
@@ -444,8 +570,8 @@ def test_sync_to_espanso_blocks_renamed_trigger_collision_before_writing(tmp_pat
 
     assert result is False
     assert not (match_dir / "espansr.yml").exists()
-    assert not (templates_dir / "plain.json").exists()
-    assert (templates_dir / "dumb.json").exists()
+    assert not (templates_dir / "sanitize.json").exists()
+    assert (templates_dir / "hide_ai.json").exists()
 
 
 def test_sync_to_espanso_invalid_bundled_hint_uses_starters_command(tmp_path, capsys):
@@ -527,9 +653,7 @@ def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
         "meta.json": ("context",),
         "context.json": (),
         "template_builder.json": (),
-        "project_init.json": (),
-        "feature_new.json": ("feature_idea",),
-        "feature_next.json": ("direction",),
+        "feat.json": (),
     }
 
     for filename, removed_variable_names in expected.items():
@@ -549,61 +673,35 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
     repo_root = Path(__file__).resolve().parents[1]
     templates_dir = repo_root / "templates"
     expected = {
-        "plain.json": (
-            ":plain",
-            "explanation",
-            "plain-summary",
-            [":gaps", ":verify"],
-            [":simplify"],
+        "feat.json": (
+            ":feat",
+            "workflow",
+            "feature-switcher",
+            [":feat", ":verify", ":save"],
+            [
+                ":project-init",
+                ":feature-init",
+                ":feature-new",
+                ":feature-next",
+                ":project-scaffold",
+                ":scaffold-feature-process",
+                ":feature-scope",
+                ":continue",
+            ],
         ),
         "visual_workflow.json": (
             ":visual",
             "explanation",
             "visual-workflow",
-            [":verify", ":docs-qa"],
+            [":verify"],
             [],
         ),
         "gaps.json": (
             ":gaps",
             "analysis",
             "gap-review",
-            [":principles", ":reality", ":verify"],
+            [":verify"],
             [":critique"],
-        ),
-        "principles.json": (
-            ":principles",
-            "analysis",
-            "first-principles",
-            [":reality", ":verify"],
-            [":fp"],
-        ),
-        "project_init.json": (
-            ":project-init",
-            "workflow",
-            "project-setup",
-            [":feature-init", ":feature-new"],
-            [":project-scaffold"],
-        ),
-        "feature_init.json": (
-            ":feature-init",
-            "workflow",
-            "feature-loop-setup",
-            [":feature-new"],
-            [":scaffold-feature-process"],
-        ),
-        "feature_new.json": (
-            ":feature-new",
-            "workflow",
-            "feature-scope",
-            [":feature-next"],
-            [":feature-scope"],
-        ),
-        "feature_next.json": (
-            ":feature-next",
-            "workflow",
-            "feature-advance",
-            [":verify", ":docs-qa", ":save"],
-            [":continue"],
         ),
         "context.json": (":context", "prompting", "context-reset", [":meta", ":verify"], []),
         "template_builder.json": (
@@ -614,12 +712,19 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [],
         ),
         "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
-        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save", ":verify"], [":qa"]),
+        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save"], [":qa"]),
     }
     retired_files = {
         "dumb.json",
         "explain_gaps_comprehensively_pt_2.json",
         "first_principles_analysis.json",
+        "plain.json",
+        "principles.json",
+        "reality_audit.json",
+        "project_init.json",
+        "feature_init.json",
+        "feature_new.json",
+        "feature_next.json",
         "project_scaffold.json",
         "scaffold_feature_process.json",
         "feature_scope.json",
@@ -656,20 +761,15 @@ def test_bundled_quick_help_uses_renamed_triggers():
     content = data["content"]
 
     for trigger in [
-        ":plain",
         ":explain",
         ":visual",
         ":gaps",
-        ":principles",
         ":verify",
         ":sanitize",
         ":context",
         ":template-builder",
         ":goal",
-        ":project-init",
-        ":feature-init",
-        ":feature-new",
-        ":feature-next",
+        ":feat",
         ":docs-qa",
         ":save",
     ]:
@@ -681,33 +781,54 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":fp",
         ":hide-ai",
         ":qa",
+        ":project-init",
+        ":feature-init",
+        ":feature-new",
+        ":feature-next",
         ":project-scaffold",
         ":scaffold-feature-process",
         ":feature-scope",
         ":continue",
+        ":plain",
+        ":principles",
+        ":reality",
     ]:
         assert stale_trigger not in content
 
 
-def test_bundled_project_init_template_contract():
-    """The project init prompt preserves its core alignment guardrails."""
+def test_bundled_feat_switcher_template_contract():
+    """The feat switcher owns project setup and feature workflow routes."""
     repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "project_init.json").read_text(encoding="utf-8"))
+    data = json.loads((repo_root / "templates" / "feat.json").read_text(encoding="utf-8"))
 
     content = data["content"]
     variables = {variable["name"]: variable for variable in data.get("variables", [])}
 
-    assert data["trigger"] == ":project-init"
-    assert data["replaces"] == [":project-scaffold"]
+    assert data["trigger"] == ":feat"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "feature-switcher"
+    assert data["next_triggers"] == [":feat", ":verify", ":save"]
+    assert data["replaces"] == [
+        ":project-init",
+        ":feature-init",
+        ":feature-new",
+        ":feature-next",
+        ":project-scaffold",
+        ":scaffold-feature-process",
+        ":feature-scope",
+        ":continue",
+    ]
     assert variables == {}
-    assert "Ask only one round of questions before producing the scaffold" in content
-    assert "mark it as `[TBD]`" in content
-    assert "read the current file first" in content
-    assert "merge carefully instead of replacing blindly" in content
+    assert "Route: Project setup" in content
+    assert "Route: Feature loop setup" in content
+    assert "Route: New feature" in content
+    assert "Route: Feature spec" in content
+    assert "Route: Next feature" in content
+    assert "Would create in reality" in content
     assert "AGENTS.md" in content
     assert "CLAUDE.md" in content
     assert ".github/copilot-instructions.md" in content
-    assert "docs/architecture.md" in content
+    assert "features/STATE.json" in content
 
 
 def test_bundled_sanitize_template_contract():

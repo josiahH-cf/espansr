@@ -1,0 +1,10 @@
+{
+  "name": "Merge and Push",
+  "description": "Safely merge relevant changes and push them in a streamlined flow.",
+  "content": "Safely merge all relevant changes and push the result in a streamlined flow.\n\nUse the repository's current Git state as the source of truth. Inspect the current branch, status, remotes, and relevant changes before acting.\n\nGoal: merge the relevant work and push it when the path is clear.\n\nRules:\n- Include only relevant in-scope changes.\n- Keep the flow minimal and avoid unrelated cleanup.\n- Do not discard, reset, force-push, or delete local work.\n- Stop and report if conflicts, unclear branch state, or missing remotes make the safe path ambiguous.\n\nFinal response: report what merged, what pushed, any conflicts or blockers, and the resulting branch state.",
+  "trigger": ":merge",
+  "category": "workflow",
+  "stage": "git-merge",
+  "next_triggers": [],
+  "replaces": []
+}

@@ -1,10 +1,10 @@
 {
   "name": "Docs QA",
-  "description": "Documentation QA pass that updates downstream docs after feature or workflow changes.",
+  "description": "Docs-only fallback QA pass for aligning downstream documentation without a full verification pass.",
   "trigger": ":docs-qa",
   "category": "maintenance",
   "stage": "docs-review",
-  "next_triggers": [":save", ":verify"],
+  "next_triggers": [":save"],
   "replaces": [":qa"],
-  "content": "Review the work completed in the current context and update affected downstream documentation.\n\nThis is a documentation QA pass. Its purpose is to keep docs aligned after feature, behavior, workflow, or implementation changes.\n\nCheck relevant downstream materials, including README files, specs, workflow docs, feature docs, decision docs, implementation notes, project cards or equivalent state files, and any other documentation affected by the change.\n\nRequirements:\n- Identify what changed.\n- Identify which documents are outdated because of that change.\n- Update those documents so they accurately reflect the current state.\n- Flag anything ambiguous, conflicting, or missing.\n- Prioritize correctness, consistency, and downstream coverage."
+  "content": "Review the work completed in the current context and update affected downstream documentation only.\n\nUse this as a focused fallback when I specifically want documentation alignment without a full verification and repair pass. For normal end-of-work verification, use :verify instead.\n\nCheck relevant downstream materials only when they are affected by the change, including README files, specs, workflow docs, feature docs, decision docs, implementation notes, project cards or equivalent state files, quick-help text, prompt-chain hints, and similar project documentation.\n\nRequirements:\n- Identify what changed.\n- Identify which documents are outdated because of that change.\n- Update those documents so they accurately reflect the current state.\n- Flag anything ambiguous, conflicting, or missing.\n- Prioritize correctness, consistency, and downstream coverage."
 }

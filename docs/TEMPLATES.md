@@ -24,10 +24,16 @@ template files:
 - `:coms` opens a lightweight popup showing your available triggers
 
 The bundled starter set also includes reusable AI workflow prompts such as
-`:goal`, `:project-init`, `:feature-init`, `:feature-new`, `:feature-next`,
-`:verify`, `:docs-qa`, `:save`, `:plain`, `:visual`, `:gaps`, `:principles`,
-`:meta`, `:context`, `:template-builder`, and `:sanitize`. Use `:espansr` for the
-current quick reference list.
+`:goal`, `:feat`, `:verify`, `:docs-qa`, `:save`, `:explain`, `:visual`,
+`:gaps`, `:meta`, `:context`, `:template-builder`, and `:sanitize`. Use
+`:espansr` for the current quick reference list. The `:feat` switcher handles
+project setup, feature scaffolding, new-feature planning, specs/tasks, and
+next-feature work in one prompt.
+
+Use `:verify` as the normal end-of-work prompt for fresh-context verification,
+repair, and affected documentation alignment. `:docs-qa` remains available as a
+docs-only fallback when you want documentation alignment without the full
+verification pass.
 
 ## Schema
 
