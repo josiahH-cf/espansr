@@ -1,4 +1,4 @@
-# install.ps1 — espansr installer for native Windows
+# install.ps1 - espansr installer for native Windows
 #
 # Supports: Windows 10/11 with PowerShell 5.1+ or PowerShell 7+
 # Prerequisites: Python 3.11+ installed and in PATH
@@ -14,7 +14,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $VenvDir = Join-Path $ScriptDir ".venv"
 $PythonMin = "3.11"
 
-# ─── Color helpers ────────────────────────────────────────────────────────────
+# Color helpers
 
 function Info  { param([string]$Msg) Write-Host "[INFO] $Msg" -ForegroundColor Cyan }
 function Ok    { param([string]$Msg) Write-Host "[ OK ] $Msg" -ForegroundColor Green }
@@ -27,7 +27,7 @@ function Die {
     exit 1
 }
 
-# ─── Python version check ─────────────────────────────────────────────────────
+# Python version check
 
 function Find-Python {
     $candidates = @("python", "python3")
@@ -62,12 +62,19 @@ function Find-Python {
 function Find-Espanso {
     $cmd = Get-Command espanso -ErrorAction SilentlyContinue
     if ($null -ne $cmd) {
+        $cmdDir = Split-Path -Parent $cmd.Source
+        $daemon = Join-Path $cmdDir "espansod.exe"
+        if (Test-Path $daemon) {
+            return $daemon
+        }
         return $cmd.Source
     }
 
     $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espansod.exe"),
         (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.CMD"),
         (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.exe"),
+        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espansod.exe"),
         (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.CMD"),
         (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.exe"),
         (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\espanso.exe")
@@ -93,7 +100,7 @@ function Invoke-WithTimeout {
     $job = Start-Job -ScriptBlock $ScriptBlock -ArgumentList $ArgumentList
     $finished = Wait-Job -Job $job -Timeout $TimeoutSec
     if ($null -eq $finished) {
-        # Timed out — collect whatever output arrived, then clean up
+        # Timed out - collect whatever output arrived, then clean up
         Remove-Job -Job $job -Force
         return [PSCustomObject]@{ Output = ""; ExitCode = -1; TimedOut = $true }
     }
@@ -106,14 +113,14 @@ function Ensure-EspansoService {
     param([string]$EspansoBin)
     # $script:EspansoJustStarted is set in the outer scope so the smoke test can add a grace period.
 
-    # ── Registration check ────────────────────────────────────────────────
+    # Registration check
     Info "Checking Espanso startup registration..."
     $checkResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
         param([string]$Bin)
-        & $Bin service check 2>&1
+        & $Bin service check 2>&1 | Out-String
     }
     if ($checkResult.TimedOut) {
-        Warn "Espanso service check timed out — skipping registration step"
+        Warn "Espanso service check timed out - skipping registration step"
     }
     elseif ($checkResult.Output -match "registered") {
         Ok "Espanso service registered for startup"
@@ -122,37 +129,37 @@ function Ensure-EspansoService {
         Info "Registering Espanso service for startup..."
         $regResult = Invoke-WithTimeout -TimeoutSec 10 -ArgumentList $EspansoBin -ScriptBlock {
             param([string]$Bin)
-            & $Bin service register 2>&1
+            & $Bin service register 2>&1 | Out-String
         }
         if ($regResult.TimedOut) {
-            Warn "Espanso service register timed out — may need to run 'espanso service register' manually"
+            Warn "Espanso service register timed out - may need to run 'espanso service register' manually"
         }
         else {
             Ok "Espanso service registered for startup"
         }
     }
 
-    # ── Status check ──────────────────────────────────────────────────────
+    # Status check
     $statusResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
         param([string]$Bin)
-        & $Bin service status 2>&1
+        & $Bin service status 2>&1 | Out-String
     }
     if (-not $statusResult.TimedOut -and $statusResult.Output -match "running") {
         Ok "Espanso service running"
         return
     }
 
-    # ── Fire-and-forget start + poll ──────────────────────────────────────
+    # Fire-and-forget start + poll
     Info "Starting Espanso service..."
     Start-Process -FilePath $EspansoBin -ArgumentList "service", "start" -WindowStyle Hidden
     $script:EspansoJustStarted = $true
 
     $started = $false
-    for ($i = 0; $i -lt 3; $i++) {
+    for ($i = 0; $i -lt 10; $i++) {
         Start-Sleep -Seconds 2
         $pollResult = Invoke-WithTimeout -TimeoutSec 5 -ArgumentList $EspansoBin -ScriptBlock {
             param([string]$Bin)
-            & $Bin service status 2>&1
+            & $Bin service status 2>&1 | Out-String
         }
         if (-not $pollResult.TimedOut -and $pollResult.Output -match "running") {
             $started = $true
@@ -164,7 +171,7 @@ function Ensure-EspansoService {
         Ok "Espanso service started"
     }
     else {
-        Warn "Espanso service start initiated — may take a moment to complete"
+        Warn "Espanso service start initiated - not reporting running yet"
     }
 }
 
@@ -180,7 +187,7 @@ if (-not $PythonBin) {
 $pyVersion = & $PythonBin --version
 Ok "Python: $pyVersion"
 
-# ─── Virtual environment ──────────────────────────────────────────────────────
+# Virtual environment
 
 if (Test-Path $VenvDir) {
     Info "Using existing venv: $VenvDir"
@@ -192,19 +199,20 @@ else {
     Ok "Venv created"
 }
 
-$VenvPip = Join-Path $VenvDir "Scripts" "pip.exe"
-$VenvCmd = Join-Path $VenvDir "Scripts" "espansr.exe"
+$VenvScripts = Join-Path $VenvDir "Scripts"
+$VenvPython = Join-Path $VenvScripts "python.exe"
+$VenvCmd = Join-Path $VenvScripts "espansr.exe"
 
 Info "Upgrading pip..."
-& $VenvPip install --quiet --upgrade pip
-if ($LASTEXITCODE -ne 0) { Warn "pip upgrade failed — continuing with existing version" }
+& $VenvPython -m pip install --quiet --disable-pip-version-check --upgrade pip
+if ($LASTEXITCODE -ne 0) { Warn "pip upgrade failed - continuing with existing version" }
 
 Info "Installing espansr..."
-& $VenvPip install --quiet -e $ScriptDir
+& $VenvPython -m pip install --quiet --disable-pip-version-check -e $ScriptDir
 if ($LASTEXITCODE -ne 0) { Die "Package installation failed" }
 Ok "Package installed"
 
-# ─── Post-install setup ──────────────────────────────────────────────────────
+# Post-install setup
 
 Info "Running post-install setup..."
 & $VenvCmd setup
@@ -221,14 +229,13 @@ if ($null -ne $EspansoBin) {
     Ensure-EspansoService -EspansoBin $EspansoBin
 }
 else {
-    Warn "Espanso binary not found — skipping startup registration check"
+    Warn "Espanso binary not found - skipping startup registration check"
 }
 
-# ─── PATH setup ──────────────────────────────────────────────────────────────
+# PATH setup
 
-$VenvScripts = Join-Path $VenvDir "Scripts"
-
-if ($env:PATH -split ";" | Where-Object { $_ -eq $VenvScripts }) {
+$SessionPathEntries = $env:PATH -split ";"
+if ($SessionPathEntries -contains $VenvScripts) {
     Ok "Venv Scripts directory already in session PATH"
 }
 else {
@@ -243,7 +250,7 @@ Write-Host ""
 Info "This updates the Windows user PATH only. WSL PATH and shell aliases are separate."
 Info "Then open a new terminal for the change to take effect."
 
-# ─── Smoke test ──────────────────────────────────────────────────────────────
+# Smoke test
 
 if ($EspansoJustStarted) {
     Info "Waiting for Espanso service to settle..."
@@ -268,7 +275,7 @@ else {
     Warn "espansr status returned non-zero (Espanso may not be installed)"
 }
 
-# ─── Done ─────────────────────────────────────────────────────────────────────
+# Done
 
 Write-Host ""
 Write-Host "+================================================+" -ForegroundColor Green

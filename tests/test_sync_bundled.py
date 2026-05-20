@@ -967,25 +967,37 @@ def test_bundled_gaps_template_contract_preserves_audit_modes():
 
 
 def test_bundled_git_helper_templates_are_executable_commands():
-    """Git helper prompts contain command definitions, not prose-only instructions."""
+    """Git helper prompts contain self-invoking command snippets, not prose only."""
     repo_root = Path(__file__).resolve().parents[1]
     templates_dir = repo_root / "templates"
     expected = {
-        "git_yolo_sh.json": (":git-yolo-sh", "git_yolo_main()", "git merge --ff-only"),
-        "git_rebase_sh.json": (":git-rebase-sh", "git_rebase_main_safe()", "git stash push -u"),
+        "git_yolo_sh.json": (
+            ":git-yolo-sh",
+            "git_yolo_push()",
+            "git push --force",
+            "git_yolo_push",
+        ),
+        "git_rebase_sh.json": (
+            ":git-rebase-sh",
+            "git_rebase_main_safe()",
+            "git stash push -u",
+            "git_rebase_main_safe",
+        ),
         "git_yolo_ps.json": (
             ":git-yolo-ps",
             "function Invoke-GitYoloMain",
-            "Invoke-GitChecked merge --ff-only",
+            "Invoke-GitChecked push --force",
+            "Invoke-GitYoloMain",
         ),
         "git_rebase_ps.json": (
             ":git-rebase-ps",
             "function Invoke-GitRebaseMainSafe",
             "Invoke-GitChecked stash push -u",
+            "Invoke-GitRebaseMainSafe",
         ),
     }
 
-    for filename, (trigger, definition, required_command) in expected.items():
+    for filename, (trigger, definition, required_command, invocation) in expected.items():
         data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
         content = data["content"]
 
@@ -994,6 +1006,15 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert data["next_triggers"] == [":verify"]
         assert definition in content
         assert required_command in content
+        assert content.rstrip().endswith(invocation)
         assert "git reset --hard" not in content
-        assert "--force" not in content
         assert "gh " not in content
+
+        if "yolo" in filename:
+            assert "Run this from a non-main branch." not in content
+            assert "git switch main" not in content
+            assert "git rebase main" not in content
+            assert "git merge --ff-only" not in content
+            assert "--force" in content
+        else:
+            assert "--force" not in content

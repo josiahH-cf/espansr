@@ -1,7 +1,7 @@
 {
   "name": "Git YOLO Linux",
-  "description": "Bash function that commits current branch changes, updates main, rebases the branch onto main, fast-forwards main, and pushes using configured Git upstreams.",
-  "content": "git_yolo_main() {\n  set -e\n  branch=\"$(git branch --show-current)\"\n  if [ -z \"$branch\" ]; then\n    echo \"Not on a branch.\"\n    return 1\n  fi\n  if [ \"$branch\" = \"main\" ]; then\n    echo \"Run this from a non-main branch.\"\n    return 1\n  fi\n\n  if [ -n \"$(git status --porcelain)\" ]; then\n    git add -A\n    git commit -m \"chore: yolo update\"\n  fi\n\n  git fetch\n  git switch main\n  git pull --ff-only\n  git switch \"$branch\"\n  git rebase main\n  git switch main\n  git merge --ff-only \"$branch\"\n  git push\n  git switch \"$branch\"\n  git status --short\n}\n",
+  "description": "Bash snippet that defines and runs a helper to commit all current changes and push the current branch, retrying with force when a normal push is rejected.",
+  "content": "git_yolo_push() {\n  set -e\n  branch=\"$(git branch --show-current)\"\n  if [ -z \"$branch\" ]; then\n    echo \"Not on a branch.\"\n    return 1\n  fi\n\n  if [ -n \"$(git status --porcelain)\" ]; then\n    git add -A\n    if ! git diff --cached --quiet; then\n      git commit -m \"chore: yolo update\"\n    fi\n  fi\n\n  if git rev-parse --abbrev-ref --symbolic-full-name '@{u}' >/dev/null 2>&1; then\n    if ! git push; then\n      git push --force\n    fi\n  else\n    if ! git push --set-upstream origin \"$branch\"; then\n      git push --set-upstream --force origin \"$branch\"\n    fi\n  fi\n\n  git status --short\n}\n\ngit_yolo_push\n",
   "trigger": ":git-yolo-sh",
   "category": "workflow",
   "stage": "git-yolo",
