@@ -765,6 +765,10 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         ),
         "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
         "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save"], [":qa"]),
+        "git_yolo_sh.json": (":git-yolo-sh", "workflow", "git-yolo", [":verify"], []),
+        "git_rebase_sh.json": (":git-rebase-sh", "workflow", "git-rebase", [":verify"], []),
+        "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [":verify"], []),
+        "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [":verify"], []),
     }
     retired_files = {
         "dumb.json",
@@ -825,6 +829,10 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":docs-qa",
         ":save",
         ":merge",
+        ":git-yolo-sh",
+        ":git-rebase-sh",
+        ":git-yolo-ps",
+        ":git-rebase-ps",
         ":coms",
         ":espansr",
     ]:
@@ -956,3 +964,36 @@ def test_bundled_gaps_template_contract_preserves_audit_modes():
     assert content.count("Mode selection") == 1
     assert "first-principles pass" in content
     assert "reality pass" in content
+
+
+def test_bundled_git_helper_templates_are_executable_commands():
+    """Git helper prompts contain command definitions, not prose-only instructions."""
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates"
+    expected = {
+        "git_yolo_sh.json": (":git-yolo-sh", "git_yolo_main()", "git merge --ff-only"),
+        "git_rebase_sh.json": (":git-rebase-sh", "git_rebase_main_safe()", "git stash push -u"),
+        "git_yolo_ps.json": (
+            ":git-yolo-ps",
+            "function Invoke-GitYoloMain",
+            "Invoke-GitChecked merge --ff-only",
+        ),
+        "git_rebase_ps.json": (
+            ":git-rebase-ps",
+            "function Invoke-GitRebaseMainSafe",
+            "Invoke-GitChecked stash push -u",
+        ),
+    }
+
+    for filename, (trigger, definition, required_command) in expected.items():
+        data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
+        content = data["content"]
+
+        assert data["trigger"] == trigger
+        assert data["category"] == "workflow"
+        assert data["next_triggers"] == [":verify"]
+        assert definition in content
+        assert required_command in content
+        assert "git reset --hard" not in content
+        assert "--force" not in content
+        assert "gh " not in content

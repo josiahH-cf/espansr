@@ -1,0 +1,10 @@
+{
+  "name": "Git YOLO PowerShell",
+  "description": "PowerShell function that commits current branch changes, updates main, rebases the branch onto main, fast-forwards main, and pushes using configured Git upstreams.",
+  "content": "function Invoke-GitChecked {\n  & git @args\n  if ($LASTEXITCODE -ne 0) { throw \"git $($args -join ' ') failed\" }\n}\n\nfunction Invoke-GitYoloMain {\n  $branch = (& git branch --show-current).Trim()\n  if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($branch)) { throw \"Not on a branch.\" }\n  if ($branch -eq \"main\") { throw \"Run this from a non-main branch.\" }\n\n  $dirty = & git status --porcelain\n  if ($LASTEXITCODE -ne 0) { throw \"git status failed\" }\n  if ($dirty) {\n    Invoke-GitChecked add -A\n    Invoke-GitChecked commit -m \"chore: yolo update\"\n  }\n\n  Invoke-GitChecked fetch\n  Invoke-GitChecked switch main\n  Invoke-GitChecked pull --ff-only\n  Invoke-GitChecked switch $branch\n  Invoke-GitChecked rebase main\n  Invoke-GitChecked switch main\n  Invoke-GitChecked merge --ff-only $branch\n  Invoke-GitChecked push\n  Invoke-GitChecked switch $branch\n  Invoke-GitChecked status --short\n}\n",
+  "trigger": ":git-yolo-ps",
+  "category": "workflow",
+  "stage": "git-yolo",
+  "next_triggers": [":verify"],
+  "replaces": []
+}

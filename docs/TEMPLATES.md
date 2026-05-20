@@ -42,6 +42,11 @@ repair, and affected documentation alignment. `:docs-qa` remains available as a
 docs-only fallback when you want documentation alignment without the full
 verification pass.
 
+Git helper templates are split by shell and safety level: `:git-yolo-sh` and
+`:git-yolo-ps` commit local branch changes, rebase onto `main`, fast-forward
+`main`, and push through configured Git upstreams; `:git-rebase-sh` and
+`:git-rebase-ps` use a safer stash-and-rebase-from-`main` flow.
+
 ## Schema
 
 Each template is a JSON file with the following fields:

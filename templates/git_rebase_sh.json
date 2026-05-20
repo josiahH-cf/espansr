@@ -1,0 +1,10 @@
+{
+  "name": "Git Rebase Linux",
+  "description": "Bash function that stashes local work when needed, updates main, rebases the current branch from main, and restores the stash after a clean rebase.",
+  "content": "git_rebase_main_safe() {\n  branch=\"$(git branch --show-current)\" || return 1\n  if [ -z \"$branch\" ]; then\n    echo \"Not on a branch.\"\n    return 1\n  fi\n  if [ \"$branch\" = \"main\" ]; then\n    echo \"Run this from a non-main branch.\"\n    return 1\n  fi\n\n  stashed=0\n  if [ -n \"$(git status --porcelain)\" ]; then\n    git stash push -u -m \"safe rebase from main\" || return 1\n    stashed=1\n  fi\n\n  git fetch || return 1\n  git switch main || return 1\n  if ! git pull --ff-only; then\n    git switch \"$branch\"\n    return 1\n  fi\n  git switch \"$branch\" || return 1\n\n  if ! git rebase main; then\n    echo \"Rebase stopped. Resolve conflicts, then run git rebase --continue or git rebase --abort.\"\n    return 1\n  fi\n\n  if [ \"$stashed\" -eq 1 ]; then\n    stash_ref='stash@{0}'\n    if git stash apply \"$stash_ref\"; then\n      git stash drop \"$stash_ref\"\n    else\n      echo \"Stash restore stopped. Resolve conflicts before continuing; the stash was kept.\"\n      return 1\n    fi\n  fi\n\n  git status --short\n}\n",
+  "trigger": ":git-rebase-sh",
+  "category": "workflow",
+  "stage": "git-rebase",
+  "next_triggers": [":verify"],
+  "replaces": []
+}
