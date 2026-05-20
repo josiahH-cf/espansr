@@ -81,6 +81,7 @@ class EspansoConfig:
     auto_sync: bool = False
     last_sync: str = ""  # ISO timestamp of last successful sync
     launcher_trigger: str = ":aopen"  # Espanso trigger to launch the GUI
+    allow_system_trigger_collisions: bool = False
 
 
 @dataclass

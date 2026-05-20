@@ -19,8 +19,6 @@ The daily command lanes are:
 | Retire | `espansr retire TARGET` | Local live templates | Backs up, deletes, then refreshes Espanso YAML output |
 | Remote | `espansr remote ...` | Remote configuration | Sets, reports, or removes the Git remote |
 
-`espansr sync`, `espansr sync-down`, and `espansr sync-bundled` remain available as legacy aliases for `publish`, `pull`, and `starters` respectively.
-
 ### `espansr publish`
 
 Publish local templates to Espanso. Before writing YAML match files, this also applies
@@ -31,8 +29,6 @@ up changed bundled-matching local files under `_versions/`.
 espansr publish              # publish local templates to Espanso
 espansr publish --dry-run    # preview what would be written (no changes)
 ```
-
-`espansr sync` is a legacy alias for `espansr publish`.
 
 ### `espansr starters`
 
@@ -50,8 +46,6 @@ espansr starters --apply             # copy/update bundled templates into the li
 espansr starters --apply --dry-run   # preview bundled updates without writing
 espansr starters --apply --force     # back up and replace invalid bundled-matching local JSON
 ```
-
-`espansr sync-bundled` is a legacy alias for `espansr starters`.
 
 Behavior:
 
@@ -78,8 +72,6 @@ espansr pull --template sig.json
 date, the remote was empty, Git was unavailable, or the remote could not be
 reached. It uses the existing Git credentials on the machine and does not store
 or prompt for authentication.
-
-`espansr sync-down` is a legacy alias for the pull-and-refresh workflow.
 
 ### `espansr push`
 
@@ -166,7 +158,7 @@ espansr setup --verbose --strict  # flags are combinable
 
 ### `espansr validate`
 
-Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers).
+Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers) and warning-only collisions with generated system triggers such as `:aopen` and `:coms`.
 
 ```bash
 espansr validate
@@ -237,7 +229,7 @@ espansr --version
 
 ## Global Behavior
 
-- **`--dry-run`** — Available on `publish`, `sync`, `retire`, `starters`, `sync-bundled`, and `setup`. Previews changes without writing files.
-- **`--verbose`** — Available on `starters`, `sync-bundled`, and `setup`. Shows per-file detail.
+- **`--dry-run`** — Available on `publish`, `retire`, `starters`, and `setup`. Previews changes without writing files.
+- **`--verbose`** — Available on `starters` and `setup`. Shows per-file detail.
 - **`--strict`** — Available on `setup`. Returns exit code 1 if Espanso is not detected.
 - **Colored output** — CLI output uses colors when connected to a TTY. Respects the `NO_COLOR` environment variable.

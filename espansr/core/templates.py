@@ -671,11 +671,13 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     "explain_context_comprehensively.json": (
         "plain.json",
         "dumb.json",
+    ),
+    "gaps.json": (
+        "explain_gaps_comprehensively_pt_2.json",
         "principles.json",
         "first_principles_analysis.json",
         "reality_audit.json",
     ),
-    "gaps.json": ("explain_gaps_comprehensively_pt_2.json",),
     "feat.json": (
         "project_init.json",
         "feature_init.json",

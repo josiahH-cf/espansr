@@ -7,7 +7,6 @@ Commands:
     starters — Check or apply bundled starter templates
     retire   — Back up and delete a local template, then refresh Espanso output
     remote   — Manage remote configuration
-    sync     — Legacy alias for publish
 """
 
 import argparse
@@ -192,11 +191,6 @@ def cmd_publish(args) -> int:
         bundled_dir=_get_bundled_dir(),
     )
     return 0 if success else 1
-
-
-def cmd_sync(args) -> int:
-    """Legacy alias for publishing local templates to Espanso output."""
-    return cmd_publish(args)
 
 
 def _get_bundled_dir() -> Path:
@@ -931,7 +925,7 @@ def cmd_pull(args) -> int:
             print(ok(f"Pulled {len(templates)} template(s) from remote."))
         else:
             outcome = rm.pull_with_result()
-            _print_sync_down_pull_outcome(outcome)
+            _print_pull_outcome(outcome)
 
         if sync_to_espanso(update_bundled=False):
             print(ok("Espanso output refreshed."))
@@ -950,8 +944,8 @@ def cmd_pull(args) -> int:
         return 1
 
 
-def _print_sync_down_pull_outcome(outcome) -> None:
-    """Print a human-readable summary for a sync-down pull outcome."""
+def _print_pull_outcome(outcome) -> None:
+    """Print a human-readable summary for a pull outcome."""
     if outcome.status == "changed":
         count = len(outcome.changed_files)
         suffix = "file" if count == 1 else "files"
@@ -973,37 +967,6 @@ def _print_sync_down_pull_outcome(outcome) -> None:
         return
 
     print(warn(f"Pull completed with status: {outcome.status}"))
-
-
-def cmd_sync_down(args) -> int:
-    """Pull remote templates and refresh Espanso output."""
-    from espansr.core.remote import (
-        GitNotFoundError,
-        RemoteConflictError,
-        RemoteError,
-        RemoteManager,
-    )
-    from espansr.integrations.espanso import sync_to_espanso
-
-    try:
-        outcome = RemoteManager().pull_with_result()
-        _print_sync_down_pull_outcome(outcome)
-
-        if sync_to_espanso(update_bundled=False):
-            print(ok("Espanso output refreshed."))
-            return 0
-
-        print(fail("Pulled remote templates, but Espanso sync failed."))
-        return 1
-    except RemoteConflictError as exc:
-        print(fail(f"Conflict: {exc}"))
-        return 1
-    except GitNotFoundError as exc:
-        print(fail(str(exc)))
-        return 1
-    except RemoteError as exc:
-        print(fail(f"Sync down failed: {exc}"))
-        return 1
 
 
 def cmd_push(args) -> int:
@@ -1086,21 +1049,6 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Publish local templates to Espanso output",
     )
     add_publish_flags(publish_parser)
-
-    sync_parser = subparsers.add_parser(
-        "sync",
-        help="Legacy alias for publish",
-    )
-    add_publish_flags(sync_parser)
-    subparsers.add_parser(
-        "sync-down",
-        help="Legacy alias for pull",
-    )
-    bundled_sync_parser = subparsers.add_parser(
-        "sync-bundled",
-        help="Legacy alias for starters",
-    )
-    add_starter_flags(bundled_sync_parser)
     starters_parser = subparsers.add_parser(
         "starters",
         help="Check or apply bundled starter templates",
@@ -1212,8 +1160,6 @@ def main() -> None:
 
     handlers = {
         "publish": cmd_publish,
-        "sync": cmd_sync,
-        "sync-bundled": cmd_sync_bundled,
         "starters": cmd_sync_bundled,
         "status": cmd_status,
         "list": cmd_list,
@@ -1227,7 +1173,6 @@ def main() -> None:
         "completions": cmd_completions,
         "remote": cmd_remote,
         "pull": cmd_pull,
-        "sync-down": cmd_sync_down,
         "push": cmd_push,
     }
 

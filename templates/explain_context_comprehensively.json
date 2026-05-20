@@ -5,5 +5,13 @@
   "trigger": ":explain",
   "category": "explanation",
   "stage": "context-summary",
-  "next_triggers": [":verify"]
+  "next_triggers": [
+    ":verify"
+  ],
+  "replaces": [
+    ":plain",
+    ":dumb",
+    ":simplify",
+    ":explain-1"
+  ]
 }

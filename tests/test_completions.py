@@ -12,15 +12,12 @@ from unittest.mock import patch
 # Expected subcommands from the current parser (alphabetical for assertions)
 EXPECTED_SUBCOMMANDS = sorted(
     [
-        "sync",
         "publish",
         "pull",
         "push",
         "starters",
         "retire",
         "remote",
-        "sync-down",
-        "sync-bundled",
         "status",
         "list",
         "validate",
@@ -62,6 +59,9 @@ def test_bash_script_contains_subcommands(capsys):
     for cmd in EXPECTED_SUBCOMMANDS:
         assert cmd in out, f"bash script missing subcommand: {cmd}"
 
+    for removed in ["sync", "sync-down", "sync-bundled"]:
+        assert removed not in out, f"bash script still exposes removed alias: {removed}"
+
 
 def test_bash_script_contains_top_level_flags(capsys):
     """Bash completion script contains --version and --help."""
@@ -101,6 +101,9 @@ def test_zsh_script_contains_subcommands(capsys):
 
     for cmd in EXPECTED_SUBCOMMANDS:
         assert cmd in out, f"zsh script missing subcommand: {cmd}"
+
+    for removed in ["sync", "sync-down", "sync-bundled"]:
+        assert removed not in out, f"zsh script still exposes removed alias: {removed}"
 
 
 def test_zsh_script_contains_top_level_flags(capsys):

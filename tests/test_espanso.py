@@ -51,6 +51,7 @@ def test_espanso_config_defaults():
     assert cfg.auto_sync is False
     assert cfg.last_sync == ""
     assert cfg.launcher_trigger == ":aopen"
+    assert cfg.allow_system_trigger_collisions is False
 
 
 def test_config_update_launcher_trigger(tmp_path):

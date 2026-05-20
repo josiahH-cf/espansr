@@ -85,11 +85,11 @@ Redesign espansr's bundled prompt library and sync command surface so the produc
 | AC-3 | tests/test_commands_popup.py | test_build_command_catalog_exposes_workflow_metadata | Catalog entries expose workflow category, stage, and next-trigger hints |
 | AC-3 | tests/test_commands_popup.py | test_commands_popup_dialog_renders_entries | Popup renders workflow metadata in summary and detail rows |
 | AC-4 | tests/test_commands_popup.py | test_build_command_catalog_includes_template_and_system_triggers | Catalog still includes template triggers plus generated system triggers |
-| AC-4 | docs/CLI.md / docs/TEMPLATES.md / docs/VERIFY.md / README.md / templates/espansr_help.json | documentation review | Public docs and quick help describe publish, pull, push, starters, remote, and legacy aliases consistently |
+| AC-4 | docs/CLI.md / docs/TEMPLATES.md / docs/VERIFY.md / README.md / templates/espansr_help.json | documentation review | Public docs and quick help describe publish, pull, push, starters, remote, and generated discovery triggers consistently |
 | AC-5 | tests/test_remote_sync.py | TestSyncCommandLanes::test_publish_runs_local_espanso_publish | `publish` publishes local templates without invoking remote auto-pull |
 | AC-5 | tests/test_remote_sync.py | TestSyncCommandLanes::test_pull_refreshes_espanso_output_after_remote_pull | `pull` pulls remote templates and refreshes Espanso output |
 | AC-5 | tests/test_remote_sync.py | TestSyncCommandLanes::test_top_level_help_lists_source_of_truth_lanes | Top-level help exposes publish, pull, push, starters, and remote lanes |
-| AC-5 | tests/test_completions.py | test_bash_script_contains_subcommands / test_zsh_script_contains_subcommands | Shell completions include the redesigned public command lanes and legacy aliases |
+| AC-5 | tests/test_completions.py | test_bash_script_contains_subcommands / test_zsh_script_contains_subcommands | Shell completions include the redesigned public command lanes and exclude removed legacy aliases |
 | AC-6 | tests/test_sync_bundled.py | test_sync_bundled_apply_migrates_renamed_starter_with_backup | Old starter files are backed up before renamed bundled starters replace them |
 | AC-6 | tests/test_sync_bundled.py | test_sync_bundled_blocks_renamed_trigger_collision | Renamed starter migration reports trigger collisions before applying changes |
 | AC-6 | tests/test_sync_bundled.py | test_sync_to_espanso_blocks_renamed_trigger_collision_before_writing | Espanso YAML is not written when renamed starter migration has trigger collisions |

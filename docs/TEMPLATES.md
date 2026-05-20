@@ -25,10 +25,17 @@ template files:
 
 The bundled starter set also includes reusable AI workflow prompts such as
 `:goal`, `:feat`, `:verify`, `:docs-qa`, `:save`, `:explain`, `:visual`,
-`:gaps`, `:meta`, `:context`, `:template-builder`, and `:sanitize`. Use
+`:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, and `:merge`. Use
 `:espansr` for the current quick reference list. The `:feat` switcher handles
 project setup, feature scaffolding, new-feature planning, specs/tasks, and
 next-feature work in one prompt.
+
+The switcher accepts old route names such as `:project-init`, `:feature-init`,
+`:feature-new`, `:feature-next`, `:feature-scope`, and `:continue` as route
+selectors inside `:feat`; they do not need to remain separate public triggers.
+Use `:explain` for evidence-bound plain-English explanation. Use `:gaps` for
+critical review modes, including gap review, first-principles analysis, and
+claimed-vs-actual reality audits.
 
 Use `:verify` as the normal end-of-work prompt for fresh-context verification,
 repair, and affected documentation alignment. `:docs-qa` remains available as a
@@ -95,7 +102,7 @@ but the saved file still needs to validate with `espansr validate`.
 
 ## Publish Behavior
 
-When you run `espansr publish` (or the legacy alias `espansr sync`) or click
+When you run `espansr publish` or click
 **Publish** in the GUI, including auto-publish:
 
 1. Missing or changed bundled templates are applied to the live template store.
@@ -103,12 +110,15 @@ When you run `espansr publish` (or the legacy alias `espansr sync`) or click
 3. Templates with a `trigger` field are converted to Espanso YAML match format.
 4. The generated YAML is written to the Espanso config directory.
 5. Templates without a trigger are skipped during publish.
-6. Duplicate triggers and validation issues are reported before publish.
+6. Duplicate triggers, validation errors, and system-trigger collision warnings are reported before publish.
 7. If no triggered templates remain, stale managed `espansr.yml` output is removed.
 
 The generated `:aopen` and `:coms` triggers live in separate managed Espanso
 files (`espansr-launcher.yml` and `espansr-commands.yml`) so they remain
 available even though they are not regular template JSON files.
+Template triggers that reuse those generated system triggers are reported as
+warnings, not errors. Set `espanso.allow_system_trigger_collisions` to `true`
+in the espansr config only when the overlap is intentional.
 
 In the GUI, clicking **Save** also regenerates the Espanso match file from the
 saved live templates so the edited trigger is reflected immediately. Clicking
@@ -137,13 +147,12 @@ remote cannot be reached, or when a conflict needs manual Git resolution. This
 pull path uses the platform-specific template store listed above and the
 existing Espanso path detection for Windows, Linux, and WSL2.
 
-Use `espansr push` when your local live template store is the source of truth and you want to send template JSON changes to the configured Git remote. `espansr sync-down` remains available as a legacy alias for the pull-and-refresh workflow.
+Use `espansr push` when your local live template store is the source of truth and you want to send template JSON changes to the configured Git remote.
 
 ## Bundled Drift Reconciliation
 
-Normal `espansr publish`, legacy `espansr sync`, GUI Publish, and GUI
-auto-publish apply missing or changed bundled template updates before writing
-Espanso output.
+Normal `espansr publish`, GUI Publish, and GUI auto-publish apply missing or
+changed bundled template updates before writing Espanso output.
 
 If you want to inspect or explicitly manage bundled starter drift, use:
 
@@ -153,7 +162,7 @@ espansr starters --apply
 espansr starters --apply --force
 ```
 
-`espansr starters` compares bundled starter filenames against the live template store. `espansr sync-bundled` remains available as a legacy alias.
+`espansr starters` compares bundled starter filenames against the live template store.
 
 - Missing bundled files are reported and can be copied back into the live store with `--apply`.
 - Changed bundled-matching live templates are reported and, when applied, backed up into `_versions/` before replacement.
@@ -203,3 +212,4 @@ Import strips unrecognized fields and de-duplicates names with numeric suffixes.
 - Unmatched placeholders (`{{var}}` in content with no matching variable)
 - Unused variables (defined but not referenced in content)
 - Duplicate triggers across templates
+- Warning-only collisions with generated system triggers such as `:aopen` and `:coms`

@@ -229,6 +229,59 @@ def test_validate_all_no_issues_on_clean_templates():
     assert result == []
 
 
+def test_validate_all_warns_on_commands_popup_trigger_collision():
+    """System trigger collisions are warnings, not blocking duplicate errors."""
+    from espansr.integrations.validate import validate_all
+
+    templates = [Template(name="custom_commands", content="mine", trigger=":coms")]
+    with patch("espansr.integrations.validate.get_template_manager") as mock_mgr:
+        mock_mgr.return_value.iter_with_triggers.return_value = iter(templates)
+        result = validate_all()
+
+    warnings = [w for w in result if w.severity == "warning"]
+    errors = [w for w in result if w.severity == "error"]
+    assert errors == []
+    assert any("generated commands popup trigger" in w.message for w in warnings)
+    assert any("allow_system_trigger_collisions" in w.message for w in warnings)
+
+
+def test_validate_all_warns_on_launcher_trigger_collision():
+    """Configured launcher trigger collisions are warning-only."""
+    from espansr.core.config import Config
+    from espansr.integrations.validate import validate_all
+
+    config = Config()
+    config.espanso.launcher_trigger = ":launch"
+    templates = [Template(name="custom_launcher", content="mine", trigger=":launch")]
+    with (
+        patch("espansr.integrations.validate.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.validate.get_config", return_value=config),
+    ):
+        mock_mgr.return_value.iter_with_triggers.return_value = iter(templates)
+        result = validate_all()
+
+    warnings = [w for w in result if w.severity == "warning"]
+    assert any("generated launcher trigger" in w.message for w in warnings)
+
+
+def test_validate_all_system_trigger_collision_escape_hatch():
+    """Config can suppress intentional system-trigger collision warnings."""
+    from espansr.core.config import Config
+    from espansr.integrations.validate import validate_all
+
+    config = Config()
+    config.espanso.allow_system_trigger_collisions = True
+    templates = [Template(name="custom_commands", content="mine", trigger=":coms")]
+    with (
+        patch("espansr.integrations.validate.get_template_manager") as mock_mgr,
+        patch("espansr.integrations.validate.get_config", return_value=config),
+    ):
+        mock_mgr.return_value.iter_with_triggers.return_value = iter(templates)
+        result = validate_all()
+
+    assert result == []
+
+
 # ─── sync_to_espanso() integration ──────────────────────────────────────────
 
 

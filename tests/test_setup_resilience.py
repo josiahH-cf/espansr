@@ -121,7 +121,7 @@ def _make_bundled_dir(tmp_path: Path) -> Path:
                 "name": "Espansr Quick Help",
                 "description": "Quick reference for espansr CLI commands.",
                 "trigger": ":espansr",
-                "content": "espansr commands: list, sync, status",
+                "content": "espansr commands: list, publish, status",
             }
         )
     )

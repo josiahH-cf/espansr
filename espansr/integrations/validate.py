@@ -8,6 +8,8 @@ import re
 from dataclasses import dataclass
 from typing import List
 
+from espansr.core.command_catalog import COMMANDS_POPUP_TRIGGER
+from espansr.core.config import get_config
 from espansr.core.templates import Template, get_template_manager
 
 # Regex to find {{var}} placeholders in template content
@@ -116,7 +118,8 @@ def validate_all() -> List[ValidationWarning]:
     """Validate all triggered templates, including cross-template checks.
 
     Runs validate_template() on each template and additionally checks
-    for duplicate triggers across templates.
+    for duplicate triggers across templates and non-blocking collisions with
+    espansr-managed system triggers.
 
     Returns:
         List of all ValidationWarning objects found.
@@ -149,5 +152,50 @@ def validate_all() -> List[ValidationWarning]:
                         template_name=template_name,
                     )
                 )
+
+    warnings.extend(_system_trigger_collision_warnings(templates))
+
+    return warnings
+
+
+def _system_trigger_collision_warnings(templates: list[Template]) -> List[ValidationWarning]:
+    """Return warning-only issues for collisions with generated system triggers."""
+    config = get_config()
+    if config.espanso.allow_system_trigger_collisions:
+        return []
+
+    launcher_trigger = config.espanso.launcher_trigger or ":aopen"
+    system_triggers = {
+        launcher_trigger: "generated launcher trigger",
+        COMMANDS_POPUP_TRIGGER: "generated commands popup trigger",
+    }
+
+    warnings: List[ValidationWarning] = []
+    if launcher_trigger == COMMANDS_POPUP_TRIGGER:
+        warnings.append(
+            ValidationWarning(
+                severity="warning",
+                message=(
+                    f"System trigger collision: launcher trigger '{launcher_trigger}' "
+                    "also opens the commands popup; set "
+                    "espanso.allow_system_trigger_collisions to true to acknowledge"
+                ),
+                template_name="system",
+            )
+        )
+
+    for template in templates:
+        system_role = system_triggers.get(template.trigger)
+        if system_role:
+            warnings.append(
+                ValidationWarning(
+                    severity="warning",
+                    message=(
+                        f"Trigger '{template.trigger}' collides with the {system_role}; set "
+                        "espanso.allow_system_trigger_collisions to true to acknowledge"
+                    ),
+                    template_name=template.name,
+                )
+            )
 
     return warnings

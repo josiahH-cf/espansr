@@ -89,8 +89,6 @@ espansr retire :trigger
 espansr retire template_file.json --dry-run
 ```
 
-Legacy aliases remain available for compatibility: `espansr sync` for `publish`, `espansr sync-down` for `pull`, and `espansr sync-bundled` for `starters`.
-
 ## Common Commands
 
 ```bash

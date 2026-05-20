@@ -47,7 +47,7 @@ When the user asks for a focused template, prompt, documentation, or small workf
 2. Inspect git state and avoid unrelated changes.
 3. Make only the focused edit requested.
 4. Update direct counterparts when needed for consistency, such as `meta-prompts/` plus `.github/prompts/` copies.
-5. Run relevant checks from `workflow/COMMANDS.md`; for template changes, also validate/import/sync as applicable.
+5. Run relevant checks from `workflow/COMMANDS.md`; for template changes, also validate/import/publish as applicable.
 6. Summarize the diff and verification evidence.
 7. If the user requested completion and permissions/repository state allow it, commit, push, open a PR, and merge according to `workflow/CONCURRENCY.md → Automatic Git Workflow`.
 

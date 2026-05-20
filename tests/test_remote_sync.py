@@ -546,80 +546,6 @@ class TestGitignore:
 
 
 # ---------------------------------------------------------------------------
-# Explicit sync-down CLI
-# ---------------------------------------------------------------------------
-
-
-class TestSyncDownCli:
-    """espansr sync-down reports pull outcome and refreshes Espanso output."""
-
-    def test_sync_down_success_feedback(self, capsys):
-        """sync-down prints updated-file feedback and runs Espanso sync."""
-        from espansr.__main__ import cmd_sync_down
-        from espansr.core.remote import RemotePullOutcome
-
-        with (
-            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
-            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
-        ):
-            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
-                status="changed",
-                changed_files=["sig.json"],
-                branch="main",
-            )
-
-            code = cmd_sync_down(None)
-
-        out = capsys.readouterr().out
-        assert code == 0
-        assert "Pulled latest templates" in out
-        assert "sig.json" in out
-        assert "Espanso output refreshed" in out
-        mock_sync.assert_called_once_with(update_bundled=False)
-
-    def test_sync_down_up_to_date_feedback(self, capsys):
-        """sync-down reports already-up-to-date state clearly."""
-        from espansr.__main__ import cmd_sync_down
-        from espansr.core.remote import RemotePullOutcome
-
-        with (
-            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
-            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
-        ):
-            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
-                status="up_to_date",
-                branch="main",
-            )
-
-            code = cmd_sync_down(None)
-
-        out = capsys.readouterr().out
-        assert code == 0
-        assert "already up to date" in out.lower()
-
-    def test_sync_down_remote_failure_feedback(self, capsys):
-        """sync-down prints fetch/reachability failures and exits non-zero."""
-        from espansr.__main__ import cmd_sync_down
-        from espansr.core.remote import RemoteError
-
-        with (
-            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
-            patch("espansr.integrations.espanso.sync_to_espanso") as mock_sync,
-        ):
-            mock_manager_cls.return_value.pull_with_result.side_effect = RemoteError(
-                "Failed to fetch from remote: network unavailable"
-            )
-
-            code = cmd_sync_down(None)
-
-        out = capsys.readouterr().out
-        assert code == 1
-        assert "Sync down failed" in out
-        assert "network unavailable" in out
-        mock_sync.assert_not_called()
-
-
-# ---------------------------------------------------------------------------
 # Redesigned public command lanes
 # ---------------------------------------------------------------------------
 
@@ -672,6 +598,50 @@ class TestSyncCommandLanes:
         assert "Pulled latest templates" in out
         assert "Espanso output refreshed" in out
         mock_sync.assert_called_once_with(update_bundled=False)
+
+    def test_pull_reports_up_to_date_feedback(self, capsys):
+        """pull reports already-up-to-date state clearly."""
+        import argparse
+
+        from espansr.__main__ import cmd_pull
+        from espansr.core.remote import RemotePullOutcome
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
+        ):
+            mock_manager_cls.return_value.pull_with_result.return_value = RemotePullOutcome(
+                status="up_to_date",
+                branch="main",
+            )
+
+            code = cmd_pull(argparse.Namespace(template=None))
+
+        out = capsys.readouterr().out
+        assert code == 0
+        assert "already up to date" in out.lower()
+
+    def test_pull_remote_failure_feedback(self, capsys):
+        """pull prints fetch/reachability failures and exits non-zero."""
+        import argparse
+
+        from espansr.__main__ import cmd_pull
+        from espansr.core.remote import RemoteError
+
+        with (
+            patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
+            patch("espansr.integrations.espanso.sync_to_espanso") as mock_sync,
+        ):
+            mock_manager_cls.return_value.pull_with_result.side_effect = RemoteError(
+                "Failed to fetch from remote: network unavailable"
+            )
+
+            code = cmd_pull(argparse.Namespace(template=None))
+
+        out = capsys.readouterr().out
+        assert code == 1
+        assert "network unavailable" in out
+        mock_sync.assert_not_called()
 
     def test_top_level_help_lists_source_of_truth_lanes(self, capsys):
         """Top-level help exposes the redesigned public command lanes."""

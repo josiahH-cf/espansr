@@ -1,6 +1,6 @@
 ---
 agent: agent
-description: 'Add a new espansr text expansion command — create, validate, sync, and safely complete when possible'
+description: 'Add a new espansr text expansion command — create, validate, publish, and safely complete when possible'
 ---
 
 # New Espansr Command
@@ -45,14 +45,14 @@ Draft the JSON and check it against existing templates for naming, trigger colli
 Write the JSON file to `templates/<trigger_without_colon>.json`.
 File naming: lowercase, underscores for spaces, no special characters.
 
-### Step 4 — Import, validate, sync
+### Step 4 — Import, validate, publish
 
 Run these commands in sequence:
 
 ```
 python -m espansr import templates/<filename>.json
 python -m espansr validate
-python -m espansr sync
+python -m espansr publish
 ```
 
 If validate fails (duplicate trigger, missing trigger prefix), fix and re-run.

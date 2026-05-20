@@ -228,8 +228,8 @@ def test_sync_bundled_apply_retires_old_starter_when_new_exists(tmp_path, capsys
     assert version_data["template_data"] == old_local
 
 
-def test_sync_bundled_apply_retires_deleted_analysis_starters(tmp_path, capsys):
-    """Deleted analysis starters retire into the surviving explain prompt."""
+def test_sync_bundled_apply_retires_deleted_explanation_starters(tmp_path, capsys):
+    """Deleted explanation starters retire into the surviving explain prompt."""
     from espansr.__main__ import cmd_sync_bundled
 
     bundled_dir = tmp_path / "bundled"
@@ -251,7 +251,55 @@ def test_sync_bundled_apply_retires_deleted_analysis_starters(tmp_path, capsys):
         "dumb.json": {
             "name": "Explain Like I Am Five",
             "content": "older plain prompt",
-            "trigger": ":simplify",
+            "trigger": ":dumb",
+        },
+    }
+    _write_json(bundled_dir / "explain_context_comprehensively.json", bundled_template)
+    _write_json(templates_dir / "explain_context_comprehensively.json", bundled_template)
+    for filename, data in old_templates.items():
+        _write_json(templates_dir / filename, data)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "retired" in output.lower()
+    assert (
+        json.loads(
+            (templates_dir / "explain_context_comprehensively.json").read_text(encoding="utf-8")
+        )
+        == bundled_template
+    )
+    for filename in old_templates:
+        assert not (templates_dir / filename).exists()
+
+    assert (templates_dir / "_versions" / "plainenglish_explanation" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json").exists()
+
+
+def test_sync_bundled_apply_retires_deleted_audit_starters(tmp_path, capsys):
+    """Deleted audit starters retire into the surviving gaps prompt."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    bundled_template = {
+        "name": "Gap Review",
+        "content": "new gaps prompt",
+        "trigger": ":gaps",
+    }
+    old_templates = {
+        "explain_gaps_comprehensively_pt_2.json": {
+            "name": "Explain Gaps Comprehensively (pt. 2)",
+            "content": "old gap prompt",
+            "trigger": ":gaps-2",
         },
         "principles.json": {
             "name": "First-Principles Analysis",
@@ -269,8 +317,8 @@ def test_sync_bundled_apply_retires_deleted_analysis_starters(tmp_path, capsys):
             "trigger": ":reality",
         },
     }
-    _write_json(bundled_dir / "explain_context_comprehensively.json", bundled_template)
-    _write_json(templates_dir / "explain_context_comprehensively.json", bundled_template)
+    _write_json(bundled_dir / "gaps.json", bundled_template)
+    _write_json(templates_dir / "gaps.json", bundled_template)
     for filename, data in old_templates.items():
         _write_json(templates_dir / filename, data)
 
@@ -283,14 +331,11 @@ def test_sync_bundled_apply_retires_deleted_analysis_starters(tmp_path, capsys):
     output = capsys.readouterr().out
     assert exit_code == 0
     assert "retired" in output.lower()
-    assert json.loads(
-        (templates_dir / "explain_context_comprehensively.json").read_text(encoding="utf-8")
-    ) == bundled_template
+    assert json.loads((templates_dir / "gaps.json").read_text(encoding="utf-8")) == bundled_template
     for filename in old_templates:
         assert not (templates_dir / filename).exists()
 
-    assert (templates_dir / "_versions" / "plainenglish_explanation" / "v1.json").exists()
-    assert (templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "explain_gaps_comprehensively_pt_2" / "v1.json").exists()
     assert (templates_dir / "_versions" / "firstprinciples_analysis" / "v1.json").exists()
     assert (templates_dir / "_versions" / "first_principles_analysis" / "v1.json").exists()
     assert (templates_dir / "_versions" / "reality_audit" / "v1.json").exists()
@@ -611,14 +656,14 @@ def test_sync_to_espanso_invalid_bundled_hint_uses_starters_command(tmp_path, ca
     assert "sync-bundled --apply --force" not in output
 
 
-def test_sync_bundled_help_lists_flags(capsys):
-    """sync-bundled exposes the expected check/apply CLI flags."""
+def test_starters_help_lists_flags(capsys):
+    """starters exposes the expected check/apply CLI flags."""
     import sys
 
     from espansr.__main__ import main
 
     try:
-        sys.argv = ["espansr", "sync-bundled", "--help"]
+        sys.argv = ["espansr", "starters", "--help"]
         main()
     except SystemExit:
         pass
@@ -701,7 +746,14 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             "analysis",
             "gap-review",
             [":verify"],
-            [":critique"],
+            [":critique", ":gaps-2", ":principles", ":fp", ":reality"],
+        ),
+        "explain_context_comprehensively.json": (
+            ":explain",
+            "explanation",
+            "context-summary",
+            [":verify"],
+            [":plain", ":dumb", ":simplify", ":explain-1"],
         ),
         "context.json": (":context", "prompting", "context-reset", [":meta", ":verify"], []),
         "template_builder.json": (
@@ -772,8 +824,14 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":feat",
         ":docs-qa",
         ":save",
+        ":merge",
+        ":coms",
+        ":espansr",
     ]:
         assert trigger in content
+
+    for removed_alias in ["Legacy aliases", "sync-down", "sync-bundled"]:
+        assert removed_alias not in content
 
     for stale_trigger in [
         ":simplify",
@@ -824,6 +882,10 @@ def test_bundled_feat_switcher_template_contract():
     assert "Route: New feature" in content
     assert "Route: Feature spec" in content
     assert "Route: Next feature" in content
+    assert "Legacy route names are explicit selectors" in content
+    assert content.count("Legacy route names are explicit selectors") == 1
+    assert ":feature-new, :feature-scope" in content
+    assert ":feature-next, :continue" in content
     assert "Would create in reality" in content
     assert "AGENTS.md" in content
     assert "CLAUDE.md" in content
@@ -879,3 +941,18 @@ def test_bundled_quick_help_describes_broader_sanitize_role():
         ":sanitize         — assess sensitive/internal traces and recommend sanitization"
         in data["content"]
     )
+
+
+def test_bundled_gaps_template_contract_preserves_audit_modes():
+    """The gaps prompt preserves first-principles and reality-audit intent as modes."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "gaps.json").read_text(encoding="utf-8"))
+
+    content = data["content"]
+
+    assert data["trigger"] == ":gaps"
+    assert data["replaces"] == [":critique", ":gaps-2", ":principles", ":fp", ":reality"]
+    assert "Mode selection" in content
+    assert content.count("Mode selection") == 1
+    assert "first-principles pass" in content
+    assert "reality pass" in content

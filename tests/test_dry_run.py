@@ -1,6 +1,6 @@
 """Tests for --dry-run and --verbose CLI flags.
 
-Covers: espansr sync --dry-run, espansr setup --dry-run, espansr setup --verbose,
+Covers: espansr publish --dry-run, espansr setup --dry-run, espansr setup --verbose,
 combined flags, and argparse help registration.
 """
 
@@ -19,7 +19,7 @@ def _make_bundled_dir(tmp_path: Path) -> Path:
                 "name": "Espansr Quick Help",
                 "description": "Quick reference for espansr CLI commands.",
                 "trigger": ":espansr",
-                "content": "espansr commands: list, sync, status",
+                "content": "espansr commands: list, publish, status",
             }
         )
     )
@@ -35,18 +35,18 @@ def _make_args(**kwargs):
     return argparse.Namespace(**defaults)
 
 
-# ─── sync --dry-run ──────────────────────────────────────────────────────────
+# ─── publish --dry-run ───────────────────────────────────────────────────────
 
 
-def test_sync_dry_run_no_file_written(tmp_path):
-    """sync --dry-run must not write espansr.yml to the match directory."""
+def test_publish_dry_run_no_file_written(tmp_path):
+    """publish --dry-run must not write espansr.yml to the match directory."""
     from espansr.integrations.espanso import sync_to_espanso
 
     match_dir = tmp_path / "espanso" / "match"
     match_dir.mkdir(parents=True)
     output_file = match_dir / "espansr.yml"
 
-    # Provide a template with a trigger so sync has something to write
+    # Provide a template with a trigger so publish has something to write
     class _Stub:
         name = "Test"
         trigger = ":test"
@@ -75,9 +75,9 @@ def test_sync_dry_run_no_file_written(tmp_path):
     assert not output_file.exists(), "dry-run must not create espansr.yml"
 
 
-def test_sync_dry_run_exit_zero(tmp_path):
-    """cmd_sync with --dry-run returns exit code 0."""
-    from espansr.__main__ import cmd_sync
+def test_publish_dry_run_exit_zero(tmp_path):
+    """cmd_publish with --dry-run returns exit code 0."""
+    from espansr.__main__ import cmd_publish
 
     class _Stub:
         name = "Test"
@@ -104,13 +104,13 @@ def test_sync_dry_run_exit_zero(tmp_path):
         patch("espansr.integrations.espanso.validate_all", return_value=[]),
         patch("espansr.integrations.espanso.clean_stale_espanso_files"),
     ):
-        exit_code = cmd_sync(_make_args(dry_run=True))
+        exit_code = cmd_publish(_make_args(dry_run=True))
 
     assert exit_code == 0
 
 
-def test_sync_dry_run_lists_files(tmp_path, capsys):
-    """sync --dry-run output mentions the file that would be written."""
+def test_publish_dry_run_lists_files(tmp_path, capsys):
+    """publish --dry-run output mentions the file that would be written."""
     from espansr.integrations.espanso import sync_to_espanso
 
     match_dir = tmp_path / "espanso" / "match"
@@ -293,13 +293,13 @@ def test_setup_dry_run_verbose_combined(tmp_path, capsys):
 
 
 def test_flags_in_help(capsys):
-    """--dry-run and --verbose appear in sync and setup help text."""
+    """--dry-run and --verbose appear in publish and setup help text."""
     import sys
 
     from espansr.__main__ import main
 
-    # Test sync --help
-    for subcmd in ("sync", "setup"):
+    # Test publish --help
+    for subcmd in ("publish", "setup"):
         try:
             sys.argv = ["espansr", subcmd, "--help"]
             main()
