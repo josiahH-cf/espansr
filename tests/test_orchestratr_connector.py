@@ -43,6 +43,16 @@ def _make_config_env(tmp_path: Path, *, templates: int = 1, espanso: bool = True
     return config_dir, templates_dir, espanso_dir
 
 
+def _make_bundled_dir(tmp_path: Path) -> Path:
+    """Create a fake bundled starter directory for cmd_setup tests."""
+    bundled_dir = tmp_path / "bundled"
+    bundled_dir.mkdir()
+    (bundled_dir / "starter.json").write_text(
+        json.dumps({"name": "Starter", "trigger": ":starter", "content": "Starter"})
+    )
+    return bundled_dir
+
+
 # ─── AC 1: Manifest generation ──────────────────────────────────────────────
 
 
@@ -328,8 +338,7 @@ class TestSetupIntegration:
         config_dir = tmp_path / "config" / "espansr"
         templates_dir = config_dir / "templates"
         templates_dir.mkdir(parents=True)
-        bundled_dir = tmp_path / "bundled"
-        bundled_dir.mkdir()
+        bundled_dir = _make_bundled_dir(tmp_path)
 
         apps_dir = tmp_path / "orchestratr" / "apps.d"
         apps_dir.mkdir(parents=True)
@@ -360,8 +369,7 @@ class TestSetupIntegration:
         config_dir = tmp_path / "config" / "espansr"
         templates_dir = config_dir / "templates"
         templates_dir.mkdir(parents=True)
-        bundled_dir = tmp_path / "bundled"
-        bundled_dir.mkdir()
+        bundled_dir = _make_bundled_dir(tmp_path)
 
         apps_dir = tmp_path / "orchestratr" / "apps.d"
         apps_dir.mkdir(parents=True)
@@ -397,8 +405,7 @@ class TestSetupIntegration:
         config_dir = tmp_path / "config" / "espansr"
         templates_dir = config_dir / "templates"
         templates_dir.mkdir(parents=True)
-        bundled_dir = tmp_path / "bundled"
-        bundled_dir.mkdir()
+        bundled_dir = _make_bundled_dir(tmp_path)
 
         apps_dir = tmp_path / "orchestratr" / "apps.d"
         apps_dir.mkdir(parents=True)

@@ -62,6 +62,43 @@ class TestReadme:
         text = (ROOT / "README.md").read_text(encoding="utf-8")
         assert "docs/DEVELOPMENT.md" in text, "README missing link to Development Guide"
 
+    def test_readme_links_to_supporting_docs(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        for path in [
+            "docs/CLI.md",
+            "docs/TEMPLATES.md",
+            "docs/VERIFY.md",
+            "docs/DEVELOPMENT.md",
+        ]:
+            assert path in text, f"README missing link to {path}"
+
+    def test_readme_ends_with_install_meta_prompt(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        stripped = text.rstrip()
+
+        assert "## Cursor Or VS Code Install Prompt" in text
+        assert "install espansr from Cursor or VS Code with an open folder" in text
+        assert "identify the operating system, shell, and current open folder path" in text
+        assert "If the current folder is the espansr repository, use it" in text
+        assert "Do not invent a PyPI, pipx, Homebrew, apt, winget" in text
+        assert stripped.endswith("```")
+        assert stripped.splitlines()[-1] == "```"
+
+    def test_readme_windows_commands_are_powershell_friendly(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        assert ".\\install.ps1" in text
+        assert "`./install.ps1`" not in text
+
+    def test_readme_full_suite_installs_dev_extra_first(self):
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+
+        dev_extra = '.\\.venv\\Scripts\\python.exe -m pip install -e ".[dev]"'
+        pytest_cmd = ".\\.venv\\Scripts\\python.exe -m pytest"
+
+        assert dev_extra in text
+        assert text.index(dev_extra) < text.index(pytest_cmd)
+
     def test_dev_guide_has_commands(self):
         text = (ROOT / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
         for cmd in ["pytest", "ruff check", "black"]:

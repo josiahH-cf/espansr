@@ -175,6 +175,48 @@ function Ensure-EspansoService {
     }
 }
 
+function Ensure-UserPathEntry {
+    param([string]$PathEntry)
+
+    try {
+        $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+        $entries = @()
+        if (-not [string]::IsNullOrWhiteSpace($userPath)) {
+            $entries = @($userPath -split ";" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        }
+
+        $alreadyPresent = $false
+        foreach ($entry in $entries) {
+            if ($entry -ieq $PathEntry) {
+                $alreadyPresent = $true
+                break
+            }
+        }
+
+        if ($alreadyPresent) {
+            Ok "Venv Scripts directory already in Windows user PATH"
+            return
+        }
+
+        if ([string]::IsNullOrWhiteSpace($userPath)) {
+            $newUserPath = $PathEntry
+        }
+        else {
+            $newUserPath = "$PathEntry;$userPath"
+        }
+
+        [Environment]::SetEnvironmentVariable("PATH", $newUserPath, "User")
+        Ok "Added $PathEntry to Windows user PATH"
+    }
+    catch {
+        Warn "Could not update Windows user PATH automatically: $($_.Exception.Message)"
+        Info "To add it manually, run:"
+        Write-Host ""
+        Write-Host "  [Environment]::SetEnvironmentVariable('PATH', `"$PathEntry;`" + [Environment]::GetEnvironmentVariable('PATH', 'User'), 'User')" -ForegroundColor White
+        Write-Host ""
+    }
+}
+
 Info "Platform: windows"
 Info "Install target: native Windows PowerShell"
 Info "Windows PowerShell and WSL are separate environments. This installer only configures Windows."
@@ -187,10 +229,25 @@ if (-not $PythonBin) {
 $pyVersion = & $PythonBin --version
 Ok "Python: $pyVersion"
 
+$VenvScripts = Join-Path $VenvDir "Scripts"
+$VenvPython = Join-Path $VenvScripts "python.exe"
+$VenvCmd = Join-Path $VenvScripts "espansr.exe"
+
 # Virtual environment
 
 if (Test-Path $VenvDir) {
-    Info "Using existing venv: $VenvDir"
+    $VenvConfig = Join-Path $VenvDir "pyvenv.cfg"
+    if ((Test-Path $VenvConfig) -and (Test-Path $VenvPython)) {
+        Info "Using existing venv: $VenvDir"
+    }
+    else {
+        Warn "Existing venv is incomplete - recreating $VenvDir"
+        Remove-Item -Recurse -Force $VenvDir
+        Info "Creating virtual environment at $VenvDir..."
+        & $PythonBin -m venv $VenvDir
+        if ($LASTEXITCODE -ne 0) { Die "Failed to create virtual environment" }
+        Ok "Venv created"
+    }
 }
 else {
     Info "Creating virtual environment at $VenvDir..."
@@ -198,10 +255,6 @@ else {
     if ($LASTEXITCODE -ne 0) { Die "Failed to create virtual environment" }
     Ok "Venv created"
 }
-
-$VenvScripts = Join-Path $VenvDir "Scripts"
-$VenvPython = Join-Path $VenvScripts "python.exe"
-$VenvCmd = Join-Path $VenvScripts "espansr.exe"
 
 Info "Upgrading pip..."
 & $VenvPython -m pip install --quiet --disable-pip-version-check --upgrade pip
@@ -220,16 +273,17 @@ if ($LASTEXITCODE -eq 0) {
     Ok "Setup complete"
 }
 else {
-    Warn "Setup completed with warnings"
+    Die "Post-install setup failed. Resolve the message above and rerun .\install.ps1"
 }
 
 $EspansoBin = Find-Espanso
+$EspansoFound = $null -ne $EspansoBin
 $EspansoJustStarted = $false
-if ($null -ne $EspansoBin) {
+if ($EspansoFound) {
     Ensure-EspansoService -EspansoBin $EspansoBin
 }
 else {
-    Warn "Espanso binary not found - skipping startup registration check"
+    Warn "Espanso binary not found - startup registration skipped"
 }
 
 # PATH setup
@@ -243,12 +297,16 @@ else {
     Ok "Added $VenvScripts to session PATH"
 }
 
-Info "To make 'espansr' available in all future sessions, run:"
-Write-Host ""
-Write-Host "  [Environment]::SetEnvironmentVariable('PATH', `"$VenvScripts;`" + [Environment]::GetEnvironmentVariable('PATH', 'User'), 'User')" -ForegroundColor White
-Write-Host ""
+Ensure-UserPathEntry -PathEntry $VenvScripts
+
 Info "This updates the Windows user PATH only. WSL PATH and shell aliases are separate."
-Info "Then open a new terminal for the change to take effect."
+Info "Open a new terminal for persistent PATH changes to take effect."
+
+if (-not $EspansoFound) {
+    Info "Install and start Espanso from https://espanso.org, then run:"
+    Write-Host "  espansr setup"
+    Write-Host "  espansr doctor"
+}
 
 # Smoke test
 

@@ -1,184 +1,99 @@
-# Espansr v1.1.0 — Verification Guide
+# Verification Guide
 
-A quick walkthrough to confirm everything works after install.
+Use this checklist after installing from a fresh checkout or after changing setup/install behavior.
 
----
-
-## 1. Install
+## 1. Install From The Repo Folder
 
 ```bash
-# Linux / macOS / WSL2
+# Linux / macOS / intentional WSL2 install
 ./install.sh
+```
 
-# Windows (PowerShell)
+```powershell
+# Windows PowerShell
 .\install.ps1
 ```
 
-If your machine is a Windows host, use `.\install.ps1` from Windows
-PowerShell. WSL and Windows do not share PATH, virtual environments, or shell
-startup files.
+Windows PowerShell and WSL are separate environments. On a Windows host, use
+`.\install.ps1` unless you intentionally want a WSL-side `espansr` install.
 
-## 2. Verify Version
+The installer should create `.venv`, install the package in editable mode, run
+`espansr setup`, seed bundled templates, and smoke-test `espansr list` and
+`espansr status`.
+
+## 2. Verify The CLI
 
 ```bash
 espansr --version
+espansr list
+espansr validate
+espansr status
+espansr doctor
 ```
 
-**Expected:** `espansr 1.1.0`
+Expected:
 
-## 3. Check Espanso Status
+- `--version` prints the installed version.
+- `list` shows bundled starter templates with triggers.
+- `validate` prints `All templates valid.` or specific template issues.
+- `status` shows the detected Espanso config path, or clear Espanso install/start guidance.
+- `doctor` prints `[ok]`, `[warn]`, or `[FAIL]` checks for Python, config, templates, Espanso, launcher files, and validation.
+
+`doctor` exits nonzero when Espanso or generated launcher files are missing.
+That means espansr is installed, but Espanso-trigger expansion is not fully ready yet.
+
+## 3. If Espanso Is Missing
+
+Install and start Espanso from [espanso.org](https://espanso.org/), then run:
 
 ```bash
-espansr status
+espansr setup
+espansr doctor
 ```
 
-**Expected:** Shows the detected Espanso config path, or a helpful message with install link if Espanso isn't found.
-
-### WSL2 Note
-
-`espansr` does not install Espanso automatically. On WSL2, install and initialize Espanso on Windows first:
-
-If you want a native Windows-hosted `espansr` install, stop here and run
-`.\install.ps1` in Windows PowerShell instead. The WSL install path is a
-separate environment.
-
-Preferred from WSL:
+On intentional WSL2 installs, Espanso normally runs on the Windows side. From WSL:
 
 ```bash
 espansr wsl-install-espanso
-```
-
-Manual PowerShell fallback:
-
-```powershell
-winget install --id Espanso.Espanso -e
-espanso start
-```
-
-Then return to WSL and run:
-
-```bash
 espansr doctor
 espansr setup
 ```
 
-If the Espanso launcher trigger ever stops opening the GUI on WSL2, rerun `espansr setup` to regenerate the Windows-side launcher file before troubleshooting YAML manually.
+If the WSL launcher trigger ever stops opening the GUI, rerun `espansr setup` to regenerate the Windows-side launcher file before editing YAML manually.
 
-## 4. List Templates
-
-```bash
-espansr list
-```
-
-**Expected:** At least the bundled `espansr_help` template with its trigger.
-
-## 5. Validate Templates
-
-```bash
-espansr validate
-```
-
-**Expected:** `All templates valid.` (or specific warnings/errors if templates have issues).
-
-## 6. Publish to Espanso
-
-```bash
-espansr publish
-```
-
-**Expected:** Prints a publish summary. If Espanso is installed, the managed match file is updated.
-
-## 6a. Publish Dry-Run
+## 4. Verify Publishing
 
 ```bash
 espansr publish --dry-run
+espansr publish
 ```
 
-**Expected:** Prints what would be published without writing any files.
+Expected: dry-run prints what would be written, and publish writes managed
+Espanso output when Espanso config is detected. If Espanso is missing, publish
+fails with a clear config-path error.
 
-## 7. Import a Template
-
-```bash
-# Create a test template
-echo '{"name":"Test","content":"Hello {{who}}","trigger":":test","variables":[{"name":"who","default":"World"}]}' > /tmp/test-template.json
-
-espansr import /tmp/test-template.json
-```
-
-**Expected:** `Imported 1 template: Test`
-
-## 7a. Run Doctor
-
-```bash
-espansr doctor
-```
-
-**Expected:** Prints a diagnostic report with `[ok]`, `[warn]`, or `[FAIL]` for each check (Python version, config dir, templates, Espanso config, binary, launcher, validation). Exit code 0 if no failures.
-
-## 7b. Retire Dry-Run
-
-```bash
-espansr retire :test --dry-run
-```
-
-**Expected:** Prints that the template would be backed up, deleted, and published without removing the JSON file.
-
-## 7c. Tab Completion
-
-```bash
-espansr completions bash
-espansr completions zsh
-```
-
-**Expected:** Each prints a shell completion script containing all subcommand names and `--help`/`--version` flags.
-
-## 8. Launch the GUI
+## 5. Verify The GUI
 
 ```bash
 espansr gui
 ```
 
-**Expected:** Window opens with a template browser on the left and editor on the right. Verify you can:
+Expected: the window opens with template browsing, editing, previews, variables,
+import, remote pull, and publishing available. Check that selecting a bundled
+template populates the editor and that Publish reports a status message.
 
-- [ ] Select a template from the list
-- [ ] See the trigger and content fields populated
-- [ ] Edit a trigger and click Save
-- [ ] See the YAML preview update live
-- [ ] Add/edit/delete a variable in the variable editor
-- [ ] Click "Publish" in the toolbar
-- [ ] See the status bar update after publish (e.g., "Published N template(s) to Espanso")
-- [ ] See the template output preview below the YAML preview
-- [ ] Switch theme via the toolbar combo (Auto/Dark/Light)
-- [ ] Use keyboard shortcuts: Ctrl+S (publish), Ctrl+N (new), Ctrl+I (import), Ctrl+F (search), Delete (delete)
-- [ ] Delete a test template, wait for the undo window to close, and confirm the status bar publishes the remaining templates
-- [ ] Close and reopen — window position and last template are remembered
+When Espanso is installed and running, also verify these triggers in any app
+where Espanso expands text:
 
-## 8a. Verify the Espanso launcher trigger
+- `:aopen` opens the full espansr editor.
+- `:coms` opens the commands popup and closes with `Esc`.
 
-On native Windows, type `:aopen` in Notepad or another app where Espanso
-already expands triggers.
-
-**Expected:** Espansr opens and no extra console window appears.
-
-## 8b. Verify the commands popup trigger
-
-In any app where Espanso already expands triggers, type `:coms`.
-
-**Expected:** A small scrollable popup opens listing your available Espanso
-triggers with descriptions and output previews. Press `Esc` and confirm the
-popup closes immediately.
-
-## 9. Run Tests (Developer)
+## 6. Developer Checks
 
 ```bash
-pip install -e .[dev]
 pytest
 ruff check .
 black --check .
 ```
 
-**Expected:** All tests pass, with zero lint errors and zero format issues.
-
----
-
-**All steps pass? You're good to go.**
+Expected: all tests pass, with zero lint or format errors.

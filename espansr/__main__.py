@@ -226,27 +226,37 @@ def cmd_setup(args) -> int:
 
     # ── Copy bundled templates (no-overwrite) ─────────────────────────────
     bundled_dir = _get_bundled_dir()
+    if not bundled_dir.is_dir():
+        print(fail(f"Bundled templates: not found at {bundled_dir}"))
+        print("Setup cannot continue because starter templates could not be located.")
+        return 1
+
+    bundled_templates = sorted(bundled_dir.glob("*.json"))
+    if not bundled_templates:
+        print(fail(f"Bundled templates: no JSON templates found at {bundled_dir}"))
+        print("Setup cannot continue because starter templates could not be located.")
+        return 1
+
     copied = 0
     existing = 0
-    if bundled_dir.is_dir():
-        if not dry_run:
-            templates_dir.mkdir(parents=True, exist_ok=True)
-        for src in sorted(bundled_dir.glob("*.json")):
-            dest = templates_dir / src.name
-            if dest.exists():
-                existing += 1
-                if verbose or dry_run:
-                    print(f"  {src.name}: skipped (already exists)")
+    if not dry_run:
+        templates_dir.mkdir(parents=True, exist_ok=True)
+    for src in bundled_templates:
+        dest = templates_dir / src.name
+        if dest.exists():
+            existing += 1
+            if verbose or dry_run:
+                print(f"  {src.name}: skipped (already exists)")
+        else:
+            if dry_run:
+                if verbose:
+                    print(f"  {src.name}: would copy")
+                copied += 1
             else:
-                if dry_run:
-                    if verbose:
-                        print(f"  {src.name}: would copy")
-                    copied += 1
-                else:
-                    shutil.copy2(str(src), str(dest))
-                    copied += 1
-                    if verbose:
-                        print(f"  {src.name}: copied")
+                shutil.copy2(str(src), str(dest))
+                copied += 1
+                if verbose:
+                    print(f"  {src.name}: copied")
 
     prefix = "[dry-run] " if dry_run else ""
     if dry_run:

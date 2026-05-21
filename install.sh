@@ -3,7 +3,7 @@
 #
 # Supports: Linux, WSL2, macOS
 #
-# Usage: ./install.sh [--no-desktop]
+# Usage: ./install.sh
 
 set -euo pipefail
 
@@ -70,10 +70,17 @@ ok "Python: $("$PYTHON_BIN" --version)"
 # ─── System dependencies (Linux/WSL2) ─────────────────────────────────────────
 install_system_deps() {
     if [[ "$PLATFORM" == "macos" ]]; then
-        return 0  # Homebrew handles deps separately
+        info "macOS: using Python wheels for PyQt6; install and start Espanso separately."
+        return 0
     fi
 
-    info "Checking system packages for PyQt6…"
+    if ! command -v dpkg &>/dev/null || ! command -v apt-get &>/dev/null; then
+        warn "Skipping automatic PyQt6 system package check (dpkg/apt-get not available)."
+        warn "If the GUI fails to start, install your distribution's Qt/XCB runtime packages."
+        return 0
+    fi
+
+    info "Checking Debian/Ubuntu system packages for PyQt6..."
     local missing=()
 
     # PyQt6 on Linux needs xcb platform libs
@@ -88,7 +95,7 @@ install_system_deps() {
         warn "Missing packages: ${missing[*]}"
         if command -v apt-get &>/dev/null; then
             info "Installing missing packages (requires sudo)…"
-            sudo apt-get install -y -q "${missing[@]}" || warn "Could not install system packages — GUI may not work"
+            sudo apt-get install -y -q "${missing[@]}" || warn "Could not install system packages - GUI may not work"
         else
             warn "Cannot auto-install. Please install: ${missing[*]}"
         fi
@@ -99,17 +106,25 @@ install_system_deps() {
 
 install_system_deps
 
+VENV_PYTHON="$VENV_DIR/bin/python"
+VENV_PIP="$VENV_DIR/bin/pip"
+
 # ─── Virtual environment ──────────────────────────────────────────────────────
 if [[ -d "$VENV_DIR" ]]; then
-    info "Using existing venv: $VENV_DIR"
+    if [[ -f "$VENV_DIR/pyvenv.cfg" && -x "$VENV_PYTHON" ]]; then
+        info "Using existing venv: $VENV_DIR"
+    else
+        warn "Existing venv is incomplete - recreating $VENV_DIR"
+        rm -rf "$VENV_DIR"
+        info "Creating virtual environment at $VENV_DIR…"
+        "$PYTHON_BIN" -m venv "$VENV_DIR"
+        ok "Venv created"
+    fi
 else
     info "Creating virtual environment at $VENV_DIR…"
     "$PYTHON_BIN" -m venv "$VENV_DIR"
     ok "Venv created"
 fi
-
-VENV_PYTHON="$VENV_DIR/bin/python"
-VENV_PIP="$VENV_DIR/bin/pip"
 
 info "Upgrading pip…"
 "$VENV_PIP" install --quiet --upgrade pip
@@ -122,7 +137,11 @@ VENV_CMD="$VENV_DIR/bin/espansr"
 
 # ─── Post-install setup ──────────────────────────────────────────────────────
 info "Running post-install setup…"
-"$VENV_CMD" setup && ok "Setup complete" || warn "Setup completed with warnings"
+if "$VENV_CMD" setup; then
+    ok "Setup complete"
+else
+    die "Post-install setup failed. Resolve the message above and rerun ./install.sh"
+fi
 
 # ─── Shell integration ────────────────────────────────────────────────────────
 setup_shell_alias() {
@@ -155,19 +174,30 @@ fi
 # ─── Smoke test ──────────────────────────────────────────────────────────────
 info "Running smoke test…"
 
-"$VENV_CMD" list && ok "CLI: espansr list — OK" || die "Smoke test failed: 'espansr list' exited non-zero"
-STATUS_OUTPUT="$($VENV_CMD status 2>&1 || true)"
+LIST_OUTPUT="$("$VENV_CMD" list 2>&1)" || {
+    echo "$LIST_OUTPUT"
+    die "Smoke test failed: 'espansr list' exited non-zero"
+}
+echo "$LIST_OUTPUT"
+ok "CLI: espansr list — OK"
+STATUS_OUTPUT="$("$VENV_CMD" status 2>&1 || true)"
 echo "$STATUS_OUTPUT"
 ok "CLI: espansr status — OK"
 
-if [[ "$PLATFORM" == "wsl2" ]] && echo "$STATUS_OUTPUT" | grep -q "Espanso config: not found"; then
+if echo "$STATUS_OUTPUT" | grep -q "Espanso config: not found"; then
     warn "Dependency note: espansr does not install Espanso itself."
-    info "Recommended from WSL:"
-    echo "  espansr wsl-install-espanso"
-    info "Manual fallback in Windows PowerShell, then re-check from WSL:"
-    echo "  winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements"
-    echo "  espanso start"
-    echo "  espansr doctor"
+    if [[ "$PLATFORM" == "wsl2" ]]; then
+        info "Recommended from WSL:"
+        echo "  espansr wsl-install-espanso"
+        info "Manual fallback in Windows PowerShell, then re-check from WSL:"
+        echo "  winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements"
+        echo "  espanso start"
+        echo "  espansr doctor"
+    else
+        info "Install and start Espanso from https://espanso.org, then run:"
+        echo "  espansr setup"
+        echo "  espansr doctor"
+    fi
 fi
 
 # ─── Done ─────────────────────────────────────────────────────────────────────

@@ -146,8 +146,8 @@ def test_setup_then_list_shows_template(tmp_path):
     assert "Espansr Quick Help" in names
 
 
-def test_setup_handles_missing_bundled_dir(tmp_path):
-    """cmd_setup succeeds even if the bundled dir does not exist."""
+def test_setup_fails_when_bundled_dir_missing(tmp_path, capsys):
+    """cmd_setup fails clearly when bundled starter templates are unavailable."""
     from espansr.__main__ import cmd_setup
 
     config_dir = tmp_path / "config" / "espansr"
@@ -162,7 +162,58 @@ def test_setup_handles_missing_bundled_dir(tmp_path):
     ):
         result = cmd_setup(None)
 
+    output = capsys.readouterr().out
+    assert result == 1
+    assert "Bundled templates: not found" in output
+    assert "starter templates could not be located" in output
+
+
+def test_setup_fails_when_bundled_dir_empty(tmp_path, capsys):
+    """cmd_setup fails clearly when the bundled directory has no JSON templates."""
+    from espansr.__main__ import cmd_setup
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = tmp_path / "bundled"
+    bundled_dir.mkdir()
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+    ):
+        result = cmd_setup(None)
+
+    output = capsys.readouterr().out
+    assert result == 1
+    assert "no JSON templates found" in output
+    assert "starter templates could not be located" in output
+
+
+def test_setup_bootstraps_real_bundled_templates(tmp_path):
+    """cmd_setup seeds live templates from the repository bundled starter set."""
+    from espansr.__main__ import cmd_setup
+    from espansr.core.templates import TemplateManager
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+    ):
+        result = cmd_setup(None)
+
     assert result == 0
+    assert (templates_dir / "espansr_help.json").exists()
+    assert (templates_dir / "verify.json").exists()
+    triggers = {
+        template.trigger for template in TemplateManager(templates_dir).iter_with_triggers()
+    }
+    assert ":espansr" in triggers
+    assert ":verify" in triggers
 
 
 def test_setup_with_espanso_config(tmp_path):

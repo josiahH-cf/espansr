@@ -219,6 +219,15 @@ Use `--view commands` to open the lightweight commands popup directly instead of
 the full editor. This is the same popup launched by the generated `:coms`
 Espanso trigger.
 
+The full GUI includes template browsing, editing, variable editing, previews,
+import, remote pull, and publishing. `Ctrl+S` publishes, `Ctrl+N` creates a new
+template, `Ctrl+I` imports, `Ctrl+F` searches, and `Delete` starts the
+delete-with-undo flow.
+
+Deleting a template from the GUI backs it up locally, removes the JSON file
+after the undo window, and publishes the remaining templates so managed Espanso
+output no longer contains the retired trigger.
+
 ### `espansr --version`
 
 Print the installed version.
