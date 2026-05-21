@@ -194,7 +194,7 @@ def test_setup_with_espanso_config(tmp_path):
     mock_clean.assert_called_once()
     mock_launcher.assert_called_once()
     mock_popup.assert_called_once()
-    mock_sync.assert_called_once()
+    mock_sync.assert_called_once_with(update_bundled=True, bundled_dir=bundled_dir)
 
 
 def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
@@ -276,6 +276,47 @@ def test_setup_prints_summary(tmp_path, capsys):
     assert "Templates:" in output
     assert "Espanso config:" in output
     assert "Launcher:" in output
+
+
+def test_setup_retires_zombie_bundled_templates(tmp_path):
+    """Bundled sync retires old template files superseded by a renamed replacement.
+
+    Regression for: install.ps1 re-run left feature_init.json etc. in the live
+    dir because cmd_setup called sync_to_espanso() without update_bundled=True.
+    This test exercises sync_bundled_templates_to_live() directly with the same
+    pattern (canonical file present, zombie old file present).
+    """
+    import json
+
+    from espansr.core.templates import (
+        _RENAMED_BUNDLED_TEMPLATE_FILES,
+        sync_bundled_templates_to_live,
+    )
+
+    # Pick the first known old filename for feat.json
+    old_name = _RENAMED_BUNDLED_TEMPLATE_FILES["feat.json"][0]
+
+    live_dir = tmp_path / "live"
+    live_dir.mkdir()
+    bundled_dir = tmp_path / "bundled"
+    bundled_dir.mkdir()
+
+    feat = {"name": "Feature", "trigger": ":feat", "content": "feature content"}
+    (bundled_dir / "feat.json").write_text(json.dumps(feat))
+    (live_dir / "feat.json").write_text(json.dumps(feat))
+
+    # Zombie old file — should be retired once sync runs
+    zombie = live_dir / old_name
+    zombie.write_text(json.dumps({"name": "Old", "trigger": ":old", "content": "old"}))
+
+    report, result = sync_bundled_templates_to_live(
+        templates_dir=live_dir,
+        bundled_dir=bundled_dir,
+    )
+
+    assert not zombie.exists(), f"{old_name} should have been retired by sync"
+    assert (live_dir / "feat.json").exists(), "feat.json should be kept"
+    assert result.retired >= 1
 
 
 # ─── cmd_status — platform-specific guidance ─────────────────────────────────

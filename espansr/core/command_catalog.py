@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from espansr.core.config import Config, get_config
-from espansr.core.templates import Template, TemplateManager, get_template_manager
+from espansr.core.templates import Template, TemplateManager
 
 COMMANDS_POPUP_TRIGGER = ":coms"
 COMMANDS_POPUP_NAME = "Command Reference"
@@ -126,7 +126,12 @@ def build_command_catalog(
     config: Optional[Config] = None,
 ) -> list[CommandCatalogEntry]:
     """Build the complete trigger catalog for the commands popup."""
-    template_manager = template_manager or get_template_manager()
+    # Always create a fresh TemplateManager to avoid stale singleton state.
+    # The cached get_template_manager() singleton fixes templates_dir at
+    # creation time; bypassing it ensures every catalog build re-derives
+    # the templates directory from the current config state and reads
+    # the most recent files from disk.
+    template_manager = template_manager or TemplateManager()
     config = config or get_config()
 
     entries = list(_iter_template_entries(template_manager))

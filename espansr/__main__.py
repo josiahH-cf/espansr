@@ -294,7 +294,7 @@ def cmd_setup(args) -> int:
             print(f"Espanso config: {espanso_dir}")
             print("Launcher: generated")
             print("Commands popup: generated")
-            if not sync_to_espanso():
+            if not sync_to_espanso(update_bundled=True, bundled_dir=bundled_dir):
                 print("Publish: failed — run 'espansr publish' after resolving the issues above")
     else:
         plat = get_platform()

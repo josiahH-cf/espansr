@@ -190,3 +190,43 @@ def test_launch_commands_popup_uses_dialog_exec_when_owning_app():
 
     fake_dialog.exec.assert_called_once()
     fake_dialog.show.assert_not_called()
+
+
+def test_build_command_catalog_always_reflects_current_files(tmp_path):
+    """build_command_catalog() returns fresh data on each call, never stale.
+
+    Guards against the module-level _template_manager singleton causing the
+    catalog to freeze at the set of templates present when the singleton was
+    first created.  A template added after the first call must appear in
+    subsequent calls within the same process.
+    """
+    from espansr.core.command_catalog import build_command_catalog
+    from espansr.core.templates import TemplateManager
+
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    manager.create(
+        name="First",
+        content="alpha {{x}}",
+        trigger=":first",
+        variables=[{"name": "x", "label": "X"}],
+    )
+
+    config = Config()
+    config.espanso.launcher_trigger = ":launch"
+
+    first_call = build_command_catalog(template_manager=manager, config=config)
+    assert any(e.trigger == ":first" for e in first_call)
+
+    # Add a second template to the same dir — simulates a file appearing on disk
+    # after the catalog was first built (e.g., bundled sync, git pull, GUI save).
+    manager.create(
+        name="Second",
+        content="beta",
+        trigger=":second",
+    )
+
+    second_call = build_command_catalog(template_manager=manager, config=config)
+    assert any(e.trigger == ":second" for e in second_call), (
+        "build_command_catalog() returned stale results; ':second' was not found "
+        "even though its template file was present on disk."
+    )
