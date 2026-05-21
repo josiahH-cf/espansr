@@ -1,0 +1,10 @@
+{
+  "name": "Rebase Current Branch",
+  "description": "Safely inspect branch state and rebase current work only when the path is clear.",
+  "content": "Safely rebase the current branch onto its upstream or intended target branch when that is the clearest way to bring relevant local work up to date.\n\nUse the repository's current Git state as the source of truth. Inspect the current branch, status, remotes, upstream tracking, divergence, and relevant changes before acting.\n\nGoal: update the current work without losing local changes, hiding conflicts, or assuming repository policy that is not present in local context.\n\nRules:\n- Include only relevant in-scope changes.\n- Keep the flow minimal and focused on the current repository.\n- Do not discard, reset, force-push, delete branches, or overwrite local work.\n- Do not invent a target branch; derive it from upstream tracking, the user's explicit request, or clear repository context.\n- Stop and report if branch state, conflicts, missing remotes, missing upstream, unrelated changes, or unclear target branch make the safe path ambiguous.\n\nFinal response: report the starting branch, target branch or upstream, what was rebased or why rebase was skipped, conflicts or blockers, and the resulting branch state.",
+  "trigger": ":rebase",
+  "category": "workflow",
+  "stage": "git-update",
+  "next_triggers": [":merge"],
+  "replaces": []
+}

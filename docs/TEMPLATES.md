@@ -23,9 +23,10 @@ template files:
 - `:aopen` launches the full espansr editor
 - `:coms` opens a lightweight popup showing your available triggers
 
-The bundled starter set also includes reusable AI workflow prompts such as
-`:goal`, `:feat`, `:verify`, `:docs-qa`, `:save`, `:explain`, `:visual`,
-`:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, and `:merge`. Use
+The bundled starter set also includes reusable AI prompts such as
+`:goal`, `:feat`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:revise`,
+`:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`,
+`:sanitize`, and `:merge`. Use
 `:espansr` for the current quick reference list. The `:feat` switcher handles
 project setup, feature scaffolding, new-feature planning, specs/tasks, and
 next-feature work in one prompt.
@@ -37,6 +38,12 @@ Use `:explain` for evidence-bound plain-English explanation. Use `:gaps` for
 critical review modes, including gap review, first-principles analysis, and
 claimed-vs-actual reality audits.
 
+Use `:revise` to clean up messaging while preserving the original meaning and
+following any style or wording direction included in the prompt input.
+
+Use `:troubleshoot` for ordered debugging that checks context quality, researches
+the controlling code path, plans, fixes, verifies, and reviews affected areas.
+
 Use `:verify` as the normal end-of-work prompt for fresh-context verification,
 repair, and affected documentation alignment. `:docs-qa` remains available as a
 docs-only fallback when you want documentation alignment without the full
@@ -46,7 +53,8 @@ Git helper templates are self-invoking snippets split by shell and safety
 level: `:git-yolo-sh` and `:git-yolo-ps` commit all current changes and push
 the current branch, retrying with `--force` if a normal push is rejected;
 `:git-rebase-sh` and `:git-rebase-ps` use a safer stash-and-rebase-from-`main`
-flow.
+flow; `:git-branch-sh` and `:git-branch-ps` prompt for a branch name, validate
+it, create the branch, and switch to it.
 
 ## Schema
 

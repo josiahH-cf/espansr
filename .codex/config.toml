@@ -23,8 +23,6 @@ network_access = true
 # These complement .aiignore and provide Codex-specific enforcement.
 exclude_patterns = [
   ".env*",
-  "governance/**",
-  "workflow/STATE.json",
   "*.pem",
   "*.key",
 ]

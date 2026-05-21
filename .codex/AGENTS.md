@@ -1,33 +1,20 @@
 # Codex Agent Instructions
 
-> **This file is scoped to Codex. For universal routing, conventions, and workflow phases, see ../AGENTS.md. AGENTS.md takes precedence over this file.**
+Follow [../AGENTS.md](../AGENTS.md). This file only notes Codex-specific execution preferences.
 
-## Codex-Specific Behavior
+## Execution
 
-- Read `../AGENTS.md` at the start of every task for routing, conventions, and boundaries
-- Use `../.specify/constitution.md` as the project identity reference
-- Consult advisory routing hints in `../workflow/ROUTING.md` when choosing tasks (any agent can do any task)
-- Follow branch naming conventions in `../workflow/ROUTING.md`: `agent/type-short-description` (where agent is any identifier)
+- Inspect the relevant files and git state before editing.
+- Keep changes scoped to the user request.
+- Preserve product behavior unless explicitly asked to change it.
+- Do not touch templates, product docs, install scripts, WSL/PowerShell behavior, UI styles, packaging, or application code unless explicitly requested.
 
-## Execution Mode
+## Verification
 
-- Codex operates in unattended mode with structured plans
-- Plans are written to `/.codex/PLANS.md` before execution
-- Each plan milestone maps to an acceptance criterion from the spec
-- Verify each milestone before advancing to the next
+Run the normal Python checks when relevant:
 
-## Workflow Commands
-
-Codex participates in the same 8-phase workflow defined in AGENTS.md. Entry points:
-
-- Phase 4 (Scaffold): read feature specs, produce architecture plan
-- Phase 6 (Code): execute implementation from fine-tuned spec
-- Phase 7 (Test): run test suites, report results
-- Bug Track: process bug specs from the backlog
-
-## References
-
-- Universal routing: `../AGENTS.md`
-- Constitution: `../.specify/constitution.md`
-- Implementation plan template: `PLANS.md` (this directory)
-- Sandbox config: `config.toml` (this directory)
+```bash
+pytest
+ruff check .
+black --check .
+```

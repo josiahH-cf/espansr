@@ -763,12 +763,15 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [":verify", ":context"],
             [],
         ),
+        "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [":verify"], []),
         "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
         "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save"], [":qa"]),
         "git_yolo_sh.json": (":git-yolo-sh", "workflow", "git-yolo", [":verify"], []),
         "git_rebase_sh.json": (":git-rebase-sh", "workflow", "git-rebase", [":verify"], []),
+        "git_branch_sh.json": (":git-branch-sh", "workflow", "git-branch", [":verify"], []),
         "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [":verify"], []),
         "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [":verify"], []),
+        "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [":verify"], []),
     }
     retired_files = {
         "dumb.json",
@@ -820,6 +823,7 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":explain",
         ":visual",
         ":gaps",
+        ":troubleshoot",
         ":verify",
         ":sanitize",
         ":context",
@@ -831,8 +835,10 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":merge",
         ":git-yolo-sh",
         ":git-rebase-sh",
+        ":git-branch-sh",
         ":git-yolo-ps",
         ":git-rebase-ps",
+        ":git-branch-ps",
         ":coms",
         ":espansr",
     ]:
@@ -940,6 +946,41 @@ def test_bundled_sanitize_template_contract():
     assert "when the risk is non-trivial" in content.lower()
 
 
+def test_bundled_revise_template_contract():
+    """The revise prompt stays a strict, output-only message cleanup assistant."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "revise.json").read_text(encoding="utf-8"))
+
+    content = data["content"]
+
+    assert data["trigger"] == ":revise"
+    assert data["category"] == "communication"
+    assert data["stage"] == "message-revision"
+    assert data["next_triggers"] == []
+    assert "clarity" in data["description"].lower()
+    assert "preserving meaning" in data["description"].lower()
+
+    assert (
+        "You are `revise`, a minimal assistant for cleaning up user-provided messaging." in content
+    )
+    assert (
+        "If the user includes a style, direction, audience, tone, or wording preference "
+        "there, follow it." in content
+    )
+    assert (
+        "If no direction is provided, default to a clean edit for clarity and concision." in content
+    )
+    assert "Avoid em dashes." in content
+    assert "Avoid trailing spaces." in content
+    assert "Avoid contrast framing like `it's this, not this`." in content
+    assert "Do not add new facts, claims, requests, examples, or context." in content
+    assert "Do not explain edits." in content
+    assert "Do not ask follow-up questions." in content
+    assert "Return only the revised text." in content
+    assert "No text provided to revise." in content
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
 def test_bundled_quick_help_describes_broader_sanitize_role():
     """Quick help should describe sanitize as broader than AI-marker cleanup."""
     repo_root = Path(__file__).resolve().parents[1]
@@ -947,6 +988,71 @@ def test_bundled_quick_help_describes_broader_sanitize_role():
 
     assert (
         ":sanitize         — assess sensitive/internal traces and recommend sanitization"
+        in data["content"]
+    )
+
+
+def test_bundled_quick_help_lists_revise_prompt():
+    """Quick help should list revise as a standalone writing utility prompt."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
+
+    assert (
+        ":revise   — clean up messaging while preserving meaning and direction" in data["content"]
+    )
+
+
+def test_bundled_troubleshoot_template_contract():
+    """The troubleshoot prompt enforces ordered repair and affected-area review."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "troubleshoot.json").read_text(encoding="utf-8"))
+
+    content = data["content"]
+
+    assert data["trigger"] == ":troubleshoot"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "troubleshooting"
+    assert data["next_triggers"] == [":verify"]
+    assert data["replaces"] == []
+
+    required_phrases = [
+        "Context quality first",
+        "Bounded research before planning",
+        "Concrete plan",
+        "Test-first when practical",
+        "Execute the minimal fix",
+        "Focused verification",
+        "Affected-area review",
+        "Completion gate",
+        "poisoned, stale, contradictory, or irrelevant context",
+        "newest explicit user direction and reliable local evidence",
+        "owning abstraction",
+        "directly affected docs, configs, help text, workflow text, or prompt-chain hints",
+        "cheapest failing test",
+        "Finish only when both gates pass",
+    ]
+
+    for phrase in required_phrases:
+        assert phrase in content
+
+    assert content.index("Context quality first") < content.index(
+        "Bounded research before planning"
+    )
+    assert content.index("Bounded research before planning") < content.index("Concrete plan")
+    assert content.index("Concrete plan") < content.index("Execute the minimal fix")
+    assert content.index("Execute the minimal fix") < content.index("Focused verification")
+    assert content.index("Focused verification") < content.index("Affected-area review")
+    assert content.index("Affected-area review") < content.index("Completion gate")
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_quick_help_lists_troubleshoot_prompt():
+    """Quick help should list troubleshoot as an ordered debugging workflow prompt."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
+
+    assert (
+        ":troubleshoot — debug with context checks, research, planning, fixing, and verification"
         in data["content"]
     )
 
@@ -983,6 +1089,12 @@ def test_bundled_git_helper_templates_are_executable_commands():
             "git stash push -u",
             "git_rebase_main_safe",
         ),
+        "git_branch_sh.json": (
+            ":git-branch-sh",
+            "git_new_branch()",
+            'git switch -c "$branch_name"',
+            "git_new_branch",
+        ),
         "git_yolo_ps.json": (
             ":git-yolo-ps",
             "function Invoke-GitYoloMain",
@@ -994,6 +1106,12 @@ def test_bundled_git_helper_templates_are_executable_commands():
             "function Invoke-GitRebaseMainSafe",
             "Invoke-GitChecked stash push -u",
             "Invoke-GitRebaseMainSafe",
+        ),
+        "git_branch_ps.json": (
+            ":git-branch-ps",
+            "function Invoke-GitNewBranch",
+            "Invoke-GitChecked switch -c $branchName",
+            "Invoke-GitNewBranch",
         ),
     }
 
@@ -1018,3 +1136,74 @@ def test_bundled_git_helper_templates_are_executable_commands():
             assert "--force" in content
         else:
             assert "--force" not in content
+
+        if "branch" in filename:
+            variables = {variable["name"]: variable for variable in data.get("variables", [])}
+
+            assert variables["branch_name"]["label"] == "Branch Name"
+            assert variables["branch_name"]["type"] == "form"
+            assert variables["branch_name"]["multiline"] is False
+            assert content.count("{{branch_name}}") == 1
+            assert "git check-ref-format --branch" in content
+            assert "git show-ref --verify --quiet" in content
+            assert "Branch name must be a single line." in content
+            assert "git switch -c {{branch_name}}" not in content
+            assert "Invoke-GitChecked switch -c {{branch_name}}" not in content
+            assert 'branch_name="{{branch_name}}"' not in content
+            assert "$branchName = '{{branch_name}}'" not in content
+            assert "eval " not in content
+            assert "Invoke-Expression" not in content
+            assert "git switch main" not in content
+            assert "git rebase main" not in content
+            assert "git stash push" not in content
+
+            if filename.endswith("_sh.json"):
+                assert "<<'ESPANSR_BRANCH_NAME:" in content
+            else:
+                assert "$rawBranchName = @'" in content
+
+
+def test_bundled_git_branch_helpers_use_popup_form_variable(tmp_path):
+    """Git branch helpers use Espanso form variables for branch-name input."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    repo_root = Path(__file__).resolve().parents[1]
+    bundled_templates_dir = repo_root / "templates"
+    templates_dir = tmp_path / "templates"
+    match_dir = tmp_path / "espanso" / "match"
+    templates_dir.mkdir()
+    match_dir.mkdir(parents=True)
+
+    for filename in ["git_branch_sh.json", "git_branch_ps.json"]:
+        (templates_dir / filename).write_text(
+            (bundled_templates_dir / filename).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+    manager = TemplateManager(templates_dir=templates_dir)
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager", return_value=manager),
+        patch("espansr.integrations.espanso.validate_all", return_value=[]),
+        patch("espansr.integrations.espanso.clean_stale_espanso_files"),
+        patch("espansr.integrations.espanso.restart_espanso", return_value=True),
+    ):
+        result = sync_to_espanso()
+
+    assert result is True
+    data = yaml.safe_load((match_dir / "espansr.yml").read_text(encoding="utf-8"))
+    matches = {entry["trigger"]: entry for entry in data["matches"]}
+
+    for trigger in [":git-branch-sh", ":git-branch-ps"]:
+        entry = matches[trigger]
+
+        assert "{{branch_name.value}}" in entry["replace"]
+        assert "{{branch_name}}" not in entry["replace"]
+        assert entry["vars"] == [
+            {
+                "name": "branch_name",
+                "type": "form",
+                "params": {"layout": "Branch Name: [[value]]"},
+            }
+        ]

@@ -1,0 +1,19 @@
+{
+  "name": "Git Branch Linux",
+  "description": "Bash snippet that prompts for a branch name, validates it, creates a new branch, and switches to it.",
+  "content": "git_new_branch() {\n  raw_branch_name=\"$(cat <<'ESPANSR_BRANCH_NAME:9E6F0F0D_8EAD_45C4_9B3F_5A64E71F7C8D'\n{{branch_name}}\nESPANSR_BRANCH_NAME:9E6F0F0D_8EAD_45C4_9B3F_5A64E71F7C8D\n)\"\n  case \"$raw_branch_name\" in\n    *$'\\n'*|*$'\\r'*)\n      echo \"Branch name must be a single line.\"\n      return 1\n      ;;\n  esac\n\n  branch_name=\"$(printf '%s' \"$raw_branch_name\" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')\"\n  if [ -z \"$branch_name\" ]; then\n    echo \"Branch name is required.\"\n    return 1\n  fi\n  case \"$branch_name\" in\n    -*)\n      echo \"Branch name must not start with '-'.\"\n      return 1\n      ;;\n  esac\n\n  if ! git rev-parse --git-dir >/dev/null 2>&1; then\n    echo \"Not in a Git repository.\"\n    return 1\n  fi\n\n  validated_branch_name=\"$(git check-ref-format --branch \"$branch_name\")\" || {\n    echo \"Invalid branch name: $branch_name\"\n    return 1\n  }\n  if [ \"$validated_branch_name\" != \"$branch_name\" ]; then\n    echo \"Branch name must be explicit and unambiguous.\"\n    return 1\n  fi\n\n  git show-ref --verify --quiet \"refs/heads/$branch_name\"\n  show_ref_status=$?\n  if [ \"$show_ref_status\" -eq 0 ]; then\n    echo \"Branch '$branch_name' already exists.\"\n    return 1\n  fi\n  if [ \"$show_ref_status\" -ne 1 ]; then\n    echo \"git show-ref failed\"\n    return 1\n  fi\n\n  git switch -c \"$branch_name\" || return 1\n  git status --short\n}\n\ngit_new_branch\n",
+  "trigger": ":git-branch-sh",
+  "category": "workflow",
+  "stage": "git-branch",
+  "next_triggers": [":verify"],
+  "replaces": [],
+  "variables": [
+    {
+      "name": "branch_name",
+      "label": "Branch Name",
+      "default": "",
+      "type": "form",
+      "multiline": false
+    }
+  ]
+}
