@@ -1080,7 +1080,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
         "git_yolo_sh.json": (
             ":git-yolo-sh",
             "git_yolo_push()",
-            "git push --force",
+            "git push --force-with-lease",
             "git_yolo_push",
         ),
         "git_rebase_sh.json": (
@@ -1098,7 +1098,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
         "git_yolo_ps.json": (
             ":git-yolo-ps",
             "function Invoke-GitYoloMain",
-            "Invoke-GitChecked push --force",
+            "Invoke-GitChecked push --force-with-lease",
             "Invoke-GitYoloMain",
         ),
         "git_rebase_ps.json": (
@@ -1127,13 +1127,13 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert content.rstrip().endswith(invocation)
         assert "git reset --hard" not in content
         assert "gh " not in content
+        assert "Run this from a non-main branch." not in content
+        assert "Local changes are on main" in content
+        assert "merge --ff-only" in content
 
         if "yolo" in filename:
-            assert "Run this from a non-main branch." not in content
-            assert "git switch main" not in content
-            assert "git rebase main" not in content
-            assert "git merge --ff-only" not in content
-            assert "--force" in content
+            assert "--force-with-lease" in content
+            assert "not force-pushing main" in content
         else:
             assert "--force" not in content
 
@@ -1153,9 +1153,8 @@ def test_bundled_git_helper_templates_are_executable_commands():
             assert "$branchName = '{{branch_name}}'" not in content
             assert "eval " not in content
             assert "Invoke-Expression" not in content
-            assert "git switch main" not in content
-            assert "git rebase main" not in content
-            assert "git stash push" not in content
+            assert "stash push -u" in content
+            assert "Rebase stopped. Resolve conflicts" in content
 
             if filename.endswith("_sh.json"):
                 assert "<<'ESPANSR_BRANCH_NAME:" in content
