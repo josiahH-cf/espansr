@@ -6,10 +6,11 @@ Single source of truth for OS and WSL2 detection across the codebase.
 import os
 import platform
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Mapping, Optional
 
 _RESERVED_WINDOWS_USER_DIRS = {
     "all users",
@@ -260,3 +261,236 @@ def get_windows_username() -> Optional[str]:
         return username if username else None
     except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
         return None
+
+
+# ─── Command shim (cross-platform `espansr` on PATH) ─────────────────────────
+#
+# Background: on POSIX the install script historically exposed `espansr` only
+# via a shell alias appended to ~/.bashrc or ~/.zshrc. Aliases never resolve
+# in non-interactive shells (subprocess, scripts, `.desktop` launchers,
+# systemd-user units, IDE terminals, or the non-interactive shells that
+# remote-desktop session managers like RustDesk/RDP commonly spawn). Windows
+# already installs a real PATH entry via install.ps1, so it does not suffer
+# the same gap. The helpers below give POSIX the same property by placing a
+# real executable shim on PATH at ~/.local/bin/espansr.
+
+ShimStatus = Literal[
+    "created",
+    "updated",
+    "unchanged",
+    "conflict",
+    "skipped",
+    "unavailable",
+]
+
+
+@dataclass(frozen=True)
+class ShimResult:
+    """Outcome of an ensure_command_shim() call."""
+
+    path: Path
+    target: Optional[Path]
+    status: ShimStatus
+    message: str
+
+
+def get_venv_bin_dir(executable: Optional[str] = None) -> Path:
+    """Return the bin/Scripts directory of the venv hosting the interpreter.
+
+    Uses ``sys.executable`` by default. On Windows the directory is
+    ``<prefix>\\Scripts``; elsewhere it is ``<prefix>/bin``.
+    """
+    exe = Path(executable) if executable else Path(sys.executable)
+    return exe.parent
+
+
+def _shim_executable_name() -> str:
+    return "espansr.exe" if get_platform() == "windows" else "espansr"
+
+
+def get_user_bin_dir() -> Path:
+    """Return the canonical user-level executable directory for this platform.
+
+    On POSIX returns ``~/.local/bin`` (XDG/freedesktop standard, on default
+    PATH for Debian/Ubuntu/Fedora login shells and respected by systemd-user
+    and desktop launchers). On Windows returns the venv ``Scripts`` directory
+    that ``install.ps1`` already persists to the user PATH.
+    """
+    if get_platform() == "windows":
+        return get_venv_bin_dir()
+    return Path.home() / ".local" / "bin"
+
+
+def is_user_bin_on_path(
+    user_bin: Optional[Path] = None,
+    env: Optional[Mapping[str, str]] = None,
+) -> bool:
+    """Return True if ``user_bin`` appears on PATH in the given environment."""
+    target = (user_bin or get_user_bin_dir()).resolve()
+    raw = (env or os.environ).get("PATH", "")
+    sep = ";" if get_platform() == "windows" else ":"
+    for entry in raw.split(sep):
+        if not entry:
+            continue
+        try:
+            if Path(entry).resolve() == target:
+                return True
+        except OSError:
+            continue
+    return False
+
+
+def _find_venv_espansr(venv_bin: Path) -> Optional[Path]:
+    """Locate the installed espansr executable inside a venv bin dir."""
+    for name in ("espansr", "espansr.exe"):
+        candidate = venv_bin / name
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def ensure_command_shim(
+    target_executable: Optional[Path] = None,
+    user_bin: Optional[Path] = None,
+    force: bool = False,
+) -> ShimResult:
+    """Ensure a PATH-visible ``espansr`` shim exists for the running install.
+
+    POSIX: idempotently maintain a symlink at ``<user_bin>/espansr`` pointing
+    to the venv's ``espansr`` executable. If a non-symlink regular file is in
+    the way, return status ``conflict`` unless ``force=True`` (which replaces
+    it). Falls back to a tiny wrapper script when symlinks are unsupported
+    (rare; e.g. FAT/exFAT home dirs).
+
+    Windows: verify-only. ``install.ps1`` is the source of truth for the
+    persistent user PATH entry; this helper reports whether the venv Scripts
+    directory is currently on PATH so doctor and tests can surface the state.
+    """
+    plat = get_platform()
+    venv_bin = get_venv_bin_dir()
+    target = target_executable or _find_venv_espansr(venv_bin)
+    bin_dir = user_bin or get_user_bin_dir()
+    shim_path = bin_dir / _shim_executable_name()
+
+    if plat == "windows":
+        if target is None:
+            return ShimResult(
+                path=shim_path,
+                target=None,
+                status="unavailable",
+                message="espansr executable not found in venv Scripts directory",
+            )
+        if is_user_bin_on_path(bin_dir):
+            return ShimResult(
+                path=target,
+                target=target,
+                status="unchanged",
+                message=(
+                    "Windows: venv Scripts directory is on user PATH " "(managed by install.ps1)"
+                ),
+            )
+        return ShimResult(
+            path=target,
+            target=target,
+            status="skipped",
+            message=(
+                "Windows: venv Scripts directory is not on PATH; " "rerun install.ps1 to persist it"
+            ),
+        )
+
+    if target is None:
+        return ShimResult(
+            path=shim_path,
+            target=None,
+            status="unavailable",
+            message=f"espansr executable not found in {venv_bin}",
+        )
+
+    try:
+        bin_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        return ShimResult(
+            path=shim_path,
+            target=target,
+            status="unavailable",
+            message=f"could not create {bin_dir}: {exc}",
+        )
+
+    # Inspect existing entry.
+    if shim_path.is_symlink():
+        try:
+            current = (bin_dir / os.readlink(shim_path)).resolve()
+        except OSError:
+            current = None
+        if current == target.resolve():
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status="unchanged",
+                message=f"shim already points to {target}",
+            )
+        try:
+            shim_path.unlink()
+        except OSError as exc:
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status="unavailable",
+                message=f"could not replace stale shim at {shim_path}: {exc}",
+            )
+        return _create_shim(shim_path, target, status_on_success="updated")
+
+    if shim_path.exists():
+        if not force:
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status="conflict",
+                message=(
+                    f"non-symlink file at {shim_path}; rerun with --force-shim " "to overwrite"
+                ),
+            )
+        try:
+            shim_path.unlink()
+        except OSError as exc:
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status="unavailable",
+                message=f"could not remove existing file at {shim_path}: {exc}",
+            )
+
+    return _create_shim(shim_path, target, status_on_success="created")
+
+
+def _create_shim(shim_path: Path, target: Path, *, status_on_success: ShimStatus) -> ShimResult:
+    """Create the shim as a symlink, falling back to a wrapper script."""
+    try:
+        shim_path.symlink_to(target)
+        return ShimResult(
+            path=shim_path,
+            target=target,
+            status=status_on_success,
+            message=f"symlink {shim_path} -> {target}",
+        )
+    except (OSError, NotImplementedError):
+        # Fall back to a tiny POSIX wrapper script.
+        try:
+            shim_path.write_text(
+                "#!/usr/bin/env sh\n" f'exec "{target}" "$@"\n',
+                encoding="utf-8",
+            )
+            shim_path.chmod(0o755)
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status=status_on_success,
+                message=f"wrapper script {shim_path} -> {target}",
+            )
+        except OSError as exc:
+            return ShimResult(
+                path=shim_path,
+                target=target,
+                status="unavailable",
+                message=f"could not create shim at {shim_path}: {exc}",
+            )

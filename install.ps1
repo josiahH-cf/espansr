@@ -302,6 +302,25 @@ Ensure-UserPathEntry -PathEntry $VenvScripts
 Info "This updates the Windows user PATH only. WSL PATH and shell aliases are separate."
 Info "Open a new terminal for persistent PATH changes to take effect."
 
+# Non-interactive resolution smoke test — confirms `espansr` is reachable in
+# a fresh process that does not inherit our session PATH mutation. Mirrors
+# the POSIX installer's non-interactive smoke and proves the persistent
+# user-PATH entry works the same way RDP-spawned processes will see it.
+Info "Verifying non-interactive command resolution..."
+$resolveResult = Invoke-WithTimeout -TimeoutSec 5 -ScriptBlock {
+    $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+    $machinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+    $env:PATH = "$userPath;$machinePath"
+    Get-Command espansr -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source
+}
+if (-not $resolveResult.TimedOut -and -not [string]::IsNullOrWhiteSpace($resolveResult.Output)) {
+    Ok "Non-interactive: 'espansr' resolves via persistent user PATH"
+}
+else {
+    Warn "Non-interactive: 'espansr' did not resolve via persistent user PATH"
+    Info "Open a new terminal window or reboot, then rerun .\install.ps1 if needed"
+}
+
 if (-not $EspansoFound) {
     Info "Install and start Espanso from https://espanso.org, then run:"
     Write-Host "  espansr setup"

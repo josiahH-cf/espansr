@@ -8,6 +8,33 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _no_real_shim_mutation(monkeypatch):
+    """Prevent cmd_setup tests from mutating the user's real ~/.local/bin.
+
+    cmd_setup now calls ensure_command_shim(); tests should not write to a
+    real path on the developer's machine. Individual tests that exercise
+    shim behavior patch it explicitly.
+    """
+    from espansr.core.platform import ShimResult
+
+    monkeypatch.setattr(
+        "espansr.core.platform.ensure_command_shim",
+        lambda *a, **kw: ShimResult(
+            path=Path("/tmp/fake-shim/espansr"),
+            target=Path("/tmp/fake-target"),
+            status="unchanged",
+            message="patched in test",
+        ),
+    )
+    monkeypatch.setattr(
+        "espansr.core.platform.is_user_bin_on_path",
+        lambda *a, **kw: True,
+    )
+
 
 def _make_bundled_dir(tmp_path: Path) -> Path:
     """Create a fake bundled templates directory with espansr_help.json."""
@@ -420,3 +447,90 @@ def test_status_macos_guidance(capsys):
     output = capsys.readouterr().out
     assert "https://espanso.org" in output
     assert "on Windows" not in output
+
+
+# ─── cmd_setup — command shim wiring ────────────────────────────────────────
+
+
+def test_setup_invokes_command_shim_and_prints_status(tmp_path, capsys, monkeypatch):
+    """cmd_setup calls ensure_command_shim() and prints a 'Command shim:' line."""
+    from espansr.__main__ import cmd_setup
+    from espansr.core.platform import ShimResult
+
+    calls = []
+
+    def fake_shim(*args, **kwargs):
+        calls.append(kwargs)
+        return ShimResult(
+            path=tmp_path / "bin" / "espansr",
+            target=tmp_path / "venv" / "bin" / "espansr",
+            status="created",
+            message=f"symlink {tmp_path}/bin/espansr -> {tmp_path}/venv/bin/espansr",
+        )
+
+    monkeypatch.setattr("espansr.core.platform.ensure_command_shim", fake_shim)
+    monkeypatch.setattr("espansr.core.platform.is_user_bin_on_path", lambda *a, **k: True)
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = _make_bundled_dir(tmp_path)
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+    ):
+        result = cmd_setup(None)
+
+    output = capsys.readouterr().out
+    assert result == 0
+    assert calls, "ensure_command_shim should have been invoked"
+    assert "Command shim:" in output
+    assert "created" in output
+
+
+def test_setup_force_shim_flag_propagates(tmp_path, monkeypatch):
+    """--force-shim is plumbed into ensure_command_shim(force=True)."""
+    import argparse
+
+    from espansr.__main__ import cmd_setup
+    from espansr.core.platform import ShimResult
+
+    seen = {}
+
+    def fake_shim(*args, **kwargs):
+        seen.update(kwargs)
+        return ShimResult(
+            path=tmp_path / "bin" / "espansr",
+            target=None,
+            status="unchanged",
+            message="ok",
+        )
+
+    monkeypatch.setattr("espansr.core.platform.ensure_command_shim", fake_shim)
+    monkeypatch.setattr("espansr.core.platform.is_user_bin_on_path", lambda *a, **k: True)
+
+    config_dir = tmp_path / "config" / "espansr"
+    templates_dir = config_dir / "templates"
+    bundled_dir = _make_bundled_dir(tmp_path)
+    args = argparse.Namespace(strict=False, dry_run=False, verbose=False, force_shim=True)
+
+    with (
+        patch("espansr.__main__.get_config_dir", return_value=config_dir),
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        patch("espansr.__main__.get_espanso_config_dir", return_value=None),
+    ):
+        cmd_setup(args)
+
+    assert seen.get("force") is True
+
+
+def test_setup_parser_registers_force_shim_flag():
+    """argparse exposes --force-shim on the setup subcommand."""
+    from espansr.__main__ import _build_parser
+
+    parser = _build_parser()
+    args = parser.parse_args(["setup", "--force-shim"])
+    assert getattr(args, "force_shim", False) is True

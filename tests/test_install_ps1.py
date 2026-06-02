@@ -78,3 +78,15 @@ def test_windows_installer_prints_missing_espanso_next_steps():
     assert "Install and start Espanso from https://espanso.org" in text
     assert "espansr setup" in text
     assert "espansr doctor" in text
+
+
+def test_windows_installer_runs_non_interactive_resolution_smoke():
+    """Symmetry with install.sh: prove the persistent user-PATH entry is
+    reachable from a fresh process, the way RDP-spawned processes will see it.
+    """
+    text = _installer_text()
+
+    assert "Verifying non-interactive command resolution" in text
+    assert '[Environment]::GetEnvironmentVariable("PATH", "User")' in text
+    assert "Get-Command espansr" in text
+    assert "Non-interactive: 'espansr' resolves via persistent user PATH" in text

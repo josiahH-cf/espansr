@@ -353,6 +353,41 @@ def cmd_setup(args) -> int:
     else:
         print("orchestratr not found — skipping app registration")
 
+    # ── Command shim (PATH-visible `espansr` for all shells/sessions) ─────
+    from espansr.core.platform import (
+        ensure_command_shim,
+        get_user_bin_dir,
+        is_user_bin_on_path,
+    )
+
+    force_shim = getattr(args, "force_shim", False) if args else False
+    if dry_run:
+        user_bin = get_user_bin_dir()
+        print(f"[dry-run] Would ensure command shim under {user_bin}")
+    else:
+        shim = ensure_command_shim(force=force_shim)
+        if shim.status in ("created", "updated"):
+            print(f"Command shim: {shim.status} ({shim.message})")
+        elif shim.status == "unchanged":
+            print(f"Command shim: up to date ({shim.path})")
+        elif shim.status == "conflict":
+            print(warn(f"Command shim: {shim.message}"))
+        elif shim.status == "skipped":
+            print(f"Command shim: {shim.message}")
+        else:
+            print(warn(f"Command shim: {shim.message}"))
+
+        # PATH visibility hint (POSIX only; on Windows install.ps1 manages PATH).
+        if get_platform() != "windows" and shim.status not in ("unavailable",):
+            user_bin = get_user_bin_dir()
+            if not is_user_bin_on_path(user_bin):
+                print(
+                    f"Command shim: note — {user_bin} is not on PATH; "
+                    "add it in your shell profile (Debian/Ubuntu/Fedora "
+                    "include it from ~/.profile by default) and open a "
+                    "new login shell"
+                )
+
     if strict and not espanso_found:
         return 1
     return 0
@@ -826,6 +861,39 @@ def cmd_doctor(args) -> int:
     else:
         _fail("Commands popup: espansr-commands.yml not found")
 
+    # 6c. Command availability — PATH-visible `espansr` shim. Non-blocking:
+    # always warn-only so doctor exit-code semantics for existing checks are
+    # preserved. Surfaces the same failure mode that RDP/RustDesk-spawned
+    # non-interactive shells hit when only a shell alias exists.
+    from espansr.core.platform import (
+        ensure_command_shim,
+        get_user_bin_dir,
+        is_user_bin_on_path,
+    )
+
+    user_bin = get_user_bin_dir()
+    # Probe without mutating: re-check current state via a dry inspect.
+    shim_path = user_bin / ("espansr.exe" if platform == "windows" else "espansr")
+    if shim_path.exists() or shim_path.is_symlink():
+        _ok(f"Command availability: shim present at {shim_path}")
+    else:
+        # Try to create it if missing — repairs the common case where the
+        # user installed before the shim existed.
+        result = ensure_command_shim()
+        if result.status in ("created", "updated", "unchanged"):
+            _ok(f"Command availability: {result.message}")
+        elif result.status == "conflict":
+            _warn(f"Command availability: {result.message}")
+            _warn("Run 'espansr setup --force-shim' to repair")
+        else:
+            _warn(f"Command availability: {result.message}")
+
+    if not is_user_bin_on_path(user_bin):
+        _warn(
+            f"Command availability: {user_bin} is not on PATH for this process; "
+            "open a new login shell or add it to your shell profile"
+        )
+
     # 7. Template validation
     warnings = validate_all()
     errors = [w for w in warnings if w.severity == "error"]
@@ -1104,6 +1172,13 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Print detailed per-file information during setup",
+    )
+    setup_parser.add_argument(
+        "--force-shim",
+        dest="force_shim",
+        action="store_true",
+        default=False,
+        help="Overwrite a non-symlink file blocking the command shim path",
     )
     subparsers.add_parser("doctor", help="Run diagnostic health checks")
     subparsers.add_parser(

@@ -10,6 +10,31 @@ from unittest.mock import patch
 
 import pytest
 
+
+@pytest.fixture(autouse=True)
+def _no_real_shim_mutation(monkeypatch):
+    """Prevent cmd_doctor tests from touching the user's real ~/.local/bin."""
+    from espansr.core.platform import ShimResult
+
+    monkeypatch.setattr(
+        "espansr.core.platform.ensure_command_shim",
+        lambda *a, **kw: ShimResult(
+            path=Path("/tmp/fake-shim/espansr"),
+            target=Path("/tmp/fake-target"),
+            status="unchanged",
+            message="patched in test",
+        ),
+    )
+    monkeypatch.setattr(
+        "espansr.core.platform.is_user_bin_on_path",
+        lambda *a, **kw: True,
+    )
+    monkeypatch.setattr(
+        "espansr.core.platform.get_user_bin_dir",
+        lambda: Path("/tmp/fake-shim"),
+    )
+
+
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
@@ -347,3 +372,36 @@ def test_doctor_output_has_status_indicators(capsys):
         assert (
             "[ok]" in line or "[warn]" in line or "[FAIL]" in line
         ), f"Line missing status indicator: {line!r}"
+
+
+# ─── Command availability ──────────────────────────────────────────────────
+
+
+def test_doctor_reports_command_availability(capsys):
+    """Doctor surfaces a 'Command availability' line and warns when bin not on PATH."""
+    from espansr.core.platform import ShimResult
+
+    # Override the autouse fixture for this test: report not on PATH.
+    with (
+        patch(
+            "espansr.core.platform.ensure_command_shim",
+            return_value=ShimResult(
+                path=Path("/tmp/fake-shim/espansr"),
+                target=Path("/tmp/fake-target"),
+                status="unchanged",
+                message="shim ok",
+            ),
+        ),
+        patch("espansr.core.platform.is_user_bin_on_path", return_value=False),
+        patch(
+            "espansr.core.platform.get_user_bin_dir",
+            return_value=Path("/tmp/fake-shim"),
+        ),
+    ):
+        exit_code, output = _run_doctor(capsys)
+
+    assert exit_code == 0  # availability is warn-only
+    assert "Command availability" in output
+    # Both lines should appear: the shim status line and the PATH warning.
+    assert "[warn] Command availability" in output
+    assert "is not on PATH" in output
