@@ -176,18 +176,18 @@ class TestGetThemeStylesheet:
             assert LIGHT_THEME in result
 
 
-# ── AC 4: UIConfig.theme defaults to "auto" ─────────────────────────────────
+# ── AC 4: UIConfig.theme defaults to "dark" ─────────────────────────────────
 
 
 class TestUIConfigDefault:
-    """UIConfig.theme should default to 'auto'."""
+    """UIConfig.theme should default to 'dark'."""
 
-    def test_auto_is_default(self):
-        """A fresh UIConfig has theme='auto'."""
+    def test_dark_is_default(self):
+        """A fresh UIConfig has theme='dark' (light must be explicitly chosen)."""
         from espansr.core.config import UIConfig
 
         cfg = UIConfig()
-        assert cfg.theme == "auto"
+        assert cfg.theme == "dark"
 
 
 # ── AC 5: Runtime theme switcher (toolbar combo box) ────────────────────────

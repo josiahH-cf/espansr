@@ -8,11 +8,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Commands popup scratchpad** — the `:coms` popup now includes an ephemeral,
+	expandable scratchpad pinned at the bottom where you can type or paste any
+	command, add context, and copy it back out. The scratchpad is throwaway and
+	never saved.
 - **Commands popup trigger** — espansr now generates an `espansr-commands.yml`
 	file with a hardcoded `:coms` trigger that opens a lightweight read-only
 	popup showing available Espanso triggers, descriptions, and output previews.
 - **Template retirement command** — `espansr retire TARGET` backs up a live
 	template, deletes the JSON file, and refreshes managed Espanso output.
+
+### Changed
+
+- **Default theme is now Dark** — the GUI and `:coms` popup default to dark mode
+	everywhere. Light mode must be explicitly selected from the toolbar theme
+	selector (Auto/Dark/Light).
 
 ### Fixed
 
