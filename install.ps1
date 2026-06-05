@@ -276,6 +276,18 @@ else {
     Die "Post-install setup failed. Resolve the message above and rerun .\install.ps1"
 }
 
+# Record install metadata for `espansr refresh`
+# Persist the platform, repository folder, installer, and venv so that
+# `espansr refresh` can later rerun this PowerShell installer.
+Info "Recording install metadata for 'espansr refresh'..."
+& $VenvCmd record-install --installer install.ps1 --repo-dir $ScriptDir --venv-dir $VenvDir
+if ($LASTEXITCODE -eq 0) {
+    Ok "Install metadata recorded"
+}
+else {
+    Warn "Could not record install metadata; 'espansr refresh' will fall back to auto-detection"
+}
+
 $EspansoBin = Find-Espanso
 $EspansoFound = $null -ne $EspansoBin
 $EspansoJustStarted = $false
@@ -362,4 +374,5 @@ Write-Host ""
 Write-Host "  CLI:  espansr publish / status / list / doctor"
 Write-Host "  GUI:  espansr gui"
 Write-Host "  Bin:  $VenvCmd"
+Write-Host "  Reinstall: espansr refresh"
 Write-Host ""

@@ -9,6 +9,16 @@ def _installer_text() -> str:
     return (ROOT / "install.ps1").read_text(encoding="utf-8")
 
 
+def test_windows_installer_records_install_metadata_for_refresh():
+    text = _installer_text()
+
+    assert (
+        "& $VenvCmd record-install --installer install.ps1 "
+        "--repo-dir $ScriptDir --venv-dir $VenvDir" in text
+    )
+    assert "espansr refresh" in text
+
+
 def test_windows_installer_uses_venv_python_for_pip_operations():
     text = _installer_text()
 

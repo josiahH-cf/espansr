@@ -9,6 +9,16 @@ def _installer_text() -> str:
     return (ROOT / "install.sh").read_text(encoding="utf-8")
 
 
+def test_shell_installer_records_install_metadata_for_refresh():
+    text = _installer_text()
+
+    assert (
+        '"$VENV_CMD" record-install --installer install.sh '
+        '--repo-dir "$SCRIPT_DIR" --venv-dir "$VENV_DIR"' in text
+    )
+    assert "espansr refresh" in text
+
+
 def test_shell_installer_does_not_advertise_unsupported_no_desktop_flag():
     text = _installer_text()
 
