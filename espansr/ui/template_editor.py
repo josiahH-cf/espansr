@@ -113,7 +113,6 @@ class TemplateEditorWidget(QWidget):
         self._output_preview.setReadOnly(True)
         self._output_preview.setPlaceholderText("Enter content to see expanded output…")
         self._output_preview.setMaximumHeight(200)
-        self._output_preview.setStyleSheet("background-color: #f5f5f5;")
         preview_layout.addWidget(self._output_preview)
 
         layout.addWidget(self._preview_container)

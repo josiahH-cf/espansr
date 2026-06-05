@@ -168,12 +168,20 @@ class TestGetThemeStylesheet:
             assert DARK_THEME in result
 
     def test_auto_with_light_system(self):
-        """'auto' on a light system returns the light stylesheet."""
-        from espansr.ui.theme import LIGHT_THEME, get_theme_stylesheet
+        """'auto' always resolves to dark (light must be chosen explicitly)."""
+        from espansr.ui.theme import DARK_THEME, get_theme_stylesheet
 
         with patch("espansr.ui.theme.detect_system_theme", return_value="light"):
             result = get_theme_stylesheet(theme="auto")
-            assert LIGHT_THEME in result
+            assert DARK_THEME in result
+
+    def test_auto_always_resolves_to_dark(self):
+        """'auto' resolves to dark regardless of system detection."""
+        from espansr.ui.theme import DARK_THEME, LIGHT_THEME, get_theme_stylesheet
+
+        result = get_theme_stylesheet(theme="auto")
+        assert DARK_THEME in result
+        assert LIGHT_THEME not in result
 
 
 # ── AC 4: UIConfig.theme defaults to "dark" ─────────────────────────────────
@@ -257,3 +265,70 @@ class TestThemeComboBox:
         with patch("espansr.ui.main_window.save_config") as mock_save:
             window._theme_combo.setCurrentText("Light")
             mock_save.assert_called_once()
+
+
+# ── AC 6: One-time dark-default migration for existing configs ───────────────
+
+
+class TestThemeDefaultMigration:
+    """Pre-existing 'light'/'auto' configs are forced to 'dark' once on load."""
+
+    def _write(self, path, theme, migrated=None):
+        import json
+
+        ui = {"theme": theme}
+        if migrated is not None:
+            ui["theme_default_migrated"] = migrated
+        path.write_text(json.dumps({"ui": ui}), encoding="utf-8")
+
+    def test_light_config_migrated_to_dark(self, tmp_path):
+        """An un-migrated 'light' config loads as 'dark'."""
+        from espansr.core.config import ConfigManager
+
+        cfg_path = tmp_path / "config.json"
+        self._write(cfg_path, "light")
+        config = ConfigManager(config_path=cfg_path).load()
+        assert config.ui.theme == "dark"
+        assert config.ui.theme_default_migrated is True
+
+    def test_auto_config_migrated_to_dark(self, tmp_path):
+        """An un-migrated 'auto' config loads as 'dark'."""
+        from espansr.core.config import ConfigManager
+
+        cfg_path = tmp_path / "config.json"
+        self._write(cfg_path, "auto")
+        config = ConfigManager(config_path=cfg_path).load()
+        assert config.ui.theme == "dark"
+        assert config.ui.theme_default_migrated is True
+
+    def test_migration_persisted_to_disk(self, tmp_path):
+        """Migration is written back so it only runs once."""
+        import json
+
+        from espansr.core.config import ConfigManager
+
+        cfg_path = tmp_path / "config.json"
+        self._write(cfg_path, "light")
+        ConfigManager(config_path=cfg_path).load()
+        data = json.loads(cfg_path.read_text(encoding="utf-8"))
+        assert data["ui"]["theme"] == "dark"
+        assert data["ui"]["theme_default_migrated"] is True
+
+    def test_explicit_light_preserved_after_migration(self, tmp_path):
+        """Once migrated, an explicit 'light' choice is preserved."""
+        from espansr.core.config import ConfigManager
+
+        cfg_path = tmp_path / "config.json"
+        self._write(cfg_path, "light", migrated=True)
+        config = ConfigManager(config_path=cfg_path).load()
+        assert config.ui.theme == "light"
+
+    def test_dark_config_marked_migrated(self, tmp_path):
+        """A dark config gets the migration flag set without changing theme."""
+        from espansr.core.config import ConfigManager
+
+        cfg_path = tmp_path / "config.json"
+        self._write(cfg_path, "dark")
+        config = ConfigManager(config_path=cfg_path).load()
+        assert config.ui.theme == "dark"
+        assert config.ui.theme_default_migrated is True

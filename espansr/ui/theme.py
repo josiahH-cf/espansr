@@ -678,7 +678,8 @@ def get_theme_stylesheet(theme: str = "dark", font_size: int = 13) -> str:
 
     Args:
         theme: Theme name (``"dark"``, ``"light"``, or ``"auto"``).
-            ``"auto"`` resolves to ``"dark"`` or ``"light"`` via system detection.
+            ``"auto"`` resolves to ``"dark"`` — dark is the default everywhere and
+            light must be chosen explicitly.
         font_size: Base font size in points for text content.
 
     Returns:
@@ -686,7 +687,7 @@ def get_theme_stylesheet(theme: str = "dark", font_size: int = 13) -> str:
     """
     resolved = theme
     if theme == "auto":
-        resolved = detect_system_theme()
+        resolved = "dark"
 
     base = LIGHT_THEME if resolved == "light" else DARK_THEME
 

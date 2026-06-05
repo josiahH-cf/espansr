@@ -89,6 +89,8 @@ class UIConfig:
     """Configuration for the UI."""
 
     theme: str = "dark"  # Default to dark everywhere; light must be explicitly chosen
+    # One-time flag: forces pre-existing "light"/"auto" configs to "dark" on load.
+    theme_default_migrated: bool = False
     window_width: int = 960
     window_height: int = 700
     font_size: int = 13  # Base font size for text content
@@ -197,10 +199,27 @@ class ConfigManager:
         try:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            return Config.from_dict(data)
+            config = Config.from_dict(data)
+            self._migrate_theme_default(config)
+            return config
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             print(f"Warning: Failed to load config: {e}")
             return Config()
+
+    def _migrate_theme_default(self, config: Config) -> None:
+        """Force pre-existing "light"/"auto" themes to "dark" once.
+
+        Dark is the default everywhere; light must be chosen explicitly. This
+        runs a single time for configs created before that policy so existing
+        users land on dark, then records the migration so an explicit later
+        switch to light is preserved.
+        """
+        if config.ui.theme_default_migrated:
+            return
+        if config.ui.theme in ("light", "auto"):
+            config.ui.theme = "dark"
+        config.ui.theme_default_migrated = True
+        self.save(config)
 
     def save(self, config: Optional[Config] = None) -> bool:
         """Save configuration to file.
