@@ -198,6 +198,29 @@ Use this only when you are intentionally running `espansr` inside WSL2. It
 does not install `espansr` into Windows PowerShell, and it does not merge WSL
 PATH or shell setup with Windows.
 
+### `espansr refresh`
+
+Reinstall `espansr` in place by rerunning the OS-appropriate installer. This is
+useful after pulling repository updates or when an install looks broken.
+
+```bash
+espansr refresh
+```
+
+`refresh` identifies the operating system and the recorded install location,
+then reruns `install.ps1` through PowerShell on Windows or `install.sh` through
+Bash on Linux, macOS, and WSL2. On success it prints a small `ok` notification.
+If the reinstall fails, it opens the install folder so you can rerun the
+installer manually.
+
+The install location is recorded by `install.sh` / `install.ps1` (which call
+`espansr record-install` after setup) and stored as `install.json` in the
+espansr config directory. When that metadata is missing, `refresh` falls back to
+auto-detecting the repository folder from the installed package.
+
+`espansr record-install` is an installer helper that writes this metadata; you
+do not normally run it by hand.
+
 ### `espansr completions`
 
 Generate shell tab completion scripts.

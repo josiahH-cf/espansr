@@ -633,6 +633,16 @@ else
     die "Post-install setup failed. Resolve the message above and rerun ./install.sh"
 fi
 
+# ─── Record install metadata for `espansr refresh` ───────────────────────────
+# Persist the platform, repository folder, installer, and venv so that
+# `espansr refresh` can later rerun the correct OS-specific installer.
+info "Recording install metadata for 'espansr refresh'…"
+if "$VENV_CMD" record-install --installer install.sh --repo-dir "$SCRIPT_DIR" --venv-dir "$VENV_DIR"; then
+    ok "Install metadata recorded"
+else
+    warn "Could not record install metadata; 'espansr refresh' will fall back to auto-detection"
+fi
+
 # ─── Shell integration ────────────────────────────────────────────────────────
 setup_shell_alias() {
     local shell_rc
@@ -728,6 +738,7 @@ echo ""
 echo "  CLI:  espansr publish / status / list / doctor"
 echo "  GUI:  espansr gui"
 echo "  Bin:  $VENV_CMD"
+echo "  Reinstall: espansr refresh"
 if (( XWAYLAND_OVERRIDES_APPLIED == 1 )); then
     echo ""
     echo "  XWayland overrides applied. To revert any time:"

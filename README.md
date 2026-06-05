@@ -78,6 +78,8 @@ After Espanso is installed and running, type `:aopen` anywhere Espanso expands t
 
 Use `espansr publish` after template changes if you want to refresh Espanso output from the CLI. The GUI also publishes from the toolbar and saves edited templates into the same local template store.
 
+To reinstall `espansr` in place after pulling updates or if an install looks broken, run `espansr refresh`. It reruns the correct OS installer (`install.ps1` on Windows, `install.sh` on Linux/macOS/WSL2), shows a small `ok` notification when it finishes, and opens the install folder if the reinstall fails.
+
 ## Verify From Windows PowerShell
 
 ```powershell

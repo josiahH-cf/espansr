@@ -7,6 +7,7 @@ Commands:
     starters — Check or apply bundled starter templates
     retire   — Back up and delete a local template, then refresh Espanso output
     remote   — Manage remote configuration
+    refresh  — Reinstall espansr in place via the OS-appropriate installer
 """
 
 import argparse
@@ -1070,6 +1071,150 @@ def cmd_push(args) -> int:
         return 1
 
 
+def cmd_record_install(args) -> int:
+    """Record install metadata used by ``espansr refresh``.
+
+    Invoked by ``install.sh`` / ``install.ps1`` after a successful install so
+    the ``refresh`` command knows the platform, repository folder, and which
+    installer to rerun. Falls back to inferring the repository folder when the
+    installer does not pass one.
+    """
+    from espansr.core.install_meta import (
+        get_install_meta_path,
+        infer_repo_dir,
+        record_install_meta,
+    )
+
+    repo_dir = getattr(args, "repo_dir", None) or infer_repo_dir()
+    if repo_dir is None:
+        print(fail("Could not determine the install directory to record."))
+        return 1
+
+    record_install_meta(
+        repo_dir,
+        installer=getattr(args, "installer", None),
+        venv_dir=getattr(args, "venv_dir", None) or "",
+    )
+    print(ok(f"Recorded install metadata at {get_install_meta_path()}"))
+    return 0
+
+
+def _refresh_command(platform: str, script_path: Path) -> list[str]:
+    """Build the argv that reruns the installer for ``platform``."""
+    if platform == "windows":
+        return [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script_path),
+        ]
+    return ["bash", str(script_path)]
+
+
+def _open_install_folder(folder: Path) -> None:
+    """Best-effort open of the install folder in the OS file manager."""
+    platform = get_platform()
+    if platform == "windows":
+        opener = ["explorer", str(folder)]
+    elif platform == "macos":
+        opener = ["open", str(folder)]
+    else:
+        opener = ["xdg-open", str(folder)]
+    try:
+        subprocess.run(opener, check=False)
+    except OSError:
+        print(warn(f"Could not open the install folder automatically: {folder}"))
+
+
+def _notify_refresh_ok() -> None:
+    """Show a small 'ok' notification that the reinstall completed."""
+    print(ok("ok"))
+    platform = get_platform()
+    try:
+        if platform == "macos":
+            subprocess.run(
+                ["osascript", "-e", 'display notification "ok" with title "espansr"'],
+                check=False,
+            )
+        elif platform in ("linux", "wsl2"):
+            if shutil.which("notify-send"):
+                subprocess.run(["notify-send", "espansr", "ok"], check=False)
+    except OSError:
+        pass  # Desktop notifications are best-effort; the console line is the source of truth.
+
+
+def cmd_refresh(args) -> int:
+    """Reinstall espansr in place by rerunning the OS-appropriate installer.
+
+    Identifies the platform and the recorded install location, reruns
+    ``install.ps1`` (Windows, via PowerShell) or ``install.sh``
+    (Linux/macOS/WSL2, via Bash), shows a small ``ok`` notification on
+    success, and opens the install folder when the reinstall fails.
+    """
+    from espansr.core.install_meta import (
+        infer_repo_dir,
+        installer_for_platform,
+        load_install_meta,
+    )
+
+    platform = get_platform()
+    print(ok(f"Detected OS: {platform}"))
+
+    meta = load_install_meta()
+    repo_dir: Path | None = None
+    installer: str | None = None
+    if meta:
+        repo_dir = Path(meta.repo_dir) if meta.repo_dir else None
+        installer = meta.installer or None
+
+    if repo_dir is None or not repo_dir.exists():
+        repo_dir = infer_repo_dir()
+    if installer is None:
+        installer = installer_for_platform(platform)
+
+    if repo_dir is None:
+        print(
+            fail(
+                "Could not determine where espansr is installed. Reinstall from the "
+                "repository with ./install.sh or .\\install.ps1."
+            )
+        )
+        return 1
+    print(ok(f"Install location: {repo_dir}"))
+
+    script_path = repo_dir / installer
+    if not script_path.exists():
+        # Recorded installer is missing; fall back to the platform default.
+        installer = installer_for_platform(platform)
+        script_path = repo_dir / installer
+    if not script_path.exists():
+        print(fail(f"Installer script not found at {script_path}."))
+        _open_install_folder(repo_dir)
+        return 1
+
+    print(ok(f"Reinstalling espansr via {installer}\u2026"))
+    try:
+        completed = subprocess.run(
+            _refresh_command(platform, script_path),
+            cwd=str(repo_dir),
+            check=False,
+        )
+    except OSError as exc:
+        print(fail(f"Could not launch the installer: {exc}"))
+        _open_install_folder(repo_dir)
+        return 1
+
+    if completed.returncode == 0:
+        _notify_refresh_ok()
+        return 0
+
+    print(fail(f"Reinstall failed (exit code {completed.returncode}). Opening the install folder."))
+    _open_install_folder(repo_dir)
+    return 1
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Construct and return the full CLI argument parser."""
     from espansr import __version__
@@ -1185,6 +1330,32 @@ def _build_parser() -> argparse.ArgumentParser:
         "wsl-install-espanso",
         help="WSL helper: install/start Espanso on Windows via PowerShell",
     )
+    subparsers.add_parser(
+        "refresh",
+        help="Reinstall espansr in place by rerunning the OS-appropriate installer",
+    )
+    record_parser = subparsers.add_parser(
+        "record-install",
+        help="Record install metadata for 'espansr refresh' (used by installers)",
+    )
+    record_parser.add_argument(
+        "--repo-dir",
+        dest="repo_dir",
+        default=None,
+        help="Repository folder containing the installer scripts",
+    )
+    record_parser.add_argument(
+        "--installer",
+        dest="installer",
+        default=None,
+        help="Installer script name (install.sh or install.ps1)",
+    )
+    record_parser.add_argument(
+        "--venv-dir",
+        dest="venv_dir",
+        default=None,
+        help="Virtual environment directory created by the installer",
+    )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
@@ -1254,6 +1425,8 @@ def main() -> None:
         "setup": cmd_setup,
         "doctor": cmd_doctor,
         "wsl-install-espanso": cmd_wsl_install_espanso,
+        "refresh": cmd_refresh,
+        "record-install": cmd_record_install,
         "gui": cmd_gui,
         "completions": cmd_completions,
         "remote": cmd_remote,

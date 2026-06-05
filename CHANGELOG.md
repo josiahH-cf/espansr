@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **In-place reinstall command** — `espansr refresh` identifies the OS and the
+	recorded install location, then reruns the correct installer (`install.ps1`
+	via PowerShell on Windows, `install.sh` via Bash on Linux/macOS/WSL2). It
+	prints a small `ok` notification on success and opens the install folder if
+	the reinstall fails. The installers now record this location via
+	`espansr record-install` (stored as `install.json` in the config directory).
 - **Commands popup scratchpad** — the `:coms` popup now includes an ephemeral,
 	expandable scratchpad pinned at the bottom where you can type or paste any
 	command, add context, and copy it back out. The scratchpad is throwaway and
