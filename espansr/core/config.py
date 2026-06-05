@@ -88,7 +88,7 @@ class EspansoConfig:
 class UIConfig:
     """Configuration for the UI."""
 
-    theme: str = "auto"
+    theme: str = "dark"  # Default to dark everywhere; light must be explicitly chosen
     window_width: int = 960
     window_height: int = 700
     font_size: int = 13  # Base font size for text content

@@ -95,7 +95,7 @@ class CommandRowWidget(QFrame):
 
 
 class CommandsPopupDialog(QDialog):
-    """Read-only popup showing available Espanso triggers."""
+    """Popup showing available Espanso triggers plus an ephemeral scratchpad."""
 
     def __init__(
         self,
@@ -167,13 +167,38 @@ class CommandsPopupDialog(QDialog):
         self._list.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
         self._list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._list.setSpacing(8)
-        layout.addWidget(self._list, 1)
+        layout.addWidget(self._list, 2)
+
+        # Ephemeral scratchpad pinned to the bottom of the popup. It is never
+        # persisted — purely a throwaway space to type or paste a command,
+        # add context, and copy it back out.
+        self._scratchpad_label = QLabel("Scratchpad")
+        scratchpad_font = QFont(self._scratchpad_label.font())
+        scratchpad_font.setBold(True)
+        self._scratchpad_label.setFont(scratchpad_font)
+        layout.addWidget(self._scratchpad_label)
+
+        self._scratchpad_hint = QLabel(
+            "Ephemeral — type or paste a command, add context, then copy it. Nothing here is saved."
+        )
+        self._scratchpad_hint.setWordWrap(True)
+        layout.addWidget(self._scratchpad_hint)
+
+        self._scratchpad = QPlainTextEdit()
+        self._scratchpad.setObjectName("scratchpad")
+        self._scratchpad.setPlaceholderText("Type or paste any command here…")
+        self._scratchpad.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
+        self._scratchpad.setMinimumHeight(96)
+        layout.addWidget(self._scratchpad, 1)
 
         self._entries = entries if entries is not None else build_command_catalog()
         self._populate_entries(self._entries)
 
         self._shortcut_close = QShortcut(QKeySequence("Esc"), self)
         self._shortcut_close.activated.connect(self.reject)
+
+        # Focus the scratchpad so a command can be typed or pasted immediately.
+        self._scratchpad.setFocus()
 
     def _populate_entries(self, entries: list[CommandCatalogEntry]) -> None:
         """Populate the scrollable list from command catalog entries."""

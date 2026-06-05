@@ -143,8 +143,11 @@ Run post-install setup: copies bundled templates, validates them, detects Espans
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.
 
-The generated `:coms` popup trigger opens a lightweight read-only command
-reference showing your currently available Espanso triggers.
+The generated `:coms` popup trigger opens a lightweight command reference
+showing your currently available Espanso triggers. It also includes an
+ephemeral scratchpad pinned at the bottom of the popup where you can type or
+paste any command, add context, and copy it back out. The scratchpad is
+throwaway and never saved.
 
 On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
 
@@ -223,6 +226,10 @@ The full GUI includes template browsing, editing, variable editing, previews,
 import, remote pull, and publishing. `Ctrl+S` publishes, `Ctrl+N` creates a new
 template, `Ctrl+I` imports, `Ctrl+F` searches, and `Delete` starts the
 delete-with-undo flow.
+
+The toolbar theme selector (Auto/Dark/Light) defaults to Dark. The GUI and the
+`:coms` popup start in dark mode; choose Light or Auto from the selector to
+switch.
 
 Deleting a template from the GUI backs it up locally, removes the JSON file
 after the undo window, and publishes the remaining templates so managed Espanso

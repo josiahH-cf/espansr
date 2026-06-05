@@ -115,6 +115,41 @@ def test_commands_popup_dialog_renders_entries(qtbot):
     assert first_widget._preview_text.toPlainText() == "alpha output"
 
 
+def test_commands_popup_dialog_has_ephemeral_scratchpad(qtbot):
+    """Dialog exposes an editable scratchpad pinned at the bottom of the popup."""
+    from PyQt6.QtWidgets import QPlainTextEdit
+
+    from espansr.ui.commands_popup import CommandsPopupDialog
+
+    entries = [
+        CommandCatalogEntry(
+            trigger=":alpha",
+            name="Alpha",
+            description="First command",
+            preview="alpha output",
+            source="template",
+        )
+    ]
+
+    with patch("espansr.ui.commands_popup.get_config", return_value=Config()):
+        dialog = CommandsPopupDialog(entries=entries)
+        qtbot.addWidget(dialog)
+
+    # Editable (not read-only) so commands can be typed or pasted.
+    assert isinstance(dialog._scratchpad, QPlainTextEdit)
+    assert dialog._scratchpad.isReadOnly() is False
+
+    # Pinned below the command list in the layout.
+    main_layout = dialog.layout()
+    list_index = main_layout.indexOf(dialog._list)
+    scratchpad_index = main_layout.indexOf(dialog._scratchpad)
+    assert scratchpad_index > list_index
+
+    # Round-trips typed/pasted text so it can be copied back out.
+    dialog._scratchpad.setPlainText("echo hello")
+    assert dialog._scratchpad.toPlainText() == "echo hello"
+
+
 def test_commands_popup_dialog_closes_on_escape(qtbot):
     """Escape closes the commands popup immediately."""
     from espansr.ui.commands_popup import CommandsPopupDialog
