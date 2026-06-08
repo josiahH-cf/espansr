@@ -1,0 +1,10 @@
+{
+  "name": "Tenable Scans PowerShell",
+  "description": "PowerShell snippet that, for each .zip in the current folder, extracts it, renames the contained .nessus/.xml scan to match the archive name, copies the .nessus back to the root, and removes the processed archive.",
+  "content": "$root = (Get-Location).Path\nforeach ($zip in @(Get-ChildItem -File -Filter *.zip)) {\n    $name = $zip.BaseName\n    $dest = Join-Path $root $name\n    try {\n        $ErrorActionPreference = 'Stop'\n        if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }\n        New-Item -ItemType Directory -Path $dest | Out-Null\n        Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dest -Force\n        $scan = Get-ChildItem -LiteralPath $dest -Recurse -File |\n            Where-Object { $_.Extension -in '.nessus', '.xml' } | Select-Object -First 1\n        if (-not $scan) { throw \"No .nessus/.xml found inside $($zip.Name)\" }\n        $target = Join-Path $dest ($name + '.nessus')\n        if ($scan.FullName -ne $target) { Move-Item -LiteralPath $scan.FullName -Destination $target -Force }\n        Copy-Item -LiteralPath $target -Destination (Join-Path $root ($name + '.nessus')) -Force\n        Remove-Item -LiteralPath $zip.FullName -Force\n        Write-Host \"OK   $name\"\n    } catch {\n        Write-Host \"FAIL $name -> $($_.Exception.Message)\" -ForegroundColor Red\n    }\n}",
+  "trigger": ":tenable-scans",
+  "category": "workflow",
+  "stage": "tenable-scans",
+  "next_triggers": [],
+  "replaces": []
+}
