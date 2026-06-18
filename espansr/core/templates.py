@@ -678,14 +678,18 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
         "first_principles_analysis.json",
         "reality_audit.json",
     ),
-    "feat.json": (
-        "project_init.json",
+    "project_init_llm.json": ("project_init.json",),
+    "agent_scaffold.json": (
         "feature_init.json",
-        "feature_new.json",
-        "feature_next.json",
         "project_scaffold.json",
         "scaffold_feature_process.json",
+    ),
+    "feat_plan.json": (
+        "feature_new.json",
         "feature_scope.json",
+    ),
+    "feat_runner.json": (
+        "feature_next.json",
         "feature_continue.json",
     ),
     "sanitize.json": ("hide_ai.json",),

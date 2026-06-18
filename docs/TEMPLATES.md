@@ -24,16 +24,28 @@ template files:
 - `:coms` opens a lightweight popup showing your available triggers
 
 The bundled starter set also includes reusable AI prompts such as
-`:goal`, `:feat`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:revise`,
+`:goal`, `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`,
+`:feat`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:revise`,
 `:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`,
-`:sanitize`, and `:merge`. Use
-`:espansr` for the current quick reference list. The `:feat` switcher handles
-project setup, feature scaffolding, new-feature planning, specs/tasks, and
-next-feature work in one prompt.
+`:sanitize`, and `:merge`. Use `:espansr` for the current quick reference list.
 
-The switcher accepts old route names such as `:project-init`, `:feature-init`,
-`:feature-new`, `:feature-next`, `:feature-scope`, and `:continue` as route
-selectors inside `:feat`; they do not need to remain separate public triggers.
+The bundled agent feature workflow is split into durable command paths:
+
+1. Run `:project-init-llm` once to establish `AGENTS.md` as the canonical
+   repo-level instruction contract for Codex, Claude, and GitHub Copilot.
+2. Run `:agent-scaffold` once to create the persistent file-backed feature loop
+   under `features/`.
+3. Use `:feat-plan` to add or refine feature scope without implementation
+   edits.
+4. Use `:feat-runner` to start or continue the current or next feature from
+   `features/STATE.json`.
+
+`:feat` remains as a thin router for older habits and ambiguous feature-work
+requests. Legacy starter triggers migrate to the split commands:
+`:project-init` maps to `:project-init-llm`; `:feature-init`,
+`:project-scaffold`, and `:scaffold-feature-process` map to
+`:agent-scaffold`; `:feature-new` and `:feature-scope` map to `:feat-plan`;
+`:feature-next` and `:continue` map to `:feat-runner`.
 Use `:explain` for evidence-bound plain-English explanation. Use `:gaps` for
 critical review modes, including gap review, first-principles analysis, and
 claimed-vs-actual reality audits.

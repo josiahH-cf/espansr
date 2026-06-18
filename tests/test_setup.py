@@ -371,17 +371,21 @@ def test_setup_retires_zombie_bundled_templates(tmp_path):
         sync_bundled_templates_to_live,
     )
 
-    # Pick the first known old filename for feat.json
-    old_name = _RENAMED_BUNDLED_TEMPLATE_FILES["feat.json"][0]
+    # Pick the old filename for the project-init split command.
+    old_name = _RENAMED_BUNDLED_TEMPLATE_FILES["project_init_llm.json"][0]
 
     live_dir = tmp_path / "live"
     live_dir.mkdir()
     bundled_dir = tmp_path / "bundled"
     bundled_dir.mkdir()
 
-    feat = {"name": "Feature", "trigger": ":feat", "content": "feature content"}
-    (bundled_dir / "feat.json").write_text(json.dumps(feat))
-    (live_dir / "feat.json").write_text(json.dumps(feat))
+    project_init = {
+        "name": "Project Init LLM",
+        "trigger": ":project-init-llm",
+        "content": "project init content",
+    }
+    (bundled_dir / "project_init_llm.json").write_text(json.dumps(project_init))
+    (live_dir / "project_init_llm.json").write_text(json.dumps(project_init))
 
     # Zombie old file — should be retired once sync runs
     zombie = live_dir / old_name
@@ -393,7 +397,7 @@ def test_setup_retires_zombie_bundled_templates(tmp_path):
     )
 
     assert not zombie.exists(), f"{old_name} should have been retired by sync"
-    assert (live_dir / "feat.json").exists(), "feat.json should be kept"
+    assert (live_dir / "project_init_llm.json").exists(), "new split template should be kept"
     assert result.retired >= 1
 
 

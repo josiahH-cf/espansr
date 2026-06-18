@@ -36,7 +36,18 @@ def _make_fake_venv(tmp_path: Path, name: str = "espansr") -> Path:
     return exe
 
 
-def test_ensure_command_shim_creates_symlink(tmp_path, monkeypatch):
+def _assert_shim_points_to_target(shim_path: Path, target: Path) -> None:
+    """Assert a shim reaches target, whether symlink or fallback wrapper."""
+    assert shim_path.exists()
+    if shim_path.is_symlink():
+        assert Path(os.readlink(shim_path)).resolve() == target.resolve()
+        return
+
+    text = shim_path.read_text(encoding="utf-8")
+    assert text == "#!/usr/bin/env sh\n" f'exec "{target}" "$@"\n'
+
+
+def test_ensure_command_shim_creates_path_visible_shim(tmp_path, monkeypatch):
     from espansr.core import platform as plat
     from espansr.core.platform import ensure_command_shim
 
@@ -48,8 +59,7 @@ def test_ensure_command_shim_creates_symlink(tmp_path, monkeypatch):
 
     assert result.status == "created"
     assert result.path == user_bin / "espansr"
-    assert result.path.is_symlink()
-    assert Path(os.readlink(result.path)) == target
+    _assert_shim_points_to_target(result.path, target)
 
 
 def test_ensure_command_shim_is_idempotent(tmp_path, monkeypatch):
@@ -84,7 +94,7 @@ def test_ensure_command_shim_replaces_stale_symlink(tmp_path, monkeypatch):
     result = ensure_command_shim(target_executable=new_target, user_bin=user_bin)
 
     assert result.status == "updated"
-    assert Path(os.readlink(result.path)).resolve() == new_target.resolve()
+    _assert_shim_points_to_target(result.path, new_target)
 
 
 def test_ensure_command_shim_conflict_on_regular_file(tmp_path, monkeypatch):
@@ -119,7 +129,7 @@ def test_ensure_command_shim_force_overwrites_regular_file(tmp_path, monkeypatch
     result = ensure_command_shim(target_executable=target, user_bin=user_bin, force=True)
 
     assert result.status == "created"
-    assert (user_bin / "espansr").is_symlink()
+    _assert_shim_points_to_target(user_bin / "espansr", target)
 
 
 def test_ensure_command_shim_unavailable_when_target_missing(tmp_path, monkeypatch):
@@ -202,4 +212,5 @@ def test_ensure_command_shim_wrapper_fallback(tmp_path, monkeypatch):
     assert not shim.is_symlink()
     assert str(target) in shim.read_text()
     mode = shim.stat().st_mode
-    assert mode & stat.S_IXUSR
+    if os.name != "nt":
+        assert mode & stat.S_IXUSR

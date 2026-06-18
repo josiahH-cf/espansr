@@ -341,8 +341,8 @@ def test_sync_bundled_apply_retires_deleted_audit_starters(tmp_path, capsys):
     assert (templates_dir / "_versions" / "reality_audit" / "v1.json").exists()
 
 
-def test_sync_bundled_apply_consolidates_feature_switcher_starters(tmp_path, capsys):
-    """Old project/feature starter prompts retire into the single feat switcher."""
+def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, capsys):
+    """Old project/feature starter prompts migrate into the split workflow commands."""
     from espansr.__main__ import cmd_sync_bundled
 
     bundled_dir = tmp_path / "bundled"
@@ -350,17 +350,42 @@ def test_sync_bundled_apply_consolidates_feature_switcher_starters(tmp_path, cap
     bundled_dir.mkdir(parents=True)
     templates_dir.mkdir(parents=True)
 
-    bundled_template = {
-        "name": "Feature Switcher",
-        "content": "single switcher prompt",
-        "trigger": ":feat",
-        "replaces": [":project-init", ":feature-new", ":feature-next"],
+    bundled_templates = {
+        "project_init_llm.json": {
+            "name": "Project Init LLM",
+            "content": "project init prompt",
+            "trigger": ":project-init-llm",
+            "replaces": [":project-init"],
+        },
+        "agent_scaffold.json": {
+            "name": "Agent Scaffold",
+            "content": "agent scaffold prompt",
+            "trigger": ":agent-scaffold",
+            "replaces": [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
+        },
+        "feat_plan.json": {
+            "name": "Feature Plan",
+            "content": "feature plan prompt",
+            "trigger": ":feat-plan",
+            "replaces": [":feature-new", ":feature-scope"],
+        },
+        "feat_runner.json": {
+            "name": "Feature Runner",
+            "content": "feature runner prompt",
+            "trigger": ":feat-runner",
+            "replaces": [":feature-next", ":continue"],
+        },
     }
     old_templates = {
         "project_init.json": {
             "name": "Project Init",
             "content": "old project prompt",
             "trigger": ":project-init",
+        },
+        "feature_init.json": {
+            "name": "Feature Init",
+            "content": "old feature-init prompt",
+            "trigger": ":feature-init",
         },
         "feature_new.json": {
             "name": "Feature New",
@@ -373,7 +398,8 @@ def test_sync_bundled_apply_consolidates_feature_switcher_starters(tmp_path, cap
             "trigger": ":feature-next",
         },
     }
-    _write_json(bundled_dir / "feat.json", bundled_template)
+    for filename, data in bundled_templates.items():
+        _write_json(bundled_dir / filename, data)
     for filename, data in old_templates.items():
         _write_json(templates_dir / filename, data)
 
@@ -386,13 +412,14 @@ def test_sync_bundled_apply_consolidates_feature_switcher_starters(tmp_path, cap
     output = capsys.readouterr().out
     assert exit_code == 0
     assert "migrated" in output.lower()
-    assert "retired" in output.lower()
-    actual_template = json.loads((templates_dir / "feat.json").read_text(encoding="utf-8"))
-    assert actual_template == bundled_template
+    for filename, data in bundled_templates.items():
+        actual_template = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
+        assert actual_template == data
     for filename in old_templates:
         assert not (templates_dir / filename).exists()
 
     assert (templates_dir / "_versions" / "project_init" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "feature_init" / "v1.json").exists()
     assert (templates_dir / "_versions" / "feature_new" / "v1.json").exists()
     assert (templates_dir / "_versions" / "feature_next" / "v1.json").exists()
 
@@ -699,6 +726,10 @@ def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
         "context.json": (),
         "template_builder.json": (),
         "feat.json": (),
+        "project_init_llm.json": (),
+        "agent_scaffold.json": (),
+        "feat_plan.json": (),
+        "feat_runner.json": (),
     }
 
     for filename, removed_variable_names in expected.items():
@@ -721,18 +752,37 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "feat.json": (
             ":feat",
             "workflow",
-            "feature-switcher",
-            [":feat", ":verify", ":save"],
-            [
-                ":project-init",
-                ":feature-init",
-                ":feature-new",
-                ":feature-next",
-                ":project-scaffold",
-                ":scaffold-feature-process",
-                ":feature-scope",
-                ":continue",
-            ],
+            "feature-router",
+            [":project-init-llm", ":agent-scaffold", ":feat-plan", ":feat-runner"],
+            [],
+        ),
+        "project_init_llm.json": (
+            ":project-init-llm",
+            "workflow",
+            "project-init-llm",
+            [":agent-scaffold", ":feat-plan", ":verify"],
+            [":project-init"],
+        ),
+        "agent_scaffold.json": (
+            ":agent-scaffold",
+            "workflow",
+            "agent-scaffold",
+            [":feat-plan", ":feat-runner", ":verify"],
+            [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
+        ),
+        "feat_plan.json": (
+            ":feat-plan",
+            "workflow",
+            "feature-plan",
+            [":feat-runner", ":verify", ":save"],
+            [":feature-new", ":feature-scope"],
+        ),
+        "feat_runner.json": (
+            ":feat-runner",
+            "workflow",
+            "feature-runner",
+            [":feat-runner", ":verify", ":save"],
+            [":feature-next", ":continue"],
         ),
         "visual_workflow.json": (
             ":visual",
@@ -829,6 +879,10 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":context",
         ":template-builder",
         ":goal",
+        ":project-init-llm",
+        ":agent-scaffold",
+        ":feat-plan",
+        ":feat-runner",
         ":feat",
         ":docs-qa",
         ":save",
@@ -847,6 +901,7 @@ def test_bundled_quick_help_uses_renamed_triggers():
     for removed_alias in ["Legacy aliases", "sync-down", "sync-bundled"]:
         assert removed_alias not in content
 
+    help_lines = content.splitlines()
     for stale_trigger in [
         ":simplify",
         ":critique",
@@ -865,11 +920,11 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":principles",
         ":reality",
     ]:
-        assert stale_trigger not in content
+        assert not any(line.strip().startswith(f"{stale_trigger} ") for line in help_lines)
 
 
-def test_bundled_feat_switcher_template_contract():
-    """The feat switcher owns project setup and feature workflow routes."""
+def test_bundled_feat_router_template_contract():
+    """:feat is a thin router to the split project and feature workflow commands."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "feat.json").read_text(encoding="utf-8"))
 
@@ -878,33 +933,90 @@ def test_bundled_feat_switcher_template_contract():
 
     assert data["trigger"] == ":feat"
     assert data["category"] == "workflow"
-    assert data["stage"] == "feature-switcher"
-    assert data["next_triggers"] == [":feat", ":verify", ":save"]
-    assert data["replaces"] == [
-        ":project-init",
-        ":feature-init",
-        ":feature-new",
-        ":feature-next",
-        ":project-scaffold",
-        ":scaffold-feature-process",
-        ":feature-scope",
-        ":continue",
+    assert data["stage"] == "feature-router"
+    assert data["next_triggers"] == [
+        ":project-init-llm",
+        ":agent-scaffold",
+        ":feat-plan",
+        ":feat-runner",
     ]
+    assert data["replaces"] == []
     assert variables == {}
-    assert "Route: Project setup" in content
-    assert "Route: Feature loop setup" in content
-    assert "Route: New feature" in content
-    assert "Route: Feature spec" in content
-    assert "Route: Next feature" in content
-    assert "Legacy route names are explicit selectors" in content
-    assert content.count("Legacy route names are explicit selectors") == 1
-    assert ":feature-new, :feature-scope" in content
-    assert ":feature-next, :continue" in content
-    assert "Would create in reality" in content
+    assert "thin router" in content
+    assert "Do not implement product code from this router" in content
+    assert ":project-init -> :project-init-llm" in content
+    assert (
+        ":feature-init, :project-scaffold, :scaffold-feature-process -> :agent-scaffold" in content
+    )
+    assert ":feature-new, :feature-scope -> :feat-plan" in content
+    assert ":feature-next, :continue -> :feat-runner" in content
     assert "AGENTS.md" in content
-    assert "CLAUDE.md" in content
-    assert ".github/copilot-instructions.md" in content
     assert "features/STATE.json" in content
+    assert "Route: Feature spec" not in content
+
+
+def test_bundled_split_agent_workflow_template_contracts():
+    """The split feature workflow prompts own the old route responsibilities."""
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates"
+
+    expected = {
+        "project_init_llm.json": (
+            ":project-init-llm",
+            [":project-init"],
+            [
+                "AGENTS.md as the canonical instruction surface",
+                "CLAUDE.md as a pointer to AGENTS.md",
+                "Do not create a separate Copilot instruction file unless",
+            ],
+        ),
+        "agent_scaffold.json": (
+            ":agent-scaffold",
+            [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
+            [
+                "features/README.md",
+                "features/STATE.json",
+                "features/archive/README.md",
+                "schema version 1",
+                "currentFeature",
+            ],
+        ),
+        "feat_plan.json": (
+            ":feat-plan",
+            [":feature-new", ":feature-scope"],
+            [
+                "without implementing product code",
+                "next three-digit feature ID",
+                "Would create in reality:",
+                "Verification map",
+            ],
+        ),
+        "feat_runner.json": (
+            ":feat-runner",
+            [":feature-next", ":continue"],
+            [
+                "Begin in plan mode by default",
+                "Select the feature deterministically",
+                "Do not skip phases",
+                "If no current or queued feature exists, direct the user to :feat-plan",
+            ],
+        ),
+    }
+
+    all_replacements: list[str] = []
+    for filename, (trigger, replaces, phrases) in expected.items():
+        data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
+        content = data["content"]
+
+        assert data["trigger"] == trigger
+        assert data["category"] == "workflow"
+        assert data["replaces"] == replaces
+        assert content.endswith(INLINE_CONTEXT_FOOTER)
+        for phrase in phrases:
+            assert phrase in content
+        all_replacements.extend(replaces)
+
+    assert len(all_replacements) == len(set(all_replacements))
 
 
 def test_bundled_sanitize_template_contract():

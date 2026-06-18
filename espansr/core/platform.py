@@ -5,6 +5,7 @@ Single source of truth for OS and WSL2 detection across the codebase.
 
 import os
 import platform
+import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
@@ -349,6 +350,19 @@ def _find_venv_espansr(venv_bin: Path) -> Optional[Path]:
     return None
 
 
+def _read_managed_wrapper_target(shim_path: Path) -> Optional[Path]:
+    """Return the target from a fallback wrapper created by _create_shim()."""
+    try:
+        text = shim_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    match = re.fullmatch(r'#!/usr/bin/env sh\nexec "(.+)" "\$@"\n?', text)
+    if match is None:
+        return None
+    return Path(match.group(1)).resolve()
+
+
 def ensure_command_shim(
     target_executable: Optional[Path] = None,
     user_bin: Optional[Path] = None,
@@ -441,6 +455,26 @@ def ensure_command_shim(
         return _create_shim(shim_path, target, status_on_success="updated")
 
     if shim_path.exists():
+        wrapper_target = _read_managed_wrapper_target(shim_path)
+        if wrapper_target is not None:
+            if wrapper_target == target.resolve():
+                return ShimResult(
+                    path=shim_path,
+                    target=target,
+                    status="unchanged",
+                    message=f"wrapper shim already points to {target}",
+                )
+            try:
+                shim_path.unlink()
+            except OSError as exc:
+                return ShimResult(
+                    path=shim_path,
+                    target=target,
+                    status="unavailable",
+                    message=f"could not replace stale wrapper at {shim_path}: {exc}",
+                )
+            return _create_shim(shim_path, target, status_on_success="updated")
+
         if not force:
             return ShimResult(
                 path=shim_path,
