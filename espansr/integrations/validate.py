@@ -165,9 +165,11 @@ def _system_trigger_collision_warnings(templates: list[Template]) -> List[Valida
         return []
 
     launcher_trigger = config.espanso.launcher_trigger or ":aopen"
+    sync_trigger = getattr(config.espanso, "sync_trigger", "") or ":sync"
     system_triggers = {
         launcher_trigger: "generated launcher trigger",
         COMMANDS_POPUP_TRIGGER: "generated commands popup trigger",
+        sync_trigger: "generated sync trigger",
     }
 
     warnings: List[ValidationWarning] = []

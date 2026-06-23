@@ -100,3 +100,16 @@ def test_windows_installer_runs_non_interactive_resolution_smoke():
     assert '[Environment]::GetEnvironmentVariable("PATH", "User")' in text
     assert "Get-Command espansr" in text
     assert "Non-interactive: 'espansr' resolves via persistent user PATH" in text
+
+
+def test_windows_installer_configures_remote_desktop_after_metadata():
+    """install.ps1 applies the Espanso remote-desktop fix, after recording metadata.
+
+    Running after record-install means a failure here never blocks `espansr
+    refresh` from working.
+    """
+    text = _installer_text()
+
+    assert "& $VenvCmd configure-remote-desktop" in text
+    assert "Configuring Espanso for remote desktop (RustDesk/RDP)" in text
+    assert text.index("record-install") < text.index("configure-remote-desktop")

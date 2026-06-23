@@ -11,6 +11,7 @@ Commands:
 """
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,7 @@ from espansr.integrations.espanso import (
     clean_stale_espanso_files,
     generate_commands_popup_file,
     generate_launcher_file,
+    generate_sync_file,
     get_espanso_config_dir,
 )
 
@@ -295,6 +297,7 @@ def cmd_setup(args) -> int:
             print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
             print("[dry-run] Would generate launcher")
             print("[dry-run] Would generate commands popup")
+            print("[dry-run] Would generate sync trigger")
             print("[dry-run] Would publish templates to Espanso")
         else:
             from espansr.integrations.espanso import sync_to_espanso
@@ -302,9 +305,11 @@ def cmd_setup(args) -> int:
             clean_stale_espanso_files()
             generate_launcher_file()
             generate_commands_popup_file()
+            generate_sync_file()
             print(f"Espanso config: {espanso_dir}")
             print("Launcher: generated")
             print("Commands popup: generated")
+            print("Sync trigger: generated")
             if not sync_to_espanso(update_bundled=True, bundled_dir=bundled_dir):
                 print("Publish: failed — run 'espansr publish' after resolving the issues above")
     else:
@@ -1099,6 +1104,25 @@ def cmd_record_install(args) -> int:
     return 0
 
 
+def cmd_configure_remote_desktop(args) -> int:
+    """Configure Espanso for reliable expansion over RustDesk/RDP.
+
+    Switches Espanso to the clipboard backend (paste instead of per-key
+    injection) so triggers like ``:coms`` expand correctly inside remote-desktop
+    sessions. Invoked by ``install.ps1``; ``--revert`` removes the
+    espansr-managed keys again.
+    """
+    from espansr.integrations.espanso import apply_remote_desktop_config
+
+    revert = getattr(args, "revert", False)
+    if apply_remote_desktop_config(revert=revert):
+        action = "Reverted" if revert else "Applied"
+        print(ok(f"{action} Espanso remote-desktop config"))
+        return 0
+    print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
+    return 1
+
+
 def _refresh_command(platform: str, script_path: Path) -> list[str]:
     """Build the argv that reruns the installer for ``platform``."""
     if platform == "windows":
@@ -1145,13 +1169,13 @@ def _notify_refresh_ok() -> None:
         pass  # Desktop notifications are best-effort; the console line is the source of truth.
 
 
-def cmd_refresh(args) -> int:
-    """Reinstall espansr in place by rerunning the OS-appropriate installer.
+def _resolve_install_target() -> "tuple[Path, str, str] | None":
+    """Resolve ``(repo_dir, installer, platform)`` from recorded install metadata.
 
-    Identifies the platform and the recorded install location, reruns
-    ``install.ps1`` (Windows, via PowerShell) or ``install.sh``
-    (Linux/macOS/WSL2, via Bash), shows a small ``ok`` notification on
-    success, and opens the install folder when the reinstall fails.
+    Falls back to inferring the repository folder and the platform-default
+    installer. Prints the detected OS / install location, and returns None
+    (after printing why) when the install location cannot be determined.
+    Shared by ``refresh`` and ``sync``.
     """
     from espansr.core.install_meta import (
         infer_repo_dir,
@@ -1181,8 +1205,20 @@ def cmd_refresh(args) -> int:
                 "repository with ./install.sh or .\\install.ps1."
             )
         )
-        return 1
+        return None
     print(ok(f"Install location: {repo_dir}"))
+    return repo_dir, installer, platform
+
+
+def run_installer(repo_dir: Path, installer: str, platform: str) -> int:
+    """Rerun the OS-appropriate installer in ``repo_dir`` and report the result.
+
+    Reruns ``install.ps1`` (Windows, via PowerShell) or ``install.sh``
+    (Linux/macOS/WSL2, via Bash), shows a small ``ok`` notification on success,
+    and opens the install folder when the reinstall fails. Shared by the
+    ``refresh`` and ``sync`` commands.
+    """
+    from espansr.core.install_meta import installer_for_platform
 
     script_path = repo_dir / installer
     if not script_path.exists():
@@ -1213,6 +1249,144 @@ def cmd_refresh(args) -> int:
     print(fail(f"Reinstall failed (exit code {completed.returncode}). Opening the install folder."))
     _open_install_folder(repo_dir)
     return 1
+
+
+def cmd_refresh(args) -> int:
+    """Reinstall espansr in place by rerunning the OS-appropriate installer.
+
+    Identifies the platform and the recorded install location, then reruns the
+    installer. Shows a small ``ok`` notification on success and opens the
+    install folder when the reinstall fails.
+    """
+    target = _resolve_install_target()
+    if target is None:
+        return 1
+    return run_installer(*target)
+
+
+def _git_in(repo_dir: Path, *args: str, timeout: int = 120) -> subprocess.CompletedProcess:
+    """Run ``git -C <repo_dir> <args>`` with output captured and prompts disabled."""
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+    return subprocess.run(
+        ["git", "-C", str(repo_dir), *args],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=env,
+        timeout=timeout,
+    )
+
+
+def _is_git_worktree(repo_dir: Path) -> bool:
+    """Return True when ``repo_dir`` is inside a git work tree."""
+    try:
+        result = _git_in(repo_dir, "rev-parse", "--is-inside-work-tree", timeout=15)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
+def _worktree_dirty(repo_dir: Path) -> bool:
+    """Return True when ``repo_dir`` has uncommitted changes."""
+    result = _git_in(repo_dir, "status", "--porcelain", timeout=30)
+    return bool(result.stdout.strip())
+
+
+def _conflicted_files(repo_dir: Path) -> list[str]:
+    """Return the list of files with merge conflicts (empty when none)."""
+    result = _git_in(repo_dir, "diff", "--name-only", "--diff-filter=U", timeout=30)
+    return [line for line in result.stdout.splitlines() if line.strip()]
+
+
+def _ahead_of_upstream(repo_dir: Path) -> bool:
+    """Return True when the branch has commits the upstream does not (None = no upstream)."""
+    result = _git_in(repo_dir, "rev-list", "--count", "@{u}..HEAD", timeout=30)
+    if result.returncode != 0:
+        return False  # no upstream configured
+    return result.stdout.strip() not in ("", "0")
+
+
+def _run_sync(*, no_push: bool = False) -> int:
+    """Pull latest, optionally yolo-push, then reinstall \u2014 the one-button update.
+
+    Resolves the install location/OS from recorded metadata, pulls the project
+    repo with ``--rebase``; on a clean pull it commits and pushes any local
+    changes ("yolo") unless ``no_push``; then reruns the OS-appropriate
+    installer. Stops without reinstalling on a merge conflict so a broken tree
+    is never reinstalled.
+    """
+    target = _resolve_install_target()
+    if target is None:
+        return 1
+    repo_dir, installer, platform = target
+
+    if not shutil.which("git") or not _is_git_worktree(repo_dir):
+        print(warn("Not a git checkout; skipping pull/push and reinstalling in place."))
+        return run_installer(repo_dir, installer, platform)
+
+    try:
+        fetched = _git_in(repo_dir, "fetch", "--prune")
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(warn(f"git fetch failed ({exc}); reinstalling current checkout."))
+        return run_installer(repo_dir, installer, platform)
+    if fetched.returncode != 0:
+        print(warn("git fetch failed (offline?); reinstalling current checkout."))
+        return run_installer(repo_dir, installer, platform)
+
+    stashed = False
+    if _worktree_dirty(repo_dir):
+        stash = _git_in(repo_dir, "stash", "push", "-u", "-m", "espansr-sync")
+        stashed = stash.returncode == 0
+
+    pull = _git_in(repo_dir, "pull", "--rebase")
+    if pull.returncode != 0:
+        if _conflicted_files(repo_dir) or "CONFLICT" in (pull.stdout + pull.stderr):
+            _git_in(repo_dir, "rebase", "--abort")
+            if stashed:
+                _git_in(repo_dir, "stash", "pop")
+            print(fail("Merge conflict during rebase \u2014 resolve it manually, then sync again."))
+            for path in _conflicted_files(repo_dir):
+                print(f"  conflict: {path}")
+            print(warn("Skipping reinstall because the rebase did not complete."))
+            return 1
+        print(warn(f"git pull --rebase reported: {pull.stderr.strip() or pull.stdout.strip()}"))
+    else:
+        print(ok("Pulled latest changes."))
+
+    if stashed:
+        pop = _git_in(repo_dir, "stash", "pop")
+        if pop.returncode != 0 and _conflicted_files(repo_dir):
+            print(fail("Local changes conflicted with the update; resolve them manually."))
+            print(warn("Skipping reinstall: the working tree is in conflict."))
+            return 1
+
+    if not no_push:
+        if _worktree_dirty(repo_dir):
+            _git_in(repo_dir, "add", "-A")
+            _git_in(repo_dir, "commit", "-m", "espansr sync: local changes")
+        if _ahead_of_upstream(repo_dir):
+            push = _git_in(repo_dir, "push")
+            if push.returncode == 0:
+                print(ok("Pushed local changes."))
+            else:
+                print(warn("Could not push local changes (continuing with reinstall)."))
+        else:
+            print(ok("Nothing to push."))
+    else:
+        print(ok("Auto-push disabled (--no-push)."))
+
+    return run_installer(repo_dir, installer, platform)
+
+
+def cmd_sync(args) -> int:
+    """Pull latest, push local changes if clean, then reinstall locally.
+
+    The one-button update for a machine that was already installed once: it
+    rebases the project repo onto the latest, "yolo" commits and pushes any
+    local changes when there is no conflict, and reruns the installer recorded
+    at first install. ``--no-push`` performs a pull-only update.
+    """
+    return _run_sync(no_push=getattr(args, "no_push", False))
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -1334,6 +1508,17 @@ def _build_parser() -> argparse.ArgumentParser:
         "refresh",
         help="Reinstall espansr in place by rerunning the OS-appropriate installer",
     )
+    sync_parser = subparsers.add_parser(
+        "sync",
+        help="Pull latest, push local changes if clean, then reinstall locally",
+    )
+    sync_parser.add_argument(
+        "--no-push",
+        dest="no_push",
+        action="store_true",
+        default=False,
+        help="Pull and reinstall only; do not auto-commit/push local changes",
+    )
     record_parser = subparsers.add_parser(
         "record-install",
         help="Record install metadata for 'espansr refresh' (used by installers)",
@@ -1355,6 +1540,16 @@ def _build_parser() -> argparse.ArgumentParser:
         dest="venv_dir",
         default=None,
         help="Virtual environment directory created by the installer",
+    )
+    rd_parser = subparsers.add_parser(
+        "configure-remote-desktop",
+        help="Configure Espanso for reliable expansion over RustDesk/RDP (used by installers)",
+    )
+    rd_parser.add_argument(
+        "--revert",
+        action="store_true",
+        default=False,
+        help="Remove the espansr-managed remote-desktop Espanso settings",
     )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
@@ -1426,6 +1621,8 @@ def main() -> None:
         "doctor": cmd_doctor,
         "wsl-install-espanso": cmd_wsl_install_espanso,
         "refresh": cmd_refresh,
+        "sync": cmd_sync,
+        "configure-remote-desktop": cmd_configure_remote_desktop,
         "record-install": cmd_record_install,
         "gui": cmd_gui,
         "completions": cmd_completions,

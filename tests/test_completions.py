@@ -27,6 +27,7 @@ EXPECTED_SUBCOMMANDS = sorted(
         "wsl-install-espanso",
         "gui",
         "completions",
+        "sync",
     ]
 )
 
@@ -59,7 +60,7 @@ def test_bash_script_contains_subcommands(capsys):
     for cmd in EXPECTED_SUBCOMMANDS:
         assert cmd in out, f"bash script missing subcommand: {cmd}"
 
-    for removed in ["sync", "sync-down", "sync-bundled"]:
+    for removed in ["sync-down", "sync-bundled"]:
         assert removed not in out, f"bash script still exposes removed alias: {removed}"
 
 
@@ -102,7 +103,7 @@ def test_zsh_script_contains_subcommands(capsys):
     for cmd in EXPECTED_SUBCOMMANDS:
         assert cmd in out, f"zsh script missing subcommand: {cmd}"
 
-    for removed in ["sync", "sync-down", "sync-bundled"]:
+    for removed in ["sync-down", "sync-bundled"]:
         assert removed not in out, f"zsh script still exposes removed alias: {removed}"
 
 

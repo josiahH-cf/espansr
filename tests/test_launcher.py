@@ -440,6 +440,64 @@ def test_managed_files_includes_launcher():
     """_MANAGED_FILES includes espansr-launcher.yml for stale cleanup."""
     assert "espansr-launcher.yml" in _MANAGED_FILES
     assert "espansr-commands.yml" in _MANAGED_FILES
+    assert "espansr-sync.yml" in _MANAGED_FILES
+
+
+# ─── generate_sync_file() tests ─────────────────────────────────────────────
+
+
+def test_generate_sync_creates_valid_yaml(tmp_path):
+    """generate_sync_file() writes a shell trigger that runs `espansr sync`."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.is_wsl2", return_value=False),
+        patch("espansr.integrations.espanso.is_windows", return_value=False),
+        patch("shutil.which", return_value="/usr/bin/espansr"),
+    ):
+        from espansr.integrations.espanso import generate_sync_file
+
+        result = generate_sync_file()
+
+    assert result is True
+    sync_file = match_dir / "espansr-sync.yml"
+    assert sync_file.exists()
+
+    data = yaml.safe_load(sync_file.read_text())
+    match = data["matches"][0]
+    assert match["trigger"] == ":sync"
+    assert match["replace"] == "{{output}}"
+    assert "espansr sync" in match["vars"][0]["params"]["cmd"]
+
+
+def test_generate_sync_windows_uses_visible_console(tmp_path):
+    """Windows sync trigger runs the console entrypoint, not a hidden pythonw."""
+    match_dir = tmp_path / "match"
+    match_dir.mkdir()
+
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.is_wsl2", return_value=False),
+        patch("espansr.integrations.espanso.is_windows", return_value=True),
+        patch("shutil.which", return_value=r"C:\Program Files\espansr\espansr.exe"),
+    ):
+        from espansr.integrations.espanso import generate_sync_file
+
+        result = generate_sync_file()
+
+    assert result is True
+    params = yaml.safe_load((match_dir / "espansr-sync.yml").read_text())["matches"][0]["vars"][0][
+        "params"
+    ]
+    cmd = params["cmd"]
+    assert params["shell"] == "powershell"
+    assert "Start-Process" in cmd
+    assert "-WindowStyle Hidden" not in cmd  # console must be visible for progress
+    assert "espansr.exe" in cmd
+    assert "'sync'" in cmd
+    assert "pythonw" not in cmd
 
 
 # ─── GUI first-run tip tests ────────────────────────────────────────────────

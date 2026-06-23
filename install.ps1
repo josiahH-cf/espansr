@@ -298,6 +298,22 @@ else {
     Warn "Espanso binary not found - startup registration skipped"
 }
 
+# Remote-desktop (RustDesk/RDP) reliability
+#
+# Over RustDesk/RDP, Espanso's simulated-keystroke injection garbles keys so
+# triggers like :coms fail to expand. Switch Espanso to the clipboard backend
+# (paste instead of per-key injection). This is the Windows analog of the
+# Linux/Wayland XWayland fix in install.sh. Non-fatal: a missing or not-yet-run
+# Espanso simply skips this, and `espansr configure-remote-desktop` can be rerun.
+Info "Configuring Espanso for remote desktop (RustDesk/RDP)..."
+& $VenvCmd configure-remote-desktop
+if ($LASTEXITCODE -eq 0) {
+    Ok "Espanso remote-desktop config applied"
+}
+else {
+    Warn "Could not apply remote-desktop Espanso config (continuing)"
+}
+
 # PATH setup
 
 $SessionPathEntries = $env:PATH -split ";"

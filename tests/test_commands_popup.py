@@ -41,6 +41,20 @@ def test_build_command_catalog_includes_template_and_system_triggers(tmp_path):
     assert greeting.stage == "custom"
 
 
+def test_build_command_catalog_includes_sync_system_entry(tmp_path):
+    """Catalog exposes the built-in :sync maintenance command."""
+    from espansr.core.command_catalog import build_command_catalog
+
+    manager = TemplateManager(templates_dir=tmp_path / "templates")
+    entries = build_command_catalog(template_manager=manager, config=Config())
+
+    sync = next((e for e in entries if e.trigger == ":sync"), None)
+    assert sync is not None
+    assert sync.source == "system"
+    assert sync.category == "system"
+    assert sync.stage == "maintenance"
+
+
 def test_build_command_catalog_exposes_workflow_metadata(tmp_path):
     """AC-3: catalog entries preserve template category, stage, and chain hints."""
     from espansr.core.command_catalog import build_command_catalog
