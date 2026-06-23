@@ -48,8 +48,14 @@ class SyncResult:
 # File names managed by espansr — only these are cleaned up
 LAUNCHER_FILE_NAME = "espansr-launcher.yml"
 COMMANDS_POPUP_FILE_NAME = "espansr-commands.yml"
+SYNC_FILE_NAME = "espansr-sync.yml"
 
-_MANAGED_FILES = ("espansr.yml", LAUNCHER_FILE_NAME, COMMANDS_POPUP_FILE_NAME)
+_MANAGED_FILES = (
+    "espansr.yml",
+    LAUNCHER_FILE_NAME,
+    COMMANDS_POPUP_FILE_NAME,
+    SYNC_FILE_NAME,
+)
 
 # Old file names from before the rebrand — cleaned up on sync
 _OLD_MANAGED_FILES = ("automatr-espanso.yml", "automatr-launcher.yml")
@@ -449,6 +455,113 @@ def generate_commands_popup_file(match_dir: Optional[Path] = None) -> bool:
     )
 
 
+def _resolve_subcommand(
+    binary: Optional[str],
+    python_executable: str,
+    subcommand_args: list[str],
+    *,
+    wsl_windows_host: bool = False,
+) -> tuple[str, list[str]]:
+    """Resolve the executable and argv used to run ``espansr <subcommand>``.
+
+    Unlike :func:`_resolve_gui_command`, this targets the *console* entrypoint
+    (no pythonw.exe) so long-running commands like ``sync`` show their progress
+    in a window — the whole point of running them over RustDesk/RDP.
+    """
+    if binary:
+        return binary, list(subcommand_args)
+    return python_executable, ["-m", "espansr", *subcommand_args]
+
+
+def _generate_subcommand_trigger_file(
+    *,
+    filename: str,
+    trigger: str,
+    subcommand_args: list[str],
+    match_dir: Optional[Path] = None,
+) -> bool:
+    """Generate a managed Espanso shell trigger that runs ``espansr <subcommand>``.
+
+    Args:
+        filename: The file name written into the Espanso match directory.
+        trigger: The Espanso trigger keyword.
+        subcommand_args: CLI args passed to the espansr console entrypoint.
+        match_dir: Override match directory (for testing). Uses get_match_dir() if None.
+
+    Returns:
+        True if the file was written successfully, False otherwise.
+    """
+    import shutil
+    import sys
+
+    if match_dir is None:
+        match_dir = get_match_dir()
+    if match_dir is None:
+        return False
+
+    # WSL with a Windows-hosted Espanso config needs a Windows-side launch that
+    # still invokes the WSL executable through wsl.exe.
+    wsl_windows_host = is_wsl2() and _is_windows_side_wsl_path(match_dir.parent)
+
+    binary = shutil.which("espansr")
+    executable, args = _resolve_subcommand(
+        binary,
+        sys.executable,
+        subcommand_args,
+        wsl_windows_host=wsl_windows_host,
+    )
+
+    if wsl_windows_host:
+        distro = get_wsl_distro_name()
+        wsl_args: list[str] = []
+        if distro:
+            wsl_args.extend(["-d", distro])
+        wsl_args.extend(["--", executable, *args])
+        shell_params = _build_windows_launch_params("wsl.exe", wsl_args)
+    elif is_windows():
+        shell_params = _build_windows_launch_params(executable, args)
+    else:
+        shell_params = _build_posix_launch_params(executable, args)
+
+    content = {
+        "matches": [
+            {
+                "trigger": trigger,
+                "replace": "{{output}}",
+                "vars": [
+                    {
+                        "name": "output",
+                        "type": "shell",
+                        "params": shell_params,
+                    }
+                ],
+            }
+        ]
+    }
+
+    try:
+        output_path = match_dir / filename
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(content, f, default_flow_style=False, allow_unicode=True)
+        logger.info("Generated subcommand trigger at %s", output_path)
+        return True
+    except Exception as exc:
+        logger.warning("Failed to generate subcommand trigger file: %s", exc)
+        return False
+
+
+def generate_sync_file(match_dir: Optional[Path] = None) -> bool:
+    """Generate espansr-sync.yml with a trigger that runs ``espansr sync``."""
+    config = get_config()
+    trigger = getattr(config.espanso, "sync_trigger", "") or ":sync"
+    return _generate_subcommand_trigger_file(
+        filename=SYNC_FILE_NAME,
+        trigger=trigger,
+        subcommand_args=["sync"],
+        match_dir=match_dir,
+    )
+
+
 # Tracks the number of templates written by the most recent sync_to_espanso() call.
 # The GUI reads this after sync to display a richer feedback message.
 _last_sync_count: int = 0
@@ -739,6 +852,126 @@ def restart_espanso() -> bool:
             pass
 
     return False
+
+
+# ── Section 6: Remote-desktop (RustDesk/RDP) reliability ──────────────────────
+# Over RustDesk/RDP, Espanso's simulated-keystroke injection garbles keys so
+# triggers like :coms fail to expand. The Windows-appropriate fix is to switch
+# Espanso to the clipboard backend (paste instead of per-key injection) and add
+# small delays. This mirrors what install.sh does for Linux/Wayland (forcing the
+# X11 path), but here the lever is Espanso's own config/default.yml. The keys
+# below are espansr-managed and reversible via the --revert path.
+REMOTE_DESKTOP_MARKER = (
+    "# espansr-remote-desktop — managed by espansr; "
+    "revert with: espansr configure-remote-desktop --revert"
+)
+_REMOTE_DESKTOP_KEYS: dict = {
+    "backend": "Clipboard",  # primary fix: paste instead of per-key injection
+    "show_icon": False,
+    "show_notifications": False,
+    "key_delay": 30,
+    "backspace_delay": 30,
+}
+
+
+def get_espanso_default_config_path(config_dir: Optional[Path] = None) -> Optional[Path]:
+    """Return ``<config_dir>/config/default.yml``.
+
+    Resolves the Espanso config dir when ``config_dir`` is None. Returns None
+    only when no Espanso config directory can be located.
+    """
+    if config_dir is None:
+        config_dir = get_espanso_config_dir()
+    if config_dir is None:
+        return None
+    return Path(config_dir) / "config" / "default.yml"
+
+
+def _write_espanso_default_config(path: Path, data: dict, *, with_marker: bool) -> None:
+    """Write ``default.yml`` from a mapping, optionally prefixing the marker."""
+    body = yaml.safe_dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    header = f"{REMOTE_DESKTOP_MARKER}\n" if with_marker else ""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(header + body, encoding="utf-8")
+
+
+def apply_remote_desktop_config(
+    config_dir: Optional[Path] = None,
+    *,
+    revert: bool = False,
+    restart: bool = True,
+) -> bool:
+    """Merge (or remove) espansr remote-desktop keys in Espanso's default.yml.
+
+    Idempotent. Preserves every key espansr does not own. On ``revert`` only
+    removes a managed key when its value still equals what espansr wrote, so a
+    user who re-customizes (e.g. ``backend: Inject``) is never clobbered.
+
+    Returns True on success or no-op; False only when Espanso config is missing
+    or the file could not be written.
+    """
+    if config_dir is None:
+        config_dir = get_espanso_config_dir()
+    if config_dir is None:
+        logger.warning("Espanso config directory not found; skipping remote-desktop config")
+        return False
+
+    path = get_espanso_default_config_path(config_dir)
+    if path is None:
+        return False
+
+    data: dict = {}
+    invalid = False
+    if path.exists():
+        try:
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if loaded is None:
+                data = {}
+            elif isinstance(loaded, dict):
+                data = loaded
+            else:
+                invalid = True
+        except (OSError, yaml.YAMLError):
+            invalid = True
+
+    if revert:
+        if invalid or not path.exists():
+            return True  # nothing espansr can safely revert
+        for key, value in _REMOTE_DESKTOP_KEYS.items():
+            if data.get(key) == value:
+                data.pop(key, None)
+        try:
+            if data:
+                _write_espanso_default_config(path, data, with_marker=False)
+            else:
+                path.unlink()
+        except OSError as exc:
+            logger.warning("Could not revert remote-desktop config: %s", exc)
+            return False
+        if restart:
+            restart_espanso()
+        return True
+
+    if invalid:
+        # The file is not a YAML mapping Espanso could use — preserve it as a
+        # backup, then write a clean managed mapping.
+        try:
+            backup = path.with_suffix(path.suffix + ".espansr-bak")
+            path.replace(backup)
+            logger.warning("default.yml was not valid YAML; backed up to %s", backup)
+        except OSError as exc:
+            logger.warning("Could not back up invalid default.yml: %s", exc)
+        data = {}
+
+    data.update(_REMOTE_DESKTOP_KEYS)
+    try:
+        _write_espanso_default_config(path, data, with_marker=True)
+    except OSError as exc:
+        logger.warning("Could not write remote-desktop config: %s", exc)
+        return False
+    if restart:
+        restart_espanso()
+    return True
 
 
 class EspansoManager:

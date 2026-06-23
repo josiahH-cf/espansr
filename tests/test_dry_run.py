@@ -169,6 +169,7 @@ def test_setup_dry_run_no_copy(tmp_path):
         patch("espansr.__main__.clean_stale_espanso_files") as mock_clean,
         patch("espansr.__main__.generate_launcher_file") as mock_launcher,
         patch("espansr.__main__.generate_commands_popup_file") as mock_popup,
+        patch("espansr.__main__.generate_sync_file") as mock_sync_file,
     ):
         result = cmd_setup(_make_args(dry_run=True))
 
@@ -177,6 +178,7 @@ def test_setup_dry_run_no_copy(tmp_path):
     mock_clean.assert_not_called()
     mock_launcher.assert_not_called()
     mock_popup.assert_not_called()
+    mock_sync_file.assert_not_called()
 
 
 def test_setup_dry_run_prints_plan(tmp_path, capsys):

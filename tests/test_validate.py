@@ -264,6 +264,21 @@ def test_validate_all_warns_on_launcher_trigger_collision():
     assert any("generated launcher trigger" in w.message for w in warnings)
 
 
+def test_validate_all_warns_on_sync_trigger_collision():
+    """A template colliding with the generated :sync trigger is warning-only."""
+    from espansr.integrations.validate import validate_all
+
+    templates = [Template(name="custom_sync", content="mine", trigger=":sync")]
+    with patch("espansr.integrations.validate.get_template_manager") as mock_mgr:
+        mock_mgr.return_value.iter_with_triggers.return_value = iter(templates)
+        result = validate_all()
+
+    warnings = [w for w in result if w.severity == "warning"]
+    errors = [w for w in result if w.severity == "error"]
+    assert errors == []
+    assert any("generated sync trigger" in w.message for w in warnings)
+
+
 def test_validate_all_system_trigger_collision_escape_hatch():
     """Config can suppress intentional system-trigger collision warnings."""
     from espansr.core.config import Config

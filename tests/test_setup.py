@@ -264,6 +264,7 @@ def test_setup_with_espanso_config(tmp_path):
         patch("espansr.__main__.clean_stale_espanso_files") as mock_clean,
         patch("espansr.__main__.generate_launcher_file", return_value=True) as mock_launcher,
         patch("espansr.__main__.generate_commands_popup_file", return_value=True) as mock_popup,
+        patch("espansr.__main__.generate_sync_file", return_value=True) as mock_sync_file,
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=True) as mock_sync,
     ):
         result = cmd_setup(None)
@@ -272,6 +273,7 @@ def test_setup_with_espanso_config(tmp_path):
     mock_clean.assert_called_once()
     mock_launcher.assert_called_once()
     mock_popup.assert_called_once()
+    mock_sync_file.assert_called_once()
     mock_sync.assert_called_once_with(update_bundled=True, bundled_dir=bundled_dir)
 
 
@@ -296,6 +298,7 @@ def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
         patch("espansr.__main__.clean_stale_espanso_files"),
         patch("espansr.__main__.generate_launcher_file", return_value=True),
         patch("espansr.__main__.generate_commands_popup_file", return_value=True),
+        patch("espansr.__main__.generate_sync_file", return_value=True),
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=False),
     ):
         result = cmd_setup(None)
@@ -326,6 +329,7 @@ def test_setup_generates_commands_popup_when_espanso_found(tmp_path):
         patch("espansr.__main__.clean_stale_espanso_files"),
         patch("espansr.__main__.generate_launcher_file", return_value=True),
         patch("espansr.__main__.generate_commands_popup_file", return_value=True) as mock_popup,
+        patch("espansr.__main__.generate_sync_file", return_value=True),
         patch("espansr.integrations.espanso.sync_to_espanso", return_value=True),
     ):
         result = cmd_setup(None)

@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 from typing import Optional
 
-from PyQt6.QtCore import QByteArray, Qt, QTimer
+from PyQt6.QtCore import QByteArray, QObject, Qt, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QApplication,
@@ -25,6 +25,23 @@ from espansr.ui.template_editor import TemplateEditorWidget
 from espansr.ui.theme import get_theme_stylesheet
 
 AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000  # 5 minutes
+
+
+class _RepoSyncWorker(QObject):
+    """Runs ``espansr sync`` (pull → push-if-clean → reinstall) off the UI thread."""
+
+    finished = pyqtSignal(int)
+
+    def run(self) -> None:
+        """Execute the sync and emit its exit code."""
+        rc = 1
+        try:
+            from espansr.__main__ import _run_sync
+
+            rc = _run_sync(no_push=False)
+        except Exception:
+            rc = 1
+        self.finished.emit(rc)
 
 
 class MainWindow(QMainWindow):
@@ -60,6 +77,13 @@ class MainWindow(QMainWindow):
         self._pull_latest_btn.setToolTip("Pull latest templates from remote and refresh Espanso")
         self._pull_latest_btn.clicked.connect(self._do_pull_latest)
         toolbar.addWidget(self._pull_latest_btn)
+
+        self._sync_repo_btn = QPushButton("Sync")
+        self._sync_repo_btn.setToolTip(
+            "Pull the latest version, push local changes if clean, then reinstall locally"
+        )
+        self._sync_repo_btn.clicked.connect(self._do_repo_sync)
+        toolbar.addWidget(self._sync_repo_btn)
 
         self._import_btn = QPushButton("Import")
         self._import_btn.setToolTip("Import template(s) from a JSON file (Ctrl+I)")
@@ -346,6 +370,54 @@ class MainWindow(QMainWindow):
         finally:
             self._pull_latest_btn.setEnabled(True)
             self._update_espanso_status()
+
+    def _do_repo_sync(self) -> None:
+        """Pull latest, push local changes if clean, then reinstall — off the UI thread.
+
+        Distinct from ``_do_sync`` (which publishes templates to Espanso): this
+        runs ``espansr sync`` on a worker thread so the git + installer work does
+        not freeze the window.
+        """
+        if self._editor.has_unsaved_changes():
+            self.statusBar().showMessage(
+                "Sync blocked: save or discard current changes first",
+                8000,
+            )
+            return
+
+        self._sync_repo_btn.setEnabled(False)
+        self.statusBar().showMessage(
+            "Syncing: pulling latest, pushing local changes, and reinstalling…",
+            0,
+        )
+
+        # Keep references on self so neither thread nor worker is garbage-collected
+        # mid-run; both are cleaned up via deleteLater when the worker finishes.
+        self._sync_thread = QThread(self)
+        self._sync_worker = _RepoSyncWorker()
+        self._sync_worker.moveToThread(self._sync_thread)
+        self._sync_thread.started.connect(self._sync_worker.run)
+        self._sync_worker.finished.connect(self._on_repo_sync_done)
+        self._sync_worker.finished.connect(self._sync_thread.quit)
+        self._sync_worker.finished.connect(self._sync_worker.deleteLater)
+        self._sync_thread.finished.connect(self._sync_thread.deleteLater)
+        self._sync_thread.start()
+
+    def _on_repo_sync_done(self, rc: int) -> None:
+        """Re-enable the Sync button and report the outcome."""
+        self._sync_repo_btn.setEnabled(True)
+        if rc == 0:
+            self.statusBar().showMessage(
+                "Sync complete: pulled latest, pushed local changes, and reinstalled",
+                5000,
+            )
+        else:
+            self.statusBar().showMessage(
+                "Sync stopped (merge conflict or error) — see the console for details",
+                0,
+            )
+        self._browser.refresh()
+        self._update_espanso_status()
 
     def _toggle_auto_sync(self, state: int) -> None:
         """Start or stop the auto-sync timer."""

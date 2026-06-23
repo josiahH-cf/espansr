@@ -16,6 +16,13 @@ COMMANDS_POPUP_PREVIEW = (
 LAUNCHER_NAME = "Open Editor"
 LAUNCHER_DESCRIPTION = "Launch the full espansr editor window."
 LAUNCHER_PREVIEW = "Opens the full espansr editor so you can browse, edit, and sync templates."
+SYNC_TRIGGER = ":sync"
+SYNC_NAME = "Sync & Reinstall"
+SYNC_DESCRIPTION = "Pull the latest version, push local changes if clean, then reinstall locally."
+SYNC_PREVIEW = (
+    "Runs `espansr sync`: rebases the project repo onto the latest, pushes your local "
+    "changes when there is no conflict, then reruns the installer recorded at first install."
+)
 
 _PREVIEW_MAX_LINES = 4
 _PREVIEW_MAX_CHARS = 280
@@ -99,6 +106,7 @@ def _iter_template_entries(template_manager: TemplateManager) -> Iterable[Comman
 def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
     """Return built-in entries that are available outside template sync."""
     launcher_trigger = config.espanso.launcher_trigger or ":aopen"
+    sync_trigger = getattr(config.espanso, "sync_trigger", "") or SYNC_TRIGGER
     return [
         CommandCatalogEntry(
             trigger=launcher_trigger,
@@ -117,6 +125,15 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             source="system",
             category="system",
             stage="reference",
+        ),
+        CommandCatalogEntry(
+            trigger=sync_trigger,
+            name=SYNC_NAME,
+            description=SYNC_DESCRIPTION,
+            preview=SYNC_PREVIEW,
+            source="system",
+            category="system",
+            stage="maintenance",
         ),
     ]
 
