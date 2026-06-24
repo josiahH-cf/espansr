@@ -855,18 +855,23 @@ def restart_espanso() -> bool:
 
 
 # ── Section 6: Remote-desktop (RustDesk/RDP) reliability ──────────────────────
-# Over RustDesk/RDP, Espanso's simulated-keystroke injection garbles keys so
-# triggers like :coms fail to expand. The Windows-appropriate fix is to switch
-# Espanso to the clipboard backend (paste instead of per-key injection) and add
-# small delays. This mirrors what install.sh does for Linux/Wayland (forcing the
-# X11 path), but here the lever is Espanso's own config/default.yml. The keys
-# below are espansr-managed and reversible via the --revert path.
+# Over RustDesk/RDP the keys you type are *software-injected* on the host with no
+# physical HID source. Espanso's default `win32_exclude_orphan_events: true`
+# discards exactly those events, so triggers like :coms are never even detected.
+# Setting it false lets Espanso see RustDesk/RDP input — this is THE fix for
+# "commands don't fire over RustDesk." We also switch to the clipboard backend so
+# text expansions paste cleanly instead of garbling, and quiet the tray. Mirrors
+# install.sh's Linux/Wayland fix; here the lever is Espanso's config/default.yml.
+# All keys are espansr-managed and reversible via the --revert path.
 REMOTE_DESKTOP_MARKER = (
     "# espansr-remote-desktop — managed by espansr; "
     "revert with: espansr configure-remote-desktop --revert"
 )
 _REMOTE_DESKTOP_KEYS: dict = {
-    "backend": "Clipboard",  # primary fix: paste instead of per-key injection
+    # Detection: stop espanso from filtering out RustDesk/RDP-injected keystrokes.
+    "win32_exclude_orphan_events": False,
+    # Injection: paste expansions instead of per-key typing (clean over remote).
+    "backend": "Clipboard",
     "show_icon": False,
     "show_notifications": False,
     "key_delay": 30,
