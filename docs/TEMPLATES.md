@@ -33,7 +33,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature workflow: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
 - Prompt workflow: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
-- Explanation, research, and analysis prompts: `:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`
+- Explanation, research, and analysis prompts: `:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`
 - Pocket capture prompts: `:pocket-note`, `:pocket-system`
 - Utility prompts: `:defaults`, `:listen`, `:revise`
 - Security helpers: `:tenable-scans`

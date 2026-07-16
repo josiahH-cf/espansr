@@ -151,6 +151,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":distill", "distill long context into a 3-paragraph objective synopsis"),
             (":research", "research a topic with strong evidence handling and synthesis"),
             (":summarize", "summarize one source with grounded facts and core insights"),
+            (":audit", "build an interactive HTML audit/decision packet to resolve findings"),
         ),
     ),
     HelpSection(
