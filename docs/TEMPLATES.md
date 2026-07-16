@@ -25,19 +25,19 @@ template files:
 
 The bundled starter set also ships reusable AI prompt notes. Every bundled
 prompt is surfaced in the live `:coms` popup, in the `:espansr` quick reference,
-and here, so a helpful note is discoverable everywhere. The current set is:
+and here. The list below is generated from the same source as the `:espansr`
+quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
+`python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
-- Feature workflow: `:goal`, `:project-init-llm`, `:agent-scaffold`,
-  `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
-- Delivery and review: `:troubleshoot`, `:verify`, `:docs-qa`, `:save`,
-  `:merge`, `:work-merge-safe`, `:revise`
-- Explanation, research, and analysis: `:explain`, `:visual`, `:gaps`,
-  `:distill`, `:research`, `:summarize`, `:meta`, `:context`,
-  `:template-builder`, `:sanitize`
-- Pocket capture: `:pocket-note`, `:pocket-system`
-- Working style and utilities: `:defaults`, `:listen`, `:tenable-scans`
-- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`,
-  `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
+<!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
+- Agent feature workflow: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
+- Prompt workflow: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
+- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
+- Explanation, research, and analysis prompts: `:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`
+- Pocket capture prompts: `:pocket-note`, `:pocket-system`
+- Utility prompts: `:defaults`, `:listen`, `:revise`
+- Security helpers: `:tenable-scans`
+<!-- END generated note list -->
 
 Use `:espansr` for the current quick reference list.
 
@@ -138,10 +138,13 @@ above to the live template directory.
 Bundled helper prompts such as `:template-builder` can help draft template JSON,
 but the saved file still needs to validate with `espansr validate`.
 
-When you add or rename a bundled prompt note in `templates/`, reflect it in the
-same change across its discovery surfaces: the `:espansr` quick help
-(`templates/espansr_help.json`) and the prompt-note list above. Surfacing every
-helpful note everywhere is a core goal of this project.
+When you add or rename a bundled prompt note, register it once in
+`espansr/core/discovery.py` and run `python scripts/sync_discovery.py`. That
+regenerates both the `:espansr` quick help (`templates/espansr_help.json`) and
+the prompt-note list above from the single source, and
+`tests/test_discovery_sync.py` fails if any bundled note is not surfaced
+everywhere. Surfacing every helpful note everywhere is a core goal of this
+project.
 
 ## Publish Behavior
 
