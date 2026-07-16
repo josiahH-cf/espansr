@@ -694,6 +694,7 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     ),
     "sanitize.json": ("hide_ai.json",),
     "docs_qa.json": ("qa_docs.json",),
+    "pocket_system.json": ("pocket.json",),
 }
 
 

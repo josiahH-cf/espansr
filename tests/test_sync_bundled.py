@@ -816,6 +816,20 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [":verify"], []),
         "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
         "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save"], [":qa"]),
+        "pocket_system.json": (
+            ":pocket-system",
+            "workflow",
+            "pocket-directive",
+            [":meta", ":verify"],
+            [":pocket"],
+        ),
+        "pocket_note.json": (
+            ":pocket-note",
+            "workflow",
+            "pocket-note-run",
+            [":verify"],
+            [],
+        ),
         "git_yolo_sh.json": (":git-yolo-sh", "workflow", "git-yolo", [":verify"], []),
         "git_rebase_sh.json": (":git-rebase-sh", "workflow", "git-rebase", [":verify"], []),
         "git_branch_sh.json": (":git-branch-sh", "workflow", "git-branch", [":verify"], []),
@@ -840,6 +854,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "feature_continue.json",
         "hide_ai.json",
         "qa_docs.json",
+        "pocket.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
