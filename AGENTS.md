@@ -6,14 +6,22 @@ This file is the lightweight agent entrypoint for `espansr`.
 
 `espansr` is a Python 3.11+ CLI and GUI manager for Espanso text expansion templates. It stores editable templates as JSON, validates them, publishes managed Espanso YAML, and supports optional Git-backed template sync.
 
-## Protected Product Surface
+## Product Surface
 
-Do not modify these areas unless the user explicitly asks for a product or template change:
+`espansr` exists to manage reusable prompt "notes" (bundled templates) and to
+surface them everywhere they can be discovered. When you add or refine a bundled
+prompt note, reflect it across all of its discovery surfaces in the same change:
+the template JSON in `templates/`, the `:espansr` quick help
+(`templates/espansr_help.json`), and `docs/TEMPLATES.md`. Keeping helpful notes
+surfaced everywhere is the point of the project, not a special request that
+needs asking.
 
-- `templates/` bundled templates, including `feat.json` and helper prompts
+Change these areas only when the request calls for it, and keep edits scoped and
+behavior-preserving:
+
 - `espansr/` application code, UI behavior, styles, and generated `:aopen` / `:coms` behavior
 - `install.ps1`, `install.sh`, WSL/PowerShell install or setup behavior
-- `README.md`, product docs under `docs/`, packaging metadata, and product tests
+- `README.md`, packaging metadata, product tests, and docs unrelated to the prompt-note set
 
 ## Normal Maintenance Flow
 

@@ -7,7 +7,8 @@ Follow [AGENTS.md](AGENTS.md) for the repository rules. This file only adds Clau
 - Read `AGENTS.md` before editing.
 - Inspect the relevant files and current git state before changing anything.
 - Keep work scoped to the user request.
-- Do not touch templates, product docs, install scripts, WSL/PowerShell behavior, UI styles, packaging, or product code unless explicitly asked.
+- Reflect every bundled prompt note across all of its discovery surfaces in the same change: the template JSON in `templates/`, the `:espansr` quick help, and `docs/TEMPLATES.md`. Surfacing helpful notes everywhere is the project's purpose.
+- Do not touch install scripts, WSL/PowerShell behavior, UI styles, packaging, product code, or docs unrelated to the prompt-note set unless explicitly asked.
 - Preserve existing behavior and tests.
 
 ## Verification
