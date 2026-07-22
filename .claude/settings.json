@@ -31,14 +31,24 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
-        "command": "if command -v npx >/dev/null 2>&1 && [ -f package.json ]; then npx prettier --write \"$FILEPATH\" 2>/dev/null || true; fi",
-        "timeout": 15000
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v npx >/dev/null 2>&1 && [ -f package.json ]; then npx prettier --write \"$FILEPATH\" 2>/dev/null || true; fi",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "command": "echo 'Remember: run pytest before ending this session.'"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Remember: run pytest before ending this session.'"
+          }
+        ]
       }
     ]
   }
