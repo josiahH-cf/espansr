@@ -141,6 +141,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         "Explanation, research, and analysis prompts",
         17,
         (
+            (":q&a", "start evidence-bound Q&A on the current context"),
             (":explain", "explain context in plain, evidence-bound terms"),
             (":visual", "build workflow diagrams or visual explanations"),
             (":reality", "state what the context created or would create in reality"),

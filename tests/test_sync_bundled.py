@@ -770,6 +770,27 @@ def test_bundled_meta_template_has_inline_optional_input_block():
     assert data["content"].endswith(INLINE_CONTEXT_FOOTER)
 
 
+def test_bundled_q_and_a_template_contract():
+    """The :q&a starter opens a source-agnostic, evidence-bound Q&A session."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "q_and_a.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["trigger"] == ":q&a"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "interactive-qa"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+    assert "output exactly this sentence and nothing else" in content
+    assert "Okay, what do you want to know about?" in content
+    assert "Be agnostic to project type, technology, file format, and concept." in content
+    assert "Do not require the user to preselect sources" in content
+    assert "connected vault" not in content.lower()
+    assert "## Refresh" not in content
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+
+
 def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
     """Context-bearing starter prompts use inline notes instead of popup variables."""
     repo_root = Path(__file__).resolve().parents[1]
