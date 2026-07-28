@@ -5,9 +5,7 @@
   "trigger": ":explain",
   "category": "explanation",
   "stage": "context-summary",
-  "next_triggers": [
-    ":verify"
-  ],
+  "next_triggers": [],
   "replaces": [
     ":plain",
     ":dumb",

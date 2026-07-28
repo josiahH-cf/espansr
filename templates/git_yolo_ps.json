@@ -5,6 +5,6 @@
   "trigger": ":git-yolo-ps",
   "category": "workflow",
   "stage": "git-yolo",
-  "next_triggers": [":verify"],
+  "next_triggers": [],
   "replaces": []
 }

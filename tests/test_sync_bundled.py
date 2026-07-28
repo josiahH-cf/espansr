@@ -1,6 +1,7 @@
 """Tests for bundled-template drift checking and reconciliation."""
 
 import json
+import re
 from pathlib import Path
 from unittest.mock import patch
 
@@ -281,8 +282,8 @@ def test_sync_bundled_apply_retires_deleted_explanation_starters(tmp_path, capsy
     assert (templates_dir / "_versions" / "explain_like_i_am_five" / "v1.json").exists()
 
 
-def test_sync_bundled_apply_retires_deleted_audit_starters(tmp_path, capsys):
-    """Deleted audit starters retire into the surviving gaps prompt."""
+def test_sync_bundled_apply_retires_deleted_gap_review_starters(tmp_path, capsys):
+    """Deleted gap and principles starters retire into the surviving gaps prompt."""
     from espansr.__main__ import cmd_sync_bundled
 
     bundled_dir = tmp_path / "bundled"
@@ -311,11 +312,6 @@ def test_sync_bundled_apply_retires_deleted_audit_starters(tmp_path, capsys):
             "content": "older principles prompt",
             "trigger": ":fp",
         },
-        "reality_audit.json": {
-            "name": "Reality Audit",
-            "content": "old reality prompt",
-            "trigger": ":reality",
-        },
     }
     _write_json(bundled_dir / "gaps.json", bundled_template)
     _write_json(templates_dir / "gaps.json", bundled_template)
@@ -338,7 +334,65 @@ def test_sync_bundled_apply_retires_deleted_audit_starters(tmp_path, capsys):
     assert (templates_dir / "_versions" / "explain_gaps_comprehensively_pt_2" / "v1.json").exists()
     assert (templates_dir / "_versions" / "firstprinciples_analysis" / "v1.json").exists()
     assert (templates_dir / "_versions" / "first_principles_analysis" / "v1.json").exists()
+
+
+def test_sync_bundled_apply_migrates_reality_and_telegram_starters(tmp_path, capsys):
+    """Old reality and pocket-note files migrate to their independent replacements."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    reality_template = {
+        "name": "Reality Summary",
+        "content": "new reality prompt",
+        "trigger": ":reality",
+    }
+    telegram_template = {
+        "name": "Telegram Directive Runner",
+        "content": "new telegram prompt",
+        "trigger": ":telegram",
+        "replaces": [":pocket-note"],
+    }
+    old_templates = {
+        "reality_audit.json": {
+            "name": "Reality Audit",
+            "content": "old reality prompt",
+            "trigger": ":reality",
+        },
+        "pocket_note.json": {
+            "name": "Pocket Note Runner",
+            "content": "old pocket note prompt",
+            "trigger": ":pocket-note",
+        },
+    }
+    _write_json(bundled_dir / "reality.json", reality_template)
+    _write_json(bundled_dir / "telegram.json", telegram_template)
+    for filename, data in old_templates.items():
+        _write_json(templates_dir / filename, data)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "migrated" in output.lower()
+    assert json.loads((templates_dir / "reality.json").read_text(encoding="utf-8")) == (
+        reality_template
+    )
+    assert json.loads((templates_dir / "telegram.json").read_text(encoding="utf-8")) == (
+        telegram_template
+    )
+    for filename in old_templates:
+        assert not (templates_dir / filename).exists()
+
     assert (templates_dir / "_versions" / "reality_audit" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "pocket_note_runner" / "v1.json").exists()
 
 
 def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, capsys):
@@ -753,89 +807,90 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             ":feat",
             "workflow",
             "feature-router",
-            [":project-init-llm", ":agent-scaffold", ":feat-plan", ":feat-runner"],
+            [],
             [],
         ),
         "project_init_llm.json": (
             ":project-init-llm",
             "workflow",
             "project-init-llm",
-            [":agent-scaffold", ":feat-plan", ":verify"],
+            [],
             [":project-init"],
         ),
         "agent_scaffold.json": (
             ":agent-scaffold",
             "workflow",
             "agent-scaffold",
-            [":feat-plan", ":feat-runner", ":verify"],
+            [],
             [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
         ),
         "feat_plan.json": (
             ":feat-plan",
             "workflow",
             "feature-plan",
-            [":feat-runner", ":verify", ":save"],
+            [],
             [":feature-new", ":feature-scope"],
         ),
         "feat_runner.json": (
             ":feat-runner",
             "workflow",
             "feature-runner",
-            [":feat-runner", ":verify", ":save"],
+            [],
             [":feature-next", ":continue"],
         ),
         "visual_workflow.json": (
             ":visual",
             "explanation",
             "visual-workflow",
-            [":verify"],
+            [],
             [],
         ),
         "gaps.json": (
             ":gaps",
             "analysis",
             "gap-review",
-            [":verify"],
-            [":critique", ":gaps-2", ":principles", ":fp", ":reality"],
+            [],
+            [":critique", ":gaps-2", ":principles", ":fp"],
         ),
+        "reality.json": (":reality", "analysis", "reality-summary", [], []),
         "explain_context_comprehensively.json": (
             ":explain",
             "explanation",
             "context-summary",
-            [":verify"],
+            [],
             [":plain", ":dumb", ":simplify", ":explain-1"],
         ),
-        "context.json": (":context", "prompting", "context-reset", [":meta", ":verify"], []),
+        "context.json": (":context", "prompting", "context-reset", [], []),
         "template_builder.json": (
             ":template-builder",
             "prompting",
             "template-authoring",
-            [":verify", ":context"],
+            [],
             [],
         ),
-        "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [":verify"], []),
-        "sanitize.json": (":sanitize", "safety", "scrub", [":verify"], [":hide-ai"]),
-        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [":save"], [":qa"]),
+        "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [], []),
+        "sanitize.json": (":sanitize", "safety", "scrub", [], [":hide-ai"]),
+        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [], [":qa"]),
         "pocket_system.json": (
             ":pocket-system",
             "workflow",
             "pocket-directive",
-            [":meta", ":verify"],
+            [],
             [":pocket"],
         ),
-        "pocket_note.json": (
-            ":pocket-note",
+        "telegram.json": (
+            ":telegram",
             "workflow",
-            "pocket-note-run",
-            [":verify"],
+            "source-directive",
             [],
+            [":pocket-note"],
         ),
-        "git_yolo_sh.json": (":git-yolo-sh", "workflow", "git-yolo", [":verify"], []),
-        "git_rebase_sh.json": (":git-rebase-sh", "workflow", "git-rebase", [":verify"], []),
-        "git_branch_sh.json": (":git-branch-sh", "workflow", "git-branch", [":verify"], []),
-        "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [":verify"], []),
-        "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [":verify"], []),
-        "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [":verify"], []),
+        "git_yolo_sh.json": (":git-yolo-sh", "workflow", "git-yolo", [], []),
+        "git_rebase_sh.json": (":git-rebase-sh", "workflow", "git-rebase", [], []),
+        "git_branch_sh.json": (":git-branch-sh", "workflow", "git-branch", [], []),
+        "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [], []),
+        "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [], []),
+        "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [], []),
     }
     retired_files = {
         "dumb.json",
@@ -855,6 +910,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "hide_ai.json",
         "qa_docs.json",
         "pocket.json",
+        "pocket_note.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -865,7 +921,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         assert data["description"]
         assert data["category"]
         assert data["stage"]
-        assert "next_triggers" in data
+        assert data.get("next_triggers", []) == []
 
     for filename, (trigger, category, stage, next_triggers, replaces) in expected.items():
         data = json.loads((templates_dir / filename).read_text(encoding="utf-8"))
@@ -878,8 +934,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         assert data["replaces"] == replaces
 
 
-def test_bundled_quick_help_uses_renamed_triggers():
-    """AC-3: :espansr quick help lists the new prompt chain without stale triggers."""
+def test_bundled_quick_help_uses_current_triggers():
+    """AC-3: :espansr quick help lists current prompts without stale triggers."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
     content = data["content"]
@@ -888,6 +944,8 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":explain",
         ":visual",
         ":gaps",
+        ":reality",
+        ":telegram",
         ":troubleshoot",
         ":verify",
         ":sanitize",
@@ -933,7 +991,7 @@ def test_bundled_quick_help_uses_renamed_triggers():
         ":continue",
         ":plain",
         ":principles",
-        ":reality",
+        ":pocket-note",
     ]:
         assert not any(line.strip().startswith(f"{stale_trigger} ") for line in help_lines)
 
@@ -949,12 +1007,7 @@ def test_bundled_feat_router_template_contract():
     assert data["trigger"] == ":feat"
     assert data["category"] == "workflow"
     assert data["stage"] == "feature-router"
-    assert data["next_triggers"] == [
-        ":project-init-llm",
-        ":agent-scaffold",
-        ":feat-plan",
-        ":feat-runner",
-    ]
+    assert data["next_triggers"] == []
     assert data["replaces"] == []
     assert variables == {}
     assert "thin router" in content
@@ -1013,7 +1066,7 @@ def test_bundled_split_agent_workflow_template_contracts():
                 "Begin in plan mode by default",
                 "Select the feature deterministically",
                 "Do not skip phases",
-                "If no current or queued feature exists, direct the user to :feat-plan",
+                "If no current or queued feature exists, report that no feature is available",
             ],
         ),
     }
@@ -1044,7 +1097,7 @@ def test_bundled_sanitize_template_contract():
     assert data["trigger"] == ":sanitize"
     assert data["category"] == "safety"
     assert data["stage"] == "scrub"
-    assert data["next_triggers"] == [":verify"]
+    assert data["next_triggers"] == []
     assert data["replaces"] == [":hide-ai"]
     assert "comprehensive" in data["description"].lower()
     assert "recommendation" in data["description"].lower()
@@ -1139,7 +1192,7 @@ def test_bundled_troubleshoot_template_contract():
     assert data["trigger"] == ":troubleshoot"
     assert data["category"] == "workflow"
     assert data["stage"] == "troubleshooting"
-    assert data["next_triggers"] == [":verify"]
+    assert data["next_triggers"] == []
     assert data["replaces"] == []
 
     required_phrases = [
@@ -1154,7 +1207,7 @@ def test_bundled_troubleshoot_template_contract():
         "poisoned, stale, contradictory, or irrelevant context",
         "newest explicit user direction and reliable local evidence",
         "owning abstraction",
-        "directly affected docs, configs, help text, workflow text, or prompt-chain hints",
+        "directly affected docs, configs, help text, workflow text, or prompt guidance",
         "cheapest failing test",
         "Finish only when both gates pass",
     ]
@@ -1184,19 +1237,83 @@ def test_bundled_quick_help_lists_troubleshoot_prompt():
     )
 
 
-def test_bundled_gaps_template_contract_preserves_audit_modes():
-    """The gaps prompt preserves first-principles and reality-audit intent as modes."""
+def test_bundled_gaps_template_contract_preserves_review_modes():
+    """The gaps prompt preserves gap and first-principles review without owning reality."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "gaps.json").read_text(encoding="utf-8"))
 
     content = data["content"]
 
     assert data["trigger"] == ":gaps"
-    assert data["replaces"] == [":critique", ":gaps-2", ":principles", ":fp", ":reality"]
+    assert data["replaces"] == [":critique", ":gaps-2", ":principles", ":fp"]
     assert "Mode selection" in content
     assert content.count("Mode selection") == 1
     assert "first-principles pass" in content
-    assert "reality pass" in content
+    assert "reality pass" not in content
+
+
+def test_bundled_reality_template_contract():
+    """Reality is a standalone outcome summary, not a diagnostic review mode."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["trigger"] == ":reality"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "reality-summary"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert "Return exactly two short plain-English paragraphs" in content
+    assert "followed by zero to ten bullets" in content
+    assert "Every bullet must be one complete sentence" in content
+    assert "meta-prompt, prompt, research request, report specification" in content
+    assert "Do not perform gap analysis" in content
+    assert "Do not tell the user which prompt to run next" in content
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_telegram_template_contract():
+    """Telegram resolves a generic source and runs its directive without fixed file assumptions."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "telegram.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["trigger"] == ":telegram"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "source-directive"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == [":pocket-note"]
+    assert "attachment, local path, URL, filename, directory, file-type hint" in content
+    assert "unique or strongly supported" in content
+    assert "ask one focused follow-up question" in content
+    assert "Do not assume a fixed filename, directory, repository" in content
+    assert "contextualized.md" not in content
+    assert "Pocket" not in content
+    assert content.endswith("SOURCE, LOCATION, FILE TYPE, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+
+
+def test_bundled_prompts_are_independent_except_for_explicit_router_and_help():
+    """Bundled prompts do not suggest another prompt unless routing is their purpose."""
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates"
+    templates = {}
+    for path in templates_dir.glob("*.json"):
+        templates[path.name] = json.loads(path.read_text(encoding="utf-8"))
+
+    triggers = {data["trigger"] for data in templates.values() if data.get("trigger")}
+    allowed_cross_prompt_files = {"feat.json", "espansr_help.json"}
+
+    for filename, data in templates.items():
+        assert data.get("next_triggers", []) == [], filename
+        if filename in allowed_cross_prompt_files:
+            continue
+
+        own_trigger = data.get("trigger")
+        content = data.get("content", "")
+        for trigger in triggers - {own_trigger}:
+            assert not re.search(
+                re.escape(trigger) + r"(?![a-z0-9-])", content
+            ), f"{filename} directs users to {trigger}"
 
 
 def test_bundled_git_helper_templates_are_executable_commands():
@@ -1248,7 +1365,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
 
         assert data["trigger"] == trigger
         assert data["category"] == "workflow"
-        assert data["next_triggers"] == [":verify"]
+        assert data["next_triggers"] == []
         assert definition in content
         assert required_command in content
         assert content.rstrip().endswith(invocation)

@@ -94,7 +94,7 @@ _FOOTER = "\n".join(
 
 PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     HelpSection(
-        "Agent feature workflow",
+        "Agent feature prompts",
         17,
         (
             (":project-init-llm", "initialize AGENTS.md-centered repo instructions"),
@@ -106,7 +106,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
-        "Prompt workflow",
+        "Project and maintenance prompts",
         13,
         (
             (":goal", "clarify a vague goal into milestones"),
@@ -143,7 +143,8 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (":explain", "explain context in plain, evidence-bound terms"),
             (":visual", "build workflow diagrams or visual explanations"),
-            (":gaps", "critical review modes for gaps, principles, and reality audits"),
+            (":reality", "state what the context created or would create in reality"),
+            (":gaps", "critical review modes for gaps and principles"),
             (":meta", "context-safe meta-prompt generator"),
             (":context", "condense drifted prompt context"),
             (":template-builder", "draft command templates"),
@@ -155,10 +156,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
-        "Pocket capture prompts",
+        "Source and capture prompts",
         14,
         (
-            (":pocket-note", "run the project's contextualized.md note in this codebase"),
+            (":telegram", "run the directive from an accessible source or location"),
             (":pocket-system", "sync Pocket notes into Obsidian and run a directive on one"),
         ),
     ),

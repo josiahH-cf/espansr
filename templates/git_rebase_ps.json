@@ -5,6 +5,6 @@
   "trigger": ":git-rebase-ps",
   "category": "workflow",
   "stage": "git-rebase",
-  "next_triggers": [":verify"],
+  "next_triggers": [],
   "replaces": []
 }

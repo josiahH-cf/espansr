@@ -30,27 +30,22 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 `python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
-- Agent feature workflow: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
-- Prompt workflow: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
+- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
-- Explanation, research, and analysis prompts: `:explain`, `:visual`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`
-- Pocket capture prompts: `:pocket-note`, `:pocket-system`
+- Explanation, research, and analysis prompts: `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`
+- Source and capture prompts: `:telegram`, `:pocket-system`
 - Utility prompts: `:defaults`, `:listen`, `:revise`
 - Security helpers: `:tenable-scans`
 <!-- END generated note list -->
 
 Use `:espansr` for the current quick reference list.
 
-The bundled agent feature workflow is split into durable command paths:
-
-1. Run `:project-init-llm` once to establish `AGENTS.md` as the canonical
-   repo-level instruction contract for Codex, Claude, and GitHub Copilot.
-2. Run `:agent-scaffold` once to create the persistent file-backed feature loop
-   under `features/`.
-3. Use `:feat-plan` to add or refine feature scope without implementation
-   edits.
-4. Use `:feat-runner` to start or continue the current or next feature from
-   `features/STATE.json`.
+Bundled prompts are self-contained and can be selected by the job they perform.
+`:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
+contract, `:agent-scaffold` creates a persistent file-backed feature loop,
+`:feat-plan` records or refines feature scope without implementation edits, and
+`:feat-runner` works from the current file-backed feature state.
 
 `:feat` remains as a thin router for older habits and ambiguous feature-work
 requests. Legacy starter triggers migrate to the split commands:
@@ -58,9 +53,9 @@ requests. Legacy starter triggers migrate to the split commands:
 `:project-scaffold`, and `:scaffold-feature-process` map to
 `:agent-scaffold`; `:feature-new` and `:feature-scope` map to `:feat-plan`;
 `:feature-next` and `:continue` map to `:feat-runner`.
-Use `:explain` for evidence-bound plain-English explanation. Use `:gaps` for
-critical review modes, including gap review, first-principles analysis, and
-claimed-vs-actual reality audits.
+Use `:explain` for evidence-bound plain-English explanation, `:reality` for a
+compact statement of what the context created or would create, and `:gaps` for
+critical gap or first-principles review.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.
@@ -68,10 +63,9 @@ following any style or wording direction included in the prompt input.
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
 
-Use `:verify` as the normal end-of-work prompt for fresh-context verification,
-repair, and affected documentation alignment. `:docs-qa` remains available as a
-docs-only fallback when you want documentation alignment without the full
-verification pass.
+Use `:verify` for fresh-context verification, repair, and affected documentation
+alignment. Use `:docs-qa` when the requested work is limited to documentation
+alignment.
 
 Git helper templates are self-invoking snippets split by shell and safety
 level: `:git-yolo-sh` and `:git-yolo-ps` commit all current changes and push
@@ -92,7 +86,6 @@ Each template is a JSON file with the following fields:
   "trigger": ":greet",
   "category": "utility",
   "stage": "draft",
-  "next_triggers": [":review"],
   "replaces": [],
   "deprecated": false,
   "variables": [
@@ -110,15 +103,15 @@ Each template is a JSON file with the following fields:
 | `content` | string | Yes | The expansion text. Use `{{variable_name}}` for placeholders. |
 | `trigger` | string | No | Espanso trigger string (e.g., `:greet`). Templates without a trigger are shown in the browser but excluded from sync. |
 | `category` | string | No | Workflow or library grouping used by prompt discovery surfaces. |
-| `stage` | string | No | Optional position within a workflow chain, such as `goal`, `plan`, `review`, or `archive`. |
-| `next_triggers` | array | No | Suggested follow-up triggers that naturally continue the workflow. |
+| `stage` | string | No | Optional role or state label, such as `goal`, `plan`, `review`, or `archive`. |
+| `next_triggers` | array | No | Optional follow-up hints supported for user-managed templates. Bundled prompts intentionally leave this empty. |
 | `replaces` | array | No | Previous bundled trigger names or template identifiers replaced by this template during migration planning. |
 | `deprecated` | boolean | No | Migration metadata for bundled templates. Current publish behavior does not skip a template only because this field is true. |
 | `variables` | array | No | List of variable definitions for placeholders in `content`. |
 
-Workflow metadata fields are optional for user templates, but bundled workflow
-prompts should include enough metadata for `:coms`, quick help, documentation,
-and migration checks to present a coherent prompt chain.
+Workflow metadata fields are optional for user templates. Bundled prompts are
+self-contained: discovery metadata describes each prompt without prescribing
+another prompt to run afterward.
 
 ### Variable Fields
 

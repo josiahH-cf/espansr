@@ -5,6 +5,6 @@
   "trigger": ":rebase",
   "category": "workflow",
   "stage": "git-update",
-  "next_triggers": [":merge"],
+  "next_triggers": [],
   "replaces": []
 }

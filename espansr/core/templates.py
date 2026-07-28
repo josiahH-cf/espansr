@@ -676,8 +676,8 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
         "explain_gaps_comprehensively_pt_2.json",
         "principles.json",
         "first_principles_analysis.json",
-        "reality_audit.json",
     ),
+    "reality.json": ("reality_audit.json",),
     "project_init_llm.json": ("project_init.json",),
     "agent_scaffold.json": (
         "feature_init.json",
@@ -695,6 +695,7 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     "sanitize.json": ("hide_ai.json",),
     "docs_qa.json": ("qa_docs.json",),
     "pocket_system.json": ("pocket.json",),
+    "telegram.json": ("pocket_note.json",),
 }
 
 

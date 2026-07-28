@@ -5,7 +5,7 @@
   "trigger": ":git-branch-sh",
   "category": "workflow",
   "stage": "git-branch",
-  "next_triggers": [":verify"],
+  "next_triggers": [],
   "replaces": [],
   "variables": [
     {
