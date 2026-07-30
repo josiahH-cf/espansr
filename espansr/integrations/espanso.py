@@ -860,7 +860,9 @@ def restart_espanso() -> bool:
 # discards exactly those events, so triggers like :coms are never even detected.
 # Setting it false lets Espanso see RustDesk/RDP input — this is THE fix for
 # "commands don't fire over RustDesk." We also switch to the clipboard backend so
-# text expansions paste cleanly instead of garbling, and quiet the tray. Mirrors
+# text expansions paste cleanly instead of garbling, and quiet the tray. Because
+# the clipboard backend restores the user's prior clipboard shortly after
+# pasting, we also disable that restore so it never races the paste. Mirrors
 # install.sh's Linux/Wayland fix; here the lever is Espanso's config/default.yml.
 # All keys are espansr-managed and reversible via the --revert path.
 REMOTE_DESKTOP_MARKER = (
@@ -872,6 +874,13 @@ _REMOTE_DESKTOP_KEYS: dict = {
     "win32_exclude_orphan_events": False,
     # Injection: paste expansions instead of per-key typing (clean over remote).
     "backend": "Clipboard",
+    # Clipboard safety: the clipboard backend copies the expansion, sends paste,
+    # then restores the prior clipboard ~300ms later. In apps that paste
+    # asynchronously (browser/Electron chats) that restore wins the race and the
+    # app pastes the *previously copied* text instead of the expansion. Disabling
+    # the restore removes the race so the expansion always wins (the clipboard
+    # then simply holds the expanded text).
+    "preserve_clipboard": False,
     "show_icon": False,
     "show_notifications": False,
     "key_delay": 30,
