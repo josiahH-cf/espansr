@@ -115,3 +115,30 @@ def test_apply_backs_up_invalid_yaml(tmp_path):
 def test_apply_returns_false_without_espanso(tmp_path):
     with patch.object(espanso, "get_espanso_config_dir", return_value=None):
         assert espanso.apply_remote_desktop_config() is False
+
+
+def test_apply_workstation_config_preserves_clipboard(tmp_path):
+    cfg = _cfg_dir(tmp_path)
+    with patch.object(espanso, "restart_espanso", return_value=True):
+        assert espanso.apply_workstation_config(config_dir=cfg) is True
+
+    text = _default_yml(cfg).read_text(encoding="utf-8")
+    data = yaml.safe_load(text)
+    assert data["preserve_clipboard"] is True
+    assert data["restore_clipboard_delay"] == 700
+    assert espanso.WORKSTATION_MARKER in text
+
+
+def test_workstation_config_clears_host_keys_and_preserves_user_keys(tmp_path):
+    cfg = _cfg_dir(tmp_path)
+    _default_yml(cfg).write_text("toggle_key: ALT\n")
+    with patch.object(espanso, "restart_espanso", return_value=True):
+        espanso.apply_remote_desktop_config(config_dir=cfg)
+        espanso.apply_workstation_config(config_dir=cfg)
+
+    data = yaml.safe_load(_default_yml(cfg).read_text(encoding="utf-8"))
+    assert data["toggle_key"] == "ALT"
+    assert data["preserve_clipboard"] is True
+    assert data["restore_clipboard_delay"] == 700
+    assert "backend" not in data
+    assert "win32_exclude_orphan_events" not in data

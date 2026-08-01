@@ -116,5 +116,5 @@ def test_windows_installer_gates_remote_desktop_by_role():
     # Host mode is opt-in, not unconditional.
     assert "if ($RemoteDesktop)" in text
     assert "& $VenvCmd configure-remote-desktop" in text
-    assert "& $VenvCmd configure-remote-desktop --revert" in text
+    assert "& $VenvCmd configure-remote-desktop --local" in text
     assert text.index("record-install") < text.index("configure-remote-desktop")

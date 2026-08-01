@@ -1105,14 +1105,24 @@ def cmd_record_install(args) -> int:
 
 
 def cmd_configure_remote_desktop(args) -> int:
-    """Configure Espanso for reliable expansion over RustDesk/RDP.
+    """Configure Espanso's backend for a machine's role.
 
-    Switches Espanso to the clipboard backend (paste instead of per-key
-    injection) so triggers like ``:coms`` expand correctly inside remote-desktop
-    sessions. Invoked by ``install.ps1``; ``--revert`` removes the
-    espansr-managed keys again.
+    Default applies remote-desktop host mode (clipboard backend + orphan-event
+    capture) so triggers expand over RustDesk/RDP. ``--local`` instead tunes a
+    workstation to preserve the clipboard, and ``--revert`` removes the
+    espansr-managed remote-desktop keys. Invoked by ``install.ps1``.
     """
-    from espansr.integrations.espanso import apply_remote_desktop_config
+    from espansr.integrations.espanso import (
+        apply_remote_desktop_config,
+        apply_workstation_config,
+    )
+
+    if getattr(args, "local", False):
+        if apply_workstation_config():
+            print(ok("Applied Espanso workstation config (clipboard preserved)"))
+            return 0
+        print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
+        return 1
 
     revert = getattr(args, "revert", False)
     if apply_remote_desktop_config(revert=revert):
@@ -1550,6 +1560,12 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Remove the espansr-managed remote-desktop Espanso settings",
+    )
+    rd_parser.add_argument(
+        "--local",
+        action="store_true",
+        default=False,
+        help="Tune Espanso for a local workstation (preserve the clipboard)",
     )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"

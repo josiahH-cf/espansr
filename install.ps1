@@ -318,18 +318,18 @@ if ($RemoteDesktop) {
     }
 }
 elseif ($LocalOnly) {
-    Info "Ensuring Espanso local Inject backend (clipboard left untouched)..."
-    & $VenvCmd configure-remote-desktop --revert
+    Info "Tuning Espanso for local workstation use (clipboard preserved)..."
+    & $VenvCmd configure-remote-desktop --local
     if ($LASTEXITCODE -eq 0) {
-        Ok "Espanso local backend ensured (Inject; clipboard preserved)"
+        Ok "Espanso workstation config applied (clipboard preserved)"
     }
     else {
-        Warn "Could not revert to local Espanso backend (continuing)"
+        Warn "Could not apply local Espanso config (continuing)"
     }
 }
 else {
-    Info "Leaving Espanso backend unchanged (default Inject keeps the clipboard safe)."
-    Info "On machines you remote INTO, run: .\install.ps1 -RemoteDesktop  (or: espansr configure-remote-desktop)"
+    Info "Leaving Espanso backend unchanged."
+    Info "Workstation? run: .\install.ps1 -LocalOnly    Remote host? run: .\install.ps1 -RemoteDesktop"
 }
 
 # PATH setup

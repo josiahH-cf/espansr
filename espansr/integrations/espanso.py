@@ -901,10 +901,10 @@ def get_espanso_default_config_path(config_dir: Optional[Path] = None) -> Option
     return Path(config_dir) / "config" / "default.yml"
 
 
-def _write_espanso_default_config(path: Path, data: dict, *, with_marker: bool) -> None:
-    """Write ``default.yml`` from a mapping, optionally prefixing the marker."""
+def _write_espanso_default_config(path: Path, data: dict, *, marker: Optional[str] = None) -> None:
+    """Write ``default.yml`` from a mapping, optionally prefixing a marker line."""
     body = yaml.safe_dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
-    header = f"{REMOTE_DESKTOP_MARKER}\n" if with_marker else ""
+    header = f"{marker}\n" if marker else ""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(header + body, encoding="utf-8")
 
@@ -956,7 +956,7 @@ def apply_remote_desktop_config(
                 data.pop(key, None)
         try:
             if data:
-                _write_espanso_default_config(path, data, with_marker=False)
+                _write_espanso_default_config(path, data)
             else:
                 path.unlink()
         except OSError as exc:
@@ -979,9 +979,67 @@ def apply_remote_desktop_config(
 
     data.update(_REMOTE_DESKTOP_KEYS)
     try:
-        _write_espanso_default_config(path, data, with_marker=True)
+        _write_espanso_default_config(path, data, marker=REMOTE_DESKTOP_MARKER)
     except OSError as exc:
         logger.warning("Could not write remote-desktop config: %s", exc)
+        return False
+    if restart:
+        restart_espanso()
+    return True
+
+
+WORKSTATION_MARKER = (
+    "# espansr-workstation — managed by espansr; "
+    "reapply with: espansr configure-remote-desktop --local"
+)
+# espansr templates all exceed Espanso's clipboard_threshold, so every expansion
+# pastes via the clipboard. Keep the clipboard (preserve_clipboard) but restore
+# it late enough that the paste wins the race (default 300ms was too short).
+_WORKSTATION_KEYS: dict = {
+    "preserve_clipboard": True,
+    "restore_clipboard_delay": 700,
+}
+
+
+def apply_workstation_config(
+    config_dir: Optional[Path] = None,
+    *,
+    restart: bool = True,
+) -> bool:
+    """Tune Espanso so espansr expansions paste correctly while preserving the
+    user's clipboard, for a machine you sit at physically (not remote into).
+
+    Clears any espansr host-managed keys first so a former remote-desktop host
+    becomes a clean workstation. Preserves every key espansr does not own.
+    """
+    if config_dir is None:
+        config_dir = get_espanso_config_dir()
+    if config_dir is None:
+        logger.warning("Espanso config directory not found; skipping workstation config")
+        return False
+
+    path = get_espanso_default_config_path(config_dir)
+    if path is None:
+        return False
+
+    data: dict = {}
+    if path.exists():
+        try:
+            loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
+        except (OSError, yaml.YAMLError):
+            data = {}
+
+    for key, value in _REMOTE_DESKTOP_KEYS.items():
+        if data.get(key) == value:
+            data.pop(key, None)
+    data.update(_WORKSTATION_KEYS)
+
+    try:
+        _write_espanso_default_config(path, data, marker=WORKSTATION_MARKER)
+    except OSError as exc:
+        logger.warning("Could not write workstation config: %s", exc)
         return False
     if restart:
         restart_espanso()
