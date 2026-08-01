@@ -102,19 +102,18 @@ def test_windows_installer_runs_non_interactive_resolution_smoke():
     assert "Non-interactive: 'espansr' resolves via persistent user PATH" in text
 
 
-def test_windows_installer_gates_remote_desktop_by_role():
-    """install.ps1 no longer forces the clipboard backend on every machine.
+def test_windows_installer_configures_espanso_backend_by_role():
+    """install.ps1 configures the Espanso backend by machine role, automatically.
 
-    Host mode is opt-in via -RemoteDesktop, -LocalOnly reverts to the Inject
-    workstation backend, and neither flag leaves Espanso's backend untouched.
-    Still runs after record-install so a failure never blocks `espansr refresh`.
+    Default (--auto) applies the workstation tuning unless the machine is a
+    declared remote-desktop host; -RemoteDesktop and -LocalOnly force a role.
+    Runs after record-install so a failure never blocks `espansr refresh`.
     """
     text = _installer_text()
 
     assert "[switch]$RemoteDesktop" in text
     assert "[switch]$LocalOnly" in text
-    # Host mode is opt-in, not unconditional.
     assert "if ($RemoteDesktop)" in text
-    assert "& $VenvCmd configure-remote-desktop" in text
+    assert "& $VenvCmd configure-remote-desktop --auto" in text
     assert "& $VenvCmd configure-remote-desktop --local" in text
     assert text.index("record-install") < text.index("configure-remote-desktop")

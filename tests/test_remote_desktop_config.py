@@ -142,3 +142,13 @@ def test_workstation_config_clears_host_keys_and_preserves_user_keys(tmp_path):
     assert data["restore_clipboard_delay"] == 700
     assert "backend" not in data
     assert "win32_exclude_orphan_events" not in data
+
+
+def test_default_config_marker_detection(tmp_path):
+    cfg = _cfg_dir(tmp_path)
+    with patch.object(espanso, "restart_espanso", return_value=True):
+        assert espanso.default_config_has_remote_desktop_marker(config_dir=cfg) is False
+        espanso.apply_workstation_config(config_dir=cfg)
+        assert espanso.default_config_has_remote_desktop_marker(config_dir=cfg) is False
+        espanso.apply_remote_desktop_config(config_dir=cfg)
+        assert espanso.default_config_has_remote_desktop_marker(config_dir=cfg) is True

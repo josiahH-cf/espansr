@@ -1046,6 +1046,17 @@ def apply_workstation_config(
     return True
 
 
+def default_config_has_remote_desktop_marker(config_dir: Optional[Path] = None) -> bool:
+    """Return True if Espanso's default.yml carries the espansr host marker."""
+    path = get_espanso_default_config_path(config_dir)
+    if path is None or not path.exists():
+        return False
+    try:
+        return REMOTE_DESKTOP_MARKER in path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+
+
 class EspansoManager:
     """High-level manager for Espanso integration."""
 

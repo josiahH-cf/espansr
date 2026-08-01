@@ -1107,15 +1107,30 @@ def cmd_record_install(args) -> int:
 def cmd_configure_remote_desktop(args) -> int:
     """Configure Espanso's backend for a machine's role.
 
-    Default applies remote-desktop host mode (clipboard backend + orphan-event
-    capture) so triggers expand over RustDesk/RDP. ``--local`` instead tunes a
-    workstation to preserve the clipboard, and ``--revert`` removes the
-    espansr-managed remote-desktop keys. Invoked by ``install.ps1``.
+    ``--auto`` (used by the default install) applies the clipboard-preserving
+    workstation tuning unless the machine was declared a remote-desktop host,
+    which it then keeps. ``--local`` forces workstation mode; plain applies
+    remote-desktop host mode; ``--revert`` removes the espansr-managed keys.
+    Invoked by ``install.ps1``.
     """
     from espansr.integrations.espanso import (
         apply_remote_desktop_config,
         apply_workstation_config,
+        default_config_has_remote_desktop_marker,
     )
+
+    if getattr(args, "auto", False):
+        if default_config_has_remote_desktop_marker():
+            applied = apply_remote_desktop_config()
+            label = "remote-desktop host"
+        else:
+            applied = apply_workstation_config()
+            label = "workstation"
+        if applied:
+            print(ok(f"Applied Espanso {label} config"))
+            return 0
+        print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
+        return 1
 
     if getattr(args, "local", False):
         if apply_workstation_config():
@@ -1566,6 +1581,12 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         default=False,
         help="Tune Espanso for a local workstation (preserve the clipboard)",
+    )
+    rd_parser.add_argument(
+        "--auto",
+        action="store_true",
+        default=False,
+        help="Apply workstation tuning, or keep host mode if already declared",
     )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"

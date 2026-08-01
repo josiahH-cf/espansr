@@ -303,10 +303,10 @@ else {
     Warn "Espanso binary not found - startup registration skipped"
 }
 
-# Remote-desktop backend is role-based, not forced. Only machines you remote
-# INTO need the clipboard backend; forcing it on a workstation hijacks the
-# clipboard on every expansion. Opt-in + sticky (default leaves the backend
-# as-is, so a configured host survives reinstalls and `espansr refresh`).
+# Espanso backend is role-based and configured automatically. Default (--auto)
+# applies the clipboard-preserving workstation tuning, unless this machine was
+# declared a remote-desktop host (-RemoteDesktop), which stays sticky across
+# reinstalls and `espansr refresh`. -LocalOnly forces workstation mode.
 if ($RemoteDesktop) {
     Info "Configuring Espanso for remote-desktop HOST mode (clipboard backend)..."
     & $VenvCmd configure-remote-desktop
@@ -328,8 +328,14 @@ elseif ($LocalOnly) {
     }
 }
 else {
-    Info "Leaving Espanso backend unchanged."
-    Info "Workstation? run: .\install.ps1 -LocalOnly    Remote host? run: .\install.ps1 -RemoteDesktop"
+    Info "Configuring Espanso backend (auto: workstation unless a remote-desktop host)..."
+    & $VenvCmd configure-remote-desktop --auto
+    if ($LASTEXITCODE -eq 0) {
+        Ok "Espanso backend configured"
+    }
+    else {
+        Warn "Could not configure Espanso backend (continuing)"
+    }
 }
 
 # PATH setup
