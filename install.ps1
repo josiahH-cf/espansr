@@ -7,6 +7,11 @@
 
 #Requires -Version 5.1
 
+param(
+    [switch]$RemoteDesktop,
+    [switch]$LocalOnly
+)
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
@@ -298,20 +303,33 @@ else {
     Warn "Espanso binary not found - startup registration skipped"
 }
 
-# Remote-desktop (RustDesk/RDP) reliability
-#
-# Over RustDesk/RDP, Espanso's simulated-keystroke injection garbles keys so
-# triggers like :coms fail to expand. Switch Espanso to the clipboard backend
-# (paste instead of per-key injection). This is the Windows analog of the
-# Linux/Wayland XWayland fix in install.sh. Non-fatal: a missing or not-yet-run
-# Espanso simply skips this, and `espansr configure-remote-desktop` can be rerun.
-Info "Configuring Espanso for remote desktop (RustDesk/RDP)..."
-& $VenvCmd configure-remote-desktop
-if ($LASTEXITCODE -eq 0) {
-    Ok "Espanso remote-desktop config applied"
+# Remote-desktop backend is role-based, not forced. Only machines you remote
+# INTO need the clipboard backend; forcing it on a workstation hijacks the
+# clipboard on every expansion. Opt-in + sticky (default leaves the backend
+# as-is, so a configured host survives reinstalls and `espansr refresh`).
+if ($RemoteDesktop) {
+    Info "Configuring Espanso for remote-desktop HOST mode (clipboard backend)..."
+    & $VenvCmd configure-remote-desktop
+    if ($LASTEXITCODE -eq 0) {
+        Ok "Espanso remote-desktop host config applied"
+    }
+    else {
+        Warn "Could not apply remote-desktop Espanso config (continuing)"
+    }
+}
+elseif ($LocalOnly) {
+    Info "Ensuring Espanso local Inject backend (clipboard left untouched)..."
+    & $VenvCmd configure-remote-desktop --revert
+    if ($LASTEXITCODE -eq 0) {
+        Ok "Espanso local backend ensured (Inject; clipboard preserved)"
+    }
+    else {
+        Warn "Could not revert to local Espanso backend (continuing)"
+    }
 }
 else {
-    Warn "Could not apply remote-desktop Espanso config (continuing)"
+    Info "Leaving Espanso backend unchanged (default Inject keeps the clipboard safe)."
+    Info "On machines you remote INTO, run: .\install.ps1 -RemoteDesktop  (or: espansr configure-remote-desktop)"
 }
 
 # PATH setup
