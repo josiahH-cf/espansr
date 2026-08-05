@@ -140,3 +140,12 @@ def test_feature_prompt_registered_in_all_surfaces():
     help_lines = render_quick_help().splitlines()
     assert any(line.strip().startswith(":feature ") for line in help_lines)
     assert "`:feature`" in render_docs_note_list()
+
+
+def test_unblock_prompt_registered_in_all_surfaces():
+    """The new :unblock prompt appears once in discovery, quick help, and the docs list."""
+    listed = prompt_note_triggers()
+    assert listed.count(":unblock") == 1
+    help_lines = render_quick_help().splitlines()
+    assert any(line.strip().startswith(":unblock ") for line in help_lines)
+    assert "`:unblock`" in render_docs_note_list()
