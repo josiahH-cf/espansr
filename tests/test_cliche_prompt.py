@@ -1,8 +1,12 @@
-"""Contract tests for the standalone :humanize prose-naturalization prompt.
+"""Contract tests for the standalone :cliche prose-naturalization prompt.
 
-These tests are self-contained: they read the checked-in ``templates/humanize.json``
+These tests are self-contained: they read the checked-in ``templates/cliche.json``
 and compare it against an in-repo copy of the authoritative seed-pattern list, so
 they never depend on an uploaded checklist being mounted in CI.
+
+The command shipped first as ``:humanize`` and was renamed to ``:cliche``; the
+bundled file is ``cliche.json`` and reconciliation migrates a previously
+installed ``humanize.json`` live copy to it.
 """
 
 import json
@@ -29,7 +33,7 @@ from espansr.integrations.validate import validate_template
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = ROOT / "templates"
-HUMANIZE_PATH = TEMPLATES_DIR / "humanize.json"
+CLICHE_PATH = TEMPLATES_DIR / "cliche.json"
 HELP_PATH = TEMPLATES_DIR / "espansr_help.json"
 DOCS_PATH = ROOT / "docs" / "TEMPLATES.md"
 
@@ -135,7 +139,7 @@ SEED_LABELS = (
 
 
 def _load() -> dict:
-    return json.loads(HUMANIZE_PATH.read_text(encoding="utf-8"))
+    return json.loads(CLICHE_PATH.read_text(encoding="utf-8"))
 
 
 def _content() -> str:
@@ -145,17 +149,17 @@ def _content() -> str:
 # ── Template identity ────────────────────────────────────────────────────────
 
 
-def test_humanize_template_exists_and_parses():
+def test_cliche_template_exists_and_parses():
     """The bundled template file exists and is a JSON object."""
-    assert HUMANIZE_PATH.exists()
+    assert CLICHE_PATH.exists()
     assert isinstance(_load(), dict)
 
 
-def test_humanize_metadata_matches_spec():
-    """Metadata exactly matches the normative template."""
+def test_cliche_metadata_matches_spec():
+    """Metadata matches the normative template with the :cliche trigger."""
     data = _load()
     assert data["name"] == "Humanize Text"
-    assert data["trigger"] == ":humanize"
+    assert data["trigger"] == ":cliche"
     assert data["category"] == "communication"
     assert data["stage"] == "style-normalization"
     assert data["next_triggers"] == []
@@ -163,19 +167,19 @@ def test_humanize_metadata_matches_spec():
     assert data.get("variables", []) == []
 
 
-def test_humanize_content_ends_with_inline_marker():
+def test_cliche_content_ends_with_inline_marker():
     """The prompt ends exactly with the shared inline-context footer."""
     assert _content().endswith(INLINE_CONTEXT_FOOTER)
 
 
-def test_humanize_validates_through_product_path():
+def test_cliche_validates_through_product_path():
     """The template loads and validates with no warnings and no variables."""
     template = Template.from_dict(_load())
     assert validate_template(template) == []
     assert template.variables == []
 
 
-def test_humanize_has_no_template_variables():
+def test_cliche_has_no_template_variables():
     """The prompt uses the inline marker instead of popup variables."""
     assert "{{" not in _content()
 
@@ -183,7 +187,7 @@ def test_humanize_has_no_template_variables():
 # ── Prompt contract invariants ───────────────────────────────────────────────
 
 
-def test_humanize_prompt_contract_invariants():
+def test_cliche_prompt_contract_invariants():
     """Maintainable invariants that lock the behavioral contract in place."""
     content = _content()
 
@@ -254,7 +258,7 @@ def test_humanize_prompt_contract_invariants():
     )
 
 
-def test_humanize_output_contract_forbids_commentary():
+def test_cliche_output_contract_forbids_commentary():
     """The output contract forbids prefaces, change logs, scores, and offers."""
     content = _content()
     for forbidden in (
@@ -323,39 +327,48 @@ def test_related_pattern_section_present_beyond_seed_list():
 # ── Discovery and runtime catalog ────────────────────────────────────────────
 
 
-def test_humanize_registered_once_in_canonical_discovery():
+def test_cliche_registered_once_in_canonical_discovery():
     """The trigger is registered exactly once in the discovery source."""
-    assert prompt_note_triggers().count(":humanize") == 1
+    assert prompt_note_triggers().count(":cliche") == 1
 
 
-def test_humanize_discovery_row_uses_required_description():
+def test_cliche_discovery_row_uses_required_description():
     """The quick help row carries the exact required discovery wording."""
-    row = "  :humanize \u2014 remove AI clichés and restore natural prose"
-    assert row in render_quick_help()
+    help_lines = render_quick_help().splitlines()
+    rows = [line for line in help_lines if line.strip().startswith(":cliche ")]
+    assert len(rows) == 1
+    assert "\u2014 remove AI clichés and restore natural prose" in rows[0]
 
 
-def test_humanize_present_once_in_generated_help_file():
+def test_cliche_present_once_in_generated_help_file():
     """Generated :espansr help lists the trigger exactly once."""
     content = json.loads(HELP_PATH.read_text(encoding="utf-8"))["content"]
-    rows = [line for line in content.splitlines() if line.strip().startswith(":humanize ")]
+    rows = [line for line in content.splitlines() if line.strip().startswith(":cliche ")]
     assert len(rows) == 1
 
 
-def test_humanize_present_in_docs_note_list():
+def test_cliche_present_in_docs_note_list():
     """The trigger appears in the generated docs prompt-note list."""
-    assert "`:humanize`" in render_docs_note_list()
-    assert "`:humanize`" in DOCS_PATH.read_text(encoding="utf-8")
+    assert "`:cliche`" in render_docs_note_list()
+    assert "`:cliche`" in DOCS_PATH.read_text(encoding="utf-8")
+
+
+def test_humanize_trigger_fully_retired_from_discovery():
+    """The old :humanize trigger no longer appears in any discovery surface."""
+    assert ":humanize" not in prompt_note_triggers()
+    assert ":humanize" not in render_quick_help()
+    assert ":humanize" not in render_docs_note_list()
 
 
 def test_revise_and_sanitize_remain_registered():
-    """Adding :humanize leaves the neighboring prompts registered."""
+    """Renaming to :cliche leaves the neighboring prompts registered."""
     listed = prompt_note_triggers()
     assert ":revise" in listed
     assert ":sanitize" in listed
 
 
-def test_humanize_surfaced_once_in_runtime_catalog(tmp_path):
-    """The runtime :coms catalog surfaces :humanize exactly once."""
+def test_cliche_surfaced_once_in_runtime_catalog(tmp_path):
+    """The runtime :coms catalog surfaces :cliche exactly once."""
     live = tmp_path / "templates"
     live.mkdir()
     for path in TEMPLATES_DIR.glob("*.json"):
@@ -365,53 +378,54 @@ def test_humanize_surfaced_once_in_runtime_catalog(tmp_path):
     entries = build_command_catalog(template_manager=manager, config=Config())
     triggers = [entry.trigger for entry in entries]
 
-    assert triggers.count(":humanize") == 1
+    assert triggers.count(":cliche") == 1
+    assert triggers.count(":humanize") == 0
     assert triggers.count(":revise") == 1
     assert triggers.count(":sanitize") == 1
 
-    humanize = next(entry for entry in entries if entry.trigger == ":humanize")
-    assert humanize.category == "communication"
-    assert humanize.stage == "style-normalization"
+    cliche = next(entry for entry in entries if entry.trigger == ":cliche")
+    assert cliche.category == "communication"
+    assert cliche.stage == "style-normalization"
 
 
 # ── Bundled reconciliation ───────────────────────────────────────────────────
 
 
-def test_missing_live_humanize_is_copied(tmp_path):
+def test_missing_live_cliche_is_copied(tmp_path):
     """A missing live copy is copied through normal bundled reconciliation."""
     bundled = tmp_path / "bundled"
     local = tmp_path / "local"
     bundled.mkdir()
     local.mkdir()
-    shutil.copy2(HUMANIZE_PATH, bundled / "humanize.json")
+    shutil.copy2(CLICHE_PATH, bundled / "cliche.json")
 
     report = build_bundled_template_report(templates_dir=local, bundled_dir=bundled)
     statuses = {entry.filename: entry.status for entry in report.entries}
-    assert statuses["humanize.json"] == "missing_local"
+    assert statuses["cliche.json"] == "missing_local"
 
     manager = TemplateManager(templates_dir=local)
     result = apply_bundled_template_report(report, manager=manager)
     assert result.copied >= 1
 
-    copied = json.loads((local / "humanize.json").read_text(encoding="utf-8"))
-    assert copied["trigger"] == ":humanize"
+    copied = json.loads((local / "cliche.json").read_text(encoding="utf-8"))
+    assert copied["trigger"] == ":cliche"
 
 
-def test_changed_live_humanize_is_backed_up_before_update(tmp_path):
+def test_changed_live_cliche_is_backed_up_before_update(tmp_path):
     """A changed bundled-matching live copy is backed up before it is updated."""
     bundled = tmp_path / "bundled"
     local = tmp_path / "local"
     bundled.mkdir()
     local.mkdir()
-    shutil.copy2(HUMANIZE_PATH, bundled / "humanize.json")
+    shutil.copy2(CLICHE_PATH, bundled / "cliche.json")
 
     variant = _load()
-    variant["content"] = "old local humanize prompt"
-    (local / "humanize.json").write_text(json.dumps(variant), encoding="utf-8")
+    variant["content"] = "old local cliche prompt"
+    (local / "cliche.json").write_text(json.dumps(variant), encoding="utf-8")
 
     report = build_bundled_template_report(templates_dir=local, bundled_dir=bundled)
     statuses = {entry.filename: entry.status for entry in report.entries}
-    assert statuses["humanize.json"] == "changed_local"
+    assert statuses["cliche.json"] == "changed_local"
 
     manager = TemplateManager(templates_dir=local)
     result = apply_bundled_template_report(report, manager=manager)
@@ -420,7 +434,7 @@ def test_changed_live_humanize_is_backed_up_before_update(tmp_path):
     backups = list((local / "_versions").rglob("v*.json"))
     assert backups, "expected a backup version before the update"
 
-    updated = json.loads((local / "humanize.json").read_text(encoding="utf-8"))
+    updated = json.loads((local / "cliche.json").read_text(encoding="utf-8"))
     assert updated["content"] == _content()
 
 
@@ -430,7 +444,7 @@ def test_reconciliation_preserves_unrelated_local_template(tmp_path):
     local = tmp_path / "local"
     bundled.mkdir()
     local.mkdir()
-    shutil.copy2(HUMANIZE_PATH, bundled / "humanize.json")
+    shutil.copy2(CLICHE_PATH, bundled / "cliche.json")
 
     mine = {"name": "Mine", "content": "keep me", "trigger": ":mine"}
     (local / "mine.json").write_text(json.dumps(mine), encoding="utf-8")
@@ -443,23 +457,52 @@ def test_reconciliation_preserves_unrelated_local_template(tmp_path):
     assert json.loads((local / "mine.json").read_text(encoding="utf-8")) == mine
 
 
-def test_humanize_has_no_rename_or_retire_entry():
-    """No rename or retirement entry is added without a real predecessor."""
-    assert "humanize.json" not in _RENAMED_BUNDLED_TEMPLATE_FILES
-    assert "humanize.json" not in _RETIRED_BUNDLED_TEMPLATE_FILES
-    for old_filenames in _RENAMED_BUNDLED_TEMPLATE_FILES.values():
-        assert "humanize.json" not in old_filenames
+def test_live_humanize_copy_migrates_to_cliche(tmp_path):
+    """A previously installed :humanize copy migrates to cliche.json with a backup."""
+    bundled = tmp_path / "bundled"
+    local = tmp_path / "local"
+    bundled.mkdir()
+    local.mkdir()
+    shutil.copy2(CLICHE_PATH, bundled / "cliche.json")
+
+    # Seed the old live humanize.json copy carrying the previous :humanize trigger.
+    old = _load()
+    old["trigger"] = ":humanize"
+    (local / "humanize.json").write_text(json.dumps(old), encoding="utf-8")
+
+    report = build_bundled_template_report(templates_dir=local, bundled_dir=bundled)
+    renamed = [entry for entry in report.entries if entry.status == "renamed_local"]
+    assert len(renamed) == 1
+    assert renamed[0].filename == "cliche.json"
+
+    manager = TemplateManager(templates_dir=local)
+    result = apply_bundled_template_report(report, manager=manager)
+    assert result.migrated >= 1
+
+    assert not (local / "humanize.json").exists()
+    migrated = json.loads((local / "cliche.json").read_text(encoding="utf-8"))
+    assert migrated["trigger"] == ":cliche"
+
+    backups = list((local / "_versions").rglob("v*.json"))
+    assert backups, "expected a backup of the old humanize.json before migration"
 
 
-def test_humanize_does_not_alter_revise_or_sanitize():
-    """Installing :humanize does not touch the revise or sanitize prompts."""
+def test_cliche_migrates_from_humanize_predecessor():
+    """The rename map records humanize.json as the sole predecessor of cliche.json."""
+    assert _RENAMED_BUNDLED_TEMPLATE_FILES["cliche.json"] == ("humanize.json",)
+    assert "cliche.json" not in _RETIRED_BUNDLED_TEMPLATE_FILES
+    assert not (TEMPLATES_DIR / "humanize.json").exists()
+
+
+def test_cliche_does_not_alter_revise_or_sanitize():
+    """Renaming to :cliche does not touch the revise or sanitize prompts."""
     revise = json.loads((TEMPLATES_DIR / "revise.json").read_text(encoding="utf-8"))
     sanitize = json.loads((TEMPLATES_DIR / "sanitize.json").read_text(encoding="utf-8"))
 
     assert revise["trigger"] == ":revise"
     assert sanitize["trigger"] == ":sanitize"
-    assert ":humanize" not in revise["content"]
-    assert ":humanize" not in sanitize["content"]
-    assert ":humanize" not in revise.get("replaces", [])
-    assert ":humanize" not in sanitize.get("replaces", [])
+    assert ":cliche" not in revise["content"]
+    assert ":cliche" not in sanitize["content"]
+    assert ":cliche" not in revise.get("replaces", [])
+    assert ":cliche" not in sanitize.get("replaces", [])
     assert _load()["replaces"] == []

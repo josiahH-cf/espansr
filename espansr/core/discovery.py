@@ -162,7 +162,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":defaults", "set default working style"),
             (":listen", "convert research to listenable article"),
             (":revise", "clean up messaging while preserving meaning and direction"),
-            (":humanize", "remove AI clichés and restore natural prose"),
+            (":cliche", "remove AI clichés and restore natural prose"),
         ),
     ),
     HelpSection(

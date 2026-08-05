@@ -683,6 +683,7 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     "docs_qa.json": ("qa_docs.json",),
     "telegram.json": ("pocket_note.json",),
     "work_merge.json": ("work_merge_safe.json",),
+    "cliche.json": ("humanize.json",),
 }
 
 # Bundled starter templates that were removed from the product. A copy seeded

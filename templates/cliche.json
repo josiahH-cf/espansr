@@ -1,7 +1,7 @@
 {
   "name": "Humanize Text",
   "description": "Remove formulaic AI clichés and rewrite text in a natural, specific voice without changing its meaning.",
-  "trigger": ":humanize",
+  "trigger": ":cliche",
   "category": "communication",
   "stage": "style-normalization",
   "next_triggers": [],
