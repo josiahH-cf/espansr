@@ -65,6 +65,12 @@ Use `:verify` for fresh-context verification, repair, and affected documentation
 alignment. Use `:docs-qa` when the requested work is limited to documentation
 alignment.
 
+Use `:goal` to interpret the current context or optional notes into one tightly
+bounded, measurable or verifiable goal. It restates the interpreted goal, runs a
+context-grounded gap and misinterpretation analysis, asks recommendation-backed
+clarifications in a single batch when needed, and returns a copy-ready goal
+contract without implementing the goal or writing a plan.
+
 Git helper templates are self-invoking snippets split by shell and safety
 level: `:git-yolo-sh` and `:git-yolo-ps` commit all current changes and push
 the current branch, retrying with `--force` if a normal push is rejected;

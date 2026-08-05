@@ -106,7 +106,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         "Project and maintenance prompts",
         13,
         (
-            (":goal", "clarify a vague goal into milestones"),
+            (":goal", "interpret, gap-check, and refine context into a measurable goal"),
             (
                 ":troubleshoot",
                 "debug with context checks, research, planning, fixing, and verification",

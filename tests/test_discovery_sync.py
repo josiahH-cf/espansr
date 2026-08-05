@@ -151,3 +151,12 @@ def test_unblock_prompt_registered_in_all_surfaces():
     help_lines = render_quick_help().splitlines()
     assert any(line.strip().startswith(":unblock ") for line in help_lines)
     assert "`:unblock`" in render_docs_note_list()
+
+
+def test_goal_prompt_registered_in_all_surfaces():
+    """The reworked :goal prompt appears once in discovery, quick help, and the docs list."""
+    listed = prompt_note_triggers()
+    assert listed.count(":goal") == 1
+    help_lines = render_quick_help().splitlines()
+    assert any(line.strip().startswith(":goal ") for line in help_lines)
+    assert "`:goal`" in render_docs_note_list()
