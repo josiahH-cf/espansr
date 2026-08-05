@@ -798,6 +798,13 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [],
             [],
         ),
+        "unblock.json": (
+            ":unblock",
+            "workflow",
+            "unblocking",
+            [],
+            [],
+        ),
         "visual_workflow.json": (
             ":visual",
             "explanation",
@@ -916,6 +923,7 @@ def test_bundled_quick_help_uses_current_triggers():
         ":goal",
         ":project-init-llm",
         ":feature",
+        ":unblock",
         ":docs-qa",
         ":work-merge-safe",
         ":git-yolo-sh",
@@ -1037,6 +1045,61 @@ def test_bundled_feature_template_contract():
         ":agent-scaffold",
         ":feedback-loop",
     ]:
+        assert forbidden not in content, forbidden
+
+
+def test_bundled_unblock_template_contract():
+    """The :unblock prompt is a standalone bulk-input blocker-resolution workflow."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "unblock.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Unblock"
+    assert data["trigger"] == ":unblock"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "unblocking"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+    # Works from blank context and inspects/resolves before escalating.
+    assert "Additional notes after the final marker are optional" in content
+    assert "Inspect before asking" in content
+    assert "Resolve Everything the Agent Can" in content
+
+    # Consolidated bulk packet with stable IDs and flexible reply formats.
+    for phrase in [
+        "B01",
+        "UNBLOCK PACKET",
+        "ALREADY CLEARED",
+        "DECISIONS AND INFORMATION NEEDED",
+        "ACTIONS FOR YOU",
+        "EXTERNAL OR WAITING ITEMS",
+        "REPLY FORMAT",
+        "accept all recommendations",
+        "stream-of-consciousness",
+        "A1 done",
+        "reduced delta packet",
+        "Prevent Repeated Blocking",
+        "UNBLOCKED",
+        "PARTIALLY UNBLOCKED",
+    ]:
+        assert phrase in content, phrase
+
+    # accept-all is decision-scoped, not blanket authorization.
+    assert (
+        "`accept all recommendations` applies only to the explicitly recommended decision options"
+        in content
+    )
+    # Proof required before a blocker is cleared, plus safety handling.
+    assert "Do not claim a blocker is cleared until" in content
+    assert "Never request that the user paste passwords" in content
+    assert "untrusted data" in content
+    assert "```<detected-language>" in content
+
+    # Standalone: no feature-loop, router, state file, or platform coupling.
+    for forbidden in ["features/", ":feature", ":feat-plan", "GitHub"]:
         assert forbidden not in content, forbidden
 
 

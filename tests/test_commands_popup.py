@@ -56,7 +56,7 @@ def test_build_command_catalog_includes_sync_system_entry(tmp_path):
 
 
 def test_build_command_catalog_surfaces_feature_from_bundled_templates(tmp_path):
-    """AC-3: the runtime :coms catalog surfaces :feature and omits retired loop triggers."""
+    """AC-3: the runtime :coms catalog surfaces :feature and :unblock and omits retired triggers."""
     import shutil
     from pathlib import Path
 
@@ -73,6 +73,7 @@ def test_build_command_catalog_surfaces_feature_from_bundled_templates(tmp_path)
 
     triggers = [entry.trigger for entry in entries]
     assert triggers.count(":feature") == 1
+    assert triggers.count(":unblock") == 1
     for retired in (":feat", ":feat-plan", ":feat-runner", ":feedback-loop", ":agent-scaffold"):
         assert retired not in triggers
 
