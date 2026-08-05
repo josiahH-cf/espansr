@@ -703,6 +703,8 @@ _RETIRED_BUNDLED_TEMPLATE_FILES = {
     "rebase.json": ":rebase",
     "save.json": ":save",
     "pocket_system.json": ":pocket-system",
+    "distill.json": ":distill",
+    "summarize.json": ":summarize",
     "feature_new.json": ":feature-new",
     "feature_scope.json": ":feature-scope",
     "feature_next.json": ":feature-next",

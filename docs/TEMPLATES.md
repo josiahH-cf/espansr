@@ -33,7 +33,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:defaults`, `:listen`, `:revise`
 - Security helpers: `:tenable-scans`
@@ -48,9 +48,12 @@ contextualize, scope, clarify only material decisions, implement, and
 adversarially verify real behavior.
 
 The legacy starter trigger `:project-init` maps to `:project-init-llm`.
-Use `:explain` for evidence-bound plain-English explanation, `:reality` for a
-compact statement of what the context created or would create, and `:gaps` for
-critical gap or first-principles review.
+Use `:explain` as the single command for current-context distillation,
+source-grounded summarization, and plain-English explanation. It produces a
+faithful one-page result of three paragraphs, bullets, and an occasional inline
+visual, follows optional focus and voicing direction, and stays read-only. Use
+`:reality` for a compact statement of what the context created or would create,
+and `:gaps` for critical gap or first-principles review.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.

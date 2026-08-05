@@ -137,7 +137,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         17,
         (
             (":q&a", "start evidence-bound Q&A on the current context"),
-            (":explain", "explain context in plain, evidence-bound terms"),
+            (":explain", "explain context or sources in a faithful one-page summary"),
             (":visual", "build workflow diagrams or visual explanations"),
             (":reality", "state what the context created or would create in reality"),
             (":gaps", "critical review modes for gaps and principles"),
@@ -145,9 +145,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":context", "condense drifted prompt context"),
             (":template-builder", "draft command templates"),
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
-            (":distill", "distill long context into a 3-paragraph objective synopsis"),
             (":research", "research a topic with strong evidence handling and synthesis"),
-            (":summarize", "summarize one source with grounded facts and core insights"),
             (":audit", "build an interactive HTML audit/decision packet to resolve findings"),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),

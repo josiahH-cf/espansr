@@ -97,6 +97,8 @@ _REMOVED_TRIGGERS = (
     ":rebase",
     ":save",
     ":pocket-system",
+    ":distill",
+    ":summarize",
 )
 
 
