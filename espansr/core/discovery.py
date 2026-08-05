@@ -155,6 +155,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":research", "research a topic with strong evidence handling and synthesis"),
             (":summarize", "summarize one source with grounded facts and core insights"),
             (":audit", "build an interactive HTML audit/decision packet to resolve findings"),
+            (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),
     ),
     HelpSection(
