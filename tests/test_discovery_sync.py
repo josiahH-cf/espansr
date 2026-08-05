@@ -120,7 +120,7 @@ def test_preserved_prompts_remain_registered():
     """Preserved merge/rebase helpers and neighbors stay in discovery after the prune."""
     listed = set(prompt_note_triggers())
     for trigger in (
-        ":work-merge-safe",
+        ":work-merge",
         ":git-rebase-sh",
         ":git-rebase-ps",
         ":git-yolo-sh",
