@@ -77,6 +77,8 @@ def test_build_command_catalog_surfaces_feature_from_bundled_templates(tmp_path)
     assert triggers.count(":explain") == 1
     assert triggers.count(":goal") == 1
     assert triggers.count(":cliche") == 1
+    assert triggers.count(":tddh") == 1
+    assert triggers.count(":defaults") == 0
     for retired in (
         ":feat",
         ":feat-plan",

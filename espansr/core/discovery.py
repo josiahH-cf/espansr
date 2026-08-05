@@ -159,7 +159,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         "Utility prompts",
         9,
         (
-            (":defaults", "set default working style"),
+            (":tddh", "think deeply, verify facts, and never make things up"),
             (":listen", "convert research to listenable article"),
             (":revise", "clean up messaging while preserving meaning and direction"),
             (":cliche", "remove AI clichés and restore natural prose"),

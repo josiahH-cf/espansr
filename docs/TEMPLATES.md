@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
-- Utility prompts: `:defaults`, `:listen`, `:revise`, `:cliche`
+- Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - Security helpers: `:tenable-scans`
 <!-- END generated note list -->
 
@@ -69,6 +69,12 @@ Use `:cliche` on supplied text, a referenced source, or the most recent
 eligible prose already in view when its marker is blank. It preserves meaning
 and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
+
+Append `:tddh` to almost any request as a compact reliability instruction. It
+asks the model to reason carefully, stay grounded in the available evidence,
+keep facts separate from inferences and unknowns, state uncertainty plainly,
+and never invent information. Add optional response instructions below its final
+`IGNORE IF BLANK` marker. It imposes no Markdown or other fixed response format.
 
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
