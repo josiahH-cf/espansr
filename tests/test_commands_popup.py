@@ -74,7 +74,16 @@ def test_build_command_catalog_surfaces_feature_from_bundled_templates(tmp_path)
     triggers = [entry.trigger for entry in entries]
     assert triggers.count(":feature") == 1
     assert triggers.count(":unblock") == 1
-    for retired in (":feat", ":feat-plan", ":feat-runner", ":feedback-loop", ":agent-scaffold"):
+    assert triggers.count(":explain") == 1
+    for retired in (
+        ":feat",
+        ":feat-plan",
+        ":feat-runner",
+        ":feedback-loop",
+        ":agent-scaffold",
+        ":distill",
+        ":summarize",
+    ):
         assert retired not in triggers
 
 

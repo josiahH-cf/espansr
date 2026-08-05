@@ -823,9 +823,9 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "explain_context_comprehensively.json": (
             ":explain",
             "explanation",
-            "context-summary",
+            "one-page-explanation",
             [],
-            [":plain", ":dumb", ":simplify", ":explain-1"],
+            [":plain", ":dumb", ":simplify", ":explain-1", ":distill", ":summarize"],
         ),
         "context.json": (":context", "prompting", "context-reset", [], []),
         "template_builder.json": (
@@ -888,6 +888,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "pocket_system.json",
         "agent_scaffold.json",
         "work_merge_safe.json",
+        "distill.json",
+        "summarize.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -1148,6 +1150,64 @@ def test_bundled_unblock_template_contract():
     # Standalone: no feature-loop, router, state file, or platform coupling.
     for forbidden in ["features/", ":feature", ":feat-plan", "GitHub"]:
         assert forbidden not in content, forbidden
+
+
+def test_bundled_explain_template_contract():
+    """The unified :explain prompt is a standalone faithful one-page explainer."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads(
+        (repo_root / "templates" / "explain_context_comprehensively.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    content = data["content"]
+
+    assert data["name"] == "Explain"
+    assert data["trigger"] == ":explain"
+    assert data["category"] == "explanation"
+    assert data["stage"] == "one-page-explanation"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == [
+        ":plain",
+        ":dumb",
+        ":simplify",
+        ":explain-1",
+        ":distill",
+        ":summarize",
+    ]
+    assert data.get("variables", []) == []
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+    for phrase in [
+        "If the marker is blank, explain the most recent coherent subject already in view",
+        "focus, audience, emphasis, voice, or visual preference",
+        "Follow the newest explicit focus",
+        "inspect the actual material first when accessible",
+        "Do not summarize from a filename, title, snippet, memory, or another summary",
+        "Use lawful access only",
+        "Do not use pirated or shadow-library copies",
+        "Never claim to have read, watched, or retrieved material that was not actually accessed",
+        "strongest lawful substitute",
+        "explain the result conditionally",
+        "preserve their separate claims, terms, and positions",
+        "Attribute source-specific claims",
+        "Never invent claims, quotations, examples",
+        "Do not fact-check, critique, grade, debate",
+        "Do not modify files, execute the material, or change external state",
+        "Write exactly three short, cohesive paragraphs with no headings",
+        "Follow the paragraphs with three to seven bullets",
+        "add at most one compact inline visual after the bullets",
+        "Never invent nodes, relationships, categories, or numbers",
+        "no more than 700 words",
+        "### Additional context needed",
+        "Use no more than three bullets",
+        "ask one brief clarification question",
+    ]:
+        assert phrase in content, phrase
+
+    # Standalone and read-only: does not route to or depend on retired or sibling prompts.
+    for other in (":distill", ":summarize", ":reality", ":visual", ":research"):
+        assert other not in content, other
 
 
 def test_bundled_sanitize_template_contract():
@@ -1527,6 +1587,8 @@ _REMOVED_BUNDLED_FILES = (
     "rebase.json",
     "save.json",
     "pocket_system.json",
+    "distill.json",
+    "summarize.json",
 )
 
 
@@ -1619,6 +1681,83 @@ def test_sync_bundled_preserves_user_template_reusing_retired_filename(tmp_path)
     assert exit_code == 0
     assert json.loads((templates_dir / "merge.json").read_text(encoding="utf-8")) == user_merge
     assert not (templates_dir / "_versions" / "my_merge").exists()
+
+
+def test_sync_bundled_retires_distill_and_summarize(tmp_path, capsys):
+    """Consolidated :distill and :summarize live copies are backed up and retired."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    explain_bundled = {
+        "name": "Explain",
+        "content": "unified explain prompt",
+        "trigger": ":explain",
+    }
+    _write_json(bundled_dir / "explain_context_comprehensively.json", explain_bundled)
+    _write_json(
+        templates_dir / "distill.json",
+        {"name": "Context Distiller", "content": "old distill", "trigger": ":distill"},
+    )
+    _write_json(
+        templates_dir / "summarize.json",
+        {"name": "Source Summarizer", "content": "old summarize", "trigger": ":summarize"},
+    )
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "retired" in output.lower()
+    assert not (templates_dir / "distill.json").exists()
+    assert not (templates_dir / "summarize.json").exists()
+    assert (templates_dir / "explain_context_comprehensively.json").exists()
+    explain_triggers = [
+        p
+        for p in templates_dir.glob("*.json")
+        if json.loads(p.read_text(encoding="utf-8")).get("trigger") == ":explain"
+    ]
+    assert len(explain_triggers) == 1
+    assert (templates_dir / "_versions" / "context_distiller" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "source_summarizer" / "v1.json").exists()
+
+
+def test_sync_bundled_preserves_user_distill_and_summarize(tmp_path):
+    """User-created distill/summarize files keeping their own triggers are preserved."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "explain_context_comprehensively.json",
+        {"name": "Explain", "content": "unified explain prompt", "trigger": ":explain"},
+    )
+    user_distill = {"name": "My Distiller", "content": "mine", "trigger": ":my-distill"}
+    user_summarize = {"name": "My Summary", "content": "mine", "trigger": ":my-summary"}
+    _write_json(templates_dir / "distill.json", user_distill)
+    _write_json(templates_dir / "summarize.json", user_summarize)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    assert exit_code == 0
+    assert json.loads((templates_dir / "distill.json").read_text(encoding="utf-8")) == user_distill
+    assert (
+        json.loads((templates_dir / "summarize.json").read_text(encoding="utf-8")) == user_summarize
+    )
 
 
 def test_publish_path_retires_removed_prompt_and_omits_trigger(tmp_path):
