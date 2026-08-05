@@ -828,6 +828,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [":plain", ":dumb", ":simplify", ":explain-1", ":distill", ":summarize"],
         ),
         "context.json": (":context", "prompting", "context-reset", [], []),
+        "goal_clarifier.json": (":goal", "workflow", "goal-refinement", [], []),
         "template_builder.json": (
             ":template-builder",
             "prompting",
@@ -1208,6 +1209,58 @@ def test_bundled_explain_template_contract():
     # Standalone and read-only: does not route to or depend on retired or sibling prompts.
     for other in (":distill", ":summarize", ":reality", ":visual", ":research"):
         assert other not in content, other
+
+
+def test_bundled_goal_template_contract():
+    """The reworked :goal prompt is a standalone context-grounded goal-refinement workflow."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "goal_clarifier.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Goal Refiner"
+    assert data["trigger"] == ":goal"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "goal-refinement"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+    for phrase in [
+        "If the marker is blank, infer the active goal from the most recent coherent context",
+        "Objectively Restate the Goal",
+        "What the user said or supplied",
+        "The current state or contextual starting point",
+        "The desired real-world end state",
+        "Resolve obvious speech-to-text mistakes",
+        "Separate the requested outcome from proposed methods",
+        "Assign stable gap IDs such as G01, G02, and G03",
+        "strategic rationale or parent objective",
+        "Missing scope boundary or explicit non-goals",
+        "define observable and reviewable evidence instead of inventing a numeric target",
+        "GOAL REFINEMENT",
+        "DECISIONS NEEDED TO FINALIZE",
+        "Misinterpretation risk:",
+        "accept all recommendations",
+        "stream-of-consciousness",
+        "reduced delta packet",
+        "Adversarial Misinterpretation Check",
+        "REFINED GOAL",
+        "GOAL CONTRACT",
+        "Interpretation guardrails:",
+        "REMAINING NONBLOCKING UNKNOWNS",
+        "Do not include implementation tasks, milestones",
+    ]:
+        assert phrase in content, phrase
+
+    # Decision-scoped accept-all, not blanket authorization.
+    assert (
+        "`accept all recommendations` adopts only the explicitly recommended decision options"
+        in content
+    )
+    # Project-agnostic, read-only, no companion prompt or persistent state.
+    for forbidden in ["GitHub", "features/STATE.json", ":feature", ":unblock"]:
+        assert forbidden not in content, forbidden
 
 
 def test_bundled_sanitize_template_contract():
@@ -1758,6 +1811,43 @@ def test_sync_bundled_preserves_user_distill_and_summarize(tmp_path):
     assert (
         json.loads((templates_dir / "summarize.json").read_text(encoding="utf-8")) == user_summarize
     )
+
+
+def test_sync_bundled_apply_updates_goal_with_backup(tmp_path):
+    """A changed local goal template is backed up before the bundled version replaces it."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    new_goal = {"name": "Goal Refiner", "content": "new goal refiner prompt", "trigger": ":goal"}
+    old_goal = {
+        "name": "Goal Clarifier",
+        "content": "old goal clarifier prompt",
+        "trigger": ":goal",
+    }
+    _write_json(bundled_dir / "goal_clarifier.json", new_goal)
+    _write_json(templates_dir / "goal_clarifier.json", old_goal)
+    user_only = {"name": "Mine", "content": "keep me", "trigger": ":mine"}
+    _write_json(templates_dir / "user_only.json", user_only)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    assert exit_code == 0
+    updated = json.loads((templates_dir / "goal_clarifier.json").read_text(encoding="utf-8"))
+    assert updated == new_goal
+    preserved = json.loads((templates_dir / "user_only.json").read_text(encoding="utf-8"))
+    assert preserved == user_only
+    version_path = templates_dir / "_versions" / "goal_clarifier" / "v1.json"
+    assert version_path.exists()
+    backup = json.loads(version_path.read_text(encoding="utf-8"))
+    assert backup["template_data"]["content"] == "old goal clarifier prompt"
 
 
 def test_publish_path_retires_removed_prompt_and_omits_trigger(tmp_path):
