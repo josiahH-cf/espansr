@@ -83,3 +83,50 @@ def test_no_phantom_discovery_entries():
     triggers = _bundled_triggers()
     for trigger in prompt_note_triggers():
         assert trigger in triggers, f"Discovery lists {trigger} with no bundled template"
+
+
+# ── Pruned prompt guardrails ─────────────────────────────────────────────────
+
+_REMOVED_TRIGGERS = (
+    ":feat-plan",
+    ":feat-runner",
+    ":feat",
+    ":feedback-loop",
+    ":merge",
+    ":rebase",
+    ":save",
+    ":pocket-system",
+)
+
+
+def test_removed_triggers_absent_from_discovery():
+    """Pruned prompt triggers are not registered in the discovery source."""
+    listed = set(prompt_note_triggers())
+    for trigger in _REMOVED_TRIGGERS:
+        assert trigger not in listed, trigger
+
+
+def test_removed_triggers_absent_from_generated_surfaces():
+    """Pruned triggers are gone from the quick help and docs note list."""
+    help_lines = render_quick_help().splitlines()
+    docs_list = render_docs_note_list()
+    for trigger in _REMOVED_TRIGGERS:
+        assert not any(line.strip().startswith(f"{trigger} ") for line in help_lines), trigger
+        assert f"`{trigger}`" not in docs_list, trigger
+
+
+def test_preserved_prompts_remain_registered():
+    """Preserved merge/rebase helpers and neighbors stay in discovery after the prune."""
+    listed = set(prompt_note_triggers())
+    for trigger in (
+        ":work-merge-safe",
+        ":git-rebase-sh",
+        ":git-rebase-ps",
+        ":git-yolo-sh",
+        ":project-init-llm",
+        ":agent-scaffold",
+        ":telegram",
+        ":troubleshoot",
+        ":verify",
+    ):
+        assert trigger in listed, trigger

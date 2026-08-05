@@ -417,18 +417,6 @@ def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, cap
             "trigger": ":agent-scaffold",
             "replaces": [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
         },
-        "feat_plan.json": {
-            "name": "Feature Plan",
-            "content": "feature plan prompt",
-            "trigger": ":feat-plan",
-            "replaces": [":feature-new", ":feature-scope"],
-        },
-        "feat_runner.json": {
-            "name": "Feature Runner",
-            "content": "feature runner prompt",
-            "trigger": ":feat-runner",
-            "replaces": [":feature-next", ":continue"],
-        },
     }
     old_templates = {
         "project_init.json": {
@@ -440,16 +428,6 @@ def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, cap
             "name": "Feature Init",
             "content": "old feature-init prompt",
             "trigger": ":feature-init",
-        },
-        "feature_new.json": {
-            "name": "Feature New",
-            "content": "old new-feature prompt",
-            "trigger": ":feature-new",
-        },
-        "feature_next.json": {
-            "name": "Feature Next",
-            "content": "old next-feature prompt",
-            "trigger": ":feature-next",
         },
     }
     for filename, data in bundled_templates.items():
@@ -474,8 +452,6 @@ def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, cap
 
     assert (templates_dir / "_versions" / "project_init" / "v1.json").exists()
     assert (templates_dir / "_versions" / "feature_init" / "v1.json").exists()
-    assert (templates_dir / "_versions" / "feature_new" / "v1.json").exists()
-    assert (templates_dir / "_versions" / "feature_next" / "v1.json").exists()
 
 
 def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
@@ -800,11 +776,8 @@ def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
         "meta.json": ("context",),
         "context.json": (),
         "template_builder.json": (),
-        "feat.json": (),
         "project_init_llm.json": (),
         "agent_scaffold.json": (),
-        "feat_plan.json": (),
-        "feat_runner.json": (),
     }
 
     for filename, removed_variable_names in expected.items():
@@ -824,13 +797,6 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
     repo_root = Path(__file__).resolve().parents[1]
     templates_dir = repo_root / "templates"
     expected = {
-        "feat.json": (
-            ":feat",
-            "workflow",
-            "feature-router",
-            [],
-            [],
-        ),
         "project_init_llm.json": (
             ":project-init-llm",
             "workflow",
@@ -844,20 +810,6 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             "agent-scaffold",
             [],
             [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
-        ),
-        "feat_plan.json": (
-            ":feat-plan",
-            "workflow",
-            "feature-plan",
-            [],
-            [":feature-new", ":feature-scope"],
-        ),
-        "feat_runner.json": (
-            ":feat-runner",
-            "workflow",
-            "feature-runner",
-            [],
-            [":feature-next", ":continue"],
         ),
         "visual_workflow.json": (
             ":visual",
@@ -892,13 +844,6 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [], []),
         "sanitize.json": (":sanitize", "safety", "scrub", [], [":hide-ai"]),
         "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [], [":qa"]),
-        "pocket_system.json": (
-            ":pocket-system",
-            "workflow",
-            "pocket-directive",
-            [],
-            [":pocket"],
-        ),
         "telegram.json": (
             ":telegram",
             "workflow",
@@ -932,6 +877,14 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "qa_docs.json",
         "pocket.json",
         "pocket_note.json",
+        "feat.json",
+        "feat_plan.json",
+        "feat_runner.json",
+        "feedback_loop.json",
+        "merge.json",
+        "rebase.json",
+        "save.json",
+        "pocket_system.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -975,12 +928,8 @@ def test_bundled_quick_help_uses_current_triggers():
         ":goal",
         ":project-init-llm",
         ":agent-scaffold",
-        ":feat-plan",
-        ":feat-runner",
-        ":feat",
         ":docs-qa",
-        ":save",
-        ":merge",
+        ":work-merge-safe",
         ":git-yolo-sh",
         ":git-rebase-sh",
         ":git-branch-sh",
@@ -1013,35 +962,16 @@ def test_bundled_quick_help_uses_current_triggers():
         ":plain",
         ":principles",
         ":pocket-note",
+        ":feat-plan",
+        ":feat-runner",
+        ":feat",
+        ":feedback-loop",
+        ":save",
+        ":merge",
+        ":rebase",
+        ":pocket-system",
     ]:
         assert not any(line.strip().startswith(f"{stale_trigger} ") for line in help_lines)
-
-
-def test_bundled_feat_router_template_contract():
-    """:feat is a thin router to the split project and feature workflow commands."""
-    repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "feat.json").read_text(encoding="utf-8"))
-
-    content = data["content"]
-    variables = {variable["name"]: variable for variable in data.get("variables", [])}
-
-    assert data["trigger"] == ":feat"
-    assert data["category"] == "workflow"
-    assert data["stage"] == "feature-router"
-    assert data["next_triggers"] == []
-    assert data["replaces"] == []
-    assert variables == {}
-    assert "thin router" in content
-    assert "Do not implement product code from this router" in content
-    assert ":project-init -> :project-init-llm" in content
-    assert (
-        ":feature-init, :project-scaffold, :scaffold-feature-process -> :agent-scaffold" in content
-    )
-    assert ":feature-new, :feature-scope -> :feat-plan" in content
-    assert ":feature-next, :continue -> :feat-runner" in content
-    assert "AGENTS.md" in content
-    assert "features/STATE.json" in content
-    assert "Route: Feature spec" not in content
 
 
 def test_bundled_split_agent_workflow_template_contracts():
@@ -1068,26 +998,6 @@ def test_bundled_split_agent_workflow_template_contracts():
                 "features/archive/README.md",
                 "schema version 1",
                 "currentFeature",
-            ],
-        ),
-        "feat_plan.json": (
-            ":feat-plan",
-            [":feature-new", ":feature-scope"],
-            [
-                "without implementing product code",
-                "next three-digit feature ID",
-                "Would create in reality:",
-                "Verification map",
-            ],
-        ),
-        "feat_runner.json": (
-            ":feat-runner",
-            [":feature-next", ":continue"],
-            [
-                "Begin in plan mode by default",
-                "Select the feature deterministically",
-                "Do not skip phases",
-                "If no current or queued feature exists, report that no feature is available",
             ],
         ),
     }
@@ -1313,8 +1223,8 @@ def test_bundled_telegram_template_contract():
     assert content.endswith("SOURCE, LOCATION, FILE TYPE, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
 
 
-def test_bundled_prompts_are_independent_except_for_explicit_router_and_help():
-    """Bundled prompts do not suggest another prompt unless routing is their purpose."""
+def test_bundled_prompts_are_independent_except_for_help():
+    """Bundled prompts do not suggest another prompt; only the help lists triggers."""
     repo_root = Path(__file__).resolve().parents[1]
     templates_dir = repo_root / "templates"
     templates = {}
@@ -1322,7 +1232,7 @@ def test_bundled_prompts_are_independent_except_for_explicit_router_and_help():
         templates[path.name] = json.loads(path.read_text(encoding="utf-8"))
 
     triggers = {data["trigger"] for data in templates.values() if data.get("trigger")}
-    allowed_cross_prompt_files = {"feat.json", "espansr_help.json"}
+    allowed_cross_prompt_files = {"espansr_help.json"}
 
     for filename, data in templates.items():
         assert data.get("next_triggers", []) == [], filename
@@ -1471,3 +1381,140 @@ def test_bundled_git_branch_helpers_use_popup_form_variable(tmp_path):
                 "params": {"layout": "Branch Name: [[value]]"},
             }
         ]
+
+
+# ── Retirement of removed bundled prompts ────────────────────────────────────
+
+_REMOVED_BUNDLED_FILES = (
+    "feat.json",
+    "feat_plan.json",
+    "feat_runner.json",
+    "feedback_loop.json",
+    "merge.json",
+    "rebase.json",
+    "save.json",
+    "pocket_system.json",
+)
+
+
+def test_removed_bundled_prompt_files_are_absent():
+    """The pruned bundled prompt files no longer ship in the bundled set."""
+    templates_dir = Path(__file__).resolve().parents[1] / "templates"
+    for filename in _REMOVED_BUNDLED_FILES:
+        assert not (templates_dir / filename).exists(), filename
+
+
+def test_sync_bundled_apply_retires_removed_bundled_prompts(tmp_path, capsys):
+    """Previously installed copies of removed prompts are backed up and retired."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    # A surviving bundled prompt keeps the store otherwise in sync.
+    verify_template = {"name": "Verify", "content": "verify prompt", "trigger": ":verify"}
+    _write_json(bundled_dir / "verify.json", verify_template)
+    _write_json(templates_dir / "verify.json", verify_template)
+    # Seeded copies of removed prompts, including a historical rename alias.
+    _write_json(
+        templates_dir / "merge.json",
+        {"name": "Merge and Push", "content": "old merge prompt", "trigger": ":merge"},
+    )
+    _write_json(
+        templates_dir / "save.json",
+        {"name": "Save Project State", "content": "old save prompt", "trigger": ":save"},
+    )
+    _write_json(
+        templates_dir / "pocket.json",
+        {"name": "Pocket", "content": "old pocket prompt", "trigger": ":pocket"},
+    )
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "retired" in output.lower()
+    assert not (templates_dir / "merge.json").exists()
+    assert not (templates_dir / "save.json").exists()
+    assert not (templates_dir / "pocket.json").exists()
+
+    assert (templates_dir / "_versions" / "merge_and_push" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "save_project_state" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "pocket" / "v1.json").exists()
+
+
+def test_sync_bundled_preserves_user_template_reusing_retired_filename(tmp_path):
+    """A user template that reuses a retired filename with its own trigger is kept."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "verify.json",
+        {"name": "Verify", "content": "verify prompt", "trigger": ":verify"},
+    )
+    user_merge = {"name": "My Merge", "content": "my own merge helper", "trigger": ":my-merge"}
+    _write_json(templates_dir / "merge.json", user_merge)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    assert exit_code == 0
+    assert json.loads((templates_dir / "merge.json").read_text(encoding="utf-8")) == user_merge
+    assert not (templates_dir / "_versions" / "my_merge").exists()
+
+
+def test_publish_path_retires_removed_prompt_and_omits_trigger(tmp_path):
+    """The publish path retires a seeded removed prompt and drops it from Espanso YAML."""
+    from espansr.core.templates import TemplateManager
+    from espansr.integrations.espanso import sync_to_espanso
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    match_dir = tmp_path / "espanso" / "match"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+    match_dir.mkdir(parents=True)
+
+    _write_json(
+        bundled_dir / "verify.json",
+        {"name": "Verify", "content": "verify prompt", "trigger": ":verify"},
+    )
+    _write_json(
+        templates_dir / "rebase.json",
+        {"name": "Rebase Current Branch", "content": "old rebase prompt", "trigger": ":rebase"},
+    )
+
+    manager = TemplateManager(templates_dir=templates_dir)
+    with (
+        patch("espansr.integrations.espanso.get_match_dir", return_value=match_dir),
+        patch("espansr.integrations.espanso.get_template_manager", return_value=manager),
+        patch("espansr.integrations.espanso.validate_all", return_value=[]),
+        patch("espansr.integrations.espanso.clean_stale_espanso_files"),
+    ):
+        result = sync_to_espanso(
+            update_bundled=True,
+            templates_dir=templates_dir,
+            bundled_dir=bundled_dir,
+        )
+
+    assert result is True
+    assert not (templates_dir / "rebase.json").exists()
+    assert (templates_dir / "_versions" / "rebase_current_branch" / "v1.json").exists()
+
+    output = yaml.safe_load((match_dir / "espansr.yml").read_text(encoding="utf-8"))
+    triggers = {entry["trigger"] for entry in output["matches"]}
+    assert ":rebase" not in triggers
+    assert ":verify" in triggers

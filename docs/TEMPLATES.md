@@ -30,11 +30,11 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 `python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
-- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
-- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
+- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:cb-transcript-feature`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:work-merge-safe`
+- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`, `:cb-agenda`
-- Source and capture prompts: `:telegram`, `:pocket-system`
+- Source and capture prompts: `:telegram`
 - Utility prompts: `:defaults`, `:listen`, `:revise`
 - Security helpers: `:tenable-scans`
 <!-- END generated note list -->
@@ -43,16 +43,11 @@ Use `:espansr` for the current quick reference list.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
-contract, `:agent-scaffold` creates a persistent file-backed feature loop,
-`:feat-plan` records or refines feature scope without implementation edits, and
-`:feat-runner` works from the current file-backed feature state.
+contract, and `:agent-scaffold` creates a persistent file-backed feature loop.
 
-`:feat` remains as a thin router for older habits and ambiguous feature-work
-requests. Legacy starter triggers migrate to the split commands:
-`:project-init` maps to `:project-init-llm`; `:feature-init`,
-`:project-scaffold`, and `:scaffold-feature-process` map to
-`:agent-scaffold`; `:feature-new` and `:feature-scope` map to `:feat-plan`;
-`:feature-next` and `:continue` map to `:feat-runner`.
+Legacy starter triggers migrate to the current commands: `:project-init` maps to
+`:project-init-llm`; `:feature-init`, `:project-scaffold`, and
+`:scaffold-feature-process` map to `:agent-scaffold`.
 Use `:explain` for evidence-bound plain-English explanation, `:reality` for a
 compact statement of what the context created or would create, and `:gaps` for
 critical gap or first-principles review.

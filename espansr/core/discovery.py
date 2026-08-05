@@ -99,10 +99,6 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (":project-init-llm", "initialize AGENTS.md-centered repo instructions"),
             (":agent-scaffold", "create the persistent features/ loop"),
-            (":feat-plan", "add or refine feature scope without implementation"),
-            (":feat-runner", "start or continue the current or next feature"),
-            (":feat", "route older feature workflow requests to the split commands"),
-            (":feedback-loop", "run an autonomous feedback loop into verified feature specs"),
             (":cb-transcript-feature", "transcript to implementation-ready feature specs"),
         ),
     ),
@@ -117,8 +113,6 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":verify", "verify, repair, and align affected docs"),
             (":docs-qa", "docs-only alignment fallback"),
-            (":save", "save project state for next session"),
-            (":merge", "safely merge and push relevant changes"),
             (":work-merge-safe", "sanitize, verify, merge, and push only when state is safe"),
         ),
     ),
@@ -135,7 +129,6 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":git-branch-ps",
                 "PowerShell update main when safe, then create and switch to a branch",
             ),
-            (":rebase", "safely inspect branch state and rebase current work when clear"),
         ),
     ),
     HelpSection(
@@ -160,11 +153,8 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     ),
     HelpSection(
         "Source and capture prompts",
-        14,
-        (
-            (":telegram", "run the directive from an accessible source or location"),
-            (":pocket-system", "sync Pocket notes into Obsidian and run a directive on one"),
-        ),
+        9,
+        ((":telegram", "run the directive from an accessible source or location"),),
     ),
     HelpSection(
         "Utility prompts",
