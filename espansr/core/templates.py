@@ -619,7 +619,7 @@ class BundledTemplateStatus:
 
     filename: str
     status: str
-    bundled_path: Path
+    bundled_path: Optional[Path]
     local_path: Path
     detail: str = ""
     target_path: Optional[Path] = None
@@ -684,18 +684,33 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
         "project_scaffold.json",
         "scaffold_feature_process.json",
     ),
-    "feat_plan.json": (
-        "feature_new.json",
-        "feature_scope.json",
-    ),
-    "feat_runner.json": (
-        "feature_next.json",
-        "feature_continue.json",
-    ),
     "sanitize.json": ("hide_ai.json",),
     "docs_qa.json": ("qa_docs.json",),
-    "pocket_system.json": ("pocket.json",),
     "telegram.json": ("pocket_note.json",),
+}
+
+# Bundled starter templates that were removed from the product. A copy seeded
+# into a user's live template store by an earlier install is retired during
+# starter reconciliation: the live file is backed up through the versions
+# mechanism and then deleted. Historical rename aliases are listed too so a
+# store that never migrated to the canonical filename is still cleaned up. The
+# trigger is a non-user-facing identity guard only — a live file is retired just
+# when it still carries the removed bundled trigger, so an unrelated user
+# template that merely reuses one of these filenames is preserved.
+_RETIRED_BUNDLED_TEMPLATE_FILES = {
+    "feat.json": ":feat",
+    "feat_plan.json": ":feat-plan",
+    "feat_runner.json": ":feat-runner",
+    "feedback_loop.json": ":feedback-loop",
+    "merge.json": ":merge",
+    "rebase.json": ":rebase",
+    "save.json": ":save",
+    "pocket_system.json": ":pocket-system",
+    "feature_new.json": ":feature-new",
+    "feature_scope.json": ":feature-scope",
+    "feature_next.json": ":feature-next",
+    "feature_continue.json": ":continue",
+    "pocket.json": ":pocket",
 }
 
 
@@ -763,6 +778,43 @@ def _retired_bundled_template_status(
         target_path=target_path,
         detail=f"replaced by {filename}",
     )
+
+
+def _collect_retired_bundled_template_entries(
+    local_paths: Dict[str, Path],
+    report: BundledTemplateReport,
+) -> set[str]:
+    """Queue retirement for bundled templates removed from the product.
+
+    A previously installed copy is retired only when the live file still owns the
+    removed bundled trigger, so a user template that merely reuses one of these
+    filenames is preserved rather than deleted.
+    """
+    retired: set[str] = set()
+    for filename, trigger in _RETIRED_BUNDLED_TEMPLATE_FILES.items():
+        local_path = local_paths.get(filename)
+        if local_path is None:
+            continue
+        try:
+            local_obj = _load_template_object(local_path)
+        except ValueError:
+            # Unreadable file at a retired name: leave it for the user rather
+            # than risk deleting unrelated work we cannot identify.
+            continue
+        if _coerce_optional_string(local_obj.get("trigger", "")) != trigger:
+            continue
+        report.entries.append(
+            BundledTemplateStatus(
+                filename=filename,
+                status="retired_local",
+                bundled_path=None,
+                local_path=local_path,
+                target_path=local_path,
+                detail="retired bundled prompt removed from espansr",
+            )
+        )
+        retired.add(filename)
+    return retired
 
 
 def get_bundled_template_paths(bundled_dir: Optional[Path] = None) -> Dict[str, Path]:
@@ -915,6 +967,7 @@ def build_bundled_template_report(
             )
 
     managed_filenames = set(bundled_paths) | renamed_filenames
+    managed_filenames |= _collect_retired_bundled_template_entries(local_paths, report)
     report.local_only = [
         path for name, path in local_paths.items() if name not in managed_filenames
     ]
