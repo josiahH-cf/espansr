@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
-- Utility prompts: `:defaults`, `:listen`, `:revise`
+- Utility prompts: `:defaults`, `:listen`, `:revise`, `:humanize`
 - Security helpers: `:tenable-scans`
 <!-- END generated note list -->
 
@@ -57,6 +57,18 @@ and `:gaps` for critical gap or first-principles review.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.
+
+`:revise`, `:humanize`, and `:sanitize` cover three distinct editing jobs.
+`:revise` makes general clarity, structure, and wording edits. `:humanize` runs
+a specialized pass that removes formulaic AI-style clichés and restores a
+natural, specific voice. `:sanitize` is broader still: it reviews workspace,
+privacy, sensitive-data, provenance, and shareability concerns rather than
+prose style.
+
+Use `:humanize` on supplied text, a referenced source, or the most recent
+eligible prose already in view when its marker is blank. It preserves meaning
+and formatting, returns only the edited text, and makes no authorship claim and
+no guarantee about AI-detector outcomes.
 
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
