@@ -114,7 +114,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
             (":docs-qa", "docs-only alignment fallback"),
-            (":work-merge-safe", "sanitize, verify, merge, and push only when state is safe"),
+            (":work-merge", "push / merge"),
         ),
     ),
     HelpSection(

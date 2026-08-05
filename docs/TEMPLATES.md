@@ -31,7 +31,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge-safe`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`

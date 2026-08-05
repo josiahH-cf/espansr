@@ -851,6 +851,13 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [], []),
         "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [], []),
         "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [], []),
+        "work_merge.json": (
+            ":work-merge",
+            "workflow",
+            "git-merge-sanitize",
+            [],
+            [":work-merge-safe"],
+        ),
     }
     retired_files = {
         "dumb.json",
@@ -880,6 +887,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "save.json",
         "pocket_system.json",
         "agent_scaffold.json",
+        "work_merge_safe.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -925,7 +933,7 @@ def test_bundled_quick_help_uses_current_triggers():
         ":feature",
         ":unblock",
         ":docs-qa",
-        ":work-merge-safe",
+        ":work-merge",
         ":git-yolo-sh",
         ":git-rebase-sh",
         ":git-branch-sh",
@@ -967,8 +975,47 @@ def test_bundled_quick_help_uses_current_triggers():
         ":rebase",
         ":pocket-system",
         ":agent-scaffold",
+        ":work-merge-safe",
     ]:
         assert not any(line.strip().startswith(f"{stale_trigger} ") for line in help_lines)
+
+
+def test_sync_bundled_apply_migrates_work_merge_safe_to_work_merge(tmp_path, capsys):
+    """The renamed work-merge starter migrates the old :work-merge-safe copy with a backup."""
+    from espansr.__main__ import cmd_sync_bundled
+
+    bundled_dir = tmp_path / "bundled"
+    templates_dir = tmp_path / "config" / "espansr" / "templates"
+    bundled_dir.mkdir(parents=True)
+    templates_dir.mkdir(parents=True)
+
+    bundled_template = {
+        "name": "Work Merge",
+        "content": "new work merge prompt",
+        "trigger": ":work-merge",
+        "replaces": [":work-merge-safe"],
+    }
+    old_local = {
+        "name": "Work-Safe Merge",
+        "content": "old work-merge-safe prompt",
+        "trigger": ":work-merge-safe",
+    }
+    _write_json(bundled_dir / "work_merge.json", bundled_template)
+    _write_json(templates_dir / "work_merge_safe.json", old_local)
+
+    with (
+        patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+        patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+    ):
+        exit_code = cmd_sync_bundled(_make_args(apply=True, verbose=True))
+
+    output = capsys.readouterr().out
+    assert exit_code == 0
+    assert "migrated" in output.lower()
+    migrated = json.loads((templates_dir / "work_merge.json").read_text(encoding="utf-8"))
+    assert migrated == bundled_template
+    assert not (templates_dir / "work_merge_safe.json").exists()
+    assert (templates_dir / "_versions" / "worksafe_merge" / "v1.json").exists()
 
 
 def test_bundled_project_init_template_contract():
