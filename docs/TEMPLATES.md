@@ -30,7 +30,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 `python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
-- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`
+- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:feat-plan`, `:feat-runner`, `:feat`, `:feedback-loop`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:save`, `:merge`, `:work-merge-safe`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:rebase`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`

@@ -95,7 +95,7 @@ _FOOTER = "\n".join(
 PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     HelpSection(
         "Agent feature prompts",
-        17,
+        22,
         (
             (":project-init-llm", "initialize AGENTS.md-centered repo instructions"),
             (":agent-scaffold", "create the persistent features/ loop"),
@@ -103,6 +103,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":feat-runner", "start or continue the current or next feature"),
             (":feat", "route older feature workflow requests to the split commands"),
             (":feedback-loop", "run an autonomous feedback loop into verified feature specs"),
+            (":cb-transcript-feature", "transcript to implementation-ready feature specs"),
         ),
     ),
     HelpSection(
