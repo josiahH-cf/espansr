@@ -30,7 +30,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 `python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
-- Agent feature prompts: `:project-init-llm`, `:agent-scaffold`, `:cb-transcript-feature`
+- Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:verify`, `:docs-qa`, `:work-merge-safe`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:distill`, `:research`, `:summarize`, `:audit`, `:cb-agenda`
@@ -43,11 +43,11 @@ Use `:espansr` for the current quick reference list.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
-contract, and `:agent-scaffold` creates a persistent file-backed feature loop.
+contract, and `:feature` delivers one project-native feature end to end:
+contextualize, scope, clarify only material decisions, implement, and
+adversarially verify real behavior.
 
-Legacy starter triggers migrate to the current commands: `:project-init` maps to
-`:project-init-llm`; `:feature-init`, `:project-scaffold`, and
-`:scaffold-feature-process` map to `:agent-scaffold`.
+The legacy starter trigger `:project-init` maps to `:project-init-llm`.
 Use `:explain` for evidence-bound plain-English explanation, `:reality` for a
 compact statement of what the context created or would create, and `:gaps` for
 critical gap or first-principles review.
