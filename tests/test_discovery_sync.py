@@ -92,6 +92,7 @@ _REMOVED_TRIGGERS = (
     ":feat-runner",
     ":feat",
     ":feedback-loop",
+    ":agent-scaffold",
     ":merge",
     ":rebase",
     ":save",
@@ -124,9 +125,18 @@ def test_preserved_prompts_remain_registered():
         ":git-rebase-ps",
         ":git-yolo-sh",
         ":project-init-llm",
-        ":agent-scaffold",
+        ":feature",
         ":telegram",
         ":troubleshoot",
         ":verify",
     ):
         assert trigger in listed, trigger
+
+
+def test_feature_prompt_registered_in_all_surfaces():
+    """The new :feature prompt appears once in discovery, quick help, and the docs list."""
+    listed = prompt_note_triggers()
+    assert listed.count(":feature") == 1
+    help_lines = render_quick_help().splitlines()
+    assert any(line.strip().startswith(":feature ") for line in help_lines)
+    assert "`:feature`" in render_docs_note_list()

@@ -55,6 +55,28 @@ def test_build_command_catalog_includes_sync_system_entry(tmp_path):
     assert sync.stage == "maintenance"
 
 
+def test_build_command_catalog_surfaces_feature_from_bundled_templates(tmp_path):
+    """AC-3: the runtime :coms catalog surfaces :feature and omits retired loop triggers."""
+    import shutil
+    from pathlib import Path
+
+    from espansr.core.command_catalog import build_command_catalog
+
+    bundled_dir = Path(__file__).resolve().parents[1] / "templates"
+    live_dir = tmp_path / "templates"
+    live_dir.mkdir()
+    for path in bundled_dir.glob("*.json"):
+        shutil.copy2(path, live_dir / path.name)
+
+    manager = TemplateManager(templates_dir=live_dir)
+    entries = build_command_catalog(template_manager=manager, config=Config())
+
+    triggers = [entry.trigger for entry in entries]
+    assert triggers.count(":feature") == 1
+    for retired in (":feat", ":feat-plan", ":feat-runner", ":feedback-loop", ":agent-scaffold"):
+        assert retired not in triggers
+
+
 def test_build_command_catalog_exposes_workflow_metadata(tmp_path):
     """AC-3: catalog entries preserve template category, stage, and chain hints."""
     from espansr.core.command_catalog import build_command_catalog

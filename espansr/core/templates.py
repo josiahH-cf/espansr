@@ -679,11 +679,6 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     ),
     "reality.json": ("reality_audit.json",),
     "project_init_llm.json": ("project_init.json",),
-    "agent_scaffold.json": (
-        "feature_init.json",
-        "project_scaffold.json",
-        "scaffold_feature_process.json",
-    ),
     "sanitize.json": ("hide_ai.json",),
     "docs_qa.json": ("qa_docs.json",),
     "telegram.json": ("pocket_note.json",),
@@ -702,6 +697,7 @@ _RETIRED_BUNDLED_TEMPLATE_FILES = {
     "feat_plan.json": ":feat-plan",
     "feat_runner.json": ":feat-runner",
     "feedback_loop.json": ":feedback-loop",
+    "agent_scaffold.json": ":agent-scaffold",
     "merge.json": ":merge",
     "rebase.json": ":rebase",
     "save.json": ":save",
@@ -710,6 +706,9 @@ _RETIRED_BUNDLED_TEMPLATE_FILES = {
     "feature_scope.json": ":feature-scope",
     "feature_next.json": ":feature-next",
     "feature_continue.json": ":continue",
+    "feature_init.json": ":feature-init",
+    "project_scaffold.json": ":project-scaffold",
+    "scaffold_feature_process.json": ":scaffold-feature-process",
     "pocket.json": ":pocket",
 }
 

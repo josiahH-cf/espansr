@@ -395,8 +395,8 @@ def test_sync_bundled_apply_migrates_reality_and_telegram_starters(tmp_path, cap
     assert (templates_dir / "_versions" / "pocket_note_runner" / "v1.json").exists()
 
 
-def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, capsys):
-    """Old project/feature starter prompts migrate into the split workflow commands."""
+def test_sync_bundled_apply_migrates_project_init_starter(tmp_path, capsys):
+    """The renamed project-init starter migrates with a backup of the old file."""
     from espansr.__main__ import cmd_sync_bundled
 
     bundled_dir = tmp_path / "bundled"
@@ -411,23 +411,12 @@ def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, cap
             "trigger": ":project-init-llm",
             "replaces": [":project-init"],
         },
-        "agent_scaffold.json": {
-            "name": "Agent Scaffold",
-            "content": "agent scaffold prompt",
-            "trigger": ":agent-scaffold",
-            "replaces": [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
-        },
     }
     old_templates = {
         "project_init.json": {
             "name": "Project Init",
             "content": "old project prompt",
             "trigger": ":project-init",
-        },
-        "feature_init.json": {
-            "name": "Feature Init",
-            "content": "old feature-init prompt",
-            "trigger": ":feature-init",
         },
     }
     for filename, data in bundled_templates.items():
@@ -451,7 +440,6 @@ def test_sync_bundled_apply_migrates_split_agent_workflow_starters(tmp_path, cap
         assert not (templates_dir / filename).exists()
 
     assert (templates_dir / "_versions" / "project_init" / "v1.json").exists()
-    assert (templates_dir / "_versions" / "feature_init" / "v1.json").exists()
 
 
 def test_sync_bundled_blocks_renamed_trigger_collision(tmp_path, capsys):
@@ -777,7 +765,6 @@ def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
         "context.json": (),
         "template_builder.json": (),
         "project_init_llm.json": (),
-        "agent_scaffold.json": (),
     }
 
     for filename, removed_variable_names in expected.items():
@@ -804,12 +791,12 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [],
             [":project-init"],
         ),
-        "agent_scaffold.json": (
-            ":agent-scaffold",
+        "feature.json": (
+            ":feature",
             "workflow",
-            "agent-scaffold",
+            "feature-delivery",
             [],
-            [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
+            [],
         ),
         "visual_workflow.json": (
             ":visual",
@@ -885,6 +872,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "rebase.json",
         "save.json",
         "pocket_system.json",
+        "agent_scaffold.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -927,7 +915,7 @@ def test_bundled_quick_help_uses_current_triggers():
         ":template-builder",
         ":goal",
         ":project-init-llm",
-        ":agent-scaffold",
+        ":feature",
         ":docs-qa",
         ":work-merge-safe",
         ":git-yolo-sh",
@@ -970,12 +958,13 @@ def test_bundled_quick_help_uses_current_triggers():
         ":merge",
         ":rebase",
         ":pocket-system",
+        ":agent-scaffold",
     ]:
         assert not any(line.strip().startswith(f"{stale_trigger} ") for line in help_lines)
 
 
-def test_bundled_split_agent_workflow_template_contracts():
-    """The split feature workflow prompts own the old route responsibilities."""
+def test_bundled_project_init_template_contract():
+    """The project-init prompt keeps its AGENTS.md-centered instruction contract."""
     repo_root = Path(__file__).resolve().parents[1]
     templates_dir = repo_root / "templates"
 
@@ -987,17 +976,6 @@ def test_bundled_split_agent_workflow_template_contracts():
                 "AGENTS.md as the canonical instruction surface",
                 "CLAUDE.md as a pointer to AGENTS.md",
                 "Do not create a separate Copilot instruction file unless",
-            ],
-        ),
-        "agent_scaffold.json": (
-            ":agent-scaffold",
-            [":feature-init", ":project-scaffold", ":scaffold-feature-process"],
-            [
-                "features/README.md",
-                "features/STATE.json",
-                "features/archive/README.md",
-                "schema version 1",
-                "currentFeature",
             ],
         ),
     }
@@ -1016,6 +994,50 @@ def test_bundled_split_agent_workflow_template_contracts():
         all_replacements.extend(replaces)
 
     assert len(all_replacements) == len(set(all_replacements))
+
+
+def test_bundled_feature_template_contract():
+    """The :feature prompt is a standalone contextualize/clarify/implement/verify workflow."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "feature.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Feature"
+    assert data["trigger"] == ":feature"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "feature-delivery"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+    for phrase in [
+        "living plan",
+        "DECISIONS NEEDED BEFORE IMPLEMENTATION",
+        "accept all recommendations",
+        "evidence matrix",
+        "Adversarial Review and Repair",
+        "Verify the Feature in Reality",
+        "Would the tests fail if the feature were removed",
+    ]:
+        assert phrase in content, phrase
+
+    # Standalone: explicitly disclaims the retired feature-loop state machine.
+    assert (
+        "Do not require or create a persistent feature-loop scaffold, feature state file, "
+        "numbered feature record, phase machine, router command, or companion prompt"
+    ) in content
+
+    # No dependency on the retired loop artifacts or triggers.
+    for forbidden in [
+        "features/STATE.json",
+        "features/README.md",
+        ":feat-plan",
+        ":feat-runner",
+        ":agent-scaffold",
+        ":feedback-loop",
+    ]:
+        assert forbidden not in content, forbidden
 
 
 def test_bundled_sanitize_template_contract():
@@ -1390,6 +1412,7 @@ _REMOVED_BUNDLED_FILES = (
     "feat_plan.json",
     "feat_runner.json",
     "feedback_loop.json",
+    "agent_scaffold.json",
     "merge.json",
     "rebase.json",
     "save.json",
@@ -1430,6 +1453,14 @@ def test_sync_bundled_apply_retires_removed_bundled_prompts(tmp_path, capsys):
         templates_dir / "pocket.json",
         {"name": "Pocket", "content": "old pocket prompt", "trigger": ":pocket"},
     )
+    _write_json(
+        templates_dir / "agent_scaffold.json",
+        {"name": "Agent Scaffold", "content": "old scaffold prompt", "trigger": ":agent-scaffold"},
+    )
+    _write_json(
+        templates_dir / "feature_init.json",
+        {"name": "Feature Init", "content": "old feature-init prompt", "trigger": ":feature-init"},
+    )
 
     with (
         patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
@@ -1443,10 +1474,14 @@ def test_sync_bundled_apply_retires_removed_bundled_prompts(tmp_path, capsys):
     assert not (templates_dir / "merge.json").exists()
     assert not (templates_dir / "save.json").exists()
     assert not (templates_dir / "pocket.json").exists()
+    assert not (templates_dir / "agent_scaffold.json").exists()
+    assert not (templates_dir / "feature_init.json").exists()
 
     assert (templates_dir / "_versions" / "merge_and_push" / "v1.json").exists()
     assert (templates_dir / "_versions" / "save_project_state" / "v1.json").exists()
     assert (templates_dir / "_versions" / "pocket" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "agent_scaffold" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "feature_init" / "v1.json").exists()
 
 
 def test_sync_bundled_preserves_user_template_reusing_retired_filename(tmp_path):
