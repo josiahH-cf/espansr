@@ -125,7 +125,7 @@ def test_apply_workstation_config_preserves_clipboard(tmp_path):
     text = _default_yml(cfg).read_text(encoding="utf-8")
     data = yaml.safe_load(text)
     assert data["preserve_clipboard"] is True
-    assert data["restore_clipboard_delay"] == 700
+    assert data["restore_clipboard_delay"] == 1500
     assert data["win32_exclude_orphan_events"] is False
     assert espanso.WORKSTATION_MARKER in text
 
@@ -140,7 +140,7 @@ def test_workstation_config_clears_host_keys_and_preserves_user_keys(tmp_path):
     data = yaml.safe_load(_default_yml(cfg).read_text(encoding="utf-8"))
     assert data["toggle_key"] == "ALT"
     assert data["preserve_clipboard"] is True
-    assert data["restore_clipboard_delay"] == 700
+    assert data["restore_clipboard_delay"] == 1500
     assert data["win32_exclude_orphan_events"] is False
     assert "backend" not in data
 
