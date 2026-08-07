@@ -995,7 +995,10 @@ WORKSTATION_MARKER = (
 # espansr templates all exceed Espanso's clipboard_threshold, so every expansion
 # pastes via the clipboard. Keep the clipboard (preserve_clipboard) but restore
 # it late enough that the paste wins the race (default 300ms was too short).
+# win32_exclude_orphan_events must be false so triggers still fire when you remote
+# INTO this machine (RDP/RustDesk inject keystrokes Espanso would otherwise drop).
 _WORKSTATION_KEYS: dict = {
+    "win32_exclude_orphan_events": False,
     "preserve_clipboard": True,
     "restore_clipboard_delay": 700,
 }
