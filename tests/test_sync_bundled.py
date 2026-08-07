@@ -755,6 +755,19 @@ def test_bundled_q_and_a_template_contract():
     assert not content.endswith(INLINE_CONTEXT_FOOTER)
 
 
+def test_all_bundled_templates_end_with_trailing_newline():
+    """Every bundled template ends with a trailing newline so the cursor lands on
+    a fresh line ready for input, not jammed against the last character."""
+    repo_root = Path(__file__).resolve().parents[1]
+    templates_dir = repo_root / "templates"
+    offenders = [
+        path.name
+        for path in sorted(templates_dir.glob("*.json"))
+        if not json.loads(path.read_text(encoding="utf-8")).get("content", "").endswith("\n")
+    ]
+    assert offenders == [], f"templates missing a trailing newline: {offenders}"
+
+
 def test_bundled_context_prompts_use_inline_footer_instead_of_variables():
     """Context-bearing starter prompts use inline notes instead of popup variables."""
     repo_root = Path(__file__).resolve().parents[1]

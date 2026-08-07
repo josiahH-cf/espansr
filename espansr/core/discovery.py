@@ -183,7 +183,7 @@ def render_quick_help() -> str:
     for section in PROMPT_SECTIONS:
         blocks.append(_render_rows(section.title, list(section.entries), section.width))
     blocks.append(_FOOTER)
-    return "\n\n".join(blocks)
+    return "\n\n".join(blocks) + "\n\n"
 
 
 def render_docs_note_list() -> str:
