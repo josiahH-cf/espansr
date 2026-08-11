@@ -33,7 +33,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - Security helpers: `:tenable-scans`
@@ -69,6 +69,15 @@ Use `:cliche` on supplied text, a referenced source, or the most recent
 eligible prose already in view when its marker is blank. It preserves meaning
 and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
+
+Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit. It inventories
+every in-scope screen, flow, and state, audits them against a self-contained
+usability baseline before making any recommendation, scores findings by
+frequency and impact, and produces one self-contained interactive HTML
+workbench plus a copy-back Markdown response. It is read-only by default and is
+independent of `:audit` (the generic decision packet), `:sanitize`, and
+`:cliche`: it does not sanitize workspaces or rewrite prose, and it never
+directs you to run another trigger.
 
 Append `:tddh` to almost any request as a compact reliability instruction. It
 asks the model to reason carefully, stay grounded in the available evidence,

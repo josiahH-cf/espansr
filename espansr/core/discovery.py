@@ -151,6 +151,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":html-help-doc",
                 "build an interactive HTML runbook with result tracking and model-ready copy-back",
             ),
+            (
+                ":ui-ux-audit",
+                "audit screens, flows, and states against a standalone usability baseline",
+            ),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),
     ),
