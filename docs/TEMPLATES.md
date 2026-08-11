@@ -33,7 +33,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - Security helpers: `:tenable-scans`

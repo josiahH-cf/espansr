@@ -147,6 +147,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
             (":research", "research a topic with strong evidence handling and synthesis"),
             (":audit", "build an interactive HTML audit/decision packet to resolve findings"),
+            (
+                ":html-help-doc",
+                "build an interactive HTML runbook with result tracking and model-ready copy-back",
+            ),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),
     ),
