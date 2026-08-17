@@ -118,6 +118,16 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
+        "Personal program prompts",
+        24,
+        (
+            (
+                ":project-personal-growth",
+                "guide Personal Growth sessions and keep the program records true",
+            ),
+        ),
+    ),
+    HelpSection(
         "Git helpers",
         15,
         (
