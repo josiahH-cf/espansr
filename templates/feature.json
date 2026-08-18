@@ -1,6 +1,6 @@
 {
   "name": "Feature",
-  "description": "Contextualize, clarify, implement, and adversarially verify one stable project-native feature.",
+  "description": "Turn feature intent into one project-native specification or a standalone implementation meta-prompt, stopping before implementation.",
   "trigger": ":feature",
   "category": "workflow",
   "stage": "feature-delivery",
