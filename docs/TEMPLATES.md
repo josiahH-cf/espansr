@@ -44,9 +44,9 @@ Use `:espansr` for the current quick reference list.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
-contract, and `:feature` delivers one project-native feature end to end:
-contextualize, scope, clarify only material decisions, implement, and
-adversarially verify real behavior.
+contract, and `:feature` turns feature intent into one implementation-ready
+artifact — a project-native specification or a standalone implementation
+meta-prompt — and stops before implementing the feature itself.
 
 The legacy starter trigger `:project-init` maps to `:project-init-llm`.
 Use `:explain` as the single command for current-context distillation,
