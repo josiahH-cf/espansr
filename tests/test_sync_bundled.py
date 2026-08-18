@@ -1068,7 +1068,7 @@ def test_bundled_project_init_template_contract():
 
 
 def test_bundled_feature_template_contract():
-    """The :feature prompt is a standalone contextualize/clarify/implement/verify workflow."""
+    """The :feature prompt is a standalone spec and implementation-handoff architect."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "feature.json").read_text(encoding="utf-8"))
     content = data["content"]
@@ -1083,20 +1083,22 @@ def test_bundled_feature_template_contract():
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
     for phrase in [
-        "living plan",
-        "DECISIONS NEEDED BEFORE IMPLEMENTATION",
+        "feature specification architect",
+        "Do not implement the requested feature.",
+        "Core Feature Outcome",
+        "FEATURE SPECIFICATION DECISIONS",
         "accept all recommendations",
-        "evidence matrix",
-        "Adversarial Review and Repair",
-        "Verify the Feature in Reality",
-        "Would the tests fail if the feature were removed",
+        "Adversarial Specification Review",
+        "Evidence Matrix",
+        "implementation meta-prompt",
+        "REALITY SUMMARY",
     ]:
         assert phrase in content, phrase
 
-    # Standalone: explicitly disclaims the retired feature-loop state machine.
+    # Standalone: one self-contained prompt with no companion command.
     assert (
-        "Do not require or create a persistent feature-loop scaffold, feature state file, "
-        "numbered feature record, phase machine, router command, or companion prompt"
+        "This is one standalone prompt. Do not require, invoke, reference, or direct the user "
+        "to another prompt or command."
     ) in content
 
     # No dependency on the retired loop artifacts or triggers.
