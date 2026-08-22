@@ -1132,6 +1132,21 @@ def test_bundled_feature_template_contract():
     ]:
         assert phrase in content, phrase
 
+    # Gold-standard harness hardening: deterministic-over-judge, evidence-cited
+    # checks, recorded fail-first baseline, surfaced human kickoff inputs, an
+    # auditable single transcript, and the runnable-check invariant under any packaging.
+    for phrase in [
+        "KICKOFF INPUTS",
+        "deterministic checks over model judgment",
+        "cite the evidence",
+        "failing baseline",
+        "separate from implementation code",
+        "re-runnable verification",
+        "one linear transcript",
+        "read-only",
+    ]:
+        assert phrase in content, phrase
+
     # Standalone: one self-contained prompt with no companion command.
     assert (
         "This is one standalone prompt. Do not require, invoke, reference, or direct the user "
