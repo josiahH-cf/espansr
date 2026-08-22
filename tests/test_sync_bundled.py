@@ -1068,7 +1068,7 @@ def test_bundled_project_init_template_contract():
 
 
 def test_bundled_feature_template_contract():
-    """The :feature prompt is a standalone spec and implementation-handoff architect."""
+    """The :feature prompt defaults to one three-outcome implementation meta-prompt."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "feature.json").read_text(encoding="utf-8"))
     content = data["content"]
@@ -1082,16 +1082,53 @@ def test_bundled_feature_template_contract():
     assert data.get("variables", []) == []
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
+    # Default delivery is one implementation meta-prompt; a project-native flow is an
+    # explicit appended-context override, and process existence alone is not an override.
     for phrase in [
-        "feature specification architect",
+        "feature-handoff architect",
         "Do not implement the requested feature.",
         "Core Feature Outcome",
         "FEATURE SPECIFICATION DECISIONS",
         "accept all recommendations",
         "Adversarial Specification Review",
-        "Evidence Matrix",
         "implementation meta-prompt",
+        "one implementation meta-prompt",
+        "explicit appended-context override",
+        "is not an override",
+        "Override: Project-Native Flow",
         "REALITY SUMMARY",
+    ]:
+        assert phrase in content, phrase
+
+    # All three verification outcomes are mandatory and adaptively packaged, not three
+    # forced documents, and the architecture/behavior checks must be fail-first.
+    for phrase in [
+        "Three Verification Outcomes",
+        "Architecture Outcome",
+        "Behavior Outcome",
+        "Human Litmus Outcome",
+        "three processes the feature must satisfy",
+        "single combined specification",
+        "fails against the starting state",
+        "If this was built correctly:",
+        "Model verdict:",
+        "Human verdict:",
+    ]:
+        assert phrase in content, phrase
+
+    # Preservation gate, external completion predicate, honest budget, mechanical
+    # extraction, scope traceability, and a consolidated package are all required.
+    for phrase in [
+        "Preservation Gate",
+        "Acceptance and Preservation Matrix",
+        "ALL_GATES_GREEN",
+        "BUDGET_EXHAUSTED",
+        "BLOCKED",
+        "Do not invent a numeric",
+        "Mechanical Deliverable Extraction",
+        "derived mechanically",
+        "Scope Traceability",
+        "Consolidated Delivery Package",
     ]:
         assert phrase in content, phrase
 
@@ -1101,7 +1138,7 @@ def test_bundled_feature_template_contract():
         "to another prompt or command."
     ) in content
 
-    # No dependency on the retired loop artifacts or triggers.
+    # No dependency on the retired loop artifacts, triggers, or sibling prompts.
     for forbidden in [
         "features/STATE.json",
         "features/README.md",
@@ -1109,6 +1146,9 @@ def test_bundled_feature_template_contract():
         ":feat-runner",
         ":agent-scaffold",
         ":feedback-loop",
+        ":meta",
+        ":reality",
+        ":cb-transcript-feature",
     ]:
         assert forbidden not in content, forbidden
 
