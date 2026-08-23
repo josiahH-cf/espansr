@@ -1147,6 +1147,16 @@ def test_bundled_feature_template_contract():
     ]:
         assert phrase in content, phrase
 
+    # Delivery is a single pre-write approval round: recommendations plus a "what
+    # would be" reality summary, then the final artifact is written after the reply.
+    for phrase in [
+        "Pre-Write and Single Approval Round",
+        "consolidated approval round",
+        "DECISIONS AND RECOMMENDATIONS",
+        "triggers the final write",
+    ]:
+        assert phrase in content, phrase
+
     # Standalone: one self-contained prompt with no companion command.
     assert (
         "This is one standalone prompt. Do not require, invoke, reference, or direct the user "
