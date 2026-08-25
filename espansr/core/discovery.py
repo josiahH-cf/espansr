@@ -113,6 +113,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
+            (
+                ":feedback",
+                "apply current-cycle feedback to the existing project and verify the changes",
+            ),
             (":docs-qa", "docs-only alignment fallback"),
             (":work-merge", "push / merge"),
         ),

@@ -31,7 +31,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:docs-qa`, `:work-merge`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
@@ -93,6 +93,17 @@ the controlling code path, plans, fixes, verifies, and reviews affected areas.
 Use `:verify` for fresh-context verification, repair, and affected documentation
 alignment. Use `:docs-qa` when the requested work is limited to documentation
 alignment.
+
+Use `:feedback` to apply feedback from the current prompt cycle to an existing
+project and then verify the change. It folds the accepted current-cycle
+decisions, the newest directives appended after its marker, and current project
+evidence into one bounded apply-and-verify cycle. It differs from its neighbors:
+`:feature` stops at an implementation handoff before building, `:verify` reviews
+work that is already considered done, `:troubleshoot` starts from a bug or
+failure, and `:context` only condenses context without changing the project.
+`:feedback` keeps no persistent feedback log or cross-session memory; the retired
+`:feedback-loop` command that used persistent capture and specification
+generation remains retired.
 
 Use `:goal` to interpret the current context or optional notes into one tightly
 bounded, measurable or verifiable goal. It restates the interpreted goal, runs a
