@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Capability graph and process layer** — templates can carry additive
+	capability metadata (`capability_id`, `intent_tags`, `accepts`, `produces`,
+	`use_when`, `avoid_when`, `output_contract`); optional workflow manifests
+	under `templates/_meta/workflows/` describe how capabilities relate
+	(bundled: `evidence-research-cycle` and `feature-delivery-cycle`); the
+	`:coms` popup gains fuzzy search, artifact selectors, Recommended /
+	Processes / Recent / Favorites views, per-command guidance, and direct
+	copy/scratchpad/packet/editor actions; handoff packets provide explicit,
+	user-saved context transport (`espansr packet`); `espansr workflows`
+	inspects and validates manifests; `espansr check-output` validates model
+	output against a template's structural output contract; and the new
+	standalone `:litmus` note authors plain-language human-verification
+	checklists. The refined `:feature` note adds honest INPUT COVERAGE and an
+	explicit CLARIFICATION STATUS while preserving its nine-phase handoff
+	workflow. Everything is optional and local: every trigger works exactly as
+	before, no workflow owns a current step, nothing runs automatically, and no
+	metadata reaches generated Espanso YAML. See docs/PROCESS.md.
+
 - **In-place reinstall command** — `espansr refresh` identifies the OS and the
 	recorded install location, then reruns the correct installer (`install.ps1`
 	via PowerShell on Windows, `install.sh` via Bash on Linux/macOS/WSL2). It

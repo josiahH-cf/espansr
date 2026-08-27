@@ -5,5 +5,22 @@
   "trigger": ":verify",
   "category": "review",
   "stage": "verification",
-  "next_triggers": []
+  "next_triggers": [],
+  "capability_id": "verification",
+  "intent_tags": [
+    "verify completed work",
+    "falsify claims",
+    "check an implementation",
+    "verification report"
+  ],
+  "accepts": [
+    "implemented-feature",
+    "implementation-handoff",
+    "context-packet"
+  ],
+  "produces": [
+    "verification-report"
+  ],
+  "use_when": "Work is claimed complete and you want it verified and falsified against reality.",
+  "avoid_when": "Nothing has been implemented yet."
 }

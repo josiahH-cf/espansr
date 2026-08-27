@@ -30,7 +30,14 @@ _PREVIEW_MAX_CHARS = 280
 
 @dataclass(frozen=True)
 class CommandCatalogEntry:
-    """Normalized row model for the commands popup."""
+    """Normalized row model for the commands popup.
+
+    Capability metadata and workflow membership are additive, defaulted
+    fields: they power intent- and artifact-aware discovery while leaving
+    every existing consumer untouched. ``workflow_next`` holds derived
+    (trigger, edge label) neighbors from workflow manifests — derived at
+    runtime, never written back to templates.
+    """
 
     trigger: str
     name: str
@@ -40,6 +47,16 @@ class CommandCatalogEntry:
     category: str = ""
     stage: str = ""
     next_triggers: tuple[str, ...] = ()
+    capability_id: str = ""
+    intent_tags: tuple[str, ...] = ()
+    accepts: tuple[str, ...] = ()
+    produces: tuple[str, ...] = ()
+    use_when: str = ""
+    avoid_when: str = ""
+    workflows: tuple[str, ...] = ()
+    workflow_next: tuple[tuple[str, str], ...] = ()
+    has_output_contract: bool = False
+    content: str = ""
 
     @property
     def workflow_label(self) -> str:
@@ -90,6 +107,8 @@ def _build_template_preview(template: Template) -> str:
 
 def _iter_template_entries(template_manager: TemplateManager) -> Iterable[CommandCatalogEntry]:
     """Yield popup entries for template-backed triggers."""
+    from espansr.core.capabilities import effective_capability_id
+
     for template in template_manager.iter_with_triggers():
         yield CommandCatalogEntry(
             trigger=template.trigger,
@@ -100,6 +119,14 @@ def _iter_template_entries(template_manager: TemplateManager) -> Iterable[Comman
             category=template.category or "template",
             stage=template.stage or "custom",
             next_triggers=tuple(template.next_triggers or []),
+            capability_id=effective_capability_id(template),
+            intent_tags=tuple(template.intent_tags or []),
+            accepts=tuple(template.accepts or []),
+            produces=tuple(template.produces or []),
+            use_when=template.use_when or "",
+            avoid_when=template.avoid_when or "",
+            has_output_contract=bool(template.output_contract),
+            content=template.content or "",
         )
 
 
@@ -138,9 +165,43 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
     ]
 
 
+def _attach_workflow_membership(
+    entries: list[CommandCatalogEntry], workflow_catalog
+) -> list[CommandCatalogEntry]:
+    """Enrich entries with workflow membership and derived neighbors.
+
+    Neighbors are derived from manifest edges at runtime and mapped to the
+    current triggers via each capability's stable ID. Nothing is written back
+    to template files — topology stays owned by the manifests.
+    """
+    from dataclasses import replace
+
+    trigger_by_capability = {
+        entry.capability_id: entry.trigger for entry in entries if entry.capability_id
+    }
+    enriched: list[CommandCatalogEntry] = []
+    for entry in entries:
+        if not entry.capability_id:
+            enriched.append(entry)
+            continue
+        memberships = tuple(
+            workflow.id for workflow in workflow_catalog.workflows_for(entry.capability_id)
+        )
+        neighbors = tuple(
+            (trigger_by_capability[edge.target], edge.label)
+            for _workflow, edge in workflow_catalog.outgoing(entry.capability_id)
+            if edge.target in trigger_by_capability
+        )
+        if memberships or neighbors:
+            entry = replace(entry, workflows=memberships, workflow_next=neighbors)
+        enriched.append(entry)
+    return enriched
+
+
 def build_command_catalog(
     template_manager: Optional[TemplateManager] = None,
     config: Optional[Config] = None,
+    workflow_catalog=None,
 ) -> list[CommandCatalogEntry]:
     """Build the complete trigger catalog for the commands popup."""
     # Always create a fresh TemplateManager to avoid stale singleton state.
@@ -152,5 +213,10 @@ def build_command_catalog(
     config = config or get_config()
 
     entries = list(_iter_template_entries(template_manager))
+    if workflow_catalog is None:
+        from espansr.core.workflows import load_workflow_catalog
+
+        workflow_catalog = load_workflow_catalog()
+    entries = _attach_workflow_membership(entries, workflow_catalog)
     entries.extend(_build_system_entries(config))
     return sorted(entries, key=lambda entry: (entry.trigger.lower(), entry.name.lower()))

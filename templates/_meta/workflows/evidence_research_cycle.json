@@ -1,0 +1,84 @@
+{
+  "workflow_schema": 1,
+  "id": "evidence-research-cycle",
+  "name": "Evidence Research, Challenge, and Presentation",
+  "description": "Research a question, independently challenge the result, and present existing material in a useful form without forcing every stage. Every node is a direct entry point; no edge runs automatically.",
+  "tags": ["research", "review", "presentation"],
+  "entry_points": [
+    "research-report",
+    "gap-review",
+    "visual-workflow",
+    "html-help-doc",
+    "context-reset"
+  ],
+  "nodes": [
+    {"capability": "research-report", "role": "evidence"},
+    {"capability": "gap-review", "role": "challenge"},
+    {"capability": "visual-workflow", "role": "presentation"},
+    {"capability": "html-help-doc", "role": "presentation"},
+    {"capability": "context-reset", "role": "transfer"}
+  ],
+  "edges": [
+    {
+      "source": "research-report",
+      "target": "gap-review",
+      "label": "Challenge the findings independently.",
+      "artifact": "evidence-report"
+    },
+    {
+      "source": "research-report",
+      "target": "visual-workflow",
+      "label": "Visualize the existing findings without repeating research.",
+      "artifact": "evidence-report"
+    },
+    {
+      "source": "research-report",
+      "target": "html-help-doc",
+      "label": "Turn the findings into a self-contained interactive HTML document.",
+      "artifact": "evidence-report"
+    },
+    {
+      "source": "gap-review",
+      "target": "research-report",
+      "label": "Fill material evidence gaps discovered during review.",
+      "artifact": "gap-review"
+    },
+    {
+      "source": "gap-review",
+      "target": "visual-workflow",
+      "label": "Visualize the revised understanding.",
+      "artifact": "gap-review"
+    },
+    {
+      "source": "gap-review",
+      "target": "html-help-doc",
+      "label": "Build an interactive reading or runbook surface from the reviewed material.",
+      "artifact": "gap-review"
+    },
+    {
+      "source": "context-reset",
+      "target": "research-report",
+      "label": "Use the condensed context as the input artifact for the selected capability.",
+      "artifact": "context-packet"
+    },
+    {
+      "source": "context-reset",
+      "target": "gap-review",
+      "label": "Use the condensed context as the input artifact for the selected capability.",
+      "artifact": "context-packet"
+    },
+    {
+      "source": "context-reset",
+      "target": "visual-workflow",
+      "label": "Use the condensed context as the input artifact for the selected capability.",
+      "artifact": "context-packet"
+    },
+    {
+      "source": "context-reset",
+      "target": "html-help-doc",
+      "label": "Use the condensed context as the input artifact for the selected capability.",
+      "artifact": "context-packet"
+    }
+  ],
+  "notes": "A user with no prior material can begin at research; a user with outside research can begin at the gap review; accepted material can go straight to visualization or the HTML document. A gap review may loop back to research. The workflow never directs a model to invoke another trigger automatically."
+}

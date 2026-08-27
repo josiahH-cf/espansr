@@ -88,6 +88,43 @@ class TemplateEditorWidget(QWidget):
         self._variable_editor = VariableEditorWidget()
         layout.addWidget(self._variable_editor)
 
+        # Capability metadata (optional, collapsed by default so simple
+        # template editing stays simple)
+        self._metadata_toggle = QPushButton("Capability metadata (optional)")
+        self._metadata_toggle.setCheckable(True)
+        self._metadata_toggle.setChecked(False)
+        self._metadata_toggle.toggled.connect(self._toggle_metadata_section)
+        layout.addWidget(self._metadata_toggle)
+
+        self._metadata_container = QWidget()
+        metadata_layout = QVBoxLayout(self._metadata_container)
+        metadata_layout.setContentsMargins(0, 0, 0, 0)
+
+        def _metadata_field(label: str, placeholder: str) -> QLineEdit:
+            metadata_layout.addWidget(QLabel(label))
+            edit = QLineEdit()
+            edit.setPlaceholderText(placeholder)
+            metadata_layout.addWidget(edit)
+            return edit
+
+        self._capability_id_edit = _metadata_field(
+            "Capability ID:", "stable-id-used-by-workflows (optional)"
+        )
+        self._intent_tags_edit = _metadata_field(
+            "Intent tags (comma-separated):", "e.g. challenge completed research"
+        )
+        self._accepts_edit = _metadata_field(
+            "Accepts artifact types (comma-separated):", "e.g. evidence-report"
+        )
+        self._produces_edit = _metadata_field(
+            "Produces artifact types (comma-separated):", "e.g. gap-review"
+        )
+        self._use_when_edit = _metadata_field("Use when:", "one-line usage guidance")
+        self._avoid_when_edit = _metadata_field("Avoid when:", "one-line counter-guidance")
+
+        self._metadata_container.setVisible(False)
+        layout.addWidget(self._metadata_container)
+
         # Preview container (togglable)
         self._preview_container = QWidget()
         preview_layout = QVBoxLayout(self._preview_container)
@@ -143,6 +180,12 @@ class TemplateEditorWidget(QWidget):
         self._trigger_edit.setText(template.trigger)
         self._content_edit.setPlainText(template.content)
         self._variable_editor.load_variables(template.variables or [])
+        self._capability_id_edit.setText(template.capability_id or "")
+        self._intent_tags_edit.setText(", ".join(template.intent_tags or []))
+        self._accepts_edit.setText(", ".join(template.accepts or []))
+        self._produces_edit.setText(", ".join(template.produces or []))
+        self._use_when_edit.setText(template.use_when or "")
+        self._avoid_when_edit.setText(template.avoid_when or "")
         self._update_yaml_preview()
         self._update_output_preview()
 
@@ -153,8 +196,29 @@ class TemplateEditorWidget(QWidget):
         self._trigger_edit.clear()
         self._content_edit.clear()
         self._variable_editor.clear()
+        self._capability_id_edit.clear()
+        self._intent_tags_edit.clear()
+        self._accepts_edit.clear()
+        self._produces_edit.clear()
+        self._use_when_edit.clear()
+        self._avoid_when_edit.clear()
         self._yaml_preview.clear()
         self._output_preview.clear()
+
+    def _metadata_from_fields(self) -> dict:
+        """Read the capability metadata fields into normalized values."""
+
+        def _csv(edit: QLineEdit) -> list:
+            return [part.strip() for part in edit.text().split(",") if part.strip()]
+
+        return {
+            "capability_id": self._capability_id_edit.text().strip(),
+            "intent_tags": _csv(self._intent_tags_edit),
+            "accepts": _csv(self._accepts_edit),
+            "produces": _csv(self._produces_edit),
+            "use_when": self._use_when_edit.text().strip(),
+            "avoid_when": self._avoid_when_edit.text().strip(),
+        }
 
     def has_unsaved_changes(self) -> bool:
         """Return True when editor fields differ from the loaded template."""
@@ -162,15 +226,23 @@ class TemplateEditorWidget(QWidget):
         trigger = self._trigger_edit.text().strip()
         content = self._content_edit.toPlainText()
         variables = [var.to_dict() for var in self._variable_editor.get_variables()]
+        metadata = self._metadata_from_fields()
 
         if self._current_template is None:
-            return bool(name or trigger or content or variables)
+            return bool(name or trigger or content or variables or any(metadata.values()))
 
+        current = self._current_template
         return (
-            name != self._current_template.name
-            or trigger != self._current_template.trigger
-            or content != self._current_template.content
-            or variables != [var.to_dict() for var in (self._current_template.variables or [])]
+            name != current.name
+            or trigger != current.trigger
+            or content != current.content
+            or variables != [var.to_dict() for var in (current.variables or [])]
+            or metadata["capability_id"] != (current.capability_id or "")
+            or metadata["intent_tags"] != (current.intent_tags or [])
+            or metadata["accepts"] != (current.accepts or [])
+            or metadata["produces"] != (current.produces or [])
+            or metadata["use_when"] != (current.use_when or "")
+            or metadata["avoid_when"] != (current.avoid_when or "")
         )
 
     def save_current(self, emit_signal: bool = True) -> Optional[Template]:
@@ -190,6 +262,7 @@ class TemplateEditorWidget(QWidget):
         variables = self._variable_editor.get_variables()
         manager = get_template_manager()
 
+        metadata = self._metadata_from_fields()
         try:
             if self._current_template is None:
                 template = Template(
@@ -197,6 +270,12 @@ class TemplateEditorWidget(QWidget):
                     content=content,
                     trigger=trigger,
                     variables=variables,
+                    capability_id=metadata["capability_id"],
+                    intent_tags=metadata["intent_tags"],
+                    accepts=metadata["accepts"],
+                    produces=metadata["produces"],
+                    use_when=metadata["use_when"],
+                    avoid_when=metadata["avoid_when"],
                 )
                 if not manager.save(template):
                     self.status_message.emit(f"Save failed for '{name}'", 5000)
@@ -208,6 +287,14 @@ class TemplateEditorWidget(QWidget):
                 self._current_template.trigger = trigger
                 self._current_template.content = content
                 self._current_template.variables = variables
+                self._current_template.capability_id = metadata["capability_id"]
+                self._current_template.intent_tags = metadata["intent_tags"]
+                self._current_template.accepts = metadata["accepts"]
+                self._current_template.produces = metadata["produces"]
+                self._current_template.use_when = metadata["use_when"]
+                self._current_template.avoid_when = metadata["avoid_when"]
+                # template.output_contract has no editor UI and is preserved
+                # untouched on the loaded template.
                 if not manager.save(self._current_template):
                     self.status_message.emit(f"Save failed for '{name}'", 5000)
                     return None
@@ -274,6 +361,10 @@ class TemplateEditorWidget(QWidget):
         self._output_preview.setPlainText(result)
 
     # ── Internal ────────────────────────────────────────────────────────────
+
+    def _toggle_metadata_section(self, checked: bool) -> None:
+        """Show or hide the optional capability metadata section."""
+        self._metadata_container.setVisible(checked)
 
     def _save(self) -> None:
         """Save the current editor state as a new or existing template."""

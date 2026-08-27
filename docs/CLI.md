@@ -258,6 +258,58 @@ Deleting a template from the GUI backs it up locally, removes the JSON file
 after the undo window, and publishes the remaining templates so managed Espanso
 output no longer contains the retired trigger.
 
+### `espansr check-output`
+
+Validate a model-generated output file against a template's structural output
+contract (for templates that declare one, such as `:feature` and `:litmus`).
+For a multi-turn prompt like `:feature`, the checked file is the complete run
+transcript — the approval-round packet plus the final delivery pasted as one
+text — not a single turn in isolation.
+Validation is read-only, reports every unmet obligation rather than only the
+first, and proves structural conformance only — it never claims semantic
+correctness.
+
+```bash
+espansr check-output --template :feature run-output.txt
+espansr check-output --template :litmus checklist.md --json
+```
+
+Exit codes: `0` contract passed, `1` contract failed, `2` the template
+declares no output contract, `3` template not found or the output file cannot
+be read. The template is resolved by trigger, name, or capability ID, first in
+the live store and then among the bundled templates.
+
+### `espansr workflows`
+
+Inspect the optional workflow manifests that describe how capabilities relate.
+Workflows are informational: every capability stays directly invocable, no
+current step is tracked, and nothing ever runs automatically.
+
+```bash
+espansr workflows list                          # list manifests
+espansr workflows show evidence-research-cycle  # entry points, nodes, edges
+espansr workflows validate                      # exit 1 on any manifest error
+```
+
+Bundled manifests live beside the bundled templates in
+`templates/_meta/workflows/`; user manifests may be added under the live
+store's `_meta/workflows/` directory (which stays local-only — `_meta/` is
+gitignored by remote template sync).
+
+### `espansr packet`
+
+Inspect saved handoff packets — explicit, user-controlled context transports
+created from the `:coms` popup. Packets live in the local config directory
+(`<config>/packets/`), outside the git-synced template store, and are never
+created, synced, or deleted automatically.
+
+```bash
+espansr packet list                 # saved packets with artifact types
+espansr packet show my_packet       # print one packet (ID or path)
+espansr packet validate packet.md   # exit 1 with every validation error
+espansr packet delete my_packet     # explicitly delete one packet
+```
+
 ### `espansr --version`
 
 Print the installed version.

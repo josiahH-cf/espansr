@@ -113,6 +113,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
+            (":litmus", "create or audit a plain-language human-verification checklist"),
             (
                 ":feedback",
                 "apply current-cycle feedback to the existing project and verify the changes",

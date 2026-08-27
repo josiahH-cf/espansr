@@ -31,7 +31,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:feedback`, `:docs-qa`, `:work-merge`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:unblock`, `:verify`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
@@ -152,10 +152,22 @@ Each template is a JSON file with the following fields:
 | `replaces` | array | No | Previous bundled trigger names or template identifiers replaced by this template during migration planning. |
 | `deprecated` | boolean | No | Migration metadata for bundled templates. Current publish behavior does not skip a template only because this field is true. |
 | `variables` | array | No | List of variable definitions for placeholders in `content`. |
+| `capability_id` | string | No | Stable capability identity referenced by workflow manifests. Independent of the trigger, so renaming a trigger never breaks workflow membership. Templates without one derive a deterministic ID from their file stem (or name slug before first save). |
+| `intent_tags` | array | No | Plain-language jobs the capability addresses, used by `:coms` fuzzy search (e.g. `"challenge completed research"`). |
+| `accepts` | array | No | Artifact types the capability can consume (e.g. `evidence-report`). Powers the "I currently have" selector. |
+| `produces` | array | No | Artifact types the capability can produce (e.g. `gap-review`). Powers the "I need to produce" selector. |
+| `use_when` | string | No | One-line user-facing guidance shown on the command card. |
+| `avoid_when` | string | No | One-line counter-guidance shown on the command card. |
+| `output_contract` | object | No | Optional structural obligations for model-generated output, checked with `espansr check-output`. See [PROCESS.md](PROCESS.md). |
 
 Workflow metadata fields are optional for user templates. Bundled prompts are
 self-contained: discovery metadata describes each prompt without prescribing
-another prompt to run afterward.
+another prompt to run afterward. Process relationships between bundled prompts
+live only in workflow manifests under `templates/_meta/workflows/` — never in
+template files, and never inside prompt bodies. None of the capability
+metadata ever reaches generated Espanso YAML. See [PROCESS.md](PROCESS.md) for
+the capability graph, workflow manifests, handoff packets, and output
+contracts.
 
 ### Variable Fields
 

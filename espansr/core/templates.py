@@ -78,7 +78,12 @@ class Variable:
 
 @dataclass
 class Template:
-    """A prompt template."""
+    """A prompt template.
+
+    Capability metadata (``capability_id`` through ``output_contract``) is
+    additive and optional: it powers discovery, workflow manifests, and
+    output-contract validation, and never flows into generated Espanso YAML.
+    """
 
     name: str
     content: str
@@ -91,6 +96,13 @@ class Template:
     next_triggers: List[str] = field(default_factory=list)
     replaces: List[str] = field(default_factory=list)
     deprecated: bool = False
+    capability_id: str = ""  # Stable identity referenced by workflow manifests
+    intent_tags: List[str] = field(default_factory=list)
+    accepts: List[str] = field(default_factory=list)  # Artifact types consumed
+    produces: List[str] = field(default_factory=list)  # Artifact types produced
+    use_when: str = ""
+    avoid_when: str = ""
+    output_contract: Dict[str, Any] = field(default_factory=dict)
 
     # Internal: path to the JSON file (set when loaded from disk)
     _path: Optional[Path] = field(default=None, repr=False)
@@ -126,6 +138,20 @@ class Template:
             d["replaces"] = self.replaces
         if self.deprecated:
             d["deprecated"] = True
+        if self.capability_id:
+            d["capability_id"] = self.capability_id
+        if self.intent_tags:
+            d["intent_tags"] = self.intent_tags
+        if self.accepts:
+            d["accepts"] = self.accepts
+        if self.produces:
+            d["produces"] = self.produces
+        if self.use_when:
+            d["use_when"] = self.use_when
+        if self.avoid_when:
+            d["avoid_when"] = self.avoid_when
+        if self.output_contract:
+            d["output_contract"] = self.output_contract
         return d
 
     @classmethod
@@ -144,6 +170,13 @@ class Template:
             next_triggers=_coerce_string_list(data.get("next_triggers", [])),
             replaces=_coerce_string_list(data.get("replaces", [])),
             deprecated=_coerce_bool(data.get("deprecated", False)),
+            capability_id=_coerce_optional_string(data.get("capability_id", "")),
+            intent_tags=_coerce_string_list(data.get("intent_tags", [])),
+            accepts=_coerce_string_list(data.get("accepts", [])),
+            produces=_coerce_string_list(data.get("produces", [])),
+            use_when=_coerce_optional_string(data.get("use_when", "")),
+            avoid_when=_coerce_optional_string(data.get("avoid_when", "")),
+            output_contract=_coerce_dict(data.get("output_contract", {})),
             _path=path,
         )
 
@@ -198,6 +231,13 @@ def _coerce_bool(value: Any) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes", "on"}
     return False
+
+
+def _coerce_dict(value: Any) -> Dict[str, Any]:
+    """Return a dict for optional structured metadata, dropping anything else."""
+    if isinstance(value, dict):
+        return value
+    return {}
 
 
 @dataclass
@@ -1108,6 +1148,13 @@ _KNOWN_TEMPLATE_FIELDS = {
     "next_triggers",
     "replaces",
     "deprecated",
+    "capability_id",
+    "intent_tags",
+    "accepts",
+    "produces",
+    "use_when",
+    "avoid_when",
+    "output_contract",
 }
 
 # Known fields in the internal Variable schema.
@@ -1220,6 +1267,15 @@ def import_template(path: Path, manager: Optional[TemplateManager] = None) -> Im
     # De-duplicate name
     final_name, was_renamed = _deduplicate_name(template.name, manager)
     template.name = final_name
+
+    # Capability IDs are stable identities referenced by workflow manifests, so
+    # they must stay unique. When an imported file reuses an ID that a different
+    # template already owns, conservatively clear the incoming ID rather than
+    # create a second owner.
+    if template.capability_id and any(
+        t.capability_id == template.capability_id for t in manager.list_all()
+    ):
+        template.capability_id = ""
 
     if not manager.save(template):
         return ImportResult(error=f"Failed to save template '{template.name}'")

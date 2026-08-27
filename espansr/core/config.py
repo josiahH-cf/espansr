@@ -127,12 +127,26 @@ class RemoteConfig:
 
 
 @dataclass
+class DiscoveryConfig:
+    """Local discovery state for the commands popup (favorites and recents).
+
+    This is convenience state only — never workflow position, never a current
+    step. It stays in the local config file and is never synced anywhere.
+    """
+
+    favorite_triggers: list = field(default_factory=list)
+    recent_triggers: list = field(default_factory=list)
+    max_recent: int = 10
+
+
+@dataclass
 class Config:
     """Main application configuration."""
 
     espanso: EspansoConfig = field(default_factory=EspansoConfig)
     ui: UIConfig = field(default_factory=UIConfig)
     remote: RemoteConfig = field(default_factory=RemoteConfig)
+    discovery: DiscoveryConfig = field(default_factory=DiscoveryConfig)
 
     def to_dict(self) -> dict:
         """Convert config to dictionary."""
@@ -144,11 +158,13 @@ class Config:
         espanso_data = data.get("espanso", {})
         ui_data = data.get("ui", {})
         remote_data = data.get("remote", {})
+        discovery_data = data.get("discovery", {})
 
         # Guard against unknown fields from future versions
         known_espanso = {f.name for f in EspansoConfig.__dataclass_fields__.values()}
         known_ui = {f.name for f in UIConfig.__dataclass_fields__.values()}
         known_remote = {f.name for f in RemoteConfig.__dataclass_fields__.values()}
+        known_discovery = {f.name for f in DiscoveryConfig.__dataclass_fields__.values()}
 
         return cls(
             espanso=(
@@ -165,6 +181,11 @@ class Config:
                 RemoteConfig(**{k: v for k, v in remote_data.items() if k in known_remote})
                 if remote_data
                 else RemoteConfig()
+            ),
+            discovery=(
+                DiscoveryConfig(**{k: v for k, v in discovery_data.items() if k in known_discovery})
+                if discovery_data
+                else DiscoveryConfig()
             ),
         )
 
@@ -287,6 +308,17 @@ def get_config_manager() -> ConfigManager:
 def get_config() -> Config:
     """Get the current configuration."""
     return get_config_manager().config
+
+
+def load_config_fresh() -> Config:
+    """Load the configuration straight from disk, bypassing the cached
+    singleton.
+
+    Long-lived secondary processes (such as the :coms popup) use this before
+    writing, so a save reflects the current on-disk state instead of a stale
+    startup snapshot silently reverting changes made elsewhere.
+    """
+    return ConfigManager().load()
 
 
 def save_config(config: Optional[Config] = None) -> bool:
