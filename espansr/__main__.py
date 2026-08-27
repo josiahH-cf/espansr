@@ -18,6 +18,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+from espansr.core.atomic import atomic_copy
 from espansr.core.cli_color import fail, ok, warn
 from espansr.core.config import get_config_dir, get_templates_dir
 from espansr.core.packets import get_packets_dir
@@ -257,7 +258,7 @@ def cmd_setup(args) -> int:
                     print(f"  {src.name}: would copy")
                 copied += 1
             else:
-                shutil.copy2(str(src), str(dest))
+                atomic_copy(src, dest)
                 copied += 1
                 if verbose:
                     print(f"  {src.name}: copied")

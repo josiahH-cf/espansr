@@ -7,12 +7,12 @@ Version history is stored in _versions/ subdirectory.
 
 import json
 import re
-import shutil
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional
 
+from espansr.core.atomic import atomic_copy, atomic_write_json
 from espansr.core.config import get_config, get_templates_dir
 
 
@@ -317,8 +317,7 @@ class TemplateManager:
 
         version_path = version_dir / f"v{next_version}.json"
         try:
-            with open(version_path, "w", encoding="utf-8") as f:
-                json.dump(version.to_dict(), f, indent=2)
+            atomic_write_json(version_path, version.to_dict())
         except OSError as e:
             print(f"Error saving version: {e}")
             return None
@@ -338,7 +337,7 @@ class TemplateManager:
         suffix = path.suffix or ".json"
         backup_path = backup_dir / f"{label}-{timestamp}{suffix}"
         try:
-            shutil.copy2(path, backup_path)
+            atomic_copy(path, backup_path)
             return backup_path
         except OSError as e:
             print(f"Error backing up raw template file: {e}")
@@ -491,8 +490,7 @@ class TemplateManager:
             path = self.templates_dir / template.filename
 
         try:
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(template.to_dict(), f, indent=2)
+            atomic_write_json(path, template.to_dict())
             template._path = path
             return True
         except OSError as e:
@@ -609,8 +607,7 @@ class TemplateManager:
         new_path = target_dir / template.filename
 
         try:
-            with open(new_path, "w", encoding="utf-8") as f:
-                json.dump(template.to_dict(), f, indent=2)
+            atomic_write_json(new_path, template.to_dict())
 
             if old_path and old_path != new_path and old_path.exists():
                 old_path.unlink()
@@ -1034,7 +1031,7 @@ def apply_bundled_template_report(
         if entry.status == "missing_local":
             if not dry_run:
                 entry.local_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(entry.bundled_path, entry.local_path)
+                atomic_copy(entry.bundled_path, entry.local_path)
             result.copied += 1
             continue
 
@@ -1045,7 +1042,7 @@ def apply_bundled_template_report(
                     result.skipped_invalid.append(entry)
                     continue
                 manager.create_version(existing, note="Backup before bundled sync")
-                shutil.copy2(entry.bundled_path, entry.local_path)
+                atomic_copy(entry.bundled_path, entry.local_path)
             result.updated += 1
             continue
 
@@ -1060,8 +1057,9 @@ def apply_bundled_template_report(
                     existing, note=f"Backup before bundled rename to {entry.filename}"
                 )
                 target_path.parent.mkdir(parents=True, exist_ok=True)
-                entry.local_path.unlink()
-                shutil.copy2(entry.bundled_path, target_path)
+                atomic_copy(entry.bundled_path, target_path)
+                if entry.local_path != target_path:
+                    entry.local_path.unlink()
             result.migrated += 1
             continue
 
@@ -1097,9 +1095,10 @@ def apply_bundled_template_report(
                         result.skipped_invalid.append(entry)
                         continue
                     if entry.local_path != target_path:
-                        entry.local_path.unlink(missing_ok=True)
                         target_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(entry.bundled_path, target_path)
+                    atomic_copy(entry.bundled_path, target_path)
+                    if entry.local_path != target_path:
+                        entry.local_path.unlink(missing_ok=True)
                 result.forced += 1
                 continue
             result.skipped_invalid.append(entry)
