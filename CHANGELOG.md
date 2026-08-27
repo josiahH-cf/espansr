@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Workflow diagrams in `:coms` and `:aopen`** — the process graphs are now
+	drawn as interactive diagrams from the workflow manifests: the `:coms`
+	Processes view shows the graph with per-node details and copy / scratchpad
+	/ show-command actions, and the editor gains a Workflows panel (toolbar
+	button or `Ctrl+Shift+W`) where clicking a node selects that template.
+	Manifests may carry optional `x`/`y` layout hints on nodes and `short`
+	arrow labels on edges; manifests without hints get a deterministic
+	auto-layout. Loop edges draw in the accent color and "feeds any node"
+	sources draw once, dashed.
+
+### Changed
+
+- **`:coms` "Prompt to scratchpad"** now places the command's full prompt in
+	the scratchpad (previously only the trigger); system entries without a
+	prompt body still insert their trigger.
+
 - **Capability graph and process layer** — templates can carry additive
 	capability metadata (`capability_id`, `intent_tags`, `accepts`, `produces`,
 	`use_when`, `avoid_when`, `output_contract`); optional workflow manifests

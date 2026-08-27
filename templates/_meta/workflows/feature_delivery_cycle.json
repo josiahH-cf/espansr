@@ -3,7 +3,11 @@
   "id": "feature-delivery-cycle",
   "name": "Goal, Evidence, Handoff, Verification, and Feedback",
   "description": "Move feature intent toward an implementation handoff and later verification while preserving direct entry at any stage. Every node is a direct entry point; no edge runs automatically and no predecessor is ever required.",
-  "tags": ["feature", "handoff", "verification"],
+  "tags": [
+    "feature",
+    "handoff",
+    "verification"
+  ],
   "entry_points": [
     "goal-refinement",
     "research-report",
@@ -15,129 +19,188 @@
     "context-reset"
   ],
   "nodes": [
-    {"capability": "goal-refinement", "role": "goal"},
-    {"capability": "research-report", "role": "evidence"},
-    {"capability": "gap-review", "role": "challenge"},
-    {"capability": "human-litmus", "role": "human-verification"},
-    {"capability": "feature-handoff", "role": "handoff"},
-    {"capability": "verification", "role": "verification"},
-    {"capability": "feedback-apply", "role": "correction"},
-    {"capability": "context-reset", "role": "transfer"}
+    {
+      "capability": "goal-refinement",
+      "role": "goal",
+      "x": 20,
+      "y": 176
+    },
+    {
+      "capability": "research-report",
+      "role": "evidence",
+      "x": 220,
+      "y": 66
+    },
+    {
+      "capability": "gap-review",
+      "role": "challenge",
+      "x": 220,
+      "y": 186
+    },
+    {
+      "capability": "human-litmus",
+      "role": "human-verification",
+      "x": 220,
+      "y": 308
+    },
+    {
+      "capability": "feature-handoff",
+      "role": "handoff",
+      "x": 466,
+      "y": 176
+    },
+    {
+      "capability": "verification",
+      "role": "verification",
+      "x": 690,
+      "y": 116
+    },
+    {
+      "capability": "feedback-apply",
+      "role": "correction",
+      "x": 690,
+      "y": 254
+    },
+    {
+      "capability": "context-reset",
+      "role": "transfer",
+      "x": 466,
+      "y": 368
+    }
   ],
   "edges": [
     {
       "source": "goal-refinement",
       "target": "research-report",
       "label": "Gather evidence needed to define the goal responsibly.",
-      "artifact": "goal-contract"
+      "artifact": "goal-contract",
+      "short": "gather evidence"
     },
     {
       "source": "goal-refinement",
       "target": "gap-review",
       "label": "Stress-test the goal before handoff.",
-      "artifact": "goal-contract"
+      "artifact": "goal-contract",
+      "short": "stress-test"
     },
     {
       "source": "goal-refinement",
       "target": "feature-handoff",
       "label": "Compile a handoff when the goal and evidence are already sufficient.",
-      "artifact": "goal-contract"
+      "artifact": "goal-contract",
+      "short": "skip ahead"
     },
     {
       "source": "research-report",
       "target": "gap-review",
       "label": "Independently challenge the evidence and conclusions.",
-      "artifact": "evidence-report"
+      "artifact": "evidence-report",
+      "short": "challenge"
     },
     {
       "source": "research-report",
       "target": "feature-handoff",
       "label": "Compile a handoff when research is adequate.",
-      "artifact": "evidence-report"
+      "artifact": "evidence-report",
+      "short": "hand off"
     },
     {
       "source": "gap-review",
       "target": "research-report",
       "label": "Investigate material gaps.",
-      "artifact": "gap-review"
+      "artifact": "gap-review",
+      "short": "fill gaps"
     },
     {
       "source": "gap-review",
       "target": "human-litmus",
       "label": "Turn the resolved outcome into observable human checks.",
-      "artifact": "gap-review"
+      "artifact": "gap-review",
+      "short": "human checks"
     },
     {
       "source": "gap-review",
       "target": "feature-handoff",
       "label": "Compile the reviewed material into the implementation handoff.",
-      "artifact": "gap-review"
+      "artifact": "gap-review",
+      "short": "hand off"
     },
     {
       "source": "human-litmus",
       "target": "feature-handoff",
       "label": "Include the completed human-verification contract in the handoff.",
-      "artifact": "human-litmus"
+      "artifact": "human-litmus",
+      "short": "include contract"
     },
     {
       "source": "feature-handoff",
       "target": "verification",
       "label": "Verify the implemented feature after a separate implementation run.",
-      "artifact": "implementation-handoff"
+      "artifact": "implementation-handoff",
+      "short": "after the build"
     },
     {
       "source": "verification",
       "target": "feedback-apply",
       "label": "Apply accepted corrections from verification.",
-      "artifact": "verification-report"
+      "artifact": "verification-report",
+      "short": "apply fixes"
     },
     {
       "source": "feedback-apply",
       "target": "verification",
       "label": "Reverify the corrected implementation.",
-      "artifact": "verification-report"
+      "artifact": "verification-report",
+      "short": "reverify"
     },
     {
       "source": "context-reset",
       "target": "goal-refinement",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "research-report",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "gap-review",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "human-litmus",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "feature-handoff",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "verification",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     },
     {
       "source": "context-reset",
       "target": "feedback-apply",
       "label": "Use a compact handoff as the starting context.",
-      "artifact": "context-packet"
+      "artifact": "context-packet",
+      "short": "feeds any node"
     }
   ],
   "notes": "The user may invoke the feature handoff directly with rough notes, or with a goal contract, research report, review, or litmus artifact. Discovery may recommend predecessors or successors, but prompt bodies never route the user. Verification stays usable independently for already completed work, and the feedback node stays one bounded apply-and-verify cycle."

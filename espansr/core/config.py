@@ -112,6 +112,9 @@ class UIConfig:
     # Preview toggle
     show_previews: bool = False
 
+    # Workflow diagram panel in the main window
+    show_workflows: bool = False
+
     # Template versioning
     max_template_versions: int = 10
 

@@ -220,7 +220,8 @@ def test_copy_prompt_action_copies_full_content(qtbot):
     assert QApplication.clipboard().text() == "You are research, full prompt body."
 
 
-def test_send_to_scratchpad_places_trigger(qtbot):
+def test_send_to_scratchpad_places_full_prompt(qtbot):
+    """The scratchpad receives the prompt body, not just its trigger."""
     dialog = _make_dialog(qtbot)
     entry = _entries()[0]
     with (
@@ -228,7 +229,7 @@ def test_send_to_scratchpad_places_trigger(qtbot):
         patch("espansr.ui.commands_popup.load_config_fresh", side_effect=Config),
     ):
         dialog._send_to_scratchpad(entry)
-    assert ":research" in dialog._scratchpad.toPlainText()
+    assert "You are research, full prompt body." in dialog._scratchpad.toPlainText()
 
 
 def test_row_widget_exposes_action_buttons(qtbot):

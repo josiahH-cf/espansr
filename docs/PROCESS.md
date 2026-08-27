@@ -93,6 +93,34 @@ User manifests can be added under the live template store's
 `_meta/workflows/` directory. That directory is local-only (`_meta/` is
 gitignored by remote template sync).
 
+### Diagrams
+
+Both bundled workflows render as interactive diagrams inside espansr:
+
+- **`:coms` → Processes view** — the graph is drawn on the popup. Click a
+  node to see its trigger, what it accepts and produces, its use/avoid
+  guidance, and every optional next step with its full label. The buttons
+  under the diagram act on the selected node: copy its prompt, put the
+  prompt in the scratchpad, or jump to its card in All Commands. Selecting a
+  row in the Quick Reference table switches between workflows.
+- **`:aopen` → Workflows panel** — the editor gains a "Show Workflows"
+  toolbar button (`Ctrl+Shift+W`). Clicking a node selects that template in
+  the browser and loads it in the editor; Enter or double-click also focuses
+  the editor. The panel's visibility is remembered in `config.json`
+  (`ui.show_workflows`).
+
+Diagrams are drawn from the manifests, so they stay in sync with the
+topology by construction. Two optional, presentation-only keys shape them:
+`x`/`y` on a node (scene coordinates; when every node has them the manifest's
+own layout is used, otherwise espansr computes a deterministic layered layout)
+and `short` on an edge (the two-or-three-word label drawn on the arrow — the
+full `label` still appears in the detail panel and as a tooltip). Loop edges
+(A→B and B→A) draw in the accent color, and a node whose edges reach every
+other node — like `context-reset` — draws once as a dashed "feeds any node"
+source instead of one arrow per target. Keyboard: Tab / Shift+Tab move
+between nodes, Enter activates the selection. Nothing in a diagram runs a
+prompt; nodes only select.
+
 ## Discovery in `:coms`
 
 The popup keeps the full alphabetical reference, previews, system entries,
@@ -106,9 +134,9 @@ scratchpad, escape behavior, and theming — and adds:
   **Recent**, and **Favorites**;
 - per-command `use_when` / `avoid_when` guidance, workflow membership, and
   optional-next hints;
-- direct actions: copy the trigger, copy the full prompt, place the trigger in
-  the scratchpad, open the template in the full editor, star a favorite, and
-  preview a handoff packet.
+- direct actions: copy the trigger, copy the full prompt, place the full
+  prompt in the scratchpad ("Prompt to scratchpad"), open the template in the
+  full editor, star a favorite, and preview a handoff packet.
 
 Ranking is local and deterministic — capability metadata, artifact
 compatibility, workflow proximity, favorites, and recency. No model, no

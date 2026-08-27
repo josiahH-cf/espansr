@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
 )
 
 from espansr.core.config import get_config, get_config_manager, save_config
+from espansr.core.workflows import load_workflow_catalog
 from espansr.ui.template_browser import TemplateBrowserWidget
 from espansr.ui.template_editor import TemplateEditorWidget
 from espansr.ui.theme import get_theme_stylesheet
@@ -101,6 +102,11 @@ class MainWindow(QMainWindow):
         self._preview_toggle_btn.clicked.connect(self._toggle_preview)
         toolbar.addWidget(self._preview_toggle_btn)
 
+        # Workflow diagram toggle
+        self._workflows_toggle_btn = QPushButton()
+        self._workflows_toggle_btn.clicked.connect(self._toggle_workflows)
+        toolbar.addWidget(self._workflows_toggle_btn)
+
         # Theme selector
         self._theme_combo = QComboBox()
         self._theme_combo.addItems(["Auto", "Dark", "Light"])
@@ -133,7 +139,25 @@ class MainWindow(QMainWindow):
             self._splitter.setSizes(sizes)
 
         self._splitter.splitterMoved.connect(self._on_splitter_moved)
-        self.setCentralWidget(self._splitter)
+
+        # Workflow diagram panel (hidden until toggled; catalog loads lazily)
+        from espansr.ui.workflow_diagram import WorkflowPanel
+
+        self._workflow_panel = WorkflowPanel(
+            theme=self._config.ui.theme,
+            actions=[("Open in editor", self._open_capability_in_editor)],
+        )
+        self._workflow_panel.capability_selected.connect(self._select_capability_template)
+        self._workflow_panel.capability_activated.connect(self._open_capability_in_editor)
+        self._workflow_panel.setVisible(False)
+        self._workflow_panel_loaded = False
+
+        self._vertical_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._vertical_splitter.addWidget(self._splitter)
+        self._vertical_splitter.addWidget(self._workflow_panel)
+        self._vertical_splitter.setStretchFactor(0, 3)
+        self._vertical_splitter.setStretchFactor(1, 2)
+        self.setCentralWidget(self._vertical_splitter)
 
         # Status bar
         status_bar = QStatusBar()
@@ -173,11 +197,62 @@ class MainWindow(QMainWindow):
         self._shortcut_preview = QShortcut(QKeySequence("Ctrl+Shift+P"), self)
         self._shortcut_preview.activated.connect(lambda: self._toggle_preview())
 
+        self._shortcut_workflows = QShortcut(QKeySequence("Ctrl+Shift+W"), self)
+        self._shortcut_workflows.activated.connect(lambda: self._toggle_workflows())
+
     def _apply_preview_state(self) -> None:
         """Apply the preview visibility from config and update button."""
         visible = self._config.ui.show_previews
         self._editor.set_previews_visible(visible)
         self._update_preview_button(visible)
+        self._apply_workflows_state()
+
+    # ── Workflow diagrams ───────────────────────────────────────────────────
+
+    def _apply_workflows_state(self) -> None:
+        """Apply the workflow panel visibility from config and update the button."""
+        self._set_workflows_visible(self._config.ui.show_workflows)
+
+    def _toggle_workflows(self) -> None:
+        """Toggle the workflow diagram panel and persist the state."""
+        new_state = not self._config.ui.show_workflows
+        self._config.ui.show_workflows = new_state
+        self._set_workflows_visible(new_state)
+        save_config(self._config)
+
+    def _set_workflows_visible(self, visible: bool) -> None:
+        if visible and not self._workflow_panel_loaded:
+            self._load_workflow_panel()
+        self._workflow_panel.setVisible(visible)
+        if visible:
+            self._workflows_toggle_btn.setText("Hide Workflows")
+            self._workflows_toggle_btn.setToolTip("Hide the process diagrams (Ctrl+Shift+W)")
+        else:
+            self._workflows_toggle_btn.setText("Show Workflows")
+            self._workflows_toggle_btn.setToolTip(
+                "Show how the prompts relate as process diagrams (Ctrl+Shift+W)"
+            )
+
+    def _load_workflow_panel(self) -> None:
+        """Load manifests and the browser's templates into the diagram panel."""
+        from espansr.ui.workflow_diagram import capability_infos_from_templates
+
+        catalog = load_workflow_catalog()
+        templates = getattr(self._browser, "_all_templates", None) or []
+        self._workflow_panel.set_catalog(
+            catalog, capability_infos_from_templates(templates), theme=self._config.ui.theme
+        )
+        self._workflow_panel_loaded = True
+
+    def _select_capability_template(self, capability: str) -> None:
+        """A node click selects the matching template in the browser/editor."""
+        info = self._workflow_panel.info_for(capability)
+        if info is not None and info.name:
+            self._browser.select_template_by_name(info.name)
+
+    def _open_capability_in_editor(self, capability: str) -> None:
+        self._select_capability_template(capability)
+        self._editor.setFocus()
 
     def _toggle_preview(self) -> None:
         """Toggle the YAML/output preview panes and persist the state."""
@@ -208,6 +283,7 @@ class MainWindow(QMainWindow):
         """Handle theme combo box selection change."""
         self._config.ui.theme = text.lower()
         self._apply_theme()
+        self._workflow_panel.diagram().set_theme(self._config.ui.theme)
         save_config(self._config)
 
     def _restore_geometry(self) -> None:
