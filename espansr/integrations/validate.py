@@ -154,7 +154,38 @@ def validate_all() -> List[ValidationWarning]:
                 )
 
     warnings.extend(_system_trigger_collision_warnings(templates))
+    warnings.extend(_capability_id_duplicate_warnings(templates))
 
+    return warnings
+
+
+def _capability_id_duplicate_warnings(templates: list[Template]) -> List[ValidationWarning]:
+    """Warn when two templates declare the same explicit capability ID.
+
+    Capability IDs are stable identities referenced by workflow manifests, so
+    duplicates make workflow membership ambiguous. This is warning-only: it
+    never blocks Espanso publishing, which does not depend on capability IDs.
+    """
+    id_map: dict[str, list[str]] = {}
+    for template in templates:
+        cap_id = getattr(template, "capability_id", "")
+        if cap_id:
+            id_map.setdefault(cap_id, []).append(template.name)
+
+    warnings: List[ValidationWarning] = []
+    for cap_id, names in id_map.items():
+        if len(names) > 1:
+            for template_name in names:
+                warnings.append(
+                    ValidationWarning(
+                        severity="warning",
+                        message=(
+                            f"Duplicate capability ID '{cap_id}' — also declared by: "
+                            f"{', '.join(n for n in names if n != template_name)}"
+                        ),
+                        template_name=template_name,
+                    )
+                )
     return warnings
 
 

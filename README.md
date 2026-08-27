@@ -14,7 +14,7 @@ You need:
 - Git, so you can get this repository.
 - Espanso installed and started if you want text expansion triggers to work immediately.
 
-`espansr` can install without Espanso, but triggers such as `:aopen`, `:coms`, and bundled template triggers only expand after Espanso is installed, started, and detected.
+`espansr` can install without Espanso, but triggers such as `:aopen`, `:coms`, `:sync`, and bundled template triggers only expand after Espanso is installed, started, and detected.
 
 Windows PowerShell and WSL are separate environments. On a Windows host, use the Windows PowerShell installer unless you intentionally want a WSL-side `espansr` install.
 
@@ -42,7 +42,7 @@ Use PowerShell for the Windows command, not Command Prompt. If PowerShell blocks
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, and template expansion.
+The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, `:sync`, and template expansion.
 
 On Windows, the installer also looks for Espanso and attempts service registration/startup when it is available. On Linux, macOS, and WSL2, Espanso remains an external dependency.
 
@@ -59,6 +59,7 @@ Remove-Item -Recurse -Force "$env:APPDATA\espansr" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr.yml" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr-launcher.yml" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr-commands.yml" -ErrorAction SilentlyContinue
+Remove-Item -Force "$env:APPDATA\espanso\match\espansr-sync.yml" -ErrorAction SilentlyContinue
 $env:PATH = (($env:PATH -split ";") | Where-Object { $_ -and ($_ -ine $venvScripts) }) -join ";"
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
 if ($userPath) {
@@ -74,7 +75,7 @@ espansr doctor
 espansr gui
 ```
 
-After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup.
+After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup — it lists every trigger with previews, and you can also describe the job you need ("challenge finished research") or pick what you have and what you want to produce to surface the right prompt without remembering its trigger. See [docs/PROCESS.md](docs/PROCESS.md).
 
 Use `espansr publish` after template changes if you want to refresh Espanso output from the CLI. The GUI also publishes from the toolbar and saves edited templates into the same local template store.
 
@@ -119,10 +120,11 @@ If you meant to install on the Windows host instead, open Windows PowerShell in 
 
 - Live template JSON files in your platform-specific `espansr` config directory.
 - Bundled starter templates copied from this repository on setup.
-- Managed Espanso files named `espansr.yml`, `espansr-launcher.yml`, and `espansr-commands.yml`.
+- Managed Espanso files named `espansr.yml`, `espansr-launcher.yml`, `espansr-commands.yml`, and `espansr-sync.yml`.
 - Optional Git-backed template sync through `espansr remote`, `pull`, and `push`.
+- Optional workflow manifests describing how bundled prompts relate (`espansr workflows`), user-saved handoff packets in the config directory (`espansr packet`), and structural output-contract checks (`espansr check-output`).
 
-It does not replace Espanso, manage arbitrary Espanso YAML, or delete unmanaged Espanso files.
+It does not replace Espanso, manage arbitrary Espanso YAML, or delete unmanaged Espanso files. The process layer is optional: every trigger works directly, no workflow tracks a current step, and nothing runs automatically.
 
 ## More Help
 
@@ -130,6 +132,7 @@ It does not replace Espanso, manage arbitrary Espanso YAML, or delete unmanaged 
 |----------|---------|
 | [docs/CLI.md](docs/CLI.md) | Commands, flags, GUI launch notes, and WSL helper details |
 | [docs/TEMPLATES.md](docs/TEMPLATES.md) | Template schema, starter templates, publish behavior, and lifecycle details |
+| [docs/PROCESS.md](docs/PROCESS.md) | Capability graph, workflow manifests, handoff packets, and output contracts |
 | [docs/VERIFY.md](docs/VERIFY.md) | Practical post-install verification checklist |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Contributor setup, tests, linting, and formatting |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |

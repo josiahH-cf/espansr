@@ -11,5 +11,24 @@
     ":gaps-2",
     ":principles",
     ":fp"
-  ]
+  ],
+  "capability_id": "gap-review",
+  "intent_tags": [
+    "challenge completed research",
+    "critical review",
+    "find gaps",
+    "stress-test findings",
+    "review already complete work"
+  ],
+  "accepts": [
+    "evidence-report",
+    "goal-contract",
+    "implementation-handoff",
+    "context-packet"
+  ],
+  "produces": [
+    "gap-review"
+  ],
+  "use_when": "You have finished material - research, a plan, a report - and want it independently challenged.",
+  "avoid_when": "Nothing exists to review yet; produce the material first."
 }

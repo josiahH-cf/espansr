@@ -222,21 +222,35 @@ class TemplateBrowserWidget(QWidget):
                 folder_item.addChild(_make_item(template))
             self.tree.addTopLevelItem(folder_item)
 
-    def _filter_templates(self, text: str) -> None:
-        """Filter tree to templates matching the search text."""
+    def _filter_templates(self, text: str) -> list:
+        """Filter tree to templates matching the search text.
+
+        Matches name, trigger, and description plus the capability metadata
+        (capability ID, intent tags, and use_when guidance). Returns the
+        matched templates for callers that need the list.
+        """
         query = text.strip().lower()
         if not query:
             self._populate_tree(self._all_templates)
-            return
+            return list(self._all_templates)
 
-        filtered = [
-            t
-            for t in self._all_templates
-            if query in t.name.lower()
-            or query in (t.trigger or "").lower()
-            or query in (t.description or "").lower()
-        ]
+        def _matches(t: Template) -> bool:
+            if (
+                query in t.name.lower()
+                or query in (t.trigger or "").lower()
+                or query in (t.description or "").lower()
+            ):
+                return True
+            if query in (getattr(t, "capability_id", "") or "").lower():
+                return True
+            if query in (getattr(t, "use_when", "") or "").lower():
+                return True
+            tags = getattr(t, "intent_tags", None) or []
+            return any(query in tag.lower() for tag in tags)
+
+        filtered = [t for t in self._all_templates if _matches(t)]
         self._populate_tree(filtered)
+        return filtered
 
     def _on_item_clicked(self, item: QTreeWidgetItem, column: int) -> None:
         """Handle click on a tree item — emit signal."""

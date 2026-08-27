@@ -20,6 +20,7 @@ from pathlib import Path
 
 from espansr.core.cli_color import fail, ok, warn
 from espansr.core.config import get_config_dir, get_templates_dir
+from espansr.core.packets import get_packets_dir
 from espansr.core.platform import get_platform
 from espansr.integrations.espanso import (
     _get_candidate_paths,
@@ -1414,6 +1415,256 @@ def cmd_sync(args) -> int:
     return _run_sync(no_push=getattr(args, "no_push", False))
 
 
+# ── Process-layer commands: check-output, workflows, packet ──────────────────
+
+
+def cmd_check_output(args) -> int:
+    """Validate a model output file against a template's output contract.
+
+    Read-only. Exit codes: 0 = contract passed, 1 = contract failed,
+    2 = the template declares no output contract, 3 = template not found or
+    the output file cannot be read/parsed.
+    """
+    import json as json_module
+
+    from espansr.core.capabilities import effective_capability_id
+    from espansr.core.output_contract import check_output, normalize_contract
+    from espansr.core.templates import TemplateManager, get_bundled_template_paths
+
+    target = (getattr(args, "template", "") if args else "") or ""
+    path = (getattr(args, "path", "") if args else "") or ""
+    as_json = getattr(args, "json", False) if args else False
+
+    template = None
+    manager = TemplateManager(templates_dir=get_templates_dir())
+    lookup = {target, target.lstrip(":")}
+    for candidate in manager.list_all():
+        if (
+            candidate.trigger in lookup
+            or candidate.name in lookup
+            or effective_capability_id(candidate) in lookup
+        ):
+            template = candidate
+            break
+    if template is None:
+        # Fall back to the bundled templates so the checker works before
+        # starters have been applied to the live store.
+        for bundled_path in get_bundled_template_paths().values():
+            try:
+                data = json_module.loads(bundled_path.read_text(encoding="utf-8"))
+            except (json_module.JSONDecodeError, OSError):
+                continue
+            if (
+                data.get("trigger") in lookup
+                or data.get("name") in lookup
+                or data.get("capability_id") in lookup
+            ):
+                from espansr.core.templates import Template
+
+                template = Template.from_dict(data, path=bundled_path)
+                break
+    if template is None:
+        print(fail(f"Template not found: {target}"))
+        return 3
+
+    contract = normalize_contract(template.output_contract)
+    if contract is None:
+        print(warn(f"Template '{template.name}' declares no output contract; nothing to check."))
+        return 2
+
+    try:
+        output_text = Path(path).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        print(fail(f"Cannot read output file: {exc}"))
+        return 3
+
+    report = check_output(contract, output_text)
+    if as_json:
+        print(
+            json_module.dumps(
+                {
+                    "template": template.name,
+                    "trigger": template.trigger,
+                    "passed": report.passed,
+                    "failures": [{"kind": f.kind, "message": f.message} for f in report.failures],
+                },
+                indent=2,
+            )
+        )
+        return 0 if report.passed else 1
+
+    if report.passed:
+        print(ok(report.summary()))
+        return 0
+    print(fail(report.summary()))
+    for failure in report.failures:
+        print(fail(f"  [{failure.kind}] {failure.message}"))
+    return 1
+
+
+def _workflow_known_capability_ids() -> set:
+    """Capability IDs from the live store plus the bundled templates."""
+    import json as json_module
+
+    from espansr.core.capabilities import effective_capability_id
+    from espansr.core.templates import TemplateManager, get_bundled_template_paths
+
+    known = set()
+    manager = TemplateManager(templates_dir=get_templates_dir())
+    for template in manager.list_all():
+        known.add(effective_capability_id(template))
+    for bundled_path in get_bundled_template_paths().values():
+        try:
+            data = json_module.loads(bundled_path.read_text(encoding="utf-8"))
+        except (json_module.JSONDecodeError, OSError):
+            continue
+        known.add(data.get("capability_id") or bundled_path.stem)
+    return known
+
+
+def cmd_workflows(args) -> int:
+    """List, show, or validate workflow manifests. Read-only."""
+    from espansr.core.workflows import load_workflow_catalog, validate_catalog
+
+    action = (getattr(args, "workflows_action", "") if args else "") or "list"
+    catalog = load_workflow_catalog()
+
+    if action == "list":
+        if not catalog.workflows:
+            print("No workflow manifests found.")
+        for workflow in catalog.workflows:
+            print(
+                f"{workflow.id}  {workflow.name} "
+                f"({len(workflow.nodes)} capabilities, "
+                f"{len(workflow.entry_points)} entry points)"
+            )
+        for error in catalog.errors:
+            print(warn(error))
+        return 0
+
+    if action == "show":
+        workflow_id = getattr(args, "workflow_id", "") or ""
+        workflow = catalog.get(workflow_id)
+        if workflow is None:
+            print(fail(f"Workflow not found: {workflow_id}"))
+            return 1
+        print(f"{workflow.name} ({workflow.id})")
+        if workflow.description:
+            print(workflow.description)
+        print()
+        print("Entry points: every listed capability is directly invocable")
+        for entry in workflow.entry_points:
+            print(f"  - {entry}")
+        print()
+        print("Capabilities:")
+        for node in workflow.nodes:
+            role = f"  ({node.role})" if node.role else ""
+            print(f"  - {node.capability}{role}")
+        print()
+        print("Optional relationships (nothing runs automatically):")
+        for edge in workflow.edges:
+            label = f"  {edge.label}" if edge.label else ""
+            print(f"  {edge.source} -> {edge.target}:{label}")
+        if workflow.notes:
+            print()
+            print(workflow.notes)
+        return 0
+
+    if action == "validate":
+        errors = list(catalog.errors)
+        errors.extend(validate_catalog(catalog, _workflow_known_capability_ids()))
+        if errors:
+            for error in errors:
+                print(fail(error))
+            return 1
+        print(ok(f"All workflow manifests are valid ({len(catalog.workflows)} loaded)."))
+        return 0
+
+    print(fail(f"Unknown workflows action: {action}"))
+    return 2
+
+
+def cmd_packet(args) -> int:
+    """List, show, validate, or delete handoff packets.
+
+    Read-only except for the explicit ``delete`` action, which removes exactly
+    one packet file and nothing else.
+    """
+    from espansr.core.packets import delete_packet, list_packets, validate_packet_text
+
+    action = (getattr(args, "packet_action", "") if args else "") or "list"
+
+    if action == "validate":
+        target = getattr(args, "target", "") or ""
+        try:
+            text = Path(target).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            print(fail(f"Cannot read packet file: {exc}"))
+            return 1
+        errors = validate_packet_text(text)
+        if errors:
+            for error in errors:
+                print(fail(error))
+            return 1
+        print(ok("Packet is valid."))
+        return 0
+
+    packets_dir = get_packets_dir()
+
+    if action == "list":
+        paths = list_packets(packets_dir=packets_dir)
+        if not paths:
+            print("No saved packets.")
+            return 0
+        from espansr.core.packets import PacketError, load_packet
+
+        for path in paths:
+            try:
+                packet = load_packet(path)
+            except PacketError as exc:
+                print(warn(f"{path.name}: {exc}"))
+                continue
+            artifact = packet.artifact_type or "unknown"
+            print(f"{path.stem}  [{artifact}]  {packet.title}")
+        return 0
+
+    target = getattr(args, "target", "") or ""
+    # A saved packet ID wins over a same-named file in the working directory;
+    # an explicit path is honored only when no saved packet matches.
+    path = packets_dir / f"{target}.md"
+    if not path.exists():
+        path = Path(target)
+
+    if action == "show":
+        try:
+            print(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError):
+            print(fail(f"Packet not found: {target}"))
+            return 1
+        return 0
+
+    if action == "delete":
+        if not path.exists():
+            print(fail(f"Packet not found: {target}"))
+            return 1
+        # Delete only targets a saved packet, never an arbitrary file path.
+        try:
+            inside_packets_dir = path.resolve().parent == packets_dir.resolve()
+        except OSError:
+            inside_packets_dir = False
+        if not inside_packets_dir:
+            print(fail(f"Refusing to delete '{target}': not inside {packets_dir}."))
+            return 1
+        if delete_packet(path):
+            print(ok(f"Deleted packet {path.stem}."))
+            return 0
+        print(fail(f"Could not delete packet {target}."))
+        return 1
+
+    print(fail(f"Unknown packet action: {action}"))
+    return 2
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Construct and return the full CLI argument parser."""
     from espansr import __version__
@@ -1606,6 +1857,39 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Target shell (bash or zsh)",
     )
 
+    # ── Process-layer commands ────────────────────────────────────────────
+    check_output_parser = subparsers.add_parser(
+        "check-output",
+        help="Validate a model output file against a template's output contract",
+    )
+    check_output_parser.add_argument(
+        "--template",
+        required=True,
+        metavar="TRIGGER",
+        help="Template trigger, name, or capability ID owning the contract",
+    )
+    check_output_parser.add_argument("path", help="Path to the model output file to check")
+    check_output_parser.add_argument("--json", action="store_true", help="Print the result as JSON")
+
+    workflows_parser = subparsers.add_parser(
+        "workflows", help="Inspect optional workflow manifests"
+    )
+    workflows_sub = workflows_parser.add_subparsers(dest="workflows_action", metavar="ACTION")
+    workflows_sub.add_parser("list", help="List available workflow manifests")
+    workflows_show = workflows_sub.add_parser("show", help="Show one workflow's graph")
+    workflows_show.add_argument("workflow_id", help="Workflow ID to show")
+    workflows_sub.add_parser("validate", help="Validate all workflow manifests")
+
+    packet_parser = subparsers.add_parser("packet", help="Inspect saved handoff packets")
+    packet_sub = packet_parser.add_subparsers(dest="packet_action", metavar="ACTION")
+    packet_sub.add_parser("list", help="List saved handoff packets")
+    packet_show = packet_sub.add_parser("show", help="Print one saved packet")
+    packet_show.add_argument("target", help="Packet ID or path")
+    packet_validate = packet_sub.add_parser("validate", help="Validate a packet file")
+    packet_validate.add_argument("target", help="Path to the packet file")
+    packet_delete = packet_sub.add_parser("delete", help="Delete one saved packet")
+    packet_delete.add_argument("target", help="Packet ID or path")
+
     # ── Remote sync commands ──────────────────────────────────────────────
     remote_parser = subparsers.add_parser("remote", help="Manage remote template repository")
     remote_sub = remote_parser.add_subparsers(dest="remote_action", metavar="ACTION")
@@ -1666,6 +1950,9 @@ def main() -> None:
         "remote": cmd_remote,
         "pull": cmd_pull,
         "push": cmd_push,
+        "check-output": cmd_check_output,
+        "workflows": cmd_workflows,
+        "packet": cmd_packet,
     }
 
     if args.command in handlers:
