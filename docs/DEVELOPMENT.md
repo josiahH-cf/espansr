@@ -23,6 +23,16 @@ pytest tests/test_espanso.py
 pytest tests/test_espanso.py::test_sync_creates_yaml
 ```
 
+GUI tests run against Qt's offscreen platform by default (set in
+`tests/conftest.py`, matching CI), so `pytest` never pops real windows or
+steals focus locally. To deliberately watch the widgets render on a real
+display, override the platform for one run:
+
+```bash
+QT_QPA_PLATFORM=windows pytest tests/test_commands_popup.py   # Windows
+QT_QPA_PLATFORM=xcb pytest tests/test_commands_popup.py       # Linux/X11
+```
+
 ## Linting & Formatting
 
 ```bash
