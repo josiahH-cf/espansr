@@ -108,6 +108,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (":goal", "interpret, gap-check, and refine context into a measurable goal"),
             (
+                ":show-me",
+                "ingest, clarify, enrich, and return work so the next reader can act alone",
+            ),
+            (
                 ":troubleshoot",
                 "debug with context checks, research, planning, fixing, and verification",
             ),
