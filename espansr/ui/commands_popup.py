@@ -13,7 +13,7 @@ or open the packet/editor dialogs on explicit request.
 import sys
 from typing import Optional
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QFont, QFontDatabase, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -184,7 +184,7 @@ class CommandRowWidget(QFrame):
         self._copy_prompt_btn.clicked.connect(_run("copy_prompt", _copy_prompt_fallback))
         row.addWidget(self._copy_prompt_btn)
 
-        self._scratchpad_btn = QPushButton("To scratchpad")
+        self._scratchpad_btn = QPushButton("Prompt to scratchpad")
         self._scratchpad_btn.clicked.connect(_run("scratchpad"))
         row.addWidget(self._scratchpad_btn)
 
@@ -503,6 +503,26 @@ class CommandsPopupDialog(QDialog):
             self._list.addItem(item)
             self._list.setItemWidget(item, widget)
 
+    def _build_workflow_panel(self):
+        """Create (once) the interactive diagram panel for the Processes view."""
+        from espansr.ui.workflow_diagram import WorkflowPanel, capability_infos_from_entries
+
+        if getattr(self, "_workflow_panel", None) is None:
+            self._workflow_panel = WorkflowPanel(
+                theme=self._config.ui.theme,
+                actions=[
+                    ("Copy prompt", self._copy_capability_prompt),
+                    ("Prompt to scratchpad", self._send_capability_to_scratchpad),
+                    ("Show command", self._show_capability_command),
+                ],
+            )
+            self._workflow_panel.capability_activated.connect(self._show_capability_command)
+            self._workflow_panel.setMinimumHeight(520)
+        self._workflow_panel.set_catalog(
+            self._workflow_catalog, capability_infos_from_entries(self._entries)
+        )
+        return self._workflow_panel
+
     def _populate_workflows(self) -> None:
         """Render the optional workflow manifests (Processes view)."""
         workflows = self._workflow_catalog.workflows
@@ -523,15 +543,28 @@ class CommandsPopupDialog(QDialog):
         self._summary_table.setFixedHeight(header_height + (row_height * visible_lines) + 6)
 
         self._list.clear()
-        for workflow in workflows:
-            widget = WorkflowRowWidget(workflow)
-            item = QListWidgetItem()
-            item.setSizeHint(widget.sizeHint())
-            self._list.addItem(item)
-            self._list.setItemWidget(item, widget)
+        if not workflows:
+            return
+        # One interactive diagram panel (workflow picker inside) instead of
+        # text-only cards; clicking a summary row switches the diagram.
+        panel = self._build_workflow_panel()
+        self._workflow_panel_container = QWidget()
+        container_layout = QVBoxLayout(self._workflow_panel_container)
+        container_layout.setContentsMargins(4, 4, 4, 4)
+        container_layout.addWidget(panel)
+        item = QListWidgetItem()
+        item.setSizeHint(QSize(self._list.viewport().width() - 8, panel.minimumHeight() + 16))
+        self._list.addItem(item)
+        self._list.setItemWidget(item, self._workflow_panel_container)
 
     def _scroll_to_entry_row(self, row: int, _column: int) -> None:
         """Jump the detailed card list to the row selected in the summary table."""
+        if self._view_combo.currentText() == "Processes":
+            workflows = self._workflow_catalog.workflows
+            panel = getattr(self, "_workflow_panel", None)
+            if panel is not None and 0 <= row < len(workflows):
+                panel.show_workflow(workflows[row].id)
+            return
         item = self._list.item(row)
         if item is not None:
             self._list.scrollToItem(item, QAbstractItemView.ScrollHint.PositionAtTop)
@@ -579,10 +612,44 @@ class CommandsPopupDialog(QDialog):
         self._record_recent(entry.trigger)
 
     def _send_to_scratchpad(self, entry: CommandCatalogEntry) -> None:
+        """Place the full prompt in the scratchpad (the trigger only for
+        system entries that have no prompt body)."""
         existing = self._scratchpad.toPlainText()
         separator = "" if not existing or existing.endswith("\n") else "\n"
-        self._scratchpad.setPlainText(existing + separator + entry.trigger)
+        payload = entry.content if entry.content else entry.trigger
+        self._scratchpad.setPlainText(existing + separator + payload)
+        cursor = self._scratchpad.textCursor()
+        cursor.movePosition(cursor.MoveOperation.End)
+        self._scratchpad.setTextCursor(cursor)
         self._record_recent(entry.trigger)
+
+    def _send_capability_to_scratchpad(self, capability: str) -> None:
+        entry = self._entry_for_capability(capability)
+        if entry is not None:
+            self._send_to_scratchpad(entry)
+
+    def _copy_capability_prompt(self, capability: str) -> None:
+        entry = self._entry_for_capability(capability)
+        if entry is not None:
+            self._copy_prompt(entry)
+
+    def _entry_for_capability(self, capability: str) -> Optional[CommandCatalogEntry]:
+        for entry in self._entries:
+            if entry.capability_id == capability:
+                return entry
+        return None
+
+    def _show_capability_command(self, capability: str) -> None:
+        """Jump to the command's card in the All Commands view."""
+        entry = self._entry_for_capability(capability)
+        if entry is None:
+            return
+        self._view_combo.setCurrentText("All Commands")
+        for row, visible in enumerate(self._visible_entries()):
+            if visible.trigger == entry.trigger:
+                self._summary_table.selectRow(row)
+                self._scroll_to_entry_row(row, 0)
+                break
 
     def _toggle_favorite_entry(self, entry: CommandCatalogEntry) -> None:
         self._toggle_favorite(entry.trigger)

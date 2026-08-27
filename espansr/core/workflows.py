@@ -32,10 +32,16 @@ _EXECUTION_KEYS = {"exec", "command", "shell", "script", "run"}
 
 @dataclass(frozen=True)
 class WorkflowNode:
-    """One capability's membership in a workflow."""
+    """One capability's membership in a workflow.
+
+    ``x``/``y`` are optional diagram layout hints (scene units). They are
+    presentation metadata only — never topology, never state.
+    """
 
     capability: str
     role: str = ""
+    x: Optional[float] = None
+    y: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -46,6 +52,7 @@ class WorkflowEdge:
     target: str
     label: str = ""
     artifact: str = ""  # Optional artifact-compatibility hint
+    short: str = ""  # Optional two-or-three-word label drawn on the diagram arrow
 
 
 @dataclass
@@ -71,6 +78,8 @@ class WorkflowManifest:
             WorkflowNode(
                 capability=str(n.get("capability", "")),
                 role=str(n.get("role", "") or ""),
+                x=_optional_number(n.get("x")),
+                y=_optional_number(n.get("y")),
             )
             for n in data.get("nodes", [])
             if isinstance(n, dict)
@@ -81,6 +90,7 @@ class WorkflowManifest:
                 target=str(e.get("target", "")),
                 label=str(e.get("label", "") or ""),
                 artifact=str(e.get("artifact", "") or ""),
+                short=str(e.get("short", "") or ""),
             )
             for e in data.get("edges", [])
             if isinstance(e, dict)
@@ -109,13 +119,20 @@ class WorkflowManifest:
             d["tags"] = self.tags
         d["entry_points"] = self.entry_points
         d["nodes"] = [
-            {"capability": n.capability, **({"role": n.role} if n.role else {})} for n in self.nodes
+            {
+                "capability": n.capability,
+                **({"role": n.role} if n.role else {}),
+                **({"x": n.x} if n.x is not None else {}),
+                **({"y": n.y} if n.y is not None else {}),
+            }
+            for n in self.nodes
         ]
         d["edges"] = [
             {
                 "source": e.source,
                 "target": e.target,
                 **({"label": e.label} if e.label else {}),
+                **({"short": e.short} if e.short else {}),
                 **({"artifact": e.artifact} if e.artifact else {}),
             }
             for e in self.edges
@@ -123,6 +140,13 @@ class WorkflowManifest:
         if self.notes:
             d["notes"] = self.notes
         return d
+
+
+def _optional_number(value: Any) -> Optional[float]:
+    """Return a float for numeric layout hints, None for anything else."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
 
 
 def _find_forbidden_keys(value: Any, forbidden: set) -> List[str]:
@@ -168,6 +192,9 @@ def validate_manifest_data(data: Any) -> List[str]:
             errors.append("every node needs a capability id")
             continue
         node_ids.append(str(node["capability"]))
+        for axis in ("x", "y"):
+            if axis in node and _optional_number(node[axis]) is None:
+                errors.append(f"node {node['capability']}: layout hint '{axis}' must be a number")
     for node_id in {n for n in node_ids if node_ids.count(n) > 1}:
         errors.append(f"duplicate node identity: {node_id}")
 
@@ -197,6 +224,9 @@ def validate_manifest_data(data: Any) -> List[str]:
         artifact = edge.get("artifact", "")
         if artifact and not isinstance(artifact, str):
             errors.append(f"invalid artifact hint on edge {source} -> {target}")
+        short = edge.get("short", "")
+        if short and not isinstance(short, str):
+            errors.append(f"invalid short label on edge {source} -> {target}")
 
     for key in _find_forbidden_keys(data, _STATE_KEYS):
         errors.append(f"manifest may not declare workflow state ('{key}')")

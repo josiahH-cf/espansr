@@ -248,7 +248,10 @@ Espanso trigger.
 The full GUI includes template browsing, editing, variable editing, previews,
 import, remote pull, and publishing. `Ctrl+S` publishes, `Ctrl+N` creates a new
 template, `Ctrl+I` imports, `Ctrl+F` searches, and `Delete` starts the
-delete-with-undo flow.
+delete-with-undo flow. `Ctrl+Shift+W` (or the "Show Workflows" toolbar
+button) opens the workflow diagram panel: the bundled process graphs drawn
+from the manifests, where clicking a node selects that template in the
+browser and editor. See [PROCESS.md](PROCESS.md#diagrams).
 
 The toolbar theme selector (Auto/Dark/Light) defaults to Dark. The GUI and the
 `:coms` popup start in dark mode; choose Light or Auto from the selector to
