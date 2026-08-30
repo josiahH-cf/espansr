@@ -134,6 +134,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":project-personal-growth",
                 "guide Personal Growth sessions and keep the program records true",
             ),
+            (
+                ":project-systems",
+                "continue the Master Systems Process from its tracker files",
+            ),
         ),
     ),
     HelpSection(

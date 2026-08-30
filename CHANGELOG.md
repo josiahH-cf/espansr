@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:project-systems` — Master Systems Process runner** — a new bundled note
+	that continues the Master Systems Process from its own files rather than
+	from chat: it opens the project tracker as the single entry point, works the
+	first incomplete step, triages each unknown as discoverable / testable /
+	human-owned / deferred, groups any remaining questions into one round, and
+	writes every material result back to the tracker, clarification file, master
+	document, diagrams, and project record.
+
 - **Workflow diagrams in `:coms` and `:aopen`** — the process graphs are now
 	drawn as interactive diagrams from the workflow manifests: the `:coms`
 	Processes view shows the graph with per-node details and copy / scratchpad
