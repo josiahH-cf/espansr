@@ -1560,6 +1560,60 @@ def test_bundled_reality_template_contract():
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
+def test_bundled_project_systems_template_contract():
+    """:project-systems is a file-backed runner for the Master Systems Process."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads(
+        (repo_root / "templates" / "project_systems.json").read_text(encoding="utf-8")
+    )
+    content = data["content"]
+
+    assert data["name"] == "Master Systems Process Runner"
+    assert data["trigger"] == ":project-systems"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "master-systems-process"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    # One entry point: the tracker owns the active step and the standing command.
+    for phrase in (
+        "# Master Systems Process — Runner Prompt",
+        "The files are the memory; do not rely on prior chat.",
+        "[[Master Systems Process — Project Tracker]]",
+        "Continue the first incomplete tracker step until the next real human decision",
+        "Do not recreate the plan or restart completed work.",
+    ):
+        assert phrase in content, phrase
+
+    # Unknowns are triaged rather than pushed through unfounded criteria.
+    for phrase in (
+        "**Discoverable:**",
+        "**Testable:**",
+        "**Human-owned:**",
+        "**Deferred:**",
+        "Do not push an unknown through criteria that have not themselves been established.",
+        "Ask questions only after agent-owned discovery is complete.",
+    ):
+        assert phrase in content, phrase
+
+    # Writeback: every surface the runner may touch is named with its own rule.
+    for phrase in (
+        "**Tracker:**",
+        "**Clarification file:**",
+        "**Master document:**",
+        "**SVG files:**",
+        "**System Project:**",
+        "make sure the project can resume from the tracker alone",
+    ):
+        assert phrase in content, phrase
+
+    # Standalone runner: no inline-context footer, and it ends on the report rule.
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+    assert content.rstrip().endswith(
+        "report what changed and the next action without a long recap."
+    )
+
+
 def test_bundled_telegram_template_contract():
     """Telegram resolves a generic source and runs its directive without fixed file assumptions."""
     repo_root = Path(__file__).resolve().parents[1]
