@@ -10,11 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **`:project-systems` — Master Systems Process runner** — a new bundled note
 	that continues the Master Systems Process from its own files rather than
-	from chat: it opens the project tracker as the single entry point, works the
-	first incomplete step, triages each unknown as discoverable / testable /
-	human-owned / deferred, groups any remaining questions into one round, and
-	writes every material result back to the tracker, clarification file, master
-	document, diagrams, and project record.
+	from chat, working toward a verified master process document with matching
+	SVG diagrams. It opens the vault tracker at a fixed absolute path as the
+	single entry point, continues the first incomplete step, does discovery
+	before definition, classifies each unknown as discoverable / testable /
+	human-owned / deferred and keeps material unknowns visible in the process
+	and diagrams, asks one small grouped round only after agent-owned discovery
+	is done, and writes every verified result back to the tracker, clarification
+	file, master document, diagrams, and project record.
 
 - **Workflow diagrams in `:coms` and `:aopen`** — the process graphs are now
 	drawn as interactive diagrams from the workflow manifests: the `:coms`

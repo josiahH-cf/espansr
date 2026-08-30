@@ -1575,24 +1575,28 @@ def test_bundled_project_systems_template_contract():
     assert data["next_triggers"] == []
     assert data["replaces"] == []
 
-    # One entry point: the tracker owns the active step and the standing command.
+    # One entry point: an absolute tracker path owns the state and the standing command.
     for phrase in (
         "# Master Systems Process — Runner Prompt",
-        "The files are the memory; do not rely on prior chat.",
-        "[[Master Systems Process — Project Tracker]]",
-        "Continue the first incomplete tracker step until the next real human decision",
-        "Do not recreate the plan or restart completed work.",
+        "You are continuing the Master Systems Process project without prior chat.",
+        "The files are the memory.",
+        r"C:\Users\josia\Documents\obsidian-sync-vault",
+        r"\goals\projects\system\Master Systems Process — Project Tracker.md",
+        "**Continue the first incomplete tracker step until the next real human decision",
+        "Do not create another plan or restart completed work.",
+        "Do discovery before definition",
     ):
         assert phrase in content, phrase
 
-    # Unknowns are triaged rather than pushed through unfounded criteria.
+    # Unknowns are classified, never guessed, and stay visible until resolved.
     for phrase in (
+        "Do not guess or force an unknown through unproven criteria.",
         "**Discoverable:**",
         "**Testable:**",
         "**Human-owned:**",
         "**Deferred:**",
-        "Do not push an unknown through criteria that have not themselves been established.",
-        "Ask questions only after agent-owned discovery is complete.",
+        "never present them as settled",
+        "Ask only after agent-owned discovery is complete.",
     ):
         assert phrase in content, phrase
 
@@ -1601,16 +1605,18 @@ def test_bundled_project_systems_template_contract():
         "**Tracker:**",
         "**Clarification file:**",
         "**Master document:**",
-        "**SVG files:**",
+        "**SVG diagrams:**",
         "**System Project:**",
-        "make sure the project can resume from the tracker alone",
+        "never color alone",
+        "Never leave material progress only in chat.",
+        "make the tracker independently resumable",
     ):
         assert phrase in content, phrase
 
     # Standalone runner: no inline-context footer, and it ends on the report rule.
     assert not content.endswith(INLINE_CONTEXT_FOOTER)
     assert content.rstrip().endswith(
-        "report what changed and the next action without a long recap."
+        "report only what changed, what was verified, and the exact next action."
     )
 
 
