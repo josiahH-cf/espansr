@@ -1509,22 +1509,54 @@ def test_bundled_gaps_template_contract_preserves_review_modes():
 
 
 def test_bundled_reality_template_contract():
-    """Reality is a standalone outcome summary, not a diagnostic review mode."""
+    """Reality is a comprehensive standalone end-state account, not a diagnostic review mode."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
     content = data["content"]
 
+    assert data["name"] == "Reality Summary"
     assert data["trigger"] == ":reality"
     assert data["category"] == "analysis"
     assert data["stage"] == "reality-summary"
     assert data["next_triggers"] == []
     assert data["replaces"] == []
-    assert "Return exactly two short plain-English paragraphs" in content
-    assert "followed by zero to ten bullets" in content
-    assert "Every bullet must be one complete sentence" in content
-    assert "meta-prompt, prompt, research request, report specification" in content
-    assert "Do not perform gap analysis" in content
-    assert "Do not tell the user which prompt to run next" in content
+
+    # Grounding: evidence is classified rather than flattened into one voice.
+    for phrase in (
+        "**Verified reality:**",
+        "**Proposed reality:**",
+        "**Supported inference:**",
+        "**Unknown or unresolved:**",
+        "Do not silently repair, optimize, reinterpret, or complete it",
+    ):
+        assert phrase in content, phrase
+
+    # Boundaries: reports reality, never performs or grades the underlying work.
+    for phrase in (
+        "Report reality; do not perform the underlying work.",
+        "conduct gap analysis or a first-principles critique",
+        "recommend improvements, alternate approaches, or next steps",
+        "tell the user which espansr command to run next",
+    ):
+        assert phrase in content, phrase
+
+    # Output contract: comprehensive, headed, and closed by a definition of done.
+    for phrase in (
+        "# Reality Summary",
+        "**If you only read one thing:**",
+        "Be comprehensive rather than artificially short",
+        "## ✅ Definition of Done",
+    ):
+        assert phrase in content, phrase
+
+    # The superseded fixed-length contract is gone.
+    for phrase in (
+        "Return exactly two short plain-English paragraphs",
+        "followed by zero to ten bullets",
+        "Every bullet must be one complete sentence",
+    ):
+        assert phrase not in content, phrase
+
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 

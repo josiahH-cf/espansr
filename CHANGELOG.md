@@ -54,6 +54,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:reality` rewritten as a comprehensive end-state account** — the note
+	now classifies its evidence (verified reality / proposed reality /
+	supported inference / unknown), preserves the target material's own logic
+	instead of silently repairing it, and returns a headed `# Reality Summary`
+	opening with an "If you only read one thing" line and closing with
+	`## ✅ Definition of Done`. This supersedes the previous fixed
+	two-paragraph, zero-to-ten-bullet output contract.
 - **`:coms` "Prompt to scratchpad"** now places the command's full prompt in
 	the scratchpad (previously only the trigger); system entries without a
 	prompt body still insert their trigger.
