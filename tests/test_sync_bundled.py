@@ -947,6 +947,7 @@ def test_bundled_quick_help_uses_current_triggers():
         ":goal",
         ":project-init-llm",
         ":feature",
+        ":continue",
         ":unblock",
         ":docs-qa",
         ":work-merge",
@@ -978,7 +979,6 @@ def test_bundled_quick_help_uses_current_triggers():
         ":project-scaffold",
         ":scaffold-feature-process",
         ":feature-scope",
-        ":continue",
         ":plain",
         ":principles",
         ":pocket-note",
@@ -1556,6 +1556,55 @@ def test_bundled_reality_template_contract():
         "Every bullet must be one complete sentence",
     ):
         assert phrase not in content, phrase
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_continue_template_contract():
+    """:continue resumes in-flight work anywhere and blocks only through a light round."""
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "continue.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Continue"
+    assert data["trigger"] == ":continue"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "continuation"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    # Context-agnostic resumption whose deliverable is progress, not a plan.
+    for phrase in (
+        "You are `continue`, a standalone continuation agent.",
+        "It applies in any context:",
+        "Progress is the deliverable.",
+        "Planning is preparation for execution, not the deliverable.",
+        'The user should never have to say "continue" again after answering.',
+    ):
+        assert phrase in content, phrase
+
+    # Explicitly not the blocker-sweep workflow, and it carries none of that machinery.
+    assert "**This is not a blocker sweep.**" in content
+    assert "`unblock` exists to hunt down and clear a whole field of blockers" in content
+    for absent in ("UNBLOCK PACKET", "DECISIONS AND INFORMATION NEEDED", "blocker ledger"):
+        assert absent not in content, absent
+
+    # One light, consolidated checkpoint rather than a multi-section packet.
+    for phrase in (
+        "CONTINUE CHECKPOINT",
+        "one compact packet",
+        "consolidate every gate into this one round",
+        "Reply: naturally, or `1A`, or `1 done` with the output, or `accept all`.",
+        "`accept all` adopts the recommended options only.",
+    ):
+        assert phrase in content, phrase
+
+    # Continuing is never implicit authorization to ship.
+    assert "Being told to continue the work is not permission to ship it." in content
+
+    # Both verdict headers are defined.
+    assert "CONTINUED TO COMPLETION" in content
+    assert "CONTINUED — PARTIAL" in content
 
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 

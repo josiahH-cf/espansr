@@ -115,6 +115,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":troubleshoot",
                 "debug with context checks, research, planning, fixing, and verification",
             ),
+            (":continue", "resume work in flight and keep going to done or a real gate"),
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
             (":litmus", "create or audit a plain-language human-verification checklist"),
