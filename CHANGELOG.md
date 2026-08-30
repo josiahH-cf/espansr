@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:continue` — resume work already in flight** — a new bundled note that
+	picks up an agentic or AI workflow in any context without the user having
+	to restate it: it rebuilds the real state from evidence rather than from a
+	summary, chooses and performs the next correct work, verifies each unit,
+	and keeps going until the objective is met. When it is genuinely blocked it
+	returns one light numbered CONTINUE CHECKPOINT and resumes automatically
+	from the answer. Distinct from `:unblock`, which sweeps a whole field of
+	blockers as its own job; `:continue` raises only the blocker in front of it
+	and never treats "continue" as permission to commit, push, publish, or
+	deploy. Revives the `:continue` trigger, previously retired with the pruned
+	`feature_continue` note.
+
 - **`:project-systems` — Master Systems Process runner** — a new bundled note
 	that continues the Master Systems Process from its own files rather than
 	from chat, working toward a verified master process document with matching
