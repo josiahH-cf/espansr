@@ -54,8 +54,8 @@ Use `:explain` as the single command for current-context distillation,
 source-grounded summarization, and plain-English explanation. It produces a
 faithful one-page result of three paragraphs, bullets, and an occasional inline
 visual, follows optional focus and voicing direction, and stays read-only. Use
-`:reality` for a compact statement of what the context created or would create,
-and `:gaps` for critical gap or first-principles review.
+`:reality` for a comprehensive account of what the context created or would
+create in reality, and `:gaps` for critical gap or first-principles review.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.
