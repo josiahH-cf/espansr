@@ -1,0 +1,10 @@
+{
+  "name": "Pocket Notes Extract PowerShell",
+  "description": "PowerShell snippet that, for each .zip in the current folder, extracts it into a folder named after the archive and removes the archive, then copies each folder's transcription.txt into a transcriptions subfolder renamed to that folder's name.",
+  "content": "$root = (Get-Location).Path\n$out = Join-Path $root 'transcriptions'\nif (-not (Test-Path -LiteralPath $out)) { New-Item -ItemType Directory -Path $out | Out-Null }\nforeach ($zip in @(Get-ChildItem -File -Filter *.zip)) {\n    $name = $zip.BaseName\n    $dest = Join-Path $root $name\n    try {\n        $ErrorActionPreference = 'Stop'\n        if (-not (Test-Path -LiteralPath $dest)) { New-Item -ItemType Directory -Path $dest | Out-Null }\n        Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dest -Force\n        Remove-Item -LiteralPath $zip.FullName -Force\n        Write-Host \"UNZIP $name\"\n    } catch {\n        Write-Host \"FAIL  $name -> $($_.Exception.Message)\" -ForegroundColor Red\n    }\n}\nforeach ($dir in @(Get-ChildItem -Directory | Where-Object { $_.FullName -ne $out })) {\n    $name = $dir.Name\n    try {\n        $ErrorActionPreference = 'Stop'\n        $txt = Get-ChildItem -LiteralPath $dir.FullName -Recurse -File -Filter transcription.txt |\n            Select-Object -First 1\n        if ($txt) {\n            Copy-Item -LiteralPath $txt.FullName -Destination (Join-Path $out ($name + '.txt')) -Force\n            Write-Host \"OK    $name\"\n        } else {\n            Write-Host \"SKIP  $name -> no transcription.txt\"\n        }\n    } catch {\n        Write-Host \"FAIL  $name -> $($_.Exception.Message)\" -ForegroundColor Red\n    }\n}\n\n",
+  "trigger": ":pocket-extract",
+  "category": "workflow",
+  "stage": "pocket-extract",
+  "next_triggers": [],
+  "replaces": []
+}

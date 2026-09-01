@@ -198,6 +198,16 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
+        "File helpers",
+        15,
+        (
+            (
+                ":pocket-extract",
+                "PowerShell: unpack note archives and collect renamed transcription files",
+            ),
+        ),
+    ),
+    HelpSection(
         "Security helpers",
         14,
         ((":tenable-scans", "PowerShell: unpack and normalize Tenable .nessus scan archives"),),
