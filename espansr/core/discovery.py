@@ -139,6 +139,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":project-systems",
                 "continue the Master Systems Process from its tracker files",
             ),
+            (
+                ":project-decision-helper",
+                "reason through a decision aligned to your values while you keep the choice",
+            ),
         ),
     ),
     HelpSection(
