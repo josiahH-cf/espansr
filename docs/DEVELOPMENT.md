@@ -98,6 +98,20 @@ tests/                      pytest suite; conftest.py defaults Qt to offscreen
 - No dead code — remove unused imports, variables, and functions
 - Explicit error handling over silent failures
 
+## Test Isolation
+
+Autouse fixtures in `tests/conftest.py` keep the suite away from the developer's
+machine: the config directory (`APPDATA` and `XDG_CONFIG_HOME`) points at a
+per-test temporary directory, the command shim helpers and Espanso restarts
+are stubbed, and the template-remote auto-pull is a no-op. A test that must
+exercise the real shim helpers opts out with the `real_command_shim` marker.
+`templates/_versions/` is created only when a version is written and is
+gitignored. Dedicated files cover bundled-note invariants
+(`tests/test_bundled_invariants.py`), CLI error paths
+(`tests/test_cli_paths.py`), GUI paths (`tests/test_gui_coverage.py`), and an
+Espanso YAML round-trip of every bundled note
+(`tests/test_espanso_roundtrip.py`).
+
 ## Testing Conventions
 
 - Tests live in `/tests/` using `test_*.py` naming
@@ -114,3 +128,5 @@ targeting `main`:
 - **Ruff** lint check
 - **Black** format check
 - **pytest** across Python 3.11, 3.12, 3.13
+- **Windows job** — the same checks on `windows-latest` with Python 3.12
+- **Discovery and workflow checks** — `python scripts/sync_discovery.py --check` and `espansr workflows validate` in both jobs

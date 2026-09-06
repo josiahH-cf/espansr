@@ -8,6 +8,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Windows launcher shim** — `install.ps1` writes
+	`%LOCALAPPDATA%\espansr\bin\espansr.cmd` and appends that directory to the
+	user PATH instead of the virtual environment's `Scripts` folder, so `python`
+	and `pip` in new shells keep resolving to the user's own Python; legacy venv
+	entries are removed, `doctor` reports the launcher, and Python detection also
+	tries `py -3`.
+- **External trigger collision warnings** — `espansr validate` warns when a
+	trigger is also defined in another Espanso match file under `match/`.
+- **Sync feedback** — after its commit `espansr sync` lists the committed files;
+	the `:sync` trigger keeps its window open on Windows, opens a terminal (or logs
+	to `sync.log` and calls `notify-send`) on Linux, and opens Terminal on macOS;
+	a successful `espansr refresh` shows a balloon notification on Windows.
+- **Test isolation and Windows CI** — autouse fixtures keep the suite off the
+	real config directory, command shim, Espanso service, and template remote;
+	CI adds a Windows job plus the discovery-sync and workflow-manifest checks;
+	new tests cover bundled-note invariants, CLI error paths, GUI paths, and an
+	Espanso YAML round-trip of every bundled note.
 - **Bundled prompt notes** — 1.1.0 bundled only the `:espansr` quick help; the
 	starter set now ships reusable AI prompt notes, each surfaced in the `:coms`
 	popup, the `:espansr` quick help, and `docs/TEMPLATES.md`. Besides the notes
@@ -261,6 +278,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Espanso `default.yml` is edited as text** — `espansr configure-remote-desktop`
+	owns one marked block (`# espansr-managed BEGIN ... END`), preserves every
+	other byte of the file, records overridden keys as `# espansr-prev:` lines
+	that `--revert` restores in both modes, keeps a one-time
+	`default.yml.espansr-orig` backup, and migrates files written by the old
+	layout; the mode flags are mutually exclusive.
+- **`espansr status` exit code and help** — exits 1 when no Espanso config
+	directory is found; a missing binary is a warning; the help text now says
+	what it shows.
+- **`espansr setup` reports failures** — each generated file prints generated,
+	skipped, or failed, and setup exits 1 (stopping the installers) when Espanso
+	is present and the publish or a generated file failed.
+- **WSL scope** — detection and cleanup of Windows-side Espanso files only
+	look at the current Windows user's profile.
 - **`espansr sync` repurposed as the one-button update** — in 1.1.0 `sync`
 	published templates to Espanso; that job is now `espansr publish` (with
 	`--dry-run`). `espansr sync` resolves the repository folder and installer
@@ -385,6 +416,32 @@ Every trigger below existed only on `main` between 1.1.0 and this release
 
 ### Fixed
 
+- **Installer hang after the first publish** — the Espanso daemon spawned by
+	`espanso restart` inherited the command's output pipes, so `espansr setup`
+	never returned; restart and service commands now run detached from output
+	pipes and the restart is verified through `espanso status`.
+- **Espanso config no longer round-tripped through YAML** — comments and
+	values such as `toggle_key: OFF` are no longer lost or retyped by the
+	remote-desktop configuration.
+- **Installer checks** — `install.ps1` starts Espanso before running setup,
+	anchors its service-state matching so `not running` is no longer read as
+	running, uses the real exit code of timed-out checks, refuses
+	`-RemoteDesktop` with `-LocalOnly`, and probes a reused venv before trusting
+	it; `install.sh` tries python3.14 and python3.13 first, kills only the
+	exact `espanso` process, and warns instead of reporting success when
+	`espansr status` fails.
+- **Sync failure handling** — a failed stash restore, a failed commit, a
+	missing upstream, and git timeouts each stop `espansr sync` with a clear
+	message instead of pushing a partial tree or a traceback.
+- **Console and file robustness** — CLI output no longer crashes on characters
+	the console cannot encode; the Espanso match, launcher, popup, sync, and
+	config files plus `config.json` and `install.json` are written atomically;
+	remote URLs with embedded credentials print masked.
+- **WSL install hint** — `espansr wsl-install-espanso` now says to run `setup`
+	before `doctor`.
+- **`:project-systems` entry point** — the note's Entry points section now
+	states that the master owns the shortcut's verification state instead of
+	claiming the shortcut is pending alignment against a missing tracker.
 - **Retired-template local cleanup** — publishing now removes stale managed
 	`espansr.yml` output when no triggered templates remain.
 - **GUI delete publishing** — deleting a template from the GUI now publishes the
