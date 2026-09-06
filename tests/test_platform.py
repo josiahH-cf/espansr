@@ -355,6 +355,57 @@ def test_get_platform_config_wsl2_without_username():
     assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
 
 
+def test_get_platform_config_wsl2_only_uses_current_windows_user():
+    """Other Windows profiles are never candidates: candidates are also cleanup targets."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
+        patch(
+            "espansr.core.platform._discover_wsl_windows_usernames",
+            return_value=["Alice", "Bob"],
+        ),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    mnt = [p for p in pc.espanso_candidate_dirs if p.as_posix().startswith("/mnt/c")]
+    assert mnt == [
+        Path("/mnt/c/Users/Alice/AppData/Roaming/espanso"),
+        Path("/mnt/c/Users/Alice/.config/espanso"),
+        Path("/mnt/c/Users/Alice/.espanso"),
+    ]
+    assert not any("Bob" in p.as_posix() for p in mnt)
+
+
+def test_get_platform_config_wsl2_single_discovered_profile_is_unambiguous():
+    """Without cmd.exe, exactly one discovered profile stands in for the current user."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value=None),
+        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=["Alice"]),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert Path("/mnt/c/Users/Alice/AppData/Roaming/espanso") in pc.espanso_candidate_dirs
+
+
+def test_get_platform_config_wsl2_multiple_discovered_profiles_are_not_guessed():
+    """Without cmd.exe and several profiles, no Windows-side path is guessed."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value=None),
+        patch(
+            "espansr.core.platform._discover_wsl_windows_usernames",
+            return_value=["Alice", "Bob"],
+        ),
+        patch.dict(os.environ, {}, clear=False),
+        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
+    ):
+        pc = get_platform_config()
+    assert not any(p.as_posix().startswith("/mnt/c") for p in pc.espanso_candidate_dirs)
+
+
 def test_get_platform_config_unknown():
     """get_platform_config() returns sensible defaults for unknown platforms."""
     with patch("espansr.core.platform.get_platform", return_value="unknown"):

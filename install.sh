@@ -82,7 +82,7 @@ fi
 # ─── Python version check ─────────────────────────────────────────────────────
 check_python() {
     local python_bin
-    for candidate in python3.12 python3.11 python3; do
+    for candidate in python3.14 python3.13 python3.12 python3.11 python3; do
         if command -v "$candidate" &>/dev/null; then
             local ver
             ver="$("$candidate" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
@@ -276,7 +276,9 @@ start_espanso_service() {
 
     # Clean up any leftover espanso processes from a prior run (the v2.3.0
     # launcher / tray helper holds runtime locks and blocks fresh starts).
-    pkill -f 'espanso ' 2>/dev/null || true
+    # Exact process-name match only: `-f 'espanso '` would also kill any
+    # unrelated command whose arguments merely mention espanso.
+    pkill -x espanso 2>/dev/null || true
     sleep 1
     rm -f "$HOME/.cache/espanso/"*.lock "$HOME/.cache/espanso/"*.sock 2>/dev/null || true
 
@@ -706,12 +708,16 @@ LIST_OUTPUT="$("$VENV_CMD" list 2>&1)" || {
 }
 echo "$LIST_OUTPUT"
 ok "CLI: espansr list — OK"
-STATUS_OUTPUT="$("$VENV_CMD" status 2>&1 || true)"
-echo "$STATUS_OUTPUT"
-ok "CLI: espansr status — OK"
+if STATUS_OUTPUT="$("$VENV_CMD" status 2>&1)"; then
+    echo "$STATUS_OUTPUT"
+    ok "CLI: espansr status — OK"
+else
+    echo "$STATUS_OUTPUT"
+    warn "espansr status returned non-zero (Espanso may not be installed)"
+fi
 
 if echo "$STATUS_OUTPUT" | grep -q "Espanso config: not found"; then
-    warn "Dependency note: espansr does not install Espanso itself."
+    warn "Dependency note: espansr could not install Espanso automatically on this machine."
     if [[ "$PLATFORM" == "wsl2" ]]; then
         info "Recommended from WSL:"
         echo "  espansr wsl-install-espanso"

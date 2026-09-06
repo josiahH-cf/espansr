@@ -174,16 +174,56 @@ def test_ensure_command_shim_windows_verify_only(tmp_path, monkeypatch):
     target = venv_bin / "espansr.exe"
     target.write_text("")
     monkeypatch.setattr(plat, "get_venv_bin_dir", lambda: venv_bin)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
 
     # Not on PATH → skipped.
     monkeypatch.setenv("PATH", "C:\\Windows;C:\\Windows\\System32")
     result = ensure_command_shim()
     assert result.status == "skipped"
+    assert "rerun install.ps1" in result.message
 
-    # On PATH → unchanged (verify-only, no mutation).
+    # Legacy install (venv Scripts on PATH) → unchanged (verify-only, no mutation).
     monkeypatch.setenv("PATH", f"C:\\Windows;{venv_bin}")
     result = ensure_command_shim()
     assert result.status == "unchanged"
+
+
+def test_ensure_command_shim_windows_accepts_launcher_dir(tmp_path, monkeypatch):
+    """install.ps1 writes %LOCALAPPDATA%\\espansr\\bin\\espansr.cmd and persists that dir."""
+    from espansr.core import platform as plat
+    from espansr.core.platform import ensure_command_shim, get_user_bin_dir
+
+    monkeypatch.setattr(plat, "get_platform", lambda: "windows")
+    venv_bin = tmp_path / "venv" / "Scripts"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "espansr.exe").write_text("")
+    monkeypatch.setattr(plat, "get_venv_bin_dir", lambda: venv_bin)
+    local_appdata = tmp_path / "AppData" / "Local"
+    monkeypatch.setenv("LOCALAPPDATA", str(local_appdata))
+
+    launcher_dir = local_appdata / "espansr" / "bin"
+    assert get_user_bin_dir() == launcher_dir
+    launcher_dir.mkdir(parents=True)
+    (launcher_dir / "espansr.cmd").write_text(f'@"{venv_bin / "espansr.exe"}" %*\n')
+
+    monkeypatch.setenv("PATH", f"C:\\Windows;{launcher_dir}")
+    result = ensure_command_shim()
+    assert result.status == "unchanged"
+    assert result.path == launcher_dir / "espansr.cmd"
+    assert result.target == venv_bin / "espansr.exe"
+
+    monkeypatch.setenv("PATH", "C:\\Windows")
+    assert ensure_command_shim().status == "skipped"
+
+
+def test_get_user_bin_dir_windows_falls_back_to_venv_without_localappdata(tmp_path, monkeypatch):
+    from espansr.core import platform as plat
+    from espansr.core.platform import get_user_bin_dir
+
+    monkeypatch.setattr(plat, "get_platform", lambda: "windows")
+    monkeypatch.setattr(plat, "get_venv_bin_dir", lambda: tmp_path / "venv" / "Scripts")
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    assert get_user_bin_dir() == tmp_path / "venv" / "Scripts"
 
 
 def test_ensure_command_shim_wrapper_fallback(tmp_path, monkeypatch):

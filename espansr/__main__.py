@@ -12,11 +12,13 @@ Commands:
 
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from espansr.core.atomic import atomic_copy
 from espansr.core.cli_color import fail, ok, warn
@@ -31,6 +33,33 @@ from espansr.integrations.espanso import (
     generate_sync_file,
     get_espanso_config_dir,
 )
+
+_URL_CREDENTIALS_RE = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:]+):([^\s/@]+)@")
+
+
+def _mask_url_credentials(text: str) -> str:
+    """Mask the secret in ``scheme://user:secret@host/...`` wherever it appears in ``text``.
+
+    Only printed output is masked; stored URLs are untouched.
+    """
+    return _URL_CREDENTIALS_RE.sub(r"\1:***@", text or "")
+
+
+def _harden_console_streams() -> None:
+    """Never let an unencodable character crash a command on a legacy console.
+
+    Windows consoles often run with a cp1252/cp437 stdout; ``errors="replace"``
+    prints ``?`` for a character the code page lacks instead of raising
+    UnicodeEncodeError. The encoding itself is left alone.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(errors="replace")
+        except (ValueError, OSError, TypeError, AttributeError):
+            pass
 
 
 def _print_wsl_espanso_remediation() -> None:
@@ -294,6 +323,7 @@ def cmd_setup(args) -> int:
     # ── Espanso detection and launcher ────────────────────────────────────
     espanso_dir = get_espanso_config_dir()
     espanso_found = bool(espanso_dir)
+    espanso_setup_failed = False
     if espanso_dir:
         if dry_run:
             print(f"[dry-run] Would detect Espanso config: {espanso_dir}")
@@ -305,15 +335,25 @@ def cmd_setup(args) -> int:
             from espansr.integrations.espanso import sync_to_espanso
 
             clean_stale_espanso_files()
-            generate_launcher_file()
-            generate_commands_popup_file()
-            generate_sync_file()
+            generated = {
+                "Launcher": generate_launcher_file(),
+                "Commands popup": generate_commands_popup_file(),
+                "Sync trigger": generate_sync_file(),
+            }
             print(f"Espanso config: {espanso_dir}")
-            print("Launcher: generated")
-            print("Commands popup: generated")
-            print("Sync trigger: generated")
+            for label, written in generated.items():
+                if written:
+                    print(f"{label}: generated")
+                else:
+                    print(
+                        f"{label}: failed (could not write the Espanso match file; "
+                        "check permissions on the match directory and rerun 'espansr setup')"
+                    )
+            if not all(generated.values()):
+                espanso_setup_failed = True
             if not sync_to_espanso(update_bundled=True, bundled_dir=bundled_dir):
                 print("Publish: failed — run 'espansr publish' after resolving the issues above")
+                espanso_setup_failed = True
     else:
         plat = get_platform()
         if plat == "wsl2":
@@ -329,6 +369,7 @@ def cmd_setup(args) -> int:
             )
         print("Launcher: skipped (no Espanso config)")
         print("Commands popup: skipped (no Espanso config)")
+        print("Sync trigger: skipped (no Espanso config)")
 
     # ── orchestratr manifest ──────────────────────────────────────────────
     from espansr.integrations.orchestratr import (
@@ -397,6 +438,10 @@ def cmd_setup(args) -> int:
                 )
 
     if strict and not espanso_found:
+        return 1
+    if espanso_setup_failed:
+        # Espanso is present but its files could not be generated or published:
+        # the install is not usable yet, so the installer must not report success.
         return 1
     return 0
 
@@ -511,10 +556,12 @@ def cmd_sync_bundled(args) -> int:
 
 
 def cmd_status(args) -> int:
-    """Show Espanso availability and config path.
+    """Show the Espanso config path and binary location.
 
-    With ``--json``, outputs machine-readable JSON status for orchestratr
-    health checks instead of human-readable text.
+    Exit code 1 when no Espanso config directory can be found; a missing
+    binary alone is only a warning (exit 0). With ``--json``, outputs
+    machine-readable JSON status for orchestratr health checks instead of
+    human-readable text.
     """
     if getattr(args, "json", False):
         from espansr.integrations.orchestratr import get_status_json
@@ -522,10 +569,12 @@ def cmd_status(args) -> int:
         print(get_status_json())
         return 0
 
+    exit_code = 0
     config_dir = get_espanso_config_dir()
     if config_dir:
         print(ok(f"Espanso config: {config_dir}"))
     else:
+        exit_code = 1
         platform = get_platform()
         if platform == "wsl2":
             print(
@@ -547,15 +596,15 @@ def cmd_status(args) -> int:
     espanso_bin = shutil.which("espanso")
     if espanso_bin:
         print(ok(f"Espanso binary: {espanso_bin}"))
-        return 0
+        return exit_code
 
     # WSL2: Espanso runs on the Windows side
     if get_platform() == "wsl2":
         print(warn("Espanso binary: Windows host (WSL2 — use PowerShell to manage)"))
     else:
-        print(fail("Espanso binary: not found"))
+        print(warn("Espanso binary: not found"))
 
-    return 0
+    return exit_code
 
 
 def cmd_list(args) -> int:
@@ -880,8 +929,9 @@ def cmd_doctor(args) -> int:
     )
 
     user_bin = get_user_bin_dir()
-    # Probe without mutating: re-check current state via a dry inspect.
-    shim_path = user_bin / ("espansr.exe" if platform == "windows" else "espansr")
+    # Probe without mutating: re-check current state via a dry inspect. On
+    # Windows install.ps1 writes an `espansr.cmd` launcher into the user bin dir.
+    shim_path = user_bin / ("espansr.cmd" if platform == "windows" else "espansr")
     if shim_path.exists() or shim_path.is_symlink():
         _ok(f"Command availability: shim present at {shim_path}")
     else:
@@ -959,7 +1009,7 @@ def cmd_remote(args) -> int:
         if action == "set":
             url = args.url
             rm.set_remote(url)
-            print(ok(f"Remote set to {url}"))
+            print(ok(f"Remote set to {_mask_url_credentials(url)}"))
             return 0
 
         if action == "status":
@@ -967,7 +1017,7 @@ def cmd_remote(args) -> int:
             if not status["url"]:
                 print("No remote configured. Run: espansr remote set <git-url>")
                 return 0
-            print(f"Remote URL:  {status['url']}")
+            print(f"Remote URL:  {_mask_url_credentials(status['url'])}")
             if status["last_pull"]:
                 print(f"Last pull:   {status['last_pull']}")
             if status["last_push"]:
@@ -987,7 +1037,7 @@ def cmd_remote(args) -> int:
         print(fail(str(exc)))
         return 1
     except RemoteError as exc:
-        print(fail(str(exc)))
+        print(fail(_mask_url_credentials(str(exc))))
         return 1
 
     return 1
@@ -1026,7 +1076,7 @@ def cmd_pull(args) -> int:
         print(fail(str(exc)))
         return 1
     except RemoteError as exc:
-        print(fail(str(exc)))
+        print(fail(_mask_url_credentials(str(exc))))
         return 1
 
 
@@ -1074,7 +1124,7 @@ def cmd_push(args) -> int:
         print(fail(str(exc)))
         return 1
     except RemoteError as exc:
-        print(fail(str(exc)))
+        print(fail(_mask_url_credentials(str(exc))))
         return 1
 
 
@@ -1179,6 +1229,21 @@ def _open_install_folder(folder: Path) -> None:
         print(warn(f"Could not open the install folder automatically: {folder}"))
 
 
+# Balloon notification shown for a few seconds from the Windows tray; a
+# NotifyIcon never blocks (no modal dialog) and the helper process exits on its own.
+_WINDOWS_TOAST_SCRIPT = """
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$icon = New-Object System.Windows.Forms.NotifyIcon
+$icon.Icon = [System.Drawing.SystemIcons]::Information
+$icon.Visible = $true
+$icon.ShowBalloonTip(4000, 'espansr', 'ok', [System.Windows.Forms.ToolTipIcon]::Info)
+Start-Sleep -Seconds 5
+$icon.Visible = $false
+$icon.Dispose()
+"""
+
+
 def _notify_refresh_ok() -> None:
     """Show a small 'ok' notification that the reinstall completed."""
     print(ok("ok"))
@@ -1192,7 +1257,24 @@ def _notify_refresh_ok() -> None:
         elif platform in ("linux", "wsl2"):
             if shutil.which("notify-send"):
                 subprocess.run(["notify-send", "espansr", "ok"], check=False)
-    except OSError:
+        elif platform == "windows":
+            # Detached so the CLI returns immediately while the balloon shows.
+            subprocess.Popen(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-WindowStyle",
+                    "Hidden",
+                    "-Command",
+                    _WINDOWS_TOAST_SCRIPT,
+                ],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+    except Exception:
         pass  # Desktop notifications are best-effort; the console line is the source of truth.
 
 
@@ -1325,40 +1407,68 @@ def _conflicted_files(repo_dir: Path) -> list[str]:
     return [line for line in result.stdout.splitlines() if line.strip()]
 
 
-def _ahead_of_upstream(repo_dir: Path) -> bool:
-    """Return True when the branch has commits the upstream does not (None = no upstream)."""
+def _ahead_of_upstream(repo_dir: Path) -> Optional[bool]:
+    """Return True when the branch has commits the upstream does not.
+
+    False when the branch is level with its upstream; None when no upstream is
+    configured at all (``@{u}`` does not resolve), which callers report
+    distinctly instead of pretending there was nothing to push.
+    """
     result = _git_in(repo_dir, "rev-list", "--count", "@{u}..HEAD", timeout=30)
     if result.returncode != 0:
-        return False  # no upstream configured
+        return None
     return result.stdout.strip() not in ("", "0")
 
 
-def _run_sync(*, no_push: bool = False) -> int:
-    """Pull latest, optionally yolo-push, then reinstall \u2014 the one-button update.
+def _git_failure_text(result: subprocess.CompletedProcess) -> str:
+    """Return the most useful output of a failed git command, credentials masked."""
+    text = (result.stderr or "").strip() or (result.stdout or "").strip()
+    return _mask_url_credentials(text)
 
-    Resolves the install location/OS from recorded metadata, pulls the project
-    repo with ``--rebase``; on a clean pull it commits and pushes any local
-    changes ("yolo") unless ``no_push``; then reruns the OS-appropriate
-    installer. Stops without reinstalling on a merge conflict so a broken tree
-    is never reinstalled.
+
+def _print_indented(text: str) -> None:
+    for line in text.splitlines():
+        if line.strip():
+            print(f"  {line.rstrip()}")
+
+
+def _describe_git_command(exc: subprocess.SubprocessError) -> str:
+    """Render the git subcommand from a subprocess exception (``git pull --rebase``)."""
+    argv = getattr(exc, "cmd", None)
+    if isinstance(argv, (list, tuple)):
+        parts = [str(part) for part in argv]
+        if len(parts) >= 3 and parts[0] == "git" and parts[1] == "-C":
+            parts = ["git", *parts[3:]]
+        return " ".join(parts)
+    return "git"
+
+
+def _print_committed_files(repo_dir: Path) -> None:
+    """List the files the yolo commit just recorded so nothing lands silently."""
+    shown = _git_in(repo_dir, "show", "--name-only", "--format=", "HEAD", timeout=30)
+    files = [line.strip() for line in shown.stdout.splitlines() if line.strip()]
+    print("Committed:")
+    if not files:
+        print("  (no files listed)")
+    for path in files:
+        print(f"  {path}")
+
+
+def _sync_repository(repo_dir: Path, *, no_push: bool) -> bool:
+    """Fetch, rebase, and (unless ``no_push``) yolo-commit and push ``repo_dir``.
+
+    Returns True when the reinstall should proceed and False when the update
+    stopped short (conflict, unrestorable stash, failed commit). Git errors
+    that raise (timeouts, missing binary) propagate to the caller.
     """
-    target = _resolve_install_target()
-    if target is None:
-        return 1
-    repo_dir, installer, platform = target
-
-    if not shutil.which("git") or not _is_git_worktree(repo_dir):
-        print(warn("Not a git checkout; skipping pull/push and reinstalling in place."))
-        return run_installer(repo_dir, installer, platform)
-
     try:
         fetched = _git_in(repo_dir, "fetch", "--prune")
     except (OSError, subprocess.SubprocessError) as exc:
         print(warn(f"git fetch failed ({exc}); reinstalling current checkout."))
-        return run_installer(repo_dir, installer, platform)
+        return True
     if fetched.returncode != 0:
         print(warn("git fetch failed (offline?); reinstalling current checkout."))
-        return run_installer(repo_dir, installer, platform)
+        return True
 
     stashed = False
     if _worktree_dirty(repo_dir):
@@ -1375,33 +1485,100 @@ def _run_sync(*, no_push: bool = False) -> int:
             for path in _conflicted_files(repo_dir):
                 print(f"  conflict: {path}")
             print(warn("Skipping reinstall because the rebase did not complete."))
-            return 1
-        print(warn(f"git pull --rebase reported: {pull.stderr.strip() or pull.stdout.strip()}"))
+            return False
+        print(warn(f"git pull --rebase reported: {_git_failure_text(pull)}"))
     else:
         print(ok("Pulled latest changes."))
 
     if stashed:
         pop = _git_in(repo_dir, "stash", "pop")
-        if pop.returncode != 0 and _conflicted_files(repo_dir):
-            print(fail("Local changes conflicted with the update; resolve them manually."))
-            print(warn("Skipping reinstall: the working tree is in conflict."))
-            return 1
-
-    if not no_push:
-        if _worktree_dirty(repo_dir):
-            _git_in(repo_dir, "add", "-A")
-            _git_in(repo_dir, "commit", "-m", "espansr sync: local changes")
-        if _ahead_of_upstream(repo_dir):
-            push = _git_in(repo_dir, "push")
-            if push.returncode == 0:
-                print(ok("Pushed local changes."))
+        if pop.returncode != 0:
+            # Any failed pop leaves a partial tree; committing or pushing it
+            # would publish half of the user's work, so stop here.
+            if _conflicted_files(repo_dir):
+                print(fail("Local changes conflicted with the update; resolve them manually."))
             else:
-                print(warn("Could not push local changes (continuing with reinstall)."))
-        else:
-            print(ok("Nothing to push."))
-    else:
-        print(ok("Auto-push disabled (--no-push)."))
+                print(fail("Could not restore your local changes after the update:"))
+                _print_indented(_git_failure_text(pop))
+            print(
+                warn(
+                    f"Your changes are saved in 'git stash list' (espansr-sync) in {repo_dir}; "
+                    "run 'git stash pop' there once the working tree is clean."
+                )
+            )
+            print(warn("Skipping commit, push, and reinstall until they are restored."))
+            return False
 
+    if no_push:
+        print(ok("Auto-push disabled (--no-push)."))
+        return True
+
+    if _worktree_dirty(repo_dir):
+        added = _git_in(repo_dir, "add", "-A")
+        if added.returncode != 0:
+            print(fail("Could not stage local changes:"))
+            _print_indented(_git_failure_text(added))
+            return False
+        commit = _git_in(repo_dir, "commit", "-m", "espansr sync: local changes")
+        if commit.returncode != 0:
+            print(fail("Could not commit local changes (nothing was pushed):"))
+            _print_indented(_git_failure_text(commit))
+            return False
+        print(ok("Committed local changes."))
+        _print_committed_files(repo_dir)
+
+    ahead = _ahead_of_upstream(repo_dir)
+    if ahead is None:
+        print(warn("No upstream configured; push skipped."))
+    elif ahead:
+        push = _git_in(repo_dir, "push")
+        if push.returncode == 0:
+            print(ok("Pushed local changes."))
+        else:
+            print(warn("Could not push local changes (continuing with reinstall)."))
+            _print_indented(_git_failure_text(push))
+    else:
+        print(ok("Nothing to push."))
+    return True
+
+
+def _run_sync(*, no_push: bool = False) -> int:
+    """Pull latest, optionally yolo-push, then reinstall \u2014 the one-button update.
+
+    Resolves the install location/OS from recorded metadata, pulls the project
+    repo with ``--rebase``; on a clean pull it commits and pushes any local
+    changes ("yolo") unless ``no_push``; then reruns the OS-appropriate
+    installer. Stops without reinstalling on a merge conflict, a stash that
+    cannot be restored, or a failed commit, so a broken tree is never
+    reinstalled and partial work is never pushed.
+    """
+    target = _resolve_install_target()
+    if target is None:
+        return 1
+    repo_dir, installer, platform = target
+
+    if not shutil.which("git") or not _is_git_worktree(repo_dir):
+        print(warn("Not a git checkout; skipping pull/push and reinstalling in place."))
+        return run_installer(repo_dir, installer, platform)
+
+    try:
+        proceed = _sync_repository(repo_dir, no_push=no_push)
+    except subprocess.TimeoutExpired as exc:
+        print(
+            fail(
+                f"{_describe_git_command(exc)} timed out after {int(exc.timeout)} s; "
+                "check your network connection and rerun 'espansr sync'."
+            )
+        )
+        print(warn("Skipping reinstall because the update did not complete."))
+        return 1
+    except (OSError, subprocess.SubprocessError) as exc:
+        print(fail(f"git failed: {exc}"))
+        print(warn("Skipping reinstall because the update did not complete."))
+        return 1
+
+    if not proceed:
+        return 1
     return run_installer(repo_dir, installer, platform)
 
 
@@ -1729,7 +1906,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     add_starter_flags(starters_parser)
     status_parser = subparsers.add_parser(
-        "status", help="Show Espanso process status and config path"
+        "status", help="Show Espanso config path and binary location"
     )
     status_parser.add_argument(
         "--json",
@@ -1822,19 +1999,20 @@ def _build_parser() -> argparse.ArgumentParser:
         "configure-remote-desktop",
         help="Configure Espanso for reliable expansion over RustDesk/RDP (used by installers)",
     )
-    rd_parser.add_argument(
+    rd_mode = rd_parser.add_mutually_exclusive_group()
+    rd_mode.add_argument(
         "--revert",
         action="store_true",
         default=False,
-        help="Remove the espansr-managed remote-desktop Espanso settings",
+        help="Remove the espansr-managed block (host or workstation) from Espanso's default.yml",
     )
-    rd_parser.add_argument(
+    rd_mode.add_argument(
         "--local",
         action="store_true",
         default=False,
         help="Tune Espanso for a local workstation (preserve the clipboard)",
     )
-    rd_parser.add_argument(
+    rd_mode.add_argument(
         "--auto",
         action="store_true",
         default=False,
@@ -1926,10 +2104,11 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main() -> None:
-    """Entry point for the espansr CLI."""
+def main(argv: Optional[list[str]] = None) -> None:
+    """Entry point for the espansr CLI (``argv`` defaults to ``sys.argv[1:]``)."""
+    _harden_console_streams()
     parser = _build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     handlers = {
         "publish": cmd_publish,

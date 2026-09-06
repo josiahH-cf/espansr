@@ -118,23 +118,25 @@ def get_platform_config() -> PlatformConfig:
         base = Path(xdg) if xdg else Path.home() / ".config"
 
         candidates: list[Path] = []
-        ordered_users: list[str] = []
 
+        # Only the current Windows user's profile is a candidate: every
+        # candidate is also a cleanup target for espansr-managed files, so
+        # other users' Espanso configs must never be touched. When cmd.exe
+        # cannot report the user name, a single discovered profile is
+        # unambiguous; several profiles are not guessed at.
         win_user = get_windows_username()
+        if not win_user:
+            discovered = _discover_wsl_windows_usernames()
+            if len(discovered) == 1:
+                win_user = discovered[0]
+
         if win_user:
-            ordered_users.append(win_user)
-
-        for discovered in _discover_wsl_windows_usernames():
-            if discovered.lower() not in {u.lower() for u in ordered_users}:
-                ordered_users.append(discovered)
-
-        for user in ordered_users:
             candidates.extend(
                 [
                     # Espanso on Windows typically uses AppData/Roaming.
-                    Path(f"/mnt/c/Users/{user}/AppData/Roaming/espanso"),
-                    Path(f"/mnt/c/Users/{user}/.config/espanso"),
-                    Path(f"/mnt/c/Users/{user}/.espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
+                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
                 ]
             )
 
@@ -306,7 +308,7 @@ def get_venv_bin_dir(executable: Optional[str] = None) -> Path:
 
 
 def _shim_executable_name() -> str:
-    return "espansr.exe" if get_platform() == "windows" else "espansr"
+    return "espansr.cmd" if get_platform() == "windows" else "espansr"
 
 
 def get_user_bin_dir() -> Path:
@@ -314,10 +316,14 @@ def get_user_bin_dir() -> Path:
 
     On POSIX returns ``~/.local/bin`` (XDG/freedesktop standard, on default
     PATH for Debian/Ubuntu/Fedora login shells and respected by systemd-user
-    and desktop launchers). On Windows returns the venv ``Scripts`` directory
-    that ``install.ps1`` already persists to the user PATH.
+    and desktop launchers). On Windows returns ``%LOCALAPPDATA%\\espansr\\bin``,
+    the launcher directory ``install.ps1`` persists to the user PATH (falling
+    back to the venv ``Scripts`` directory when LOCALAPPDATA is unset).
     """
     if get_platform() == "windows":
+        localappdata = os.environ.get("LOCALAPPDATA", "")
+        if localappdata:
+            return Path(localappdata) / "espansr" / "bin"
         return get_venv_bin_dir()
     return Path.home() / ".local" / "bin"
 
@@ -376,9 +382,11 @@ def ensure_command_shim(
     it). Falls back to a tiny wrapper script when symlinks are unsupported
     (rare; e.g. FAT/exFAT home dirs).
 
-    Windows: verify-only. ``install.ps1`` is the source of truth for the
-    persistent user PATH entry; this helper reports whether the venv Scripts
-    directory is currently on PATH so doctor and tests can surface the state.
+    Windows: verify-only. ``install.ps1`` is the source of truth: it writes an
+    ``espansr.cmd`` launcher into the user bin directory and persists that
+    directory on the user PATH; this helper reports whether that directory (or,
+    for installs made before the launcher existed, the venv Scripts directory)
+    is currently on PATH so doctor and tests can surface the state.
     """
     plat = get_platform()
     venv_bin = get_venv_bin_dir()
@@ -394,22 +402,19 @@ def ensure_command_shim(
                 status="unavailable",
                 message="espansr executable not found in venv Scripts directory",
             )
-        if is_user_bin_on_path(bin_dir):
+        launcher = shim_path if shim_path.exists() else target
+        if is_user_bin_on_path(bin_dir) or is_user_bin_on_path(venv_bin):
             return ShimResult(
-                path=target,
+                path=launcher,
                 target=target,
                 status="unchanged",
-                message=(
-                    "Windows: venv Scripts directory is on user PATH " "(managed by install.ps1)"
-                ),
+                message=f"Windows: {launcher.parent} is on user PATH (managed by install.ps1)",
             )
         return ShimResult(
-            path=target,
+            path=launcher,
             target=target,
             status="skipped",
-            message=(
-                "Windows: venv Scripts directory is not on PATH; " "rerun install.ps1 to persist it"
-            ),
+            message=f"Windows: {bin_dir} is not on PATH; rerun install.ps1 to persist it",
         )
 
     if target is None:

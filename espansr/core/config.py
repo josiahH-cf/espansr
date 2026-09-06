@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
+from espansr.core.atomic import atomic_write_json
 from espansr.core.platform import get_platform, get_platform_config, is_windows  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -259,9 +260,8 @@ class ConfigManager:
             config = self.config
 
         try:
-            self.config_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.config_path, "w", encoding="utf-8") as f:
-                json.dump(config.to_dict(), f, indent=2)
+            # Atomic replace: a crash mid-write never leaves a truncated config.json.
+            atomic_write_json(self.config_path, config.to_dict())
             self._config = config
             return True
         except OSError as e:
