@@ -1642,9 +1642,12 @@ def test_bundled_project_systems_template_contract():
         "A normal startup ends with the already-known next action",
     ):
         assert phrase in content, phrase
-    # The pending-alignment entry-point section and the unblock aside are gone.
-    for absent in ("## Entry points", "pending alignment", "`unblock`"):
+    # The stale pending-alignment claim and the unblock aside are gone; the entry-point
+    # section now states that the master owns the shortcut verification state.
+    for absent in ("pending alignment", "missing tracker", "`unblock`"):
         assert absent not in content, absent
+    assert "## Entry points" in content
+    assert "The master owns the current verification state" in content
 
     # Finish: the master alone states current reality; the chat is not a second source of truth.
     for phrase in (
