@@ -27,6 +27,10 @@ jobs:
           test -f CONTRIBUTING.md || FAIL=1
           test -f docs/CLI.md || FAIL=1
           test -f docs/DEVELOPMENT.md || FAIL=1
+          test -f docs/TEMPLATES.md || FAIL=1
+          test -f docs/PROCESS.md || FAIL=1
+          test -f docs/VERIFY.md || FAIL=1
+          test -f AGENTS.md || FAIL=1
 
           if [ "$FAIL" -eq 0 ]; then
             echo "docs_ok=true" >> "$GITHUB_OUTPUT"
