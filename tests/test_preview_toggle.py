@@ -3,9 +3,10 @@
 Spec: /specs/toggleable-yaml-preview.md
 Covers: toggle shows/hides previews, persistence via config, default state,
 keyboard shortcut, tooltip reflects state, previews update when visible.
+
+Windows come from the shared ``make_window`` factory in ``tests/conftest.py``.
 """
 
-import contextlib
 from unittest.mock import patch
 
 import pytest
@@ -44,51 +45,6 @@ def editor(qtbot, _patch_editor):
     widget = TemplateEditorWidget()
     qtbot.addWidget(widget)
     return widget
-
-
-def _make_window(qtbot, config, tm=None, tmp_path=None):
-    """Create a patched MainWindow for toggle tests."""
-    from espansr.ui.main_window import MainWindow
-
-    tm_patch = (
-        patch(
-            "espansr.ui.template_browser.get_template_manager",
-            return_value=tm,
-        )
-        if tm is not None
-        else patch("espansr.ui.template_browser.get_template_manager")
-    )
-
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch("espansr.ui.main_window.get_config", return_value=config))
-        stack.enter_context(patch("espansr.ui.main_window.get_config_manager"))
-        stack.enter_context(patch("espansr.ui.main_window.save_config"))
-        stack.enter_context(patch("espansr.ui.template_browser.get_config"))
-        stack.enter_context(patch("espansr.ui.template_editor.get_config"))
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso.get_match_dir",
-                return_value=None,
-            )
-        )
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso.get_espanso_config_dir",
-                return_value=tmp_path,
-            )
-        )
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso._get_candidate_paths",
-                return_value=[],
-            )
-        )
-        stack.enter_context(tm_patch)
-
-        window = MainWindow()
-        qtbot.addWidget(window)
-
-    return window
 
 
 # ── Config default ──────────────────────────────────────────────────────────
@@ -169,17 +125,17 @@ def test_previews_update_silently_when_hidden(editor):
 # ── MainWindow toggle button ────────────────────────────────────────────────
 
 
-def test_toggle_button_exists(qtbot, tmp_path):
+def test_toggle_button_exists(make_window):
     """MainWindow has a preview toggle button in the toolbar."""
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
     assert hasattr(window, "_preview_toggle_btn")
 
 
-def test_toggle_hides_and_shows_previews(qtbot, tmp_path):
+def test_toggle_hides_and_shows_previews(make_window):
     """Clicking toggle button shows/hides the editor preview container."""
     config = Config()
     config.ui.show_previews = False
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     # Default is false → hidden
     assert window._editor._preview_container.isHidden()
@@ -193,11 +149,11 @@ def test_toggle_hides_and_shows_previews(qtbot, tmp_path):
     assert window._editor._preview_container.isHidden()
 
 
-def test_toggle_persists_to_config(qtbot, tmp_path):
+def test_toggle_persists_to_config(make_window):
     """Toggling preview updates config.ui.show_previews."""
     config = Config()
     config.ui.show_previews = False
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     window._preview_toggle_btn.click()
     assert config.ui.show_previews is True
@@ -206,11 +162,11 @@ def test_toggle_persists_to_config(qtbot, tmp_path):
     assert config.ui.show_previews is False
 
 
-def test_toggle_button_tooltip_reflects_state(qtbot, tmp_path):
+def test_toggle_button_tooltip_reflects_state(make_window):
     """Toggle button tooltip changes based on state."""
     config = Config()
     config.ui.show_previews = False
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     # Previews are hidden → tooltip should say "Show"
     assert "Show" in window._preview_toggle_btn.toolTip()
@@ -220,10 +176,10 @@ def test_toggle_button_tooltip_reflects_state(qtbot, tmp_path):
     assert "Hide" in window._preview_toggle_btn.toolTip()
 
 
-def test_shortcut_toggles_preview(qtbot, tmp_path):
+def test_shortcut_toggles_preview(make_window):
     """Ctrl+Shift+P shortcut is bound and toggles previews."""
     config = Config()
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     assert hasattr(window, "_shortcut_preview")
     assert window._shortcut_preview.key() == QKeySequence("Ctrl+Shift+P")
@@ -234,19 +190,19 @@ def test_shortcut_toggles_preview(qtbot, tmp_path):
     mock_toggle.assert_called_once()
 
 
-def test_previews_visible_on_startup_when_config_true(qtbot, tmp_path):
+def test_previews_visible_on_startup_when_config_true(make_window):
     """When config.ui.show_previews is True, previews are visible at launch."""
     config = Config()
     config.ui.show_previews = True
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     assert not window._editor._preview_container.isHidden()
 
 
-def test_previews_hidden_on_startup_when_config_false(qtbot, tmp_path):
+def test_previews_hidden_on_startup_when_config_false(make_window):
     """When config.ui.show_previews is False (default), previews are hidden at launch."""
     config = Config()
     config.ui.show_previews = False
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     assert window._editor._preview_container.isHidden()

@@ -9,13 +9,9 @@ actions — selection only ever changes what is displayed or copies text.
 
 from unittest.mock import patch
 
-import pytest
-
 from espansr.core.command_catalog import CommandCatalogEntry
 from espansr.core.config import Config
 from espansr.core.workflows import WorkflowCatalog, WorkflowEdge, WorkflowManifest, WorkflowNode
-
-pytest.importorskip("PyQt6")
 
 
 def _entries():

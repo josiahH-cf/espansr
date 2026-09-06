@@ -27,3 +27,6 @@ pytest-cache-files-*/
 .mypy_cache/
 .coverage
 htmlcov/
+
+# Version history a TemplateManager opened over the bundled checkout may write
+templates/_versions/

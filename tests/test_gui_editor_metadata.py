@@ -11,8 +11,6 @@ import pytest
 
 from espansr.core.templates import Template, TemplateManager
 
-pytest.importorskip("PyQt6")
-
 
 @pytest.fixture()
 def tm(tmp_path):

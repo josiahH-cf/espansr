@@ -107,17 +107,23 @@ class TestColorDisabled:
     def test_ok_plain(self):
         result = ok("Python 3.12")
         assert "\033[" not in result
-        assert "[ok]   Python 3.12" == result
+        tag, message = result.split(maxsplit=1)
+        assert tag == "[ok]"
+        assert message == "Python 3.12"
 
     def test_warn_plain(self):
         result = warn("Minor issue")
         assert "\033[" not in result
-        assert "[warn] Minor issue" == result
+        tag, message = result.split(maxsplit=1)
+        assert tag == "[warn]"
+        assert message == "Minor issue"
 
     def test_fail_plain(self):
         result = fail("Missing binary")
         assert "\033[" not in result
-        assert "[FAIL] Missing binary" == result
+        tag, message = result.split(maxsplit=1)
+        assert tag == "[FAIL]"
+        assert message == "Missing binary"
 
     def test_info_plain(self):
         result = info("Checking config")

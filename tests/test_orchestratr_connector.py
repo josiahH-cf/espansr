@@ -5,53 +5,18 @@ flat AppEntry schema, and passive behavior when orchestratr is absent.
 """
 
 import json
-from pathlib import Path
+import os
 from unittest.mock import patch
 
 import pytest
 import yaml
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
-
-def _make_config_env(tmp_path: Path, *, templates: int = 1, espanso: bool = True):
-    """Set up a fake espansr config directory with optional templates and espanso.
-
-    Returns (config_dir, templates_dir, espanso_dir_or_none).
-    """
-    config_dir = tmp_path / "espansr"
-    config_dir.mkdir(parents=True)
-    templates_dir = config_dir / "templates"
-    templates_dir.mkdir()
-
-    for i in range(templates):
-        (templates_dir / f"tmpl_{i}.json").write_text(
-            json.dumps(
-                {
-                    "name": f"Template {i}",
-                    "trigger": f":t{i}",
-                    "content": f"Content {i}",
-                }
-            )
-        )
-
-    espanso_dir = None
-    if espanso:
-        espanso_dir = tmp_path / "espanso"
-        espanso_dir.mkdir()
-
-    return config_dir, templates_dir, espanso_dir
-
-
-def _make_bundled_dir(tmp_path: Path) -> Path:
-    """Create a fake bundled starter directory for cmd_setup tests."""
-    bundled_dir = tmp_path / "bundled"
-    bundled_dir.mkdir()
-    (bundled_dir / "starter.json").write_text(
-        json.dumps({"name": "Starter", "trigger": ":starter", "content": "Starter"})
-    )
-    return bundled_dir
-
+from tests.orchestratr_helpers import (
+    _make_args,
+    _make_bundled_dir,
+    _make_config_env,
+    _make_config_stub,
+)
 
 # ─── AC 1: Manifest generation ──────────────────────────────────────────────
 
@@ -96,18 +61,6 @@ class TestManifestGeneration:
         # No nested objects or version
         assert "launch" not in manifest
         assert "hotkey" not in manifest
-        assert "version" not in manifest
-
-    def test_manifest_no_version_field(self, tmp_path):
-        """Manifest does not include a version field (not in orchestratr schema)."""
-        from espansr.integrations.orchestratr import generate_manifest
-
-        apps_dir = tmp_path / "orchestratr" / "apps.d"
-        apps_dir.mkdir(parents=True)
-
-        generate_manifest(apps_dir)
-
-        manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
         assert "version" not in manifest
 
 
@@ -418,11 +371,10 @@ class TestSetupIntegration:
             return_value="linux",
         ):
             generate_manifest(apps_dir)
-        original_mtime = (apps_dir / "espansr.yml").stat().st_mtime
-
-        import time
-
-        time.sleep(0.05)  # Ensure mtime would differ if rewritten
+        manifest_path = apps_dir / "espansr.yml"
+        # Pin an obviously stale mtime: any rewrite would replace it with "now".
+        stale_mtime = 1_000_000_000
+        os.utime(manifest_path, (stale_mtime, stale_mtime))
 
         with (
             patch("espansr.__main__.get_config_dir", return_value=config_dir),
@@ -440,8 +392,7 @@ class TestSetupIntegration:
         ):
             cmd_setup(None)
 
-        new_mtime = (apps_dir / "espansr.yml").stat().st_mtime
-        assert new_mtime == original_mtime
+        assert manifest_path.stat().st_mtime == stale_mtime
 
 
 # ─── AC 3 (CLI): status --json via argparse ─────────────────────────────────
@@ -580,21 +531,3 @@ class TestWsl2Manifest:
         manifest = yaml.safe_load((apps_dir / "espansr.yml").read_text())
         assert manifest["ready_cmd"] == "espansr status --json"
         assert "wsl.exe" not in manifest["ready_cmd"]
-
-
-# ─── Helpers ─────────────────────────────────────────────────────────────────
-
-
-def _make_args(**kwargs):
-    """Create a simple namespace to simulate argparse output."""
-    import types
-
-    return types.SimpleNamespace(**kwargs)
-
-
-def _make_config_stub(last_sync: str = ""):
-    """Create a minimal config stub with espanso.last_sync set."""
-    import types
-
-    espanso = types.SimpleNamespace(last_sync=last_sync)
-    return types.SimpleNamespace(espanso=espanso)

@@ -122,10 +122,16 @@ def test_litmus_keeps_human_verdicts_blank():
 
 
 def test_litmus_entries_stay_plain_language():
-    """Entries must avoid internal references a non-technical person can't judge."""
-    content = _content()
-    for term in ("file", "class", "function", "schema"):
-        assert term in content.lower(), f"prompt must forbid {term} references in entries"
+    """Entries must avoid internal references a non-technical person can't judge.
+
+    The output contract cannot detect a file or class name in an entry (its
+    forbidden markers only cover prefilled verdicts), so the prohibition is
+    pinned as the exact sentence rather than by the presence of the words.
+    """
+    assert (
+        "No file, class, function, schema, or internal architecture references in the "
+        "human-facing statement." in _content()
+    )
 
 
 def test_litmus_covers_non_visual_and_operator_outcomes():
@@ -150,8 +156,8 @@ def test_litmus_inspects_before_asking():
 
 def test_litmus_does_not_implement_or_certify():
     content = _content()
-    assert "do not implement" in content.lower()
-    assert "verified" in content.lower()
+    assert "Do not implement the feature, and do not claim the feature is verified" in content
+    assert "verification itself has not occurred here" in content
 
 
 def test_litmus_does_not_chain_to_adjacent_triggers():

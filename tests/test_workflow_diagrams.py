@@ -23,8 +23,6 @@ from espansr.core.workflows import (
     validate_manifest_data,
 )
 
-pytest.importorskip("PyQt6")
-
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLED_WORKFLOWS_DIR = ROOT / "templates" / "_meta" / "workflows"
 
@@ -277,39 +275,8 @@ def test_processes_diagram_actions_use_the_selected_capability(qtbot):
 # ── :aopen (main window) integration ─────────────────────────────────────────
 
 
-def _make_window(qtbot, tmp_path, config, tm):
-    import contextlib
-
-    from espansr.ui.main_window import MainWindow
-
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch("espansr.ui.main_window.get_config", return_value=config))
-        stack.enter_context(patch("espansr.ui.main_window.get_config_manager"))
-        stack.enter_context(patch("espansr.ui.main_window.save_config", return_value=True))
-        stack.enter_context(
-            patch(
-                "espansr.ui.main_window.load_workflow_catalog",
-                return_value=WorkflowCatalog(workflows=[_manifest()]),
-            )
-        )
-        stack.enter_context(
-            patch("espansr.ui.template_browser.get_template_manager", return_value=tm)
-        )
-        stack.enter_context(patch("espansr.ui.template_browser.get_config"))
-        stack.enter_context(patch("espansr.ui.template_editor.get_config"))
-        stack.enter_context(
-            patch("espansr.ui.template_editor.get_template_manager", return_value=tm)
-        )
-        stack.enter_context(patch("espansr.integrations.espanso.get_match_dir", return_value=None))
-        stack.enter_context(
-            patch("espansr.integrations.espanso.get_espanso_config_dir", return_value=tmp_path)
-        )
-        stack.enter_context(
-            patch("espansr.integrations.espanso._get_candidate_paths", return_value=[])
-        )
-        window = MainWindow()
-        qtbot.addWidget(window)
-        return window
+def _demo_catalog():
+    return WorkflowCatalog(workflows=[_manifest()])
 
 
 @pytest.fixture()
@@ -320,15 +287,15 @@ def cap_tm(tmp_path):
     return tm
 
 
-def test_main_window_workflows_panel_hidden_by_default(qtbot, tmp_path, cap_tm):
-    window = _make_window(qtbot, tmp_path, Config(), cap_tm)
+def test_main_window_workflows_panel_hidden_by_default(make_window, cap_tm):
+    window = make_window(Config(), tm=cap_tm, workflow_catalog=_demo_catalog())
     assert not window._workflow_panel.isVisibleTo(window)
     assert "Show Workflows" in window._workflows_toggle_btn.text()
 
 
-def test_main_window_toggle_shows_panel_and_persists(qtbot, tmp_path, cap_tm):
+def test_main_window_toggle_shows_panel_and_persists(make_window, cap_tm):
     config = Config()
-    window = _make_window(qtbot, tmp_path, config, cap_tm)
+    window = make_window(config, tm=cap_tm, workflow_catalog=_demo_catalog())
     with (
         patch("espansr.ui.main_window.save_config", return_value=True) as save_mock,
         patch(
@@ -343,17 +310,17 @@ def test_main_window_toggle_shows_panel_and_persists(qtbot, tmp_path, cap_tm):
     save_mock.assert_called()
 
 
-def test_main_window_shortcut_binding(qtbot, tmp_path, cap_tm):
+def test_main_window_shortcut_binding(make_window, cap_tm):
     from PyQt6.QtGui import QKeySequence
 
-    window = _make_window(qtbot, tmp_path, Config(), cap_tm)
+    window = make_window(Config(), tm=cap_tm, workflow_catalog=_demo_catalog())
     assert window._shortcut_workflows.key() == QKeySequence("Ctrl+Shift+W")
 
 
-def test_main_window_node_click_selects_template(qtbot, tmp_path, cap_tm):
+def test_main_window_node_click_selects_template(make_window, cap_tm):
     config = Config()
     config.ui.show_workflows = True
-    window = _make_window(qtbot, tmp_path, config, cap_tm)
+    window = make_window(config, tm=cap_tm, workflow_catalog=_demo_catalog())
     assert window._workflow_panel.isVisibleTo(window)
     window._workflow_panel.diagram().select_capability("b")
     current = window._browser.get_current_template()
@@ -361,9 +328,9 @@ def test_main_window_node_click_selects_template(qtbot, tmp_path, cap_tm):
     assert window._editor._name_edit.text() == "Beta Template"
 
 
-def test_main_window_panel_startup_from_config(qtbot, tmp_path, cap_tm):
+def test_main_window_panel_startup_from_config(make_window, cap_tm):
     config = Config()
     config.ui.show_workflows = True
-    window = _make_window(qtbot, tmp_path, config, cap_tm)
+    window = make_window(config, tm=cap_tm, workflow_catalog=_demo_catalog())
     assert window._workflow_panel_loaded is True
     assert sorted(window._workflow_panel.diagram().node_capabilities()) == ["a", "b", "c", "ctx"]

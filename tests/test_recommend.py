@@ -148,11 +148,20 @@ def test_favorites_and_recents_break_ties_deterministically():
 
     entries = _bundled_entries()
     query = RecommendationQuery(have_artifact="context-packet")
-    plain = recommend(entries, query)
-    boosted = recommend(entries, query, favorites=(":research",))
-    assert [r.entry.trigger for r in boosted].index(":research") <= [
-        r.entry.trigger for r in plain
-    ].index(":research")
+    plain = [r.entry.trigger for r in recommend(entries, query)]
+    assert ":research" in plain
+    assert plain[0] != ":research"
+
+    # A favorite wins the tie outright; every other entry keeps its relative order.
+    boosted = [r.entry.trigger for r in recommend(entries, query, favorites=(":research",))]
+    assert boosted[0] == ":research"
+    assert [t for t in boosted if t != ":research"] == [t for t in plain if t != ":research"]
+
+    # Recency does the same, and the most recent trigger outranks an older one.
+    recent = [r.entry.trigger for r in recommend(entries, query, recents=(":research",))]
+    assert recent[0] == ":research"
+    ordered = [r.entry.trigger for r in recommend(entries, query, recents=(":gaps", ":research"))]
+    assert ordered[:2] == [":gaps", ":research"]
 
 
 # ── BEH-07: full catalog access ──────────────────────────────────────────────

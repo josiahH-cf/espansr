@@ -57,14 +57,18 @@ def test_docs_note_list_matches_generator():
 
 
 def test_every_bundled_trigger_is_in_quick_help():
-    """Every bundled template trigger is surfaced in the :espansr quick help."""
-    content = render_quick_help()
+    """Every bundled template trigger has its own row in the :espansr quick help."""
+    help_lines = render_quick_help().splitlines()
     for path in TEMPLATES_DIR.glob("*.json"):
         data = json.loads(path.read_text(encoding="utf-8"))
         trigger = data.get("trigger", "")
         if not trigger:
             continue
-        assert trigger in content, f"{path.name} trigger {trigger} is not in the quick help"
+        # A whole-row match: a bare substring check would let ":reality" pass
+        # via the ":reality-max" row.
+        assert any(
+            line.strip().startswith(f"{trigger} ") for line in help_lines
+        ), f"{path.name} trigger {trigger} is not in the quick help"
 
 
 def test_every_prompt_note_is_in_docs_list():

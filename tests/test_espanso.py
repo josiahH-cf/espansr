@@ -9,6 +9,7 @@ Minimum 8 test functions required.
 import json
 import subprocess
 import sys
+from pathlib import Path
 from unittest.mock import mock_open, patch
 
 import yaml
@@ -390,66 +391,73 @@ def test_find_espanso_returns_none_when_not_found(tmp_path):
 
 
 def test_platform_detection_wsl2():
-    """get_platform() returns 'wsl2' when /proc/version contains 'microsoft'."""
-    # Reload module to clear any cached results
-    import importlib
+    """The get_platform re-exported by espansr.core.config detects WSL2.
+
+    The lru_cache is cleared by the autouse conftest fixture, so the patched
+    /proc/version is what this call reads; no module reload is needed.
+    """
+    import espansr.core.config as cfg_mod
 
     with (
         patch("platform.system", return_value="Linux"),
         patch("builtins.open", mock_open(read_data="Linux version 5.15 (Microsoft WSL2)")),
     ):
-        import espansr.core.config as cfg_mod
-
-        importlib.reload(cfg_mod)
         result = cfg_mod.get_platform()
 
     assert result == "wsl2"
 
 
 def test_platform_detection_native_linux():
-    """get_platform() returns 'linux' on a non-WSL2 Linux system."""
-    import importlib
+    """The get_platform re-exported by espansr.core.config detects native Linux."""
+    import espansr.core.config as cfg_mod
 
     with (
         patch("platform.system", return_value="Linux"),
         patch("builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")),
     ):
-        import espansr.core.config as cfg_mod
-
-        importlib.reload(cfg_mod)
         result = cfg_mod.get_platform()
 
     assert result == "linux"
 
 
 # ─── CLI command smoke tests ──────────────────────────────────────────────────
+# Subprocesses do not inherit in-process patches, so both smoke tests pass the
+# conftest isolation explicitly: APPDATA (Windows) / XDG_CONFIG_HOME (Linux,
+# WSL2) point the child's config dir at tmp_path instead of the real one.
 
 
-def test_cli_list_runs_without_error(tmp_path):
+def test_cli_list_runs_without_error(isolated_config_env):
     """'espansr list' exits 0 with an empty templates directory."""
+    import os
+
     result = subprocess.run(
         [sys.executable, "-m", "espansr", "list"],
         capture_output=True,
         text=True,
-        env={
-            **__import__("os").environ,
-            "XDG_CONFIG_HOME": str(tmp_path),
-        },
+        env={**os.environ, **isolated_config_env},
     )
-    assert result.returncode == 0
+    assert result.returncode == 0, result.stderr
+    assert "No templates with triggers found." in result.stdout
 
 
-def test_cli_status_runs_without_error():
+def test_cli_status_runs_without_error(isolated_config_env, tmp_path):
     """'espansr status' exits 0 with Espanso config present, 1 without; never crashes."""
+    import os
+
     result = subprocess.run(
         [sys.executable, "-m", "espansr", "status"],
         capture_output=True,
         text=True,
+        env={**os.environ, **isolated_config_env},
     )
-    # Status reports availability — should not crash regardless of Espanso presence
-    assert result.returncode in (0, 1)
+    # Status reports availability and never crashes, whether or not Espanso is present.
+    assert result.returncode in (0, 1), result.stderr
     assert "Traceback" not in result.stderr
     assert "Espanso config:" in result.stdout
+    # Any detected-path persistence landed in the isolated config dir, not the real one.
+    for root in isolated_config_env.values():
+        for config_json in Path(root).rglob("config.json"):
+            assert config_json.is_relative_to(tmp_path)
 
 
 # ─── Config dir migration tests ──────────────────────────────────────────────

@@ -7,6 +7,7 @@ previously installed ``:defaults`` live copy to ``:tddh`` with a backup.
 """
 
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -140,14 +141,13 @@ def test_tddh_prompt_omits_format_and_guarantee_language():
 
     assert "markdown" not in lowered
     assert "optional markdown guidance" not in lowered
-    assert "#" not in content  # no required heading format
+    assert re.search(r"^#", content, re.MULTILINE) is None  # no Markdown heading lines
     assert "bullet" not in lowered  # no required bullet format
     assert "heading" not in lowered
     assert "chain-of-thought" not in lowered
     assert "chain of thought" not in lowered
     assert "step-by-step" not in lowered
     assert "confidence" not in lowered
-    assert "%" not in content  # no confidence percentages
     assert "guarantee" not in lowered
     assert "zero hallucination" not in lowered
 

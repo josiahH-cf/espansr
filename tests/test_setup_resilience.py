@@ -7,7 +7,7 @@ Spec: /specs/setup-platform-resilience.md
 
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from espansr.core.platform import (
     PlatformConfig,
@@ -19,21 +19,19 @@ from espansr.core.platform import (
 
 
 def test_get_platform_cached():
-    """get_platform() returns the same object on consecutive calls (lru_cache)."""
+    """get_platform() keeps serving its cached answer until cache_clear() (lru_cache)."""
     with (
         patch("platform.system", return_value="Linux"),
-        patch(
-            "builtins.open",
-            __import__("unittest.mock", fromlist=["mock_open"]).mock_open(
-                read_data="Linux version 5.15 generic ubuntu"
-            ),
-        ),
+        patch("builtins.open", mock_open(read_data="Linux version 5.15 generic ubuntu")),
     ):
         get_platform.cache_clear()
-        first = get_platform()
-        second = get_platform()
-    assert first == second
-    assert first is second  # same cached object (string interning aside, identity check)
+        assert get_platform() == "linux"
+
+    # A changed environment is invisible while the cache holds, and visible once cleared.
+    with patch("platform.system", return_value="Windows"):
+        assert get_platform() == "linux"
+        get_platform.cache_clear()
+        assert get_platform() == "windows"
     get_platform.cache_clear()
 
 
@@ -229,8 +227,8 @@ def test_setup_validates_copied_templates(tmp_path, capsys):
         cmd_setup(args)
 
     output = capsys.readouterr().out
-    # Validation step should report on templates — either "valid" or specific issues
-    assert "Validation:" in output or "valid" in output.lower()
+    # The copied starter is clean, so the validation step reports the success line.
+    assert "Validation: all templates valid" in output
 
 
 def test_setup_prints_validation_warnings(tmp_path, capsys):
@@ -268,5 +266,13 @@ def test_setup_prints_validation_warnings(tmp_path, capsys):
         cmd_setup(args)
 
     output = capsys.readouterr().out
-    # Should see warning/error output about the bad trigger
-    assert "Bad Template" in output or "nocolon" in output or "Warning" in output
+    # Both validation findings are reported as warning lines naming the template.
+    assert (
+        "Validation: Warning [Bad Template]: Trigger 'nocolon' does not start with ':' or '/'"
+        in output
+    )
+    assert (
+        "Validation: Warning [Bad Template]: Placeholder '{{unused_var}}' in content has no "
+        "matching variable defined" in output
+    )
+    assert "Validation: all templates valid" not in output

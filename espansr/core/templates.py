@@ -286,13 +286,19 @@ class TemplateManager:
         """
         self.templates_dir = templates_dir or get_templates_dir()
         self.templates_dir.mkdir(parents=True, exist_ok=True)
+        # Created lazily by the first version write, so a read-only manager
+        # (for example one opened over the bundled templates/ checkout) never
+        # leaves an empty _versions/ directory behind.
         self._versions_dir = self.templates_dir / self.VERSIONS_DIR
-        self._versions_dir.mkdir(parents=True, exist_ok=True)
+
+    def _version_dir_path(self, template: Template) -> Path:
+        """Return a template's version history directory without creating it."""
+        slug = template.filename.replace(".json", "")
+        return self._versions_dir / slug
 
     def _get_version_dir(self, template: Template) -> Path:
-        """Get the version history directory for a template."""
-        slug = template.filename.replace(".json", "")
-        version_dir = self._versions_dir / slug
+        """Get the version history directory for a template, creating it on demand."""
+        version_dir = self._version_dir_path(template)
         version_dir.mkdir(parents=True, exist_ok=True)
         return version_dir
 
@@ -345,8 +351,10 @@ class TemplateManager:
 
     def list_versions(self, template: Template) -> List[TemplateVersion]:
         """List all versions for a template, sorted ascending."""
-        version_dir = self._get_version_dir(template)
+        version_dir = self._version_dir_path(template)
         versions = []
+        if not version_dir.is_dir():
+            return versions
 
         for path in version_dir.glob("v*.json"):
             try:
@@ -360,7 +368,7 @@ class TemplateManager:
 
     def get_version(self, template: Template, version_num: int) -> Optional[TemplateVersion]:
         """Get a specific version of a template."""
-        version_dir = self._get_version_dir(template)
+        version_dir = self._version_dir_path(template)
         version_path = version_dir / f"v{version_num}.json"
 
         if not version_path.exists():
@@ -408,7 +416,7 @@ class TemplateManager:
         for v in versions[-recent_count:]:
             to_keep.add(v.version)
 
-        version_dir = self._get_version_dir(template)
+        version_dir = self._version_dir_path(template)
         for v in versions:
             if v.version not in to_keep:
                 version_path = version_dir / f"v{v.version}.json"
@@ -419,7 +427,7 @@ class TemplateManager:
 
     def delete_version_history(self, template: Template) -> bool:
         """Delete all version history for a template."""
-        version_dir = self._get_version_dir(template)
+        version_dir = self._version_dir_path(template)
         try:
             import shutil
 

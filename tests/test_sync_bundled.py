@@ -1439,10 +1439,9 @@ def test_bundled_quick_help_describes_broader_sanitize_role():
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
 
-    assert (
-        ":sanitize         — assess sensitive/internal traces and recommend sanitization"
-        in data["content"]
-    )
+    rows = [line for line in data["content"].splitlines() if line.strip().startswith(":sanitize ")]
+    assert len(rows) == 1
+    assert "assess sensitive/internal traces and recommend sanitization" in rows[0]
 
 
 def test_bundled_quick_help_lists_revise_prompt():
@@ -1450,9 +1449,9 @@ def test_bundled_quick_help_lists_revise_prompt():
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
 
-    assert (
-        ":revise   — clean up messaging while preserving meaning and direction" in data["content"]
-    )
+    rows = [line for line in data["content"].splitlines() if line.strip().startswith(":revise ")]
+    assert len(rows) == 1
+    assert "clean up messaging while preserving meaning and direction" in rows[0]
 
 
 def test_bundled_troubleshoot_template_contract():
@@ -1981,7 +1980,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert required_command in content
         assert content.rstrip().endswith(invocation)
         assert "git reset --hard" not in content
-        assert "gh " not in content
+        assert re.search(r"\bgh\b", content) is None  # never shells out to the GitHub CLI
         assert "Run this from a non-main branch." not in content
         assert "Local changes are on main" in content
         assert "merge --ff-only" in content

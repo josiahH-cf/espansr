@@ -8,8 +8,6 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from espansr.core.templates import TemplateManager
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -360,7 +358,7 @@ def test_cli_import_file(tmp_path, capsys):
 
     assert code == 0
     captured = capsys.readouterr()
-    assert "1" in captured.out  # 1 imported
+    assert "Imported 1 template: CLI Greeting" in captured.out
 
 
 def test_cli_import_directory(tmp_path, capsys):
@@ -388,7 +386,9 @@ def test_cli_import_directory(tmp_path, capsys):
 
     assert code == 0
     captured = capsys.readouterr()
-    assert "2" in captured.out
+    assert "Imported 2 template(s), 0 failed." in captured.out
+    assert "  + A" in captured.out
+    assert "  + B" in captured.out
 
 
 def test_cli_import_nonexistent_path(tmp_path, capsys):
@@ -405,35 +405,11 @@ def test_cli_import_nonexistent_path(tmp_path, capsys):
 # ─── GUI import button ──────────────────────────────────────────────────────
 
 
-def test_gui_import_button_exists(tmp_path):
+def test_gui_import_button_exists(make_window):
     """MainWindow toolbar contains an Import button."""
-    pytest.importorskip("PyQt6.QtWidgets")
+    from PyQt6.QtWidgets import QPushButton
 
-    from PyQt6.QtWidgets import QApplication, QPushButton
-
-    _app = QApplication.instance() or QApplication([])
-
-    with (
-        patch("espansr.ui.main_window.get_config") as mock_cfg,
-        patch("espansr.ui.main_window.get_config_manager"),
-        patch("espansr.ui.main_window.save_config"),
-        patch("espansr.core.templates.get_templates_dir", return_value=tmp_path),
-        patch("espansr.integrations.espanso.get_match_dir", return_value=None),
-    ):
-        from espansr.core.config import EspansoConfig, UIConfig
-
-        cfg = MagicMock()
-        cfg.espanso = EspansoConfig()
-        cfg.ui = UIConfig()
-        cfg.ui.splitter_sizes = [200, 400]
-        cfg.ui.window_geometry = ""
-        cfg.ui.last_template = ""
-        mock_cfg.return_value = cfg
-
-        from espansr.ui.main_window import MainWindow
-
-        window = MainWindow()
-        buttons = window.findChildren(QPushButton)
-        import_buttons = [b for b in buttons if b.text() == "Import"]
-        assert len(import_buttons) == 1
-        window.close()
+    window = make_window()
+    import_buttons = [b for b in window.findChildren(QPushButton) if b.text() == "Import"]
+    assert len(import_buttons) == 1
+    assert import_buttons[0] is window._import_btn
