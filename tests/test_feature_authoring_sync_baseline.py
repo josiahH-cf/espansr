@@ -143,7 +143,8 @@ def test_setup_and_status_are_platform_aware(tmp_path, capsys):
         patch("espansr.__main__.get_platform", return_value="linux"),
         patch("shutil.which", return_value=None),
     ):
-        assert cmd_status(None) == 0
+        # No Espanso config directory is a failing status (exit 1).
+        assert cmd_status(None) == 1
 
     status_output = capsys.readouterr().out
     assert "https://espanso.org" in status_output

@@ -440,14 +440,16 @@ def test_cli_list_runs_without_error(tmp_path):
 
 
 def test_cli_status_runs_without_error():
-    """'espansr status' exits 0 (Espanso may or may not be installed)."""
+    """'espansr status' exits 0 with Espanso config present, 1 without; never crashes."""
     result = subprocess.run(
         [sys.executable, "-m", "espansr", "status"],
         capture_output=True,
         text=True,
     )
     # Status reports availability — should not crash regardless of Espanso presence
-    assert result.returncode == 0
+    assert result.returncode in (0, 1)
+    assert "Traceback" not in result.stderr
+    assert "Espanso config:" in result.stdout
 
 
 # ─── Config dir migration tests ──────────────────────────────────────────────

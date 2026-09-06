@@ -278,7 +278,7 @@ def test_setup_with_espanso_config(tmp_path):
 
 
 def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
-    """cmd_setup prints a follow-up hint if the initial sync fails."""
+    """cmd_setup prints a follow-up hint and fails (exit 1) if the initial sync fails."""
     from espansr.__main__ import cmd_setup
 
     config_dir = tmp_path / "config" / "espansr"
@@ -304,7 +304,7 @@ def test_setup_warns_when_initial_sync_fails(tmp_path, capsys):
         result = cmd_setup(None)
 
     output = capsys.readouterr().out
-    assert result == 0
+    assert result == 1
     assert "run 'espansr publish'" in output.lower()
 
 
