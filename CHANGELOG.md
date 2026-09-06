@@ -21,15 +21,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	`feature_continue` note.
 
 - **`:project-systems` — Master Systems Process runner** — a new bundled note
-	that continues the Master Systems Process from its own files rather than
-	from chat, working toward a verified master process document with matching
-	SVG diagrams. It opens the vault tracker at a fixed absolute path as the
-	single entry point, continues the first incomplete step, does discovery
-	before definition, classifies each unknown as discoverable / testable /
-	human-owned / deferred and keeps material unknowns visible in the process
-	and diagrams, asks one small grouped round only after agent-owned discovery
-	is done, and writes every verified result back to the tracker, clarification
-	file, master document, diagrams, and project record.
+	that resumes the Master Systems Process from its owning files in the vault's
+	System folder rather than from chat. It is the coordinator's entry prompt for
+	one project-agnostic workflow that carries a real problem from first statement
+	through scope, done criteria, planning, execution, use, measurement, and a
+	clear next decision, with Finance as one proof project. A session reads the
+	project page, the master document, and the touched current-state page in
+	order, opens with a short plain-language orientation, continues work that is
+	already authorized, and pauses only for a new unit, a material scope change,
+	a missing human decision, or an exhausted approval. It names the coordinator,
+	runner, reviewer, and owner roles, creates no tracker or side artifacts,
+	discovers before asking, and finishes each run by writing accepted results
+	back so the master alone states current reality and the next action.
 
 - **Workflow diagrams in `:coms` and `:aopen`** — the process graphs are now
 	drawn as interactive diagrams from the workflow manifests: the `:coms`

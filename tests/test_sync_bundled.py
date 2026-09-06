@@ -1610,7 +1610,7 @@ def test_bundled_continue_template_contract():
 
 
 def test_bundled_project_systems_template_contract():
-    """:project-systems is a file-backed runner for the Master Systems Process."""
+    """:project-systems is the coordinator's entry prompt, resumed from the owning files."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads(
         (repo_root / "templates" / "project_systems.json").read_text(encoding="utf-8")
@@ -1624,48 +1624,59 @@ def test_bundled_project_systems_template_contract():
     assert data["next_triggers"] == []
     assert data["replaces"] == []
 
-    # One entry point: an absolute tracker path owns the state and the standing command.
+    # Entry: the owning files in the System folder, read in a fixed order, state what is true.
     for phrase in (
         "# Master Systems Process — Runner Prompt",
-        "You are continuing the Master Systems Process project without prior chat.",
-        "The files are the memory.",
-        r"C:\Users\josia\Documents\obsidian-sync-vault",
-        r"\goals\projects\system\Master Systems Process — Project Tracker.md",
-        "**Continue the first incomplete tracker step until the next real human decision",
-        "Do not create another plan or restart completed work.",
-        "Do discovery before definition",
+        "This is the stable way to resume this work without prior chat.",
+        "It is the coordinator's entry prompt, not a Finance implementation brief.",
+        "[[goals/projects/system/project|Project: System]]",
+        "[[master-systems-process|Master Systems Process]]",
+        r"C:\Users\josia\Documents\obsidian-sync-vault\goals\projects\system",
+        "/mnt/c/Users/josia/Documents/obsidian-sync-vault/goals/projects/system",
+        "those files, not this prompt, state what is currently true",
     ):
         assert phrase in content, phrase
 
-    # Unknowns are classified, never guessed, and stay visible until resolved.
+    # Session start: short orientation, continue authorized work, pause only at real gates.
     for phrase in (
-        "Do not guess or force an unknown through unproven criteria.",
-        "**Discoverable:**",
-        "**Testable:**",
-        "**Human-owned:**",
-        "**Deferred:**",
-        "never present them as settled",
-        "Ask only after agent-owned discovery is complete.",
+        "about six short sentences or bullets, under 180 words",
+        "a brief orientation is not a reason to stop",
+        "A direct question is not permission to edit.",
+        "Pause for a new unit, a material scope change,",
+        "Do not require an uppercase approval phrase",
     ):
         assert phrase in content, phrase
 
-    # Writeback: every surface the runner may touch is named with its own rule.
+    # Roles are named and never silently substituted.
     for phrase in (
-        "**Tracker:**",
-        "**Clarification file:**",
-        "**Master document:**",
-        "**SVG diagrams:**",
-        "**System Project:**",
-        "never color alone",
-        "Never leave material progress only in chat.",
-        "make the tracker independently resumable",
+        "| Coordinator ",
+        "| Claude Opus 5 ",
+        "| Independent review ",
+        "| Josiah ",
+        "Never silently substitute one model for another.",
     ):
         assert phrase in content, phrase
 
-    # Standalone runner: no inline-context footer, and it ends on the report rule.
+    # Artifact rule: no trackers or side files; discover first before asking.
+    for phrase in (
+        "Do not create a tracker, clarification file, status report,",
+        "Discover first: read the current owning files before asking",
+        "Ask the smallest question that changes the next decision",
+        "A normal startup ends with the already-known next action",
+    ):
+        assert phrase in content, phrase
+
+    # Finish: the master alone states current reality; the chat is not a second source of truth.
+    for phrase in (
+        "the master alone states current reality, the exact unknown,",
+        "Do not make the chat another place this work must be reconstructed from.",
+    ):
+        assert phrase in content, phrase
+
+    # Standalone runner: no inline-context footer, and it ends on the finish condition.
     assert not content.endswith(INLINE_CONTEXT_FOOTER)
     assert content.rstrip().endswith(
-        "report only what changed, what was verified, and the exact next action."
+        "a fresh session resumes from files alone; and tool roles are repeatable."
     )
 
 
