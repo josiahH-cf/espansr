@@ -171,7 +171,11 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":q&a", "start evidence-bound Q&A on the current context"),
             (":explain", "explain context or sources in a faithful one-page summary"),
             (":visual", "build workflow diagrams or visual explanations"),
-            (":reality", "state what the context created or would create in reality"),
+            (
+                ":reality-max",
+                "full account of what was done or would happen, with tables and diagrams",
+            ),
+            (":reality-min", "two sentences and up to ten bullets on exactly what was done"),
             (":gaps", "critical review modes for gaps and principles"),
             (":meta", "context-safe meta-prompt generator"),
             (":context", "condense drifted prompt context"),

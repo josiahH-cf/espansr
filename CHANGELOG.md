@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:reality-min` — the minimal reality account** — a new bundled note that
+	returns one or two sentences on what was done, is true, or would happen if
+	unexecuted material ran as written, then at most ten plain bullets stating
+	exactly what was done, fewer when fewer suffice. It invents nothing, adds no
+	headings, tables, diagrams, emoji, or nested bullets, and gives no
+	recommendations; a checkable output contract enforces the shape.
+
 - **`:adversary-review` — independent adversarial review of finished work** — a
 	new bundled note that reviews a unit claimed complete against its spec of
 	record without fixing anything. It numbers the requirements and marks each
@@ -92,6 +99,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	template, deletes the JSON file, and refreshes managed Espanso output.
 
 ### Changed
+
+- **`:reality` split into `:reality-max` and `:reality-min`** — the comprehensive
+	note is now `:reality-max` (same file, same `# Reality Summary` output) and
+	gains a Visual Aids section: grounded workflow or sequence diagrams,
+	comparison tables, and count tables where they make the reality easier to
+	grasp, each marking unknown or proposed parts and never added to look
+	complete. The legacy `:reality` trigger is recorded in `replaces` and no
+	longer expands; type `:reality-max` or `:reality-min`.
 
 - **`:reality` rewritten as a comprehensive end-state account** — the note
 	now classifies its evidence (verified reality / proposed reality /

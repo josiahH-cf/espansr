@@ -832,7 +832,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
             [],
             [":critique", ":gaps-2", ":principles", ":fp"],
         ),
-        "reality.json": (":reality", "analysis", "reality-summary", [], []),
+        "reality.json": (":reality-max", "analysis", "reality-max", [], [":reality"]),
+        "reality_min.json": (":reality-min", "analysis", "reality-min", [], []),
         "explain_context_comprehensively.json": (
             ":explain",
             "explanation",
@@ -937,7 +938,8 @@ def test_bundled_quick_help_uses_current_triggers():
         ":explain",
         ":visual",
         ":gaps",
-        ":reality",
+        ":reality-max",
+        ":reality-min",
         ":telegram",
         ":troubleshoot",
         ":verify",
@@ -1508,17 +1510,17 @@ def test_bundled_gaps_template_contract_preserves_review_modes():
 
 
 def test_bundled_reality_template_contract():
-    """Reality is a comprehensive standalone end-state account, not a diagnostic review mode."""
+    """Reality Max is a comprehensive standalone end-state account, not a diagnostic review."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
     content = data["content"]
 
-    assert data["name"] == "Reality Summary"
-    assert data["trigger"] == ":reality"
+    assert data["name"] == "Reality Max"
+    assert data["trigger"] == ":reality-max"
     assert data["category"] == "analysis"
-    assert data["stage"] == "reality-summary"
+    assert data["stage"] == "reality-max"
     assert data["next_triggers"] == []
-    assert data["replaces"] == []
+    assert data["replaces"] == [":reality"]
 
     # Grounding: evidence is classified rather than flattened into one voice.
     for phrase in (
@@ -1749,6 +1751,108 @@ def test_bundled_adversary_review_template_contract():
     assert check_output(contract, skeleton).passed
     assert not check_output(contract, skeleton.replace("VERDICT: PASS WITH FOLLOW-UPS", "")).passed
     assert not check_output(contract, skeleton + "\nVERDICT: FAIL").passed
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_reality_max_template_contract():
+    """:reality-max is the comprehensive reality account, now with grounded visual aids."""
+    from espansr.core.output_contract import check_output
+
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Reality Max"
+    assert data["trigger"] == ":reality-max"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "reality-max"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == [":reality"]
+
+    # The comprehensive path keeps its grounding and its headed output.
+    for phrase in (
+        "You are `reality-max`, a context-grounded reality summarizer",
+        "This is the comprehensive path",
+        "never compress this account to imitate it",
+        "**Verified reality:**",
+        "**Proposed reality:**",
+        "**Supported inference:**",
+        "**Unknown or unresolved:**",
+        "# Reality Summary",
+        "**If you only read one thing:**",
+        "## ✅ Definition of Done",
+    ):
+        assert phrase in content, phrase
+
+    # Visual aids are grounded, optional, and never decorative.
+    for phrase in (
+        "## Visual Aids",
+        "workflow or sequence diagram",
+        "Mermaid code block",
+        "A table when several components",
+        "never estimated",
+        "never adds an element to look complete",
+        "When nothing would be clearer as a picture, use none.",
+    ):
+        assert phrase in content, phrase
+
+    contract = data["output_contract"]
+    skeleton = (
+        "# Reality Summary\n\n"
+        "**If you only read one thing:** done.\n\n"
+        "## ✅ Definition of Done\n\nDone.\n"
+    )
+    assert check_output(contract, skeleton).passed
+    assert not check_output(
+        contract, skeleton.replace("**If you only read one thing:** done.", "")
+    ).passed
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_reality_min_template_contract():
+    """:reality-min is the minimal reality account: two sentences and at most ten bullets."""
+    from espansr.core.output_contract import check_output
+
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads((repo_root / "templates" / "reality_min.json").read_text(encoding="utf-8"))
+    content = data["content"]
+
+    assert data["name"] == "Reality Min"
+    assert data["trigger"] == ":reality-min"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "reality-min"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `reality-min`, a context-grounded reality summarizer",
+        "This is the minimal path",
+        "never expand this one to imitate it",
+        "Do not invent",
+        "REALITY MIN",
+        "At most ten bullets. Use fewer whenever fewer suffice; never pad to reach ten.",
+        "no tables, no diagrams, no emoji, no nested bullets",
+        "no praise, no hedging, no opinions, no filler",
+    ):
+        assert phrase in content, phrase
+
+    # Neither path names the other's trigger; the split is stable by construction.
+    assert ":reality-max" not in content
+    max_content = json.loads(
+        (repo_root / "templates" / "reality.json").read_text(encoding="utf-8")
+    )["content"]
+    assert ":reality-min" not in max_content
+
+    contract = data["output_contract"]
+    ok = "REALITY MIN\n\nDid the thing.\n\n" + "\n".join(f"- fact {i}" for i in range(10)) + "\n"
+    assert check_output(contract, ok).passed
+    assert not check_output(contract, ok + "- fact 11\n").passed
+    assert not check_output(contract, ok + "## Extra\n").passed
+    assert not check_output(contract, ok + "| a | b |\n").passed
+    assert not check_output(contract, ok + "  - nested\n").passed
+    assert not check_output(contract, "REALITY MIN\n\nDid the thing.\n").passed
 
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
