@@ -42,8 +42,8 @@ body:
       label: Files to Modify
       description: List the specific files the agent should work on
       placeholder: |
-        - src/api/validation.ts
-        - tests/api/validation.test.ts
+        - espansr/core/templates.py
+        - tests/test_templates.py
     validations:
       required: true
 

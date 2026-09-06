@@ -13,12 +13,6 @@ config/secrets/
 *.p12
 *.pfx
 
-# Governance files (require change protocol — see governance/CHANGE_PROTOCOL.md)
-governance/
-
-# Orchestrator state (managed by /continue only)
-workflow/STATE.json
-
 # Generated and build artifacts
 node_modules/
 dist/

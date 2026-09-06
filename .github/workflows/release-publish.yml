@@ -24,31 +24,47 @@ jobs:
 
       - name: Validate semver tag
         run: |
-          TAG="${GITHUB_REF_NAME:-${{ inputs.version }}}"
+          # On a tag push the ref name is the tag; on manual dispatch the ref name is
+          # the branch, so the version input must win there.
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            TAG="${{ inputs.version }}"
+          else
+            TAG="$GITHUB_REF_NAME"
+          fi
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
             echo "::error::Tag '$TAG' does not follow semver (vMAJOR.MINOR.PATCH[-prerelease])"
             exit 1
           fi
           echo "VERSION=$TAG" >> "$GITHUB_ENV"
 
-      - name: Generate changelog
+      - name: Generate release notes
         id: changelog
         run: |
-          # Get the previous tag
-          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | sed -n '2p')
-          if [[ -z "$PREV_TAG" ]]; then
-            echo "First release — including all commits"
-            CHANGELOG=$(git log --oneline --no-merges)
+          # Prefer the curated CHANGELOG section for this version; fall back to the
+          # commit log only when the section does not exist.
+          PLAIN="${VERSION#v}"
+          if grep -q "^## \[${PLAIN}\]" CHANGELOG.md; then
+            awk -v ver="$PLAIN" '
+              $0 ~ "^## \\[" ver "\\]" { found = 1; next }
+              /^## \[/ && found { exit }
+              found { print }
+            ' CHANGELOG.md > RELEASE_NOTES.md
+            echo "Release notes taken from CHANGELOG.md section [${PLAIN}]"
           else
-            CHANGELOG=$(git log "${PREV_TAG}..HEAD" --oneline --no-merges)
+            PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]' | sed -n '2p')
+            if [[ -z "$PREV_TAG" ]]; then
+              echo "First release — including all commits"
+              CHANGELOG=$(git log --oneline --no-merges)
+            else
+              CHANGELOG=$(git log "${PREV_TAG}..HEAD" --oneline --no-merges)
+            fi
+            {
+              echo "## What's Changed"
+              echo ""
+              echo "$CHANGELOG" | sed 's/^/- /'
+            } > RELEASE_NOTES.md
+            echo "No CHANGELOG section for ${PLAIN}; generated notes from $(echo "$CHANGELOG" | wc -l) commits"
           fi
-          # Write to file for the release body
-          {
-            echo "## What's Changed"
-            echo ""
-            echo "$CHANGELOG" | sed 's/^/- /'
-          } > RELEASE_NOTES.md
-          echo "Generated changelog with $(echo "$CHANGELOG" | wc -l) entries"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

@@ -15,22 +15,32 @@ python -m pip install -e ".[dev]"
 
 ## Branch Naming
 
-Use:
+Use short descriptive branches, as `AGENTS.md` describes:
 
 ```text
 agent/type-short-description
+user/type-short-description
 ```
 
 Where:
 
-- `agent`: your identifier (`copilot`, `codex`, `claude`, username, etc.)
+- `agent/` is for changes made by an AI agent and `user/` for changes made by a person
 - `type`: `feat`, `bug`, `refactor`, `chore`, `docs`
 - `short-description`: 2-4 word kebab-case summary
 
 Examples:
 
-- `copilot/bug-wsl-wrapper-checks`
-- `josiah/docs-verify-guide`
+- `agent/feat-adversary-review-note`
+- `user/docs-verify-guide`
+
+## Bundled Prompt Notes
+
+Adding or renaming a bundled prompt note is routine work, not a special request:
+
+- Add the template JSON in `templates/`.
+- Register it once in `espansr/core/discovery.py`.
+- Run `python scripts/sync_discovery.py` to regenerate the `:espansr` quick help and the
+  `docs/TEMPLATES.md` note list. `tests/test_discovery_sync.py` fails when they drift.
 
 ## Development Commands
 
@@ -43,6 +53,9 @@ ruff check .
 
 # format
 black .
+
+# discovery surfaces
+python scripts/sync_discovery.py --check
 ```
 
 ## Pull Requests
@@ -54,8 +67,10 @@ Before opening a PR:
 - Ensure lint/format checks are run.
 - Keep changes in scope for the request.
 - Avoid adding TODO/placeholder text.
+- Add an entry under `## [Unreleased]` in `CHANGELOG.md` for any user-visible change,
+  including new or revised bundled notes.
 
-Use `.github/pull_request_template.md` and include:
+In the PR description include:
 
 - What changed and why
 - How to verify
