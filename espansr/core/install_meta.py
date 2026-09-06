@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from espansr.core.atomic import atomic_write_json
 from espansr.core.config import get_config_dir
 from espansr.core.platform import get_platform
 
@@ -78,9 +79,7 @@ def record_install_meta(
         venv_dir=str(venv_dir) if venv_dir else "",
         recorded_at=datetime.now(timezone.utc).isoformat(),
     )
-    path = get_install_meta_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(asdict(meta), indent=2), encoding="utf-8")
+    atomic_write_json(get_install_meta_path(), asdict(meta))
     return meta
 
 
