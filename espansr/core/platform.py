@@ -332,7 +332,7 @@ def symlink_target(shim_path: Path, bin_dir: Path) -> Path:
     r"""Return the resolved target of the symlink at ``shim_path``.
 
     ``os.readlink`` on Windows returns absolute targets in extended-length form
-    (``\?\C:\...``); strip that prefix so the result compares equal to a
+    (``\\?\C:\...``); strip that prefix so the result compares equal to a
     normally spelled path. Relative targets resolve against ``bin_dir``.
     """
     raw = os.readlink(shim_path)
