@@ -11,6 +11,10 @@ from pathlib import Path
 
 import pytest
 
+# These tests exercise the real helpers against tmp directories, so they opt
+# out of the conftest stub that keeps every other test away from ~/.local/bin.
+pytestmark = pytest.mark.real_command_shim
+
 
 def _reset_platform_cache():
     from espansr.core.platform import get_platform, get_platform_config

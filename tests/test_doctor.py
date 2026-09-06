@@ -2,167 +2,155 @@
 
 Covers: cmd_doctor() — diagnostic checks, status indicators, exit codes,
 reuse of existing functions, and argparse registration.
+
+The command-shim helpers are stubbed suite-wide by ``tests/conftest.py``
+(``_no_real_shim_mutation``), so cmd_doctor never touches ~/.local/bin here.
 """
 
-import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-
-@pytest.fixture(autouse=True)
-def _no_real_shim_mutation(monkeypatch):
-    """Prevent cmd_doctor tests from touching the user's real ~/.local/bin."""
-    from espansr.core.platform import ShimResult
-
-    monkeypatch.setattr(
-        "espansr.core.platform.ensure_command_shim",
-        lambda *a, **kw: ShimResult(
-            path=Path("/tmp/fake-shim/espansr"),
-            target=Path("/tmp/fake-target"),
-            status="unchanged",
-            message="patched in test",
-        ),
-    )
-    monkeypatch.setattr(
-        "espansr.core.platform.is_user_bin_on_path",
-        lambda *a, **kw: True,
-    )
-    monkeypatch.setattr(
-        "espansr.core.platform.get_user_bin_dir",
-        lambda: Path("/tmp/fake-shim"),
-    )
-
-
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
-def _run_doctor(capsys, **overrides):
-    """Run cmd_doctor with common mocks then return (exit_code, output).
+@pytest.fixture()
+def run_doctor(capsys, tmp_path):
+    """Return a runner that calls cmd_doctor with common mocks.
 
-    Default mocks simulate a fully healthy environment.
-    Pass keyword overrides to replace individual mock return values.
+    The runner returns ``(exit_code, output)``. Default mocks simulate a fully
+    healthy environment on real directories under ``tmp_path``; pass keyword
+    overrides to replace individual mock return values.
     """
     from espansr.__main__ import cmd_doctor
 
-    # Create real temp dirs so is_dir() calls work
-    _tmp = tempfile.mkdtemp()
-    _tmp_path = Path(_tmp)
-    _config_dir = _tmp_path / "espansr"
-    _config_dir.mkdir()
-    _match_dir = _tmp_path / "espanso" / "match"
-    _match_dir.mkdir(parents=True)
-    # Create a real launcher file for the healthy default
-    (_match_dir / "espansr-launcher.yml").write_text("matches: []")
-    (_match_dir / "espansr-commands.yml").write_text("matches: []")
+    def _run(**overrides):
+        # Create real dirs so is_dir() calls work
+        config_dir = tmp_path / "espansr"
+        config_dir.mkdir(exist_ok=True)
+        match_dir = tmp_path / "espanso" / "match"
+        match_dir.mkdir(parents=True, exist_ok=True)
+        # Create real launcher/popup files for the healthy default
+        (match_dir / "espansr-launcher.yml").write_text("matches: []")
+        (match_dir / "espansr-commands.yml").write_text("matches: []")
 
-    defaults = {
-        "config_dir": _config_dir,
-        "templates_dir": _config_dir / "templates",
-        "espanso_config_dir": _tmp_path / "espanso",
-        "match_dir": _match_dir,
-        "candidate_paths": [_tmp_path / "espanso"],
-        "espanso_binary": "/usr/bin/espanso",
-        "platform": "linux",
-        "validate_warnings": [],
-        "triggered_templates": ["tmpl"],
-        "launcher_exists": True,
-        "commands_popup_exists": True,
-    }
-    defaults.update(overrides)
+        defaults = {
+            "config_dir": config_dir,
+            "templates_dir": config_dir / "templates",
+            "espanso_config_dir": tmp_path / "espanso",
+            "match_dir": match_dir,
+            "candidate_paths": [tmp_path / "espanso"],
+            "espanso_binary": "/usr/bin/espanso",
+            "platform": "linux",
+            "validate_warnings": [],
+            "triggered_templates": ["tmpl"],
+            "launcher_exists": True,
+            "commands_popup_exists": True,
+        }
+        defaults.update(overrides)
 
-    # If launcher_exists is False, remove or never create the launcher file
-    if defaults["match_dir"] and not defaults["launcher_exists"]:
-        launcher = defaults["match_dir"] / "espansr-launcher.yml"
-        if launcher.exists():
-            launcher.unlink()
-    if defaults["match_dir"] and not defaults["commands_popup_exists"]:
-        popup_file = defaults["match_dir"] / "espansr-commands.yml"
-        if popup_file.exists():
-            popup_file.unlink()
+        # If launcher_exists is False, remove the launcher file
+        if defaults["match_dir"] and not defaults["launcher_exists"]:
+            launcher = defaults["match_dir"] / "espansr-launcher.yml"
+            if launcher.exists():
+                launcher.unlink()
+        if defaults["match_dir"] and not defaults["commands_popup_exists"]:
+            popup_file = defaults["match_dir"] / "espansr-commands.yml"
+            if popup_file.exists():
+                popup_file.unlink()
 
-    # Build template stub list
-    class _Stub:
-        name = "stub"
-        trigger = ":stub"
+        # Build template stub list
+        class _Stub:
+            name = "stub"
+            trigger = ":stub"
 
-    templates = (
-        [_Stub() for _ in defaults["triggered_templates"]]
-        if defaults["triggered_templates"]
-        else []
-    )
+        templates = (
+            [_Stub() for _ in defaults["triggered_templates"]]
+            if defaults["triggered_templates"]
+            else []
+        )
 
-    class _ManagerStub:
-        def iter_with_triggers(self):
-            return iter(templates)
+        class _ManagerStub:
+            def iter_with_triggers(self):
+                return iter(templates)
 
-    with (
-        patch(
-            "espansr.__main__.get_config_dir",
-            return_value=defaults["config_dir"],
-        ),
-        patch(
-            "espansr.__main__.get_templates_dir",
-            return_value=defaults["templates_dir"],
-        ),
-        patch(
-            "espansr.__main__.get_espanso_config_dir",
-            return_value=defaults["espanso_config_dir"],
-        ),
-        patch(
-            "espansr.integrations.espanso.get_match_dir",
-            return_value=defaults["match_dir"],
-        ),
-        patch("shutil.which", return_value=defaults["espanso_binary"]),
-        patch(
-            "espansr.__main__.get_platform",
-            return_value=defaults["platform"],
-        ),
-        patch(
-            "espansr.__main__._get_candidate_paths",
-            return_value=defaults["candidate_paths"],
-        ),
-        patch(
-            "espansr.integrations.validate.validate_all",
-            return_value=defaults["validate_warnings"],
-        ),
-        patch(
-            "espansr.core.templates.get_template_manager",
-            return_value=_ManagerStub(),
-        ),
-    ):
-        exit_code = cmd_doctor(None)
+        with (
+            patch(
+                "espansr.__main__.get_config_dir",
+                return_value=defaults["config_dir"],
+            ),
+            patch(
+                "espansr.__main__.get_templates_dir",
+                return_value=defaults["templates_dir"],
+            ),
+            patch(
+                "espansr.__main__.get_espanso_config_dir",
+                return_value=defaults["espanso_config_dir"],
+            ),
+            patch(
+                "espansr.integrations.espanso.get_match_dir",
+                return_value=defaults["match_dir"],
+            ),
+            patch("shutil.which", return_value=defaults["espanso_binary"]),
+            patch(
+                "espansr.__main__.get_platform",
+                return_value=defaults["platform"],
+            ),
+            patch(
+                "espansr.__main__._get_candidate_paths",
+                return_value=defaults["candidate_paths"],
+            ),
+            patch(
+                "espansr.integrations.validate.validate_all",
+                return_value=defaults["validate_warnings"],
+            ),
+            patch(
+                "espansr.core.templates.get_template_manager",
+                return_value=_ManagerStub(),
+            ),
+        ):
+            exit_code = cmd_doctor(None)
 
-    output = capsys.readouterr().out
-    return exit_code, output
+        output = capsys.readouterr().out
+        return exit_code, output
+
+    return _run
+
+
+def _make_windows_config(tmp_path: Path, name: str) -> Path:
+    """Create a canonical-looking Espanso config dir with the managed files."""
+    canonical = tmp_path / name
+    (canonical / "match").mkdir(parents=True)
+    (canonical / "match" / "espansr-launcher.yml").write_text("matches: []")
+    (canonical / "match" / "espansr-commands.yml").write_text("matches: []")
+    return canonical
 
 
 # ─── All healthy ─────────────────────────────────────────────────────────────
 
 
-def test_doctor_all_healthy(capsys):
+def test_doctor_all_healthy(run_doctor):
     """All checks pass → every line shows [ok], exit 0."""
-    exit_code, output = _run_doctor(capsys)
+    exit_code, output = run_doctor()
     assert exit_code == 0
     assert "[FAIL]" not in output
     # All 7 checks present with [ok]
     assert output.count("[ok]") >= 7
 
 
-def test_doctor_all_healthy_exit_zero(capsys):
+def test_doctor_all_healthy_exit_zero(run_doctor):
     """Exit code is 0 when everything is healthy."""
-    exit_code, _ = _run_doctor(capsys)
+    exit_code, _ = run_doctor()
     assert exit_code == 0
 
 
 # ─── Espanso not found ──────────────────────────────────────────────────────
 
 
-def test_doctor_espanso_config_missing(capsys):
+def test_doctor_espanso_config_missing(run_doctor):
     """Missing Espanso config → [FAIL] for espanso config check."""
-    exit_code, output = _run_doctor(
-        capsys,
+    exit_code, output = run_doctor(
         espanso_config_dir=None,
         match_dir=None,
         launcher_exists=False,
@@ -171,10 +159,9 @@ def test_doctor_espanso_config_missing(capsys):
     assert exit_code == 1
 
 
-def test_doctor_espanso_binary_missing(capsys):
+def test_doctor_espanso_binary_missing(run_doctor):
     """Missing Espanso binary → [FAIL] for binary check."""
-    exit_code, output = _run_doctor(
-        capsys,
+    exit_code, output = run_doctor(
         espanso_binary=None,
         platform="linux",
     )
@@ -184,10 +171,9 @@ def test_doctor_espanso_binary_missing(capsys):
     assert any("[FAIL]" in line for line in binary_lines)
 
 
-def test_doctor_espanso_binary_wsl2_ok(capsys):
+def test_doctor_espanso_binary_wsl2_ok(run_doctor):
     """On WSL2, missing native binary → [ok] (runs on Windows host)."""
-    exit_code, output = _run_doctor(
-        capsys,
+    exit_code, output = run_doctor(
         espanso_binary=None,
         platform="wsl2",
     )
@@ -197,10 +183,9 @@ def test_doctor_espanso_binary_wsl2_ok(capsys):
     assert any("[ok]" in line for line in binary_lines)
 
 
-def test_doctor_wsl_missing_espanso_prints_dependency_remediation(capsys):
+def test_doctor_wsl_missing_espanso_prints_dependency_remediation(run_doctor):
     """WSL doctor output includes explicit dependency and remediation guidance."""
-    exit_code, output = _run_doctor(
-        capsys,
+    exit_code, output = run_doctor(
         platform="wsl2",
         espanso_config_dir=None,
         match_dir=None,
@@ -215,26 +200,19 @@ def test_doctor_wsl_missing_espanso_prints_dependency_remediation(capsys):
     assert "espansr doctor" in output
 
 
-def test_doctor_wsl_conflict_reports_non_canonical_candidates(capsys):
+def test_doctor_wsl_conflict_reports_non_canonical_candidates(run_doctor, tmp_path):
     """WSL doctor reports canonical path and warns on additional candidates."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        canonical = tmp_path / "windows_cfg"
-        canonical.mkdir()
-        (canonical / "match").mkdir(parents=True)
-        ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
-        ((canonical / "match") / "espansr-commands.yml").write_text("matches: []")
-        alt = tmp_path / "linux_cfg"
-        alt.mkdir()
+    canonical = _make_windows_config(tmp_path, "windows_cfg")
+    alt = tmp_path / "linux_cfg"
+    alt.mkdir()
 
-        exit_code, output = _run_doctor(
-            capsys,
-            platform="wsl2",
-            espanso_config_dir=canonical,
-            match_dir=canonical / "match",
-            candidate_paths=[canonical, alt],
-            espanso_binary=None,
-        )
+    exit_code, output = run_doctor(
+        platform="wsl2",
+        espanso_config_dir=canonical,
+        match_dir=canonical / "match",
+        candidate_paths=[canonical, alt],
+        espanso_binary=None,
+    )
 
     assert exit_code == 0
     assert "Canonical Espanso path" in output
@@ -242,24 +220,17 @@ def test_doctor_wsl_conflict_reports_non_canonical_candidates(capsys):
     assert "Non-canonical candidate" in output
 
 
-def test_doctor_wsl_healthy_does_not_print_remediation_warning(capsys):
+def test_doctor_wsl_healthy_does_not_print_remediation_warning(run_doctor, tmp_path):
     """Healthy WSL setup should not emit remediation warning noise."""
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        canonical = tmp_path / "windows_cfg"
-        canonical.mkdir()
-        (canonical / "match").mkdir(parents=True)
-        ((canonical / "match") / "espansr-launcher.yml").write_text("matches: []")
-        ((canonical / "match") / "espansr-commands.yml").write_text("matches: []")
+    canonical = _make_windows_config(tmp_path, "windows_cfg")
 
-        exit_code, output = _run_doctor(
-            capsys,
-            platform="wsl2",
-            espanso_config_dir=canonical,
-            match_dir=canonical / "match",
-            candidate_paths=[canonical],
-            espanso_binary=None,
-        )
+    exit_code, output = run_doctor(
+        platform="wsl2",
+        espanso_config_dir=canonical,
+        match_dir=canonical / "match",
+        candidate_paths=[canonical],
+        espanso_binary=None,
+    )
 
     assert exit_code == 0
     assert "WSL2 remediation" not in output
@@ -268,9 +239,9 @@ def test_doctor_wsl_healthy_does_not_print_remediation_warning(capsys):
 # ─── No templates ───────────────────────────────────────────────────────────
 
 
-def test_doctor_no_templates(capsys):
+def test_doctor_no_templates(run_doctor):
     """No triggered templates → [FAIL], exit 1."""
-    exit_code, output = _run_doctor(capsys, triggered_templates=[])
+    exit_code, output = run_doctor(triggered_templates=[])
     assert exit_code == 1
     lines = output.strip().splitlines()
     template_lines = [line for line in lines if "template" in line.lower()]
@@ -280,7 +251,7 @@ def test_doctor_no_templates(capsys):
 # ─── Validation ─────────────────────────────────────────────────────────────
 
 
-def test_doctor_validation_warnings_only(capsys):
+def test_doctor_validation_warnings_only(run_doctor):
     """Validation produces warnings (no errors) → [warn], exit 0."""
     from espansr.integrations.validate import ValidationWarning
 
@@ -291,14 +262,14 @@ def test_doctor_validation_warnings_only(capsys):
             template_name="t",
         )
     ]
-    exit_code, output = _run_doctor(capsys, validate_warnings=warnings)
+    exit_code, output = run_doctor(validate_warnings=warnings)
     assert exit_code == 0
     lines = output.strip().splitlines()
     val_lines = [line for line in lines if "valid" in line.lower()]
     assert any("[warn]" in line for line in val_lines)
 
 
-def test_doctor_validation_errors(capsys):
+def test_doctor_validation_errors(run_doctor):
     """Validation produces errors → [FAIL], exit 1."""
     from espansr.integrations.validate import ValidationWarning
 
@@ -309,7 +280,7 @@ def test_doctor_validation_errors(capsys):
             template_name="t",
         )
     ]
-    exit_code, output = _run_doctor(capsys, validate_warnings=errors)
+    exit_code, output = run_doctor(validate_warnings=errors)
     assert exit_code == 1
     lines = output.strip().splitlines()
     val_lines = [line for line in lines if "valid" in line.lower()]
@@ -319,19 +290,18 @@ def test_doctor_validation_errors(capsys):
 # ─── Launcher ───────────────────────────────────────────────────────────────
 
 
-def test_doctor_launcher_missing(capsys):
+def test_doctor_launcher_missing(run_doctor):
     """Launcher file missing → [FAIL]."""
-    exit_code, output = _run_doctor(capsys, launcher_exists=False)
+    exit_code, output = run_doctor(launcher_exists=False)
     assert exit_code == 1
     lines = output.strip().splitlines()
     launcher_lines = [line for line in lines if "launcher" in line.lower()]
     assert any("[FAIL]" in line for line in launcher_lines)
 
 
-def test_doctor_launcher_no_match_dir(capsys):
+def test_doctor_launcher_no_match_dir(run_doctor):
     """No match dir (no Espanso) → launcher also fails."""
-    exit_code, output = _run_doctor(
-        capsys,
+    exit_code, output = run_doctor(
         espanso_config_dir=None,
         match_dir=None,
         launcher_exists=False,
@@ -339,9 +309,9 @@ def test_doctor_launcher_no_match_dir(capsys):
     assert exit_code == 1
 
 
-def test_doctor_reports_commands_popup_file_missing(capsys):
+def test_doctor_reports_commands_popup_file_missing(run_doctor):
     """Missing commands popup file is reported as a failing diagnostic."""
-    exit_code, output = _run_doctor(capsys, commands_popup_exists=False)
+    exit_code, output = run_doctor(commands_popup_exists=False)
     assert exit_code == 1
     lines = output.strip().splitlines()
     popup_lines = [line for line in lines if "commands popup" in line.lower()]
@@ -365,9 +335,9 @@ def test_doctor_subparser_registered():
 # ─── Output format ─────────────────────────────────────────────────────────
 
 
-def test_doctor_output_has_status_indicators(capsys):
+def test_doctor_output_has_status_indicators(run_doctor):
     """Each output line has one of [ok], [warn], or [FAIL]."""
-    _, output = _run_doctor(capsys)
+    _, output = run_doctor()
     for line in output.strip().splitlines():
         assert (
             "[ok]" in line or "[warn]" in line or "[FAIL]" in line
@@ -377,28 +347,26 @@ def test_doctor_output_has_status_indicators(capsys):
 # ─── Command availability ──────────────────────────────────────────────────
 
 
-def test_doctor_reports_command_availability(capsys):
+def test_doctor_reports_command_availability(run_doctor, tmp_path):
     """Doctor surfaces a 'Command availability' line and warns when bin not on PATH."""
     from espansr.core.platform import ShimResult
 
-    # Override the autouse fixture for this test: report not on PATH.
+    # Override the conftest stub for this test: report not on PATH.
+    fake_bin = tmp_path / "fake-shim"
     with (
         patch(
             "espansr.core.platform.ensure_command_shim",
             return_value=ShimResult(
-                path=Path("/tmp/fake-shim/espansr"),
-                target=Path("/tmp/fake-target"),
+                path=fake_bin / "espansr",
+                target=tmp_path / "fake-target",
                 status="unchanged",
                 message="shim ok",
             ),
         ),
         patch("espansr.core.platform.is_user_bin_on_path", return_value=False),
-        patch(
-            "espansr.core.platform.get_user_bin_dir",
-            return_value=Path("/tmp/fake-shim"),
-        ),
+        patch("espansr.core.platform.get_user_bin_dir", return_value=fake_bin),
     ):
-        exit_code, output = _run_doctor(capsys)
+        exit_code, output = run_doctor()
 
     assert exit_code == 0  # availability is warn-only
     assert "Command availability" in output
