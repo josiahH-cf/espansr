@@ -39,6 +39,47 @@ jobs:
       - name: Format check
         run: black --check .
 
+      - name: Discovery surfaces in sync
+        run: python scripts/sync_discovery.py --check
+
+      - name: Workflow manifests valid
+        run: espansr workflows validate
+
+      - name: Test
+        run: pytest
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  ci-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: black --check .
+
+      - name: Discovery surfaces in sync
+        run: python scripts/sync_discovery.py --check
+
+      - name: Workflow manifests valid
+        run: espansr workflows validate
+
       - name: Test
         run: pytest
         env:
