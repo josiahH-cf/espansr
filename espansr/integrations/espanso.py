@@ -888,6 +888,28 @@ def _run_quiet(argv: list[str], *, timeout: float) -> subprocess.CompletedProces
     return subprocess.run(argv, **kwargs)
 
 
+def _run_detached(argv: list[str], *, timeout: float) -> subprocess.CompletedProcess:
+    """Run a process without capturing its output.
+
+    Espanso's restart and service-start commands spawn the long-lived daemon,
+    which inherits any stdout/stderr pipes handed to the command. With captured
+    pipes ``subprocess.run`` then waits for an end-of-file that never arrives
+    while the daemon lives, even after the CLI itself has exited. Routing all
+    three standard handles to the null device leaves nothing to inherit, so
+    the call returns as soon as the CLI exits.
+    """
+    kwargs: dict = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "timeout": timeout,
+        "check": False,
+    }
+    if is_windows():
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    return subprocess.run(argv, **kwargs)
+
+
 def _wait_for_espanso_running(
     status_argv: list[str],
     *,
@@ -912,11 +934,11 @@ def _wait_for_espanso_running(
 def _restart_espanso_wsl2() -> None:
     """Restart the Windows-side Espanso from WSL2 and verify it came back up."""
     try:
-        _run_quiet(
+        _run_detached(
             ["powershell.exe", "-NoProfile", "-Command", "cd C:/; espanso service stop"],
             timeout=10,
         )
-        result = _run_quiet(
+        result = _run_detached(
             [
                 "powershell.exe",
                 "-NoProfile",
@@ -976,12 +998,12 @@ def restart_espanso() -> bool:
         hint = "run 'espanso restart' manually"
 
     try:
-        result = _run_quiet(restart_argv, timeout=20)
+        result = _run_detached(restart_argv, timeout=20)
     except (OSError, subprocess.SubprocessError) as exc:
         print(f"Espanso restart failed ({exc}); {hint}.")
         return False
     if result.returncode != 0:
-        detail = (result.stderr or result.stdout).strip()
+        detail = ((result.stderr or result.stdout) or "").strip()
         suffix = f": {detail}" if detail else ""
         print(f"Espanso restart failed (exit {result.returncode}){suffix}; {hint}.")
         return False

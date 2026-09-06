@@ -201,3 +201,54 @@ def test_restart_espanso_wsl2_helper_prints_note_when_not_running(capsys):
     out = capsys.readouterr().out
     assert "restarted successfully" not in out
     assert "Run 'espanso restart' from Windows PowerShell" in out
+
+
+def _recording_run(seen):
+    def fake_run(argv, **kwargs):
+        seen.append((list(argv), kwargs))
+        command = " ".join(str(part) for part in argv)
+        if "status" in command:
+            return _cp(argv, 0, stdout="espanso is running\n")
+        return _cp(argv, 0)
+
+    return fake_run
+
+
+def test_restart_command_does_not_inherit_pipes():
+    """The daemon spawned by a restart must not inherit captured output pipes.
+
+    With captured pipes the call never sees end-of-file while the daemon lives,
+    which hung ``espansr setup`` on Windows; only the status poll reads output.
+    """
+    seen = []
+    with (
+        patch.object(espanso, "is_wsl2", return_value=False),
+        patch.object(espanso, "is_windows", return_value=True),
+        patch.object(espanso, "_find_espanso_executable", return_value="C:/espanso.cmd"),
+        patch.object(espanso.subprocess, "run", side_effect=_recording_run(seen)),
+        patch("time.sleep"),
+    ):
+        assert _real_restart_espanso() is True
+
+    restart_argv, restart_kwargs = seen[0]
+    assert restart_argv == ["C:/espanso.cmd", "restart"]
+    for handle in ("stdin", "stdout", "stderr"):
+        assert restart_kwargs[handle] is subprocess.DEVNULL, handle
+    assert "capture_output" not in restart_kwargs
+    assert seen[1][1].get("capture_output") is True
+
+
+def test_wsl2_service_commands_do_not_inherit_pipes():
+    seen = []
+    with (
+        patch.object(espanso, "is_windows", return_value=False),
+        patch.object(espanso.subprocess, "run", side_effect=_recording_run(seen)),
+        patch("time.sleep"),
+    ):
+        _real_restart_espanso_wsl2()
+
+    for argv, kwargs in seen[:2]:
+        assert "service" in " ".join(argv)
+        for handle in ("stdin", "stdout", "stderr"):
+            assert kwargs[handle] is subprocess.DEVNULL, (argv, handle)
+    assert seen[2][1].get("capture_output") is True
