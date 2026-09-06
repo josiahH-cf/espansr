@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=65,<76", "wheel"]
+requires = ["setuptools>=77,<84", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "espansr"
 version = "1.1.0"
 description = "Espanso text expansion template manager"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "PyYAML>=6.0,<7",
@@ -15,10 +17,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0,<9",
+    "pytest>=8.0,<10",
     "pytest-qt>=4.4,<5",
     "ruff>=0.4,<1",
-    "black>=24.0,<25",
+    "black>=24.0,<27",
 ]
 
 [project.scripts]
@@ -46,3 +48,4 @@ testpaths = ["tests"]
 
 [tool.black]
 line-length = 100
+target-version = ["py311", "py312", "py313"]
