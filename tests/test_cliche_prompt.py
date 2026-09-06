@@ -191,6 +191,10 @@ def test_cliche_prompt_contract_invariants():
     """Maintainable invariants that lock the behavioral contract in place."""
     content = _content()
 
+    # The persona matches the trigger; the retired name survives only as the display name.
+    assert content.startswith("You are `cliche`, a standalone prose naturalization editor.")
+    assert "humanize" not in content
+
     # Accepts pasted text, references, and optional editing direction.
     assert (
         "The user may provide source text, a source reference, audience information, "
@@ -206,8 +210,7 @@ def test_cliche_prompt_contract_invariants():
     assert "Do not select this prompt’s own instructions as the source." in content
     # Exact no-text behavior.
     assert (
-        "If no editable text is available, return exactly: `No text available to humanize.`"
-        in content
+        "If no editable text is available, return exactly: `No text available to edit.`" in content
     )
     # Meaning preservation.
     assert "- The actual meaning and requested action" in content

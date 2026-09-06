@@ -15,19 +15,44 @@ from espansr.core.templates import Template, TemplateManager, import_template
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES_DIR = ROOT / "templates"
 
-# Bundled capabilities that must carry stable IDs (workflow node identities).
-EXPECTED_BUNDLED_CAPABILITY_IDS = {
-    "goal_clarifier.json": "goal-refinement",
-    "research_report.json": "research-report",
-    "gaps.json": "gap-review",
-    "litmus.json": "human-litmus",
-    "feature.json": "feature-handoff",
-    "verify.json": "verification",
-    "feedback.json": "feedback-apply",
-    "visual_workflow.json": "visual-workflow",
-    "html_help_doc.json": "html-help-doc",
-    "context.json": "context-reset",
+BUNDLED_WORKFLOWS_DIR = TEMPLATES_DIR / "_meta" / "workflows"
+
+# Workflow-node identities that must survive any manifest edit; the full set is derived
+# from the bundled manifests so a new node cannot be forgotten here.
+CORE_WORKFLOW_CAPABILITY_IDS = {
+    "goal-refinement",
+    "research-report",
+    "gap-review",
+    "human-litmus",
+    "feature-handoff",
+    "verification",
+    "adversarial-review",
+    "feedback-apply",
+    "visual-workflow",
+    "html-help-doc",
+    "context-reset",
 }
+
+
+def _bundled_workflow_capability_ids() -> set:
+    """Every capability ID that appears as a node in a bundled workflow manifest."""
+    ids = set()
+    for path in BUNDLED_WORKFLOWS_DIR.glob("*.json"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        ids.update(node["capability"] for node in data.get("nodes", []))
+    assert ids >= CORE_WORKFLOW_CAPABILITY_IDS, ids
+    return ids
+
+
+def _bundled_templates_by_explicit_id() -> dict:
+    """Map every explicit bundled ``capability_id`` to the template files declaring it."""
+    owners = {}
+    for path in sorted(TEMPLATES_DIR.glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        cap_id = data.get("capability_id", "")
+        if cap_id:
+            owners.setdefault(cap_id, []).append(path.name)
+    return owners
 
 
 # ── ARCH-02: additive metadata model ─────────────────────────────────────────
@@ -228,12 +253,11 @@ def test_trigger_rename_does_not_change_capability_identity(tmp_path):
 
 
 def test_bundled_capability_templates_declare_expected_ids():
-    """Every workflow-node capability carries its stable bundled ID."""
-    for filename, expected_id in EXPECTED_BUNDLED_CAPABILITY_IDS.items():
-        path = TEMPLATES_DIR / filename
-        assert path.exists(), f"missing bundled capability template {filename}"
-        data = json.loads(path.read_text(encoding="utf-8"))
-        assert data.get("capability_id") == expected_id, filename
+    """Every workflow-node capability is declared explicitly by exactly one bundled note."""
+    owners = _bundled_templates_by_explicit_id()
+    for cap_id in sorted(_bundled_workflow_capability_ids()):
+        assert cap_id in owners, f"no bundled template declares capability_id {cap_id}"
+        assert len(owners[cap_id]) == 1, (cap_id, owners[cap_id])
 
 
 def test_bundled_capability_ids_are_unique():
@@ -250,7 +274,9 @@ def test_bundled_capability_ids_are_unique():
 
 def test_bundled_capability_templates_declare_artifacts_and_guidance():
     """Workflow-node capabilities carry discovery metadata, not just IDs."""
-    for filename in EXPECTED_BUNDLED_CAPABILITY_IDS:
+    owners = _bundled_templates_by_explicit_id()
+    for cap_id in sorted(_bundled_workflow_capability_ids()):
+        (filename,) = owners[cap_id]
         data = json.loads((TEMPLATES_DIR / filename).read_text(encoding="utf-8"))
         assert data.get("intent_tags"), f"{filename} needs intent_tags"
         assert data.get("accepts"), f"{filename} needs accepts"

@@ -98,6 +98,13 @@
       "short": "skip ahead"
     },
     {
+      "source": "goal-refinement",
+      "target": "human-litmus",
+      "label": "Turn the refined goal into observable human checks.",
+      "artifact": "goal-contract",
+      "short": "human checks"
+    },
+    {
       "source": "research-report",
       "target": "gap-review",
       "label": "Independently challenge the evidence and conclusions.",
@@ -138,6 +145,13 @@
       "label": "Include the completed human-verification contract in the handoff.",
       "artifact": "human-litmus",
       "short": "include contract"
+    },
+    {
+      "source": "feature-handoff",
+      "target": "human-litmus",
+      "label": "Audit or revise the handoff's human-verification checklist before the build.",
+      "artifact": "implementation-handoff",
+      "short": "audit litmus"
     },
     {
       "source": "feature-handoff",

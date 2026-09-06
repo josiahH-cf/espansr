@@ -226,24 +226,56 @@ def test_feature_does_not_route_to_other_triggers():
 # ── Refinement: output contract ──────────────────────────────────────────────
 
 
+PACKET_ONLY_HEADINGS = (
+    "INPUT COVERAGE",
+    "CLARIFICATION STATUS",
+    "KICKOFF INPUTS",
+    "ARCHITECTURE OUTCOME",
+    "BEHAVIOR OUTCOME",
+    "HUMAN LITMUS",
+    "PRESERVATION SET",
+    "DECISIONS AND RECOMMENDATIONS",
+)
+
+
 def test_feature_declares_structural_output_contract():
+    """The contract describes one final-artifact reply, never the earlier approval packet."""
     data = _load()
     contract = data.get("output_contract")
     assert isinstance(contract, dict) and contract
-    required = contract.get("required_sections", [])
-    for section in (
-        "INPUT COVERAGE",
-        "CLARIFICATION STATUS",
-        "ARCHITECTURE OUTCOME",
-        "BEHAVIOR OUTCOME",
-        "HUMAN LITMUS",
-        "PRESERVATION SET",
-        "KICKOFF INPUTS",
-        "DECISIONS AND RECOMMENDATIONS",
+    assert contract["artifact_type"] == "implementation-handoff"
+    assert contract["required_sections"] == [
         "FINAL IMPLEMENTATION META-PROMPT",
         "REALITY SUMMARY",
+    ]
+    patterns = [marker["pattern"] for marker in contract["required_markers"]]
+    for pattern in (
+        "If this was built correctly:",
+        "Model verdict:",
+        "Human verdict:",
+        "ALL_GATES_GREEN",
+        "BUDGET_EXHAUSTED",
     ):
-        assert section in required, section
+        assert pattern in patterns, pattern
+    # Packet headings are printed a turn earlier and are not contract obligations.
+    for heading in PACKET_ONLY_HEADINGS:
+        assert heading not in contract["required_sections"], heading
+    assert not any("CLARIFICATION STATUS" in pattern for pattern in patterns)
+    # Prefilled human verdicts stay forbidden because litmus entries travel in the artifact.
+    forbidden = [marker["pattern"] for marker in contract["forbidden_markers"]]
+    assert len(forbidden) == 2 and all("Human verdict" in pattern for pattern in forbidden)
+
+
+def test_feature_note_says_the_packet_is_not_the_contract_target():
+    content = _content()
+    sentence = (
+        "The approval packet is a checkpoint, not the deliverable: the structural output "
+        "contract checks only the final-artifact reply that follows the user's response, "
+        "never this packet."
+    )
+    assert sentence in content
+    assert content.index("After printing this packet, stop.") < content.index(sentence)
+    assert content.index(sentence) < content.index("# Phase 9:")
 
 
 def test_feature_final_delivery_names_the_meta_prompt():

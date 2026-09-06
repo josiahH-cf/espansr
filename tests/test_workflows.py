@@ -201,6 +201,7 @@ def test_wf_research_manifest_matches_contract():
         ("gap-review", "research-report"),
         ("gap-review", "visual-workflow"),
         ("gap-review", "html-help-doc"),
+        ("visual-workflow", "html-help-doc"),
     }
     required |= {("context-reset", n) for n in nodes - {"context-reset"}}
     assert required <= edges
@@ -230,12 +231,14 @@ def test_wf_feature_manifest_matches_contract():
         ("goal-refinement", "research-report"),
         ("goal-refinement", "gap-review"),
         ("goal-refinement", "feature-handoff"),
+        ("goal-refinement", "human-litmus"),
         ("research-report", "gap-review"),
         ("research-report", "feature-handoff"),
         ("gap-review", "research-report"),
         ("gap-review", "human-litmus"),
         ("gap-review", "feature-handoff"),
         ("human-litmus", "feature-handoff"),
+        ("feature-handoff", "human-litmus"),
         ("feature-handoff", "verification"),
         ("verification", "feedback-apply"),
         ("feedback-apply", "verification"),
@@ -300,3 +303,31 @@ def test_workflow_manifests_do_not_reach_espanso_yaml(tmp_path):
     manager = TemplateManager(templates_dir=templates_dir)
     names = [t.name for t in manager.list_all()]
     assert names == ["Real"]
+
+
+def test_manifest_edge_artifacts_match_endpoint_metadata():
+    """Every bundled edge carries an artifact its source produces and its target accepts."""
+    from espansr.core.capabilities import ARTIFACT_TYPES, effective_capability_id
+    from espansr.core.templates import TemplateManager
+
+    manager = TemplateManager(templates_dir=TEMPLATES_DIR)
+    by_id = {effective_capability_id(t): t for t in manager.list_all()}
+
+    problems = []
+    checked = 0
+    for path in sorted(BUNDLED_WORKFLOWS_DIR.glob("*.json")):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for edge in data["edges"]:
+            checked += 1
+            artifact = edge.get("artifact", "")
+            label = f"{data['id']}: {edge['source']} -> {edge['target']} [{artifact}]"
+            if artifact not in ARTIFACT_TYPES:
+                problems.append(f"{label} uses an unknown artifact type")
+            source = by_id.get(edge["source"])
+            target = by_id.get(edge["target"])
+            if source is None or artifact not in source.produces:
+                problems.append(f"{label} is not produced by {edge['source']}")
+            if target is None or artifact not in target.accepts:
+                problems.append(f"{label} is not accepted by {edge['target']}")
+    assert checked, "no bundled edges were checked"
+    assert problems == []

@@ -50,20 +50,30 @@ def _render_rows(title: str, rows: List[Entry], width: int) -> str:
 
 # ── Static scaffolding (not prompt notes) ────────────────────────────────────
 
+# Every user-facing CLI subcommand. ``record-install`` is installer-only and is
+# deliberately left out; ``tests/test_discovery_sync.py`` checks the rest.
 _CLI: List[Entry] = [
     ("publish", "publish local templates to Espanso"),
     ("pull", "pull remote templates and refresh Espanso"),
     ("push", "push local templates to the remote"),
+    ("sync", "pull, push local changes, and reinstall"),
     ("starters", "reconcile bundled starter templates"),
     ("retire", "back up and delete a template"),
     ("remote", "manage the template Git remote"),
     ("list", "show templates with triggers"),
     ("status", "show config paths"),
     ("setup", "run post-install setup"),
+    ("doctor", "run diagnostic health checks"),
     ("validate", "check for errors"),
     ("import", "import templates"),
     ("gui", "launch editor"),
     ("refresh", "reinstall espansr in place"),
+    ("workflows", "inspect optional workflow manifests"),
+    ("packet", "inspect saved handoff packets"),
+    ("check-output", "validate a model output against a note's output contract"),
+    ("completions", "print a shell completion script"),
+    ("wsl-install-espanso", "WSL helper: install and start Espanso on Windows"),
+    ("configure-remote-desktop", "tune Espanso for RustDesk/RDP; --revert restores"),
 ]
 
 _LIFECYCLE = "\n".join(
@@ -77,18 +87,30 @@ _LIFECYCLE = "\n".join(
     ]
 )
 
+# One row per generated system trigger (see :data:`SYSTEM_TRIGGERS`).
 _DISCOVERY: List[Entry] = [
+    (":aopen", "open the full espansr editor"),
     (":coms", "open the live command popup"),
     (":espansr", "expand this static quick reference"),
+    (":sync", "pull, push, and reinstall espansr"),
 ]
 
 _FOOTER = "\n".join(
     [
-        "Config: ~/.config/espansr/",
+        "Config: Linux/WSL ~/.config/espansr/",
+        "        Windows   %APPDATA%\\espansr\\",
+        "        macOS     ~/Library/Application Support/espansr/",
+        "        (espansr status prints the active path)",
         "Publish: espansr publish",
         "Remote:  espansr pull / espansr push",
     ]
 )
+
+
+def _label_width(rows: List[Entry]) -> int:
+    """Column width that keeps the dashes of *rows* aligned."""
+    return max(len(label) for label, _ in rows)
+
 
 # ── Prompt notes: the single source both static surfaces render from ─────────
 
@@ -128,7 +150,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "apply current-cycle feedback to the existing project and verify the changes",
             ),
             (":docs-qa", "docs-only alignment fallback"),
-            (":work-merge", "push / merge"),
+            (
+                ":work-merge",
+                "sanitize, verify, then merge and push only when the repo state is safe",
+            ),
         ),
     ),
     HelpSection(
@@ -175,7 +200,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":reality-max",
                 "full account of what was done or would happen, with tables and diagrams",
             ),
-            (":reality-min", "two sentences and up to ten bullets on exactly what was done"),
+            (
+                ":reality-min",
+                "one or two sentences and up to ten bullets on exactly what was done",
+            ),
             (":gaps", "critical review modes for gaps and principles"),
             (":meta", "context-safe meta-prompt generator"),
             (":context", "condense drifted prompt context"),
@@ -230,9 +258,9 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
 def render_quick_help() -> str:
     """Render the full ``:espansr`` quick-help text."""
     blocks = [
-        _render_rows("espansr CLI commands", _CLI, 8),
+        _render_rows("espansr CLI commands", _CLI, _label_width(_CLI)),
         _LIFECYCLE,
-        _render_rows("Discovery", _DISCOVERY, 8),
+        _render_rows("Discovery", _DISCOVERY, _label_width(_DISCOVERY)),
     ]
     for section in PROMPT_SECTIONS:
         blocks.append(_render_rows(section.title, list(section.entries), section.width))

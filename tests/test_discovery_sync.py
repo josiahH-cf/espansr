@@ -160,3 +160,50 @@ def test_goal_prompt_registered_in_all_surfaces():
     help_lines = render_quick_help().splitlines()
     assert any(line.strip().startswith(":goal ") for line in help_lines)
     assert "`:goal`" in render_docs_note_list()
+
+
+# ── Static scaffolding stays aligned with the CLI and the system triggers ────
+
+
+def test_quick_help_cli_rows_cover_every_user_facing_subcommand():
+    """Every parser subcommand except the installer-only one has a quick-help row."""
+    import argparse
+
+    from espansr.__main__ import _build_parser
+    from espansr.core.discovery import _CLI
+
+    parser = _build_parser()
+    subcommands = set()
+    for action in parser._actions:
+        if isinstance(action, argparse._SubParsersAction):
+            subcommands.update(action.choices.keys())
+    assert subcommands, "the CLI parser declares no subcommands"
+
+    listed = {label for label, _blurb in _CLI}
+    missing = (subcommands - {"record-install"}) - listed
+    assert not missing, f"CLI subcommands missing from the :espansr quick help: {sorted(missing)}"
+    assert "record-install" not in listed
+
+
+def test_quick_help_discovery_rows_cover_every_system_trigger():
+    """Every generated system trigger is listed under Discovery in the quick help."""
+    from espansr.core.discovery import _DISCOVERY
+
+    labels = {label for label, _blurb in _DISCOVERY}
+    for trigger in SYSTEM_TRIGGERS:
+        assert trigger in labels, f"{trigger} is missing from the Discovery rows"
+    help_lines = render_quick_help().splitlines()
+    for trigger in SYSTEM_TRIGGERS:
+        assert any(line.strip().startswith(f"{trigger} ") for line in help_lines), trigger
+
+
+def test_quick_help_footer_names_every_platform_config_path():
+    """The footer no longer assumes Linux; it names each platform and points at status."""
+    content = render_quick_help()
+    for path in (
+        "~/.config/espansr/",
+        "%APPDATA%\\espansr\\",
+        "~/Library/Application Support/espansr/",
+    ):
+        assert path in content, path
+    assert "espansr status prints the active path" in content

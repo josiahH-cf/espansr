@@ -40,7 +40,22 @@ STATUS: GREEN
 """
 
 
-def _feature_output(
+def _litmus_entries(count, human_verdict_blank=True):
+    human = (
+        "Human verdict: PASS | FAIL - why:"
+        if human_verdict_blank
+        else "Human verdict: PASS - why: looks fine to me"
+    )
+    return "\n\n".join(
+        f"### Observable change {i}\n\n"
+        f"**If this was built correctly:** A person does the thing and sees result {i}.\n\n"
+        f"- Model verdict: PASS | FAIL - why: <filled after implementation verification>\n"
+        f"- {human}"
+        for i in range(1, count + 1)
+    )
+
+
+def _feature_packet(
     *,
     clarification="CLARIFICATION STATUS: NOT REQUIRED\nBasis: the supplied "
     "specification resolves goal, scope, behavior, architecture, verification, "
@@ -48,19 +63,8 @@ def _feature_output(
     litmus_entries=1,
     human_verdict_blank=True,
 ):
-    """Build a synthetic complete :feature run output for contract testing."""
-    human = (
-        "Human verdict: PASS | FAIL - why:"
-        if human_verdict_blank
-        else ("Human verdict: PASS - why: looks fine to me")
-    )
-    entries = "\n\n".join(
-        f"### Observable change {i}\n\n"
-        f"**If this was built correctly:** A person does the thing and sees result {i}.\n\n"
-        f"- Model verdict: PASS | FAIL - why: <filled after implementation verification>\n"
-        f"- {human}"
-        for i in range(1, litmus_entries + 1)
-    )
+    """Build the first :feature turn: the approval packet, after which the model stops."""
+    entries = _litmus_entries(litmus_entries, human_verdict_blank)
     litmus_block = f"HUMAN LITMUS\n\n{entries}\n" if litmus_entries else "HUMAN LITMUS\n\n(none)\n"
     return f"""FEATURE SPECIFICATION DECISIONS
 
@@ -102,16 +106,37 @@ REALITY SUMMARY
 
 If built as drafted, the user would see the thing.
 
-FINAL IMPLEMENTATION META-PROMPT
+REPLY FORMAT
+
+Reply with `accept all recommendations` or targeted corrections such as `Q1B`.
+"""
+
+
+def _feature_final_artifact(*, litmus_entries=1, human_verdict_blank=True):
+    """Build the second :feature turn: the final artifact the output contract checks."""
+    entries = _litmus_entries(litmus_entries, human_verdict_blank) or "(no litmus entries)"
+    return f"""FINAL IMPLEMENTATION META-PROMPT
 
 ```text
-Implement the feature. Terminal states: ALL_GATES_GREEN, BUDGET_EXHAUSTED.
+Implement the feature in the target project.
+
+Human litmus checklist:
+
+{entries}
+
+Terminal states: ALL_GATES_GREEN, BUDGET_EXHAUSTED.
 ```
 
 REALITY SUMMARY
 
 The artifact above was returned; the target feature is not yet implemented.
 """
+
+
+def _feature_output(**kwargs):
+    """Build a whole two-turn :feature transcript saved to one file."""
+    final_kwargs = {k: v for k, v in kwargs.items() if k != "clarification"}
+    return _feature_packet(**kwargs) + "\n" + _feature_final_artifact(**final_kwargs)
 
 
 # ── Core checker semantics ───────────────────────────────────────────────────
@@ -177,37 +202,51 @@ def _feature_contract():
 
 
 def test_feature_contract_passes_on_complete_output():
+    """A saved two-turn transcript (packet, then final artifact) passes."""
     report = check_output(_feature_contract(), _feature_output())
     assert report.passed, [f.message for f in report.failures]
 
 
-def test_feature_output_missing_clarification_status_fails():
-    report = check_output(_feature_contract(), _feature_output(clarification="(omitted)"))
+def test_feature_final_artifact_reply_passes_alone():
+    """The contract targets the second turn: the final artifact by itself passes."""
+    final = _feature_final_artifact()
+    for packet_only in ("CLARIFICATION STATUS", "INPUT COVERAGE", "KICKOFF INPUTS"):
+        assert packet_only not in final
+    report = check_output(_feature_contract(), final)
+    assert report.passed, [f.message for f in report.failures]
+
+
+def test_feature_packet_only_reply_fails():
+    """The first-turn approval packet is not the deliverable and does not pass."""
+    report = check_output(_feature_contract(), _feature_packet())
     assert not report.passed
-    assert any("CLARIFICATION STATUS" in f.message for f in report.failures)
+    messages = [f.message for f in report.failures]
+    assert any("FINAL IMPLEMENTATION META-PROMPT" in m for m in messages)
+    assert any("ALL_GATES_GREEN" in m for m in messages)
+    assert any("BUDGET_EXHAUSTED" in m for m in messages)
 
 
-def test_feature_output_missing_litmus_section_fails():
-    output = _feature_output().replace("HUMAN LITMUS", "SOMETHING ELSE")
+def test_feature_output_missing_reality_summary_fails():
+    output = _feature_final_artifact().replace("REALITY SUMMARY", "SOMETHING ELSE")
     report = check_output(_feature_contract(), output)
     assert not report.passed
-    assert any("HUMAN LITMUS" in f.message for f in report.failures)
+    assert any("REALITY SUMMARY" in f.message for f in report.failures)
 
 
 def test_feature_output_with_no_litmus_entries_fails():
-    report = check_output(_feature_contract(), _feature_output(litmus_entries=0))
+    report = check_output(_feature_contract(), _feature_final_artifact(litmus_entries=0))
     assert not report.passed
     assert any("If this was built correctly" in f.message for f in report.failures)
 
 
 def test_feature_output_with_prefilled_human_verdict_fails():
-    report = check_output(_feature_contract(), _feature_output(human_verdict_blank=False))
+    report = check_output(_feature_contract(), _feature_final_artifact(human_verdict_blank=False))
     assert not report.passed
     assert any("human verdict" in f.message.lower() for f in report.failures)
 
 
 def test_feature_output_with_prefilled_fail_human_verdict_fails():
-    output = _feature_output().replace(
+    output = _feature_final_artifact().replace(
         "Human verdict: PASS | FAIL - why:", "Human verdict: FAIL - why: broken"
     )
     report = check_output(_feature_contract(), output)
@@ -217,7 +256,7 @@ def test_feature_output_with_prefilled_fail_human_verdict_fails():
 
 def test_blank_human_verdict_template_line_is_not_a_false_positive():
     """The canonical blank 'PASS | FAIL - why:' line must never trip the check."""
-    report = check_output(_feature_contract(), _feature_output(litmus_entries=3))
+    report = check_output(_feature_contract(), _feature_final_artifact(litmus_entries=3))
     assert report.passed, [f.message for f in report.failures]
 
 
@@ -260,10 +299,10 @@ def test_cli_check_output_passes_on_conforming_output(tmp_path, capsys):
 
 
 def test_cli_check_output_fails_nonzero_and_reports_all(tmp_path, capsys):
-    bad = _feature_output(clarification="(omitted)", litmus_entries=0)
+    bad = _feature_packet(litmus_entries=0)
     assert _run_check_output(tmp_path, bad) == 1
     out = capsys.readouterr().out
-    assert "CLARIFICATION STATUS" in out
+    assert "FINAL IMPLEMENTATION META-PROMPT" in out
     assert "If this was built correctly" in out
 
 

@@ -162,7 +162,7 @@ Each template is a JSON file with the following fields:
 | `content` | string | Yes | The expansion text. Use `{{variable_name}}` for placeholders. |
 | `trigger` | string | No | Espanso trigger string (e.g., `:greet`). Templates without a trigger are shown in the browser but excluded from sync. |
 | `category` | string | No | Workflow or library grouping used by prompt discovery surfaces. |
-| `stage` | string | No | Optional role or state label, such as `goal`, `plan`, `review`, or `archive`. |
+| `stage` | string | No | Short unique label for the note's job, such as `goal-refinement` or `verification`. |
 | `next_triggers` | array | No | Optional follow-up hints supported for user-managed templates. Bundled prompts intentionally leave this empty. |
 | `replaces` | array | No | Previous bundled trigger names or template identifiers replaced by this template during migration planning. |
 | `deprecated` | boolean | No | Migration metadata for bundled templates. Current publish behavior does not skip a template only because this field is true. |
