@@ -25,8 +25,14 @@ The installer should create `.venv`, install the package in editable mode, run
 `install.ps1` also registers and starts the Espanso service when Espanso is
 found, runs `espansr configure-remote-desktop --auto` (host mode with
 `-RemoteDesktop`, workstation mode with `-LocalOnly`; see
-[docs/CLI.md](CLI.md#espansr-configure-remote-desktop)), and adds the venv
-`Scripts` folder to the Windows user PATH.
+[docs/CLI.md](CLI.md#espansr-configure-remote-desktop)), writes the
+`%LOCALAPPDATA%\espansr\bin\espansr.cmd` launcher and appends that directory to
+the Windows user PATH (removing any legacy venv `Scripts` entry), and starts
+Espanso before running setup. It refuses `-RemoteDesktop` together with
+`-LocalOnly`, and a failed setup stops the install instead of printing the
+success banner. The remote-desktop step edits only one marked block in
+Espanso's `config/default.yml` and keeps a one-time `default.yml.espansr-orig`
+backup; `espansr configure-remote-desktop --revert` restores the file.
 
 On Linux and macOS, `install.sh` does more than install `espansr`. Know its
 side effects before running it:
@@ -84,8 +90,8 @@ Expected:
 - `--version` prints the installed version.
 - `list` shows bundled starter templates with triggers.
 - `validate` prints `All templates valid.` or specific template issues.
-- `status` shows the detected Espanso config path, or clear Espanso install/start guidance.
-- `doctor` prints `[ok]`, `[warn]`, or `[FAIL]` checks for Python, config, templates, Espanso, launcher files, and validation.
+- `status` shows the detected Espanso config path and binary location; it exits 1 when no Espanso config directory is found, and a missing binary is only a warning.
+- `doctor` prints `[ok]`, `[warn]`, or `[FAIL]` checks for Python, config, templates, Espanso, launcher files, the command shim, and validation.
 
 `doctor` exits nonzero when Espanso or generated launcher files are missing.
 That means espansr is installed, but Espanso-trigger expansion is not fully ready yet.

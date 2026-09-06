@@ -120,12 +120,14 @@ espansr remote remove
 
 ### `espansr status`
 
-Show Espanso connection status and config path.
+Show the detected Espanso config path and binary location.
 
 ```bash
 espansr status            # human-readable output
 espansr status --json     # machine-readable JSON (for orchestratr or scripting)
 ```
+
+Exit code 0 when the Espanso config directory is found; a missing Espanso binary is reported as a warning and still exits 0. Exit code 1 when no Espanso config directory is detected.
 
 ### `espansr list`
 
@@ -158,11 +160,19 @@ the command resolves in non-interactive shells such as subprocess calls,
 `.desktop` launchers, systemd user units, IDE terminals, and RustDesk/RDP
 session shells, where a shell alias never does. On Linux, macOS, and WSL2 it
 is a symlink at `~/.local/bin/espansr` to the venv's executable (a small
-wrapper script where symlinks are unsupported); on Windows the user bin
-directory is the venv `Scripts` folder that `install.ps1` persists to the user
-PATH. When a stray non-symlink file blocks the shim path, setup reports a
+wrapper script where symlinks are unsupported); on Windows it is an
+`espansr.cmd` launcher in `%LOCALAPPDATA%\espansr\bin` that forwards to the
+venv's `espansr.exe`. `install.ps1` writes that launcher on every install and
+appends its directory to the Windows user PATH; the venv `Scripts` folder is no
+longer placed on PATH, and a legacy entry from an older install is removed. When a stray non-symlink file blocks the shim path, setup reports a
 conflict and `--force-shim` overwrites it. On POSIX, setup warns when the bin
 directory is not on PATH.
+
+Setup reports each generated file truthfully: `Launcher`, `Commands popup`, and
+`Sync trigger` each print `generated`, `skipped (no Espanso config)`, or
+`failed (...)`. When Espanso is detected and the publish or any generation
+fails, setup exits 1 and the installers stop with a clear message instead of
+reporting success.
 
 On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
 
@@ -177,7 +187,7 @@ espansr setup --verbose --strict  # flags are combinable
 
 ### `espansr validate`
 
-Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers) and warning-only collisions with the generated system triggers `:aopen`, `:coms`, and `:sync`. Exit code 1 when any error is found; warnings alone exit 0.
+Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers) warning-only collisions with the generated system triggers `:aopen`, `:coms`, and `:sync`, and warning-only collisions with triggers defined in any other Espanso match file under `match/` (for example `base.yml`; unreadable files are skipped). Exit code 1 when any error is found; warnings alone exit 0.
 
 ```bash
 espansr validate
@@ -194,7 +204,7 @@ espansr import /path/to/templates/
 
 ### `espansr doctor`
 
-Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning.
+Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning. On Windows the check looks for the `espansr.cmd` launcher that `install.ps1` writes and warns when its directory is not on the current process PATH (open a new shell after installing).
 
 Like `list`, `validate`, and `gui`, `doctor` first pulls the configured template remote when one is set and `remote.auto_pull` is on (the default); a failed auto-pull is logged and never blocks the command.
 
@@ -230,7 +240,9 @@ espansr refresh
 
 `refresh` identifies the operating system and the recorded install location,
 then reruns `install.ps1` through PowerShell on Windows or `install.sh` through
-Bash on Linux, macOS, and WSL2. On success it prints a small `ok` notification.
+Bash on Linux, macOS, and WSL2. On success it prints `ok` and shows a short
+desktop notification: a balloon on Windows, a notification through `osascript`
+on macOS, and `notify-send` on Linux when it is installed.
 If the reinstall fails, it opens the install folder so you can rerun the
 installer manually.
 
@@ -261,6 +273,18 @@ and pushes when the branch is ahead of its upstream; a failed push is reported
 and the reinstall still runs. Finally it reruns the recorded installer exactly
 as `refresh` does.
 
+After the commit, `sync` prints `Committed local changes.` followed by a
+`Committed:` list naming every file in that commit, so nothing lands silently.
+Failures stop the run with exit code 1 instead of pushing a broken tree: when
+the stashed changes cannot be restored after the pull, the message points at
+`git stash list` and nothing is committed, pushed, or reinstalled; when the
+commit itself fails (for example with no git identity), git's error is printed
+and nothing is pushed; when the branch has no upstream, `sync` prints
+`No upstream configured; push skipped.`; and when a git step times out
+(120 seconds, for example on a credential prompt) or cannot start, a clean
+message replaces the traceback. Remote URLs that embed credentials are printed
+masked as `scheme://user:***@host`.
+
 On a rebase conflict, `sync` aborts the rebase, restores the stash, lists the
 conflicted files, and skips the reinstall so a broken tree is never
 reinstalled (exit code 1); the same applies when the restored stash conflicts.
@@ -270,6 +294,12 @@ offline), `sync` skips the pull and push and reinstalls the current checkout.
 The generated `:sync` Espanso trigger runs this command (see `setup`), and the
 GUI toolbar **Sync** button runs the same flow; the GUI refuses to start it
 while the editor has unsaved changes.
+
+On Windows the trigger opens a PowerShell window that stays open after the run
+so the result stays readable (close it when done). On Linux it opens a terminal
+emulator that waits for Enter, or, when none is available, logs to `sync.log`
+in the espansr config directory and reports through `notify-send` when that is
+installed. On macOS it opens Terminal.
 
 ### `espansr configure-remote-desktop`
 
@@ -291,10 +321,32 @@ espansr configure-remote-desktop --revert  # remove the espansr-managed remote-d
   host mode, which then stays sticky across reinstalls and `espansr refresh`.
 - `--revert`: removes the espansr-managed remote-desktop settings.
 
+espansr edits `config/default.yml` as text and owns exactly one block between
+`# espansr-managed BEGIN (host|workstation) - reapply: ...; revert: ...` and
+`# espansr-managed END`. Everything outside the block is preserved byte for
+byte, including comments, key order, and values such as `toggle_key: OFF`. A
+managed key you had already set at top level is moved into the block as a
+`# espansr-prev: <original line>` comment and put back by `--revert`, which
+works for both modes, also removes the workstation keys, and deletes
+`default.yml` only when espansr created it. Before the first edit of a file
+that has no managed block, a one-time backup is written next to it as
+`default.yml.espansr-orig`. Files written by the older layout (a first-line
+`# espansr-remote-desktop` or `# espansr-workstation` marker) migrate on the
+next apply. Edit your own settings outside the block: anything changed inside
+it is discarded on the next apply or revert.
+
+Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`,
+`preserve_clipboard: false`, `show_icon: false`, `show_notifications: false`,
+`key_delay: 30`, and `backspace_delay: 30`. Workstation mode sets
+`win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and
+`restore_clipboard_delay: 1500`.
+
 `install.ps1` runs this on every Windows install: `--auto` by default, host
 mode with `.\install.ps1 -RemoteDesktop`, and workstation mode with
 `.\install.ps1 -LocalOnly`. The command restarts Espanso after a change and
-exits 1 when no Espanso config directory is detected.
+exits 1 when no Espanso config directory is detected. The three mode flags are
+mutually exclusive (exit code 2 when combined), and `install.ps1` refuses
+`-RemoteDesktop` together with `-LocalOnly`.
 
 ### `espansr completions`
 
@@ -404,5 +456,7 @@ espansr --version
 - **`--force-shim`** — Available on `setup`. Overwrites a non-symlink file that blocks the command shim path.
 - **`--no-push`** — Available on `sync`. Pulls and reinstalls without committing or pushing local changes.
 - **Auto-pull** — `doctor`, `list`, `validate`, and `gui` first pull the configured template remote when `remote.auto_pull` is on (the default). A failed pull is logged and never blocks the command.
-- **Exit codes** — `starters` exits 1 when it finds drift (without `--apply`) or when `--apply` skipped invalid local JSON, and 2 when the report has errors or `--force` is given without `--apply`. `import DIR` exits 0 whenever at least one file imported, 1 only when every file failed or the path does not exist. `validate` exits 1 on errors, `doctor` exits 1 on any failed check, `sync` exits 1 when a conflict stops the reinstall, and `check-output` uses 0/1/2/3 as described above.
+- **Exit codes** — `starters` exits 1 when it finds drift (without `--apply`) or when `--apply` skipped invalid local JSON, and 2 when the report has errors or `--force` is given without `--apply`. `import DIR` exits 0 whenever at least one file imported, 1 only when every file failed or the path does not exist. `validate` exits 1 on errors, `doctor` exits 1 on any failed check, `status` exits 1 when no Espanso config directory is found, `setup` exits 1 when Espanso is present and the publish or a generated file failed, `sync` exits 1 when a conflict, a failed stash restore, a failed commit, or a git timeout stops the run, `configure-remote-desktop` exits 2 when two mode flags are combined, and `check-output` uses 0/1/2/3 as described above.
+- **Console encoding** — output never crashes on characters the console cannot encode; they print as replacement characters instead.
+- **Credential masking** — remote URLs that embed credentials are printed as `scheme://user:***@host`; the stored URL is unchanged.
 - **Colored output** — CLI output uses colors when connected to a TTY. Respects the `NO_COLOR` environment variable.

@@ -42,9 +42,9 @@ Use PowerShell for the Windows command, not Command Prompt. If PowerShell blocks
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, records the install location for `espansr refresh` and `espansr sync`, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, `:sync`, and template expansion, and it creates a PATH-visible `espansr` command shim so the command works in non-interactive shells.
+The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, records the install location for `espansr refresh` and `espansr sync`, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, `:sync`, and template expansion, and it creates a PATH-visible `espansr` command shim so the command works in non-interactive shells. On Windows that shim is an `espansr.cmd` launcher in `%LOCALAPPDATA%\espansr\bin`, which the installer appends to your user PATH; the virtual environment's `Scripts` folder is not added to PATH (a legacy entry from an older install is removed), so `python` and `pip` in new shells keep resolving to your own Python.
 
-On Windows, the installer also looks for Espanso, attempts service registration/startup when it is available, and runs `espansr configure-remote-desktop --auto` to tune Espanso for the machine's role (`-RemoteDesktop` and `-LocalOnly` force host or workstation mode). On Linux and macOS, `install.sh` installs Espanso when it is missing (`.deb` or AppImage on Linux, Homebrew on macOS), starts it, seeds its default config, and on GNOME/Wayland offers to run Chrome, VS Code, Obsidian, and gnome-terminal under XWayland so triggers fire inside them; pass `--no-espanso` or `--no-xwayland-apps` to opt out, and see [docs/VERIFY.md](docs/VERIFY.md) for every side effect and the revert command. On WSL2, Espanso must run on the Windows side (`espansr wsl-install-espanso`).
+On Windows, the installer also looks for Espanso, registers and starts its service when it is available (before running setup, so the first publish succeeds), and runs `espansr configure-remote-desktop --auto` to tune Espanso for the machine's role (`-RemoteDesktop` and `-LocalOnly` force host or workstation mode; see [What It Manages](#what-it-manages) for the settings it writes). On Linux and macOS, `install.sh` installs Espanso when it is missing (`.deb` or AppImage on Linux, Homebrew on macOS), starts it, seeds its default config, and on GNOME/Wayland offers to run Chrome, VS Code, Obsidian, and gnome-terminal under XWayland so triggers fire inside them; pass `--no-espanso` or `--no-xwayland-apps` to opt out, and see [docs/VERIFY.md](docs/VERIFY.md) for every side effect and the revert command. On WSL2, Espanso must run on the Windows side (`espansr wsl-install-espanso`).
 
 ## Fresh Reinstall Reset
 
@@ -53,18 +53,21 @@ Only use this when you intentionally want to remove the local espansr install an
 From Windows PowerShell in the repository folder. For the cleanest reset, use a terminal that is not currently running the `.venv` virtual environment.
 
 ```powershell
-$venvScripts = Join-Path -Path (Get-Location) -ChildPath ".venv\Scripts"
+# Optional: restore Espanso's own config first (removes the espansr-managed block).
+espansr configure-remote-desktop --revert
+$launcherDir = Join-Path -Path $env:LOCALAPPDATA -ChildPath "espansr\bin"
 Remove-Item -Recurse -Force .\.venv -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force "$env:APPDATA\espansr" -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force "$env:LOCALAPPDATA\espansr" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr.yml" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr-launcher.yml" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr-commands.yml" -ErrorAction SilentlyContinue
 Remove-Item -Force "$env:APPDATA\espanso\match\espansr-sync.yml" -ErrorAction SilentlyContinue
-$env:PATH = (($env:PATH -split ";") | Where-Object { $_ -and ($_ -ine $venvScripts) }) -join ";"
-$userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+$env:PATH = (($env:PATH -split ";") | Where-Object { $_ -and ($_ -ine $launcherDir) }) -join ";"
+$userPath = (Get-Item HKCU:\Environment).GetValue("Path", "", "DoNotExpandEnvironmentNames")
 if ($userPath) {
-	$pathEntries = $userPath -split ";" | Where-Object { $_ -and ($_ -ine $venvScripts) }
-	[Environment]::SetEnvironmentVariable("PATH", ($pathEntries -join ";"), "User")
+	$pathEntries = $userPath -split ";" | Where-Object { $_ -and ($_ -ine $launcherDir) }
+	Set-ItemProperty -Path HKCU:\Environment -Name Path -Value ($pathEntries -join ";") -Type ExpandString
 }
 ```
 
@@ -75,11 +78,11 @@ espansr doctor
 espansr gui
 ```
 
-After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup — it lists every trigger with previews, and you can also describe the job you need ("challenge finished research") or pick what you have and what you want to produce to surface the right prompt without remembering its trigger. See [docs/PROCESS.md](docs/PROCESS.md). Type `:sync` to update this machine: it runs `espansr sync`, which pulls the repository, commits and pushes your local changes, and reruns the installer; `espansr sync --no-push` pulls and reinstalls without committing or pushing.
+After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup — it lists every trigger with previews, and you can also describe the job you need ("challenge finished research") or pick what you have and what you want to produce to surface the right prompt without remembering its trigger. See [docs/PROCESS.md](docs/PROCESS.md). Type `:sync` to update this machine: it runs `espansr sync`, which pulls the repository, commits and pushes your local changes, and reruns the installer; `espansr sync --no-push` pulls and reinstalls without committing or pushing. On Windows the `:sync` window stays open after the run so you can read the result.
 
 Use `espansr publish` after template changes if you want to refresh Espanso output from the CLI. The GUI also publishes from the toolbar and saves edited templates into the same local template store.
 
-To reinstall `espansr` in place after pulling updates or if an install looks broken, run `espansr refresh`. It reruns the correct OS installer (`install.ps1` on Windows, `install.sh` on Linux/macOS/WSL2), shows a small `ok` notification when it finishes, and opens the install folder if the reinstall fails.
+To reinstall `espansr` in place after pulling updates or if an install looks broken, run `espansr refresh`. It reruns the correct OS installer (`install.ps1` on Windows, `install.sh` on Linux/macOS/WSL2), prints `ok` with a short desktop notification when it finishes, and opens the install folder if the reinstall fails.
 
 ## Verify From Windows PowerShell
 
@@ -124,10 +127,11 @@ If you meant to install on the Windows host instead, open Windows PowerShell in 
 - Live template JSON files in your platform-specific `espansr` config directory.
 - Bundled starter templates copied from this repository on setup.
 - Managed Espanso files named `espansr.yml`, `espansr-launcher.yml`, `espansr-commands.yml`, and `espansr-sync.yml`.
+- One espansr-managed block in Espanso's `config/default.yml`, written by `espansr configure-remote-desktop` (the Windows installer runs it) and removable with `--revert`; the first edit keeps a backup as `default.yml.espansr-orig`. Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`, `preserve_clipboard: false`, `show_icon: false`, `show_notifications: false`, `key_delay: 30`, and `backspace_delay: 30`; workstation mode sets `win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and `restore_clipboard_delay: 1500`. Everything outside the block is left byte for byte as you wrote it.
 - Optional Git-backed template sync through `espansr remote`, `pull`, and `push`.
 - Optional workflow manifests describing how bundled prompts relate (`espansr workflows`), user-saved handoff packets in the config directory (`espansr packet`), and structural output-contract checks (`espansr check-output`).
 
-It does not replace Espanso, manage arbitrary Espanso YAML, or delete unmanaged Espanso files. The process layer is optional: every trigger works directly, no workflow tracks a current step, and nothing runs automatically.
+It does not replace Espanso, manage Espanso YAML beyond that block and its own match files, or delete unmanaged Espanso files. The process layer is optional: every trigger works directly, no workflow tracks a current step, and nothing runs automatically.
 
 ## More Help
 
