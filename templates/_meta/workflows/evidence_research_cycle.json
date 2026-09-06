@@ -91,6 +91,13 @@
       "short": "HTML doc"
     },
     {
+      "source": "visual-workflow",
+      "target": "html-help-doc",
+      "label": "Embed the diagram in a self-contained interactive HTML document.",
+      "artifact": "visual-artifact",
+      "short": "HTML doc"
+    },
+    {
       "source": "context-reset",
       "target": "research-report",
       "label": "Use the condensed context as the input artifact for the selected capability.",
