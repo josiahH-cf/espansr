@@ -22,7 +22,7 @@ not a special request that needs asking.
 Change these areas only when the request calls for it, and keep edits scoped and
 behavior-preserving:
 
-- `espansr/` application code, UI behavior, styles, and generated `:aopen` / `:coms` behavior
+- `espansr/` application code, UI behavior, styles, and generated `:aopen` / `:coms` / `:sync` behavior
 - `install.ps1`, `install.sh`, WSL/PowerShell install or setup behavior
 - `README.md`, packaging metadata, product tests, and docs unrelated to the prompt-note set
 

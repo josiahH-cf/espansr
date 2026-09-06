@@ -99,6 +99,21 @@ _REMOVED_TRIGGERS = (
     ":pocket-system",
     ":distill",
     ":summarize",
+    ":qa",
+    ":critique",
+    ":gaps-2",
+    ":principles",
+    ":fp",
+    ":plain",
+    ":dumb",
+    ":simplify",
+    ":explain-1",
+    ":hide-ai",
+    ":defaults",
+    ":pocket-note",
+    ":work-merge-safe",
+    ":reality",
+    ":project-init",
 )
 
 
