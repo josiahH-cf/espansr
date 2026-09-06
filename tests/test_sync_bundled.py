@@ -827,7 +827,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         ),
         "gaps.json": (
             ":gaps",
-            "analysis",
+            "review",
             "gap-review",
             [],
             [":critique", ":gaps-2", ":principles", ":fp"],
@@ -852,7 +852,7 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         ),
         "troubleshoot.json": (":troubleshoot", "workflow", "troubleshooting", [], []),
         "sanitize.json": (":sanitize", "safety", "scrub", [], [":hide-ai"]),
-        "docs_qa.json": (":docs-qa", "maintenance", "docs-review", [], [":qa"]),
+        "docs_qa.json": (":docs-qa", "review", "docs-review", [], [":qa"]),
         "telegram.json": (
             ":telegram",
             "workflow",
@@ -1179,6 +1179,12 @@ def test_bundled_feature_template_contract():
     ]:
         assert forbidden not in content, forbidden
 
+    # Identifier examples follow the packet's Q1/Q1B scheme; retired loop wording is gone;
+    # the note says the approval packet is not what the output contract checks.
+    assert "stable identifiers such as Q1" in content
+    assert "feature-loop artifacts" not in content
+    assert "the structural output contract checks only the final-artifact reply" in content
+
 
 def test_bundled_unblock_template_contract():
     """The :unblock prompt is a standalone bulk-input blocker-resolution workflow."""
@@ -1226,6 +1232,9 @@ def test_bundled_unblock_template_contract():
     )
     # Proof required before a blocker is cleared, plus safety handling.
     assert "Do not claim a blocker is cleared until" in content
+    assert (
+        "Once the path is clear, hand back; sustained execution is another note's job." in content
+    )
     assert "Never request that the user paste passwords" in content
     assert "untrusted data" in content
     assert "```<detected-language>" in content
@@ -1285,8 +1294,13 @@ def test_bundled_explain_template_contract():
         "### Additional context needed",
         "Use no more than three bullets",
         "ask one brief clarification question",
+        "Follow additional audience or voicing instructions closely, within the length, "
+        "structure, and fidelity rules.",
+        "For a bare account of the end state rather than an explanation of a source, "
+        "a separate reality note exists.",
     ]:
         assert phrase in content, phrase
+    assert "instructions loosely" not in content
 
     # Standalone and read-only: does not route to or depend on retired or sibling prompts.
     for other in (":distill", ":summarize", ":reality", ":visual", ":research"):
@@ -1382,6 +1396,7 @@ def test_bundled_sanitize_template_contract():
     assert "Hyper-safe" in content
     assert "Minimum-safe" in content
     assert "when the risk is non-trivial" in content.lower()
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
 def test_bundled_revise_template_contract():
@@ -1508,57 +1523,13 @@ def test_bundled_gaps_template_contract_preserves_review_modes():
     assert "first-principles pass" in content
     assert "reality pass" not in content
 
-
-def test_bundled_reality_template_contract():
-    """Reality Max is a comprehensive standalone end-state account, not a diagnostic review."""
-    repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
-    content = data["content"]
-
-    assert data["name"] == "Reality Max"
-    assert data["trigger"] == ":reality-max"
-    assert data["category"] == "analysis"
-    assert data["stage"] == "reality-max"
-    assert data["next_triggers"] == []
-    assert data["replaces"] == [":reality"]
-
-    # Grounding: evidence is classified rather than flattened into one voice.
-    for phrase in (
-        "**Verified reality:**",
-        "**Proposed reality:**",
-        "**Supported inference:**",
-        "**Unknown or unresolved:**",
-        "Do not silently repair, optimize, reinterpret, or complete it",
-    ):
-        assert phrase in content, phrase
-
-    # Boundaries: reports reality, never performs or grades the underlying work.
-    for phrase in (
-        "Report reality; do not perform the underlying work.",
-        "conduct gap analysis or a first-principles critique",
-        "recommend improvements, alternate approaches, or next steps",
-        "tell the user which espansr command to run next",
-    ):
-        assert phrase in content, phrase
-
-    # Output contract: comprehensive, headed, and closed by a definition of done.
-    for phrase in (
-        "# Reality Summary",
-        "**If you only read one thing:**",
-        "Be comprehensive rather than artificially short",
-        "## ✅ Definition of Done",
-    ):
-        assert phrase in content, phrase
-
-    # The superseded fixed-length contract is gone.
-    for phrase in (
-        "Return exactly two short plain-English paragraphs",
-        "followed by zero to ten bullets",
-        "Every bullet must be one complete sentence",
-    ):
-        assert phrase not in content, phrase
-
-    assert content.endswith(INLINE_CONTEXT_FOOTER)
+    # Exactly one callout input area, and no bracketed example callouts.
+    assert content.count("OPTIONAL CALLOUTS (IGNORE IF EMPTY BULLET):") == 1
+    for absent in ("My Explicit Callouts", "[Callout 1]", "Optional Callouts Section"):
+        assert absent not in content, absent
+    assert data["category"] == "review"
+    assert "review already complete work" not in data["intent_tags"]
+    assert "challenge research that is already complete" in data["intent_tags"]
 
 
 def test_bundled_continue_template_contract():
@@ -1648,15 +1619,20 @@ def test_bundled_project_systems_template_contract():
     ):
         assert phrase in content, phrase
 
-    # Roles are named and never silently substituted.
+    # Roles are named and never silently substituted: a Role/Owns table with four rows.
     for phrase in (
         "| Coordinator ",
-        "| Claude Opus 5 ",
         "| Independent review ",
         "| Josiah ",
         "Never silently substitute one model for another.",
     ):
         assert phrase in content, phrase
+    table = [line for line in content.splitlines() if line.startswith("|")]
+    assert len(table) == 6, table
+    header = [cell.strip() for cell in table[0].strip("|").split("|")]
+    assert header == ["Role", "Owns"]
+    assert set(table[1]) <= {"|", "-", " "}
+    assert all(line.count("|") == 3 for line in table[2:])
 
     # Artifact rule: no trackers or side files; discover first before asking.
     for phrase in (
@@ -1666,6 +1642,9 @@ def test_bundled_project_systems_template_contract():
         "A normal startup ends with the already-known next action",
     ):
         assert phrase in content, phrase
+    # The pending-alignment entry-point section and the unblock aside are gone.
+    for absent in ("## Entry points", "pending alignment", "`unblock`"):
+        assert absent not in content, absent
 
     # Finish: the master alone states current reality; the chat is not a second source of truth.
     for phrase in (
@@ -1785,6 +1764,30 @@ def test_bundled_reality_max_template_contract():
     ):
         assert phrase in content, phrase
 
+    # Boundaries carried over from the original reality note.
+    for phrase in (
+        "Report reality; do not perform the underlying work.",
+        "conduct gap analysis or a first-principles critique",
+        "recommend improvements, alternate approaches, or next steps",
+        "tell the user which espansr command to run next",
+        "Be comprehensive rather than artificially short",
+    ):
+        assert phrase in content, phrase
+
+    # Format principles are stated on their own terms; no other note is named.
+    for phrase in (
+        "## Format Principles",
+        "a prominent takeaway line, clear descriptive headings, restrained and consistent "
+        "emoji status markers, tables where comparison or structure helps, and a decisive "
+        "final end state",
+        "Do not add intake gates, confirmation cycles, baselines, change logs, cleanup "
+        "sweeps, execution steps, or recommendations unless the target material itself "
+        "contains them.",
+    ):
+        assert phrase in content, phrase
+    assert "show-me" not in content
+    assert "Relationship to" not in content
+
     # Visual aids are grounded, optional, and never decorative.
     for phrase in (
         "## Visual Aids",
@@ -1798,15 +1801,28 @@ def test_bundled_reality_max_template_contract():
         assert phrase in content, phrase
 
     contract = data["output_contract"]
+    assert contract["artifact_type"] == "evidence-report"
+    assert data["produces"] == ["evidence-report"]
+    assert "context-packet" in data["accepts"]
     skeleton = (
         "# Reality Summary\n\n"
         "**If you only read one thing:** done.\n\n"
         "## ✅ Definition of Done\n\nDone.\n"
     )
     assert check_output(contract, skeleton).passed
+    # The colon may sit outside the bold, and the closing heading may omit the emoji.
+    colon_outside = skeleton.replace(
+        "**If you only read one thing:**", "**If you only read one thing**:"
+    )
+    assert check_output(contract, colon_outside).passed
+    no_emoji = skeleton.replace("## ✅ Definition of Done", "## Definition of Done")
+    assert check_output(contract, no_emoji).passed
     assert not check_output(
         contract, skeleton.replace("**If you only read one thing:** done.", "")
     ).passed
+    doubled = skeleton + "\n**If you only read one thing**: twice.\n"
+    assert not check_output(contract, doubled).passed
+    assert not check_output(contract, skeleton.replace("Definition of Done", "Done")).passed
 
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
@@ -1832,6 +1848,7 @@ def test_bundled_reality_min_template_contract():
         "never expand this one to imitate it",
         "Do not invent",
         "REALITY MIN",
+        "- Use `- ` bullets.",
         "At most ten bullets. Use fewer whenever fewer suffice; never pad to reach ten.",
         "no tables, no diagrams, no emoji, no nested bullets",
         "no praise, no hedging, no opinions, no filler",
@@ -1853,6 +1870,12 @@ def test_bundled_reality_min_template_contract():
     assert not check_output(contract, ok + "| a | b |\n").passed
     assert not check_output(contract, ok + "  - nested\n").passed
     assert not check_output(contract, "REALITY MIN\n\nDid the thing.\n").passed
+    # Star bullets count as top-level bullets too; nested star bullets are still rejected.
+    assert check_output(contract, ok.replace("- fact", "* fact")).passed
+    assert not check_output(contract, ok + "  * nested\n").passed
+    assert contract["artifact_type"] == "evidence-report"
+    assert data["produces"] == ["evidence-report"]
+    assert "One or two sentences" in data["description"]
 
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
@@ -1989,6 +2012,10 @@ def test_bundled_git_helper_templates_are_executable_commands():
                 assert "<<'ESPANSR_BRANCH_NAME:" in content
             else:
                 assert "$rawBranchName = @'" in content
+
+        if filename.endswith("_sh.json"):
+            # Pasted into an interactive shell, errexit would kill the user's session.
+            assert "set -e" not in content, filename
 
 
 def test_bundled_git_branch_helpers_use_popup_form_variable(tmp_path):
@@ -2301,3 +2328,575 @@ def test_publish_path_retires_removed_prompt_and_omits_trigger(tmp_path):
     triggers = {entry["trigger"] for entry in output["matches"]}
     assert ":rebase" not in triggers
     assert ":verify" in triggers
+
+
+# ── Contract tests for the remaining bundled notes ───────────────────────────
+
+
+def _bundled(filename: str) -> dict:
+    repo_root = Path(__file__).resolve().parents[1]
+    return json.loads((repo_root / "templates" / filename).read_text(encoding="utf-8"))
+
+
+def test_bundled_cb_agenda_template_contract():
+    """:cb-agenda prints one plain-text, email-ready agenda and nothing else."""
+    data = _bundled("cb_agenda.json")
+    content = data["content"]
+
+    assert data["name"] == "CB Agenda"
+    assert data["trigger"] == ":cb-agenda"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "meeting-agenda"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `cb-agenda`, a project research analyst and meeting agenda editor.",
+        "Use the console as the sole output destination. Do not create, save, or modify a "
+        "standalone file.",
+        "Do not ask the user questions before producing the agenda. Place material unanswered "
+        "questions inside the agenda.",
+        "MEETING RELEVANCE FILTER",
+        "AGENDA PRIORITIZATION",
+        "AI LANGUAGE RESTRICTIONS",
+        "The following checklist defines these structural patterns and stock phrases.",
+    ):
+        assert phrase in content, phrase
+    assert "The supplied checklist" not in content
+
+    # The 84-item cliche list is compact: no blank line between consecutive items, while the
+    # blank lines around the list (section boundaries) stay.
+    assert (
+        '1. Two or more consecutive "No..." statements.\n'
+        '2. "That is the whole point," "the whole game," "the whole thing," or variants.\n'
+        "3. Two or more consecutive"
+    ) in content
+    assert '84. "Against this backdrop," or "in this context."\n\nAlso remove:' in content
+    assert 'stock phrases.\n\n1. Two or more consecutive "No..." statements.' in content
+
+    assert content.endswith("PROJECT, MEETING SCOPE, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+
+
+def test_bundled_pocket_extract_template_contract():
+    """:pocket-extract is a self-contained PowerShell unpack-and-collect snippet."""
+    data = _bundled("pocket_extract.json")
+    content = data["content"]
+
+    assert data["name"] == "Pocket Notes Extract PowerShell"
+    assert data["trigger"] == ":pocket-extract"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "pocket-extract"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+
+    for phrase in (
+        "$out = Join-Path $root 'transcriptions'",
+        "foreach ($zip in @(Get-ChildItem -File -Filter *.zip))",
+        "Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dest -Force",
+        "Remove-Item -LiteralPath $zip.FullName -Force",
+        "-Filter transcription.txt",
+        "Copy-Item -LiteralPath $txt.FullName -Destination (Join-Path $out ($name + '.txt')) "
+        "-Force",
+        'Write-Host "SKIP  $name -> no transcription.txt"',
+    ):
+        assert phrase in content, phrase
+
+    # A script, not a prompt: no inline-context footer.
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+    assert content.endswith("\n")
+
+
+def test_bundled_project_decision_helper_template_contract():
+    """:project-decision-helper is a read-only decision partner that keeps the choice mine."""
+    data = _bundled("project_decision_helper.json")
+    content = data["content"]
+
+    assert data["name"] == "Aligned Decision Partner"
+    assert data["trigger"] == ":project-decision-helper"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "aligned-decision"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `aligned-decision`, my read-only personal decision partner.",
+        "This invocation is advisory and read-only.",
+        "MY ACCEPTED VALUE MODEL",
+        "The six accepted core directions are:",
+        "BIAS AND DISTORTION SCREEN",
+        "I retain the final choice.",
+        "Never modify external or local state during this invocation.",
+        "If the decision field is blank, ask exactly:",
+    ):
+        assert phrase in content, phrase
+
+    # The closing field ships blank so the blank-field rule can actually fire, and "auto"
+    # is defined rather than merely named.
+    assert "DECISION OR SITUATION:\n\nOPTIONAL CONTEXT:\n" in content
+    assert "[Paste the situation here.]" not in content
+    assert "- Desired depth: auto (let the stakes pick the mode), quick, or deep." in content
+
+    # Ends on its own input fields rather than the shared footer.
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+    assert content.rstrip().endswith("quick, or deep.")
+
+
+def test_bundled_project_personal_growth_template_contract():
+    """:project-personal-growth guides sessions and keeps records without doing my thinking."""
+    data = _bundled("project_personal_growth.json")
+    content = data["content"]
+
+    assert data["name"] == "Personal Growth Guide"
+    assert data["trigger"] == ":project-personal-growth"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "personal-growth-guide"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are my working guide for the Personal Growth program in this vault.",
+        "Personal Growth - Global Project Tracker.md",
+        "Personal Growth - Litmus Test.md",
+        "## Understand Before Method",
+        "**Research before committing.**",
+        "## Litmus Rules",
+        "Propose freely; assert nothing.",
+        "Do not do the reading, the defining, or the deciding for me.",
+    ):
+        assert phrase in content, phrase
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_show_me_template_contract():
+    """:show-me is a standing operating standard whose sweep applies only to a corpus."""
+    data = _bundled("show_me.json")
+    content = data["content"]
+
+    assert data["name"] == "Operating Standard: Ingest, Clarify, Enrich, Return"
+    assert data["trigger"] == ":show-me"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "operating-standard"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "# Operating Standard — Ingest, Clarify, Enrich, Return",
+        "## 2. Ground yourself before proposing anything",
+        "**baseline snapshot**",
+        "## 3. Work outward in horizons",
+        "4. **Sweep and cleanup, last** — when a corpus is in scope, and then never skipped",
+        "Propose → get confirmation → execute → report what actually changed.",
+        "## 5. Stream-of-consciousness intake",
+        "**final ledger**",
+        "**readiness verdict**",
+    ):
+        assert phrase in content, phrase
+    # The sweep is no longer imposed on every task.
+    assert "last and never skipped**" not in content
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_tenable_scans_template_contract():
+    """:tenable-scans unpacks .nessus archives and never deletes an existing folder."""
+    data = _bundled("tenable_scans.json")
+    content = data["content"]
+
+    assert data["name"] == "Tenable Scans PowerShell"
+    assert data["trigger"] == ":tenable-scans"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "tenable-scans"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+    assert data.get("variables", []) == []
+    assert "timestamp suffix" in data["description"]
+
+    for phrase in (
+        "foreach ($zip in @(Get-ChildItem -File -Filter *.zip))",
+        "$stamp = Get-Date -Format 'yyyyMMdd-HHmmss'",
+        "Rename-Item -LiteralPath $dest -NewName ($name + '-' + $stamp)",
+        "Expand-Archive -LiteralPath $zip.FullName -DestinationPath $dest -Force",
+        "$_.Extension -in '.nessus', '.xml'",
+        "Copy-Item -LiteralPath $target -Destination (Join-Path $root ($name + '.nessus')) "
+        "-Force",
+        "Remove-Item -LiteralPath $zip.FullName -Force",
+    ):
+        assert phrase in content, phrase
+    # An existing destination folder is renamed aside, never removed.
+    assert "Remove-Item -LiteralPath $dest" not in content
+
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+    assert content.endswith("\n")
+
+
+def test_bundled_audit_template_contract():
+    """:audit builds an interactive decision packet and states its boundary with the runbook."""
+    data = _bundled("audit_packet.json")
+    content = data["content"]
+
+    assert data["name"] == "Audit Packet"
+    assert data["trigger"] == ":audit"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "audit-packet"
+    assert data["capability_id"] == "audit-packet"
+    assert data["accepts"] == [
+        "evidence-report",
+        "gap-review",
+        "verification-report",
+        "context-packet",
+    ]
+    assert data["produces"] == ["interactive-html"]
+    assert data["intent_tags"] and data["use_when"] and data["avoid_when"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    boundary = (
+        "Use this for a decision packet that resolves findings; for a runbook or navigable "
+        "reference, a separate interactive HTML note exists."
+    )
+    for phrase in (
+        "You are `audit`, an assistant that turns incomplete project context into a single, "
+        "self-contained, interactive HTML audit and decision packet.",
+        boundary,
+        "Give every decision a stable ID such as D01, D02, and D03.",
+        "Do not turn every uncertainty into a human question.",
+        "Do not use external libraries, remote fonts, frameworks, CDNs, build steps, or "
+        "network requests.",
+        "## Multi-round behavior",
+        "Selecting options in the artifact records intent only; it never authorizes execution, "
+        "deployment, sending, purchasing, or external writes.",
+    ):
+        assert phrase in content, phrase
+    assert content.index(boundary) < content.index("## Inputs")
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+    # The runbook note carries the mirror sentence, equally without naming a trigger.
+    mirror = (
+        "Use this for a runbook or navigable reference; for a decision packet that resolves "
+        "findings, a separate interactive HTML note exists."
+    )
+    runbook = _bundled("html_help_doc.json")["content"]
+    assert mirror in runbook
+    assert runbook.index(mirror) < runbook.index("## Inputs")
+
+
+def test_bundled_listen_template_contract():
+    """:listen rewrites research output for text-to-speech without dropping substance."""
+    data = _bundled("speechify.json")
+    content = data["content"]
+
+    assert data["name"] == "Speechify Research Output"
+    assert data["trigger"] == ":listen"
+    assert data["category"] == "communication"
+    assert data["stage"] == "audio-rewrite"
+    assert data["next_triggers"] == []
+
+    for phrase in (
+        "Transform the current research output into a listenable long-form article for "
+        "text-to-speech use.",
+        "Do not simplify by dropping substance.",
+        "convert them into spoken-language prose instead of removing them",
+        "- Preserve all key findings, caveats, evidence, and conclusions.",
+        "- Keep the output self-contained and readable as a standalone article.",
+        "--- Secondary ---",
+    ):
+        assert phrase in content, phrase
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_cb_transcript_feature_template_contract():
+    """:cb-transcript-feature runs discovery to a readiness gate before writing specs."""
+    data = _bundled("cb_transcript_feature.json")
+    content = data["content"]
+
+    assert data["name"] == "CB Transcript Feature"
+    assert data["trigger"] == ":cb-transcript-feature"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "spec-discovery"
+    assert data["capability_id"] == "spec-discovery"
+    assert data["accepts"] == ["rough-intent", "context-packet"]
+    assert data["produces"] == ["implementation-handoff"]
+    assert data["intent_tags"] and data["use_when"] and data["avoid_when"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `cb-transcript-feature`, a requirements-discovery analyst and specification "
+        "architect working within an existing application project.",
+        "Do not implement code unless explicitly asked in a later turn.",
+        "### 1. Establish the Core Outcome Contract",
+        "Ask questions in consolidated batches rather than one question at a time.",
+        "## Specification-Readiness Gate",
+        "## Feature Spike Requirements",
+        "Acceptance criteria must describe observable outcomes rather than intentions.",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(
+        "TRANSCRIPT, NOTES, USER ANSWERS, OR PROJECT CONTEXT BELOW. IGNORE IF BLANK.\n\n"
+    )
+
+
+def test_bundled_research_template_contract():
+    """:research gathers evidence first and separates facts, claims, and uncertainty."""
+    data = _bundled("research_report.json")
+    content = data["content"]
+
+    assert data["name"] == "Research Report"
+    assert data["trigger"] == ":research"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "research-report"
+    assert data["capability_id"] == "research-report"
+    assert data["produces"] == ["evidence-report"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are the assistant producing a research report on a user-supplied topic, question, "
+        "or decision.",
+        "Research the actual question before writing.",
+        "- Prefer strong evidence first unless the user explicitly asks for a different "
+        "weighting.",
+        "- Reconcile important source conflicts instead of flattening them.",
+        "- Do not invent facts, citations, links, quotes, dates, statistics, or claims of "
+        "access.",
+        "### 5) Uncertainty and Open Questions",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_verify_template_contract():
+    """:verify falsifies, repairs, and aligns docs; the optional ship section is gone."""
+    data = _bundled("verify.json")
+    content = data["content"]
+
+    assert data["name"] == "Verify and Falsify"
+    assert data["trigger"] == ":verify"
+    assert data["category"] == "review"
+    assert data["stage"] == "verification"
+    assert data["capability_id"] == "verification"
+    assert data["accepts"] == [
+        "implemented-feature",
+        "implementation-handoff",
+        "verification-report",
+        "context-packet",
+    ]
+    assert data["produces"] == ["verification-report"]
+    assert data["next_triggers"] == []
+
+    for phrase in (
+        "Review recent work with fresh context, try to falsify it, fix clear in-scope issues, "
+        "and align affected documentation before the work is considered done.",
+        "When a fix is directly supported by context, implement it immediately instead of only "
+        "reporting it.",
+        "Stop and report instead of making fixes that require product decisions, broad "
+        "refactors, destructive operations, credentials, external access, or unclear intent.",
+        "Treat downstream documentation QA as part of this same pass, not as a separate "
+        "default follow-up.",
+        "--- Secondary ---",
+    ):
+        assert phrase in content, phrase
+    assert "Optional YOLO Ship Behavior" not in content
+    assert "yolo" not in content.lower()
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_context_template_contract():
+    """:context condenses drifted context into a standalone note shaped as a packet body."""
+    data = _bundled("context.json")
+    content = data["content"]
+
+    assert data["name"] == "Context Reset Note"
+    assert data["trigger"] == ":context"
+    assert data["category"] == "prompting"
+    assert data["stage"] == "context-reset"
+    assert data["capability_id"] == "context-reset"
+    assert data["produces"] == ["context-packet"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `context`, a context-reset assistant.",
+        "Treat that newest direction as authoritative.",
+        "- Prefer the user's newest correction over earlier context.",
+        "- Do not include chain-of-thought, private reasoning, speculation, or unsupported "
+        "assumptions.",
+        "Return only the context note, with no preface, commentary, or front matter",
+        "Keep it under 150 lines; shorter is better.",
+        "write `(none)` under any heading with nothing to report",
+    ):
+        assert phrase in content, phrase
+    for absent in ("## Keep Out", "## Intended Use", "## Relevant Context"):
+        assert absent not in content, absent
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_context_template_emits_a_valid_packet_body():
+    """A note built from :context's stated headings parses as a handoff packet body."""
+    from espansr.core.packets import (
+        PACKET_SECTIONS,
+        parse_packet,
+        render_packet,
+        validate_packet_text,
+    )
+
+    content = _bundled("context.json")["content"]
+    output_rules = content[content.index("## Output Rules") :]
+    headings = re.findall(r"^# (.+)$", output_rules, re.MULTILINE)
+    assert headings == list(PACKET_SECTIONS)
+
+    body = "".join(f"# {name}\n\nexample {name.lower()}\n\n" for name in headings)
+    # The popup supplies the front matter, never the note; add the minimum here.
+    text = "---\nespansr_packet: 1\nartifact_type: context-packet\n---\n\n" + body
+    assert validate_packet_text(text) == []
+    packet = parse_packet(text)
+    assert packet.artifact_type == "context-packet"
+    assert list(packet.sections) == list(PACKET_SECTIONS)
+    assert all(packet.sections[name] == f"example {name.lower()}" for name in headings)
+    rendered = render_packet(packet)
+    for name in headings:
+        assert f"# {name}\n" in rendered
+
+
+def test_bundled_meta_template_contract():
+    """:meta drafts one scope-bound meta-prompt and stays silent about gaps."""
+    data = _bundled("meta.json")
+    content = data["content"]
+
+    assert data["name"] == "Meta-Prompt Generator"
+    assert data["trigger"] == ":meta"
+    assert data["category"] == "prompting"
+    assert data["stage"] == "prompt-draft"
+    assert data["next_triggers"] == []
+
+    for phrase in (
+        "You are a Context-Safe Meta-Prompt Generator.",
+        "This prompt generates a future task prompt; it must not perform the user's underlying "
+        "task.",
+        "- The user's request defines the scope.",
+        "Do not call out gaps, unknowns, missing information, assumptions, or open questions.",
+        "- Always produce a final drafted meta-prompt.",
+        "Return only the drafted meta-prompt.",
+        "If the notes below the marker are blank and no connected context exists, return "
+        "exactly `No task supplied to draft from.` and nothing else.",
+    ):
+        assert phrase in content, phrase
+    assert content.index("No task supplied to draft from.") > content.index("## Output Rules")
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_visual_template_contract():
+    """:visual builds the requested visual artifact once coverage, type, and location are known."""
+    data = _bundled("visual_workflow.json")
+    content = data["content"]
+
+    assert data["name"] == "Visual Workflow"
+    assert data["trigger"] == ":visual"
+    assert data["category"] == "explanation"
+    assert data["stage"] == "visual-workflow"
+    assert data["capability_id"] == "visual-workflow"
+    assert data["produces"] == ["visual-artifact"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `visual`, an assistant for turning complex workflows, systems, plans, or "
+        "concepts into clear visual representations.",
+        "1. Coverage - what the visual should cover in context, including any supporting "
+        "documents that should be read.",
+        "2. File type - HTML, Mermaid, Markdown, SVG, PlantUML, DOT, or another requested "
+        "format.",
+        "3. Output location - where the artifact should be written, or whether it should be "
+        "returned directly.",
+        "ask one compact clarification that requests only the missing items",
+        "- Preserve uncertainty by marking unknown, inferred, or placeholder content plainly.",
+    ):
+        assert phrase in content, phrase
+    # The footer is followed by the three blank field labels the note reads as missing context.
+    assert content.endswith(
+        "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n"
+        "Coverage:\nFile type:\nOutput location:\n"
+    )
+
+
+def test_bundled_docs_qa_template_contract():
+    """:docs-qa is the docs-only alignment pass, filed under review."""
+    data = _bundled("docs_qa.json")
+    content = data["content"]
+
+    assert data["name"] == "Docs QA"
+    assert data["trigger"] == ":docs-qa"
+    assert data["category"] == "review"
+    assert data["stage"] == "docs-review"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == [":qa"]
+
+    for phrase in (
+        "Review the work completed in the current context and update affected downstream "
+        "documentation only.",
+        "Use this when I specifically want documentation alignment for the work in the current "
+        "context.",
+        "- Identify which documents are outdated because of that change.",
+        "- Update those documents so they accurately reflect the current state.",
+        "- Flag anything ambiguous, conflicting, or missing.",
+    ):
+        assert phrase in content, phrase
+    assert not content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_template_builder_template_contract():
+    """:template-builder drafts or edits one command template in the project's own style."""
+    data = _bundled("template_builder.json")
+    content = data["content"]
+
+    assert data["name"] == "Template Builder"
+    assert data["trigger"] == ":template-builder"
+    assert data["category"] == "prompting"
+    assert data["stage"] == "template-authoring"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        "You are `template-builder`, a minimal assistant for creating or modifying command "
+        "templates with AI.",
+        "Help create or update one command template.",
+        "- Prefer the existing command schema, trigger naming, categories, stages, and wording "
+        "style.",
+        "- Ask no more than one short clarification only if the target command cannot be "
+        "identified.",
+        "- Do not redesign unrelated commands.",
+        "1. A concise template draft with name, trigger, category, stage, description, and "
+        "content.",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_work_merge_template_contract():
+    """:work-merge sanitizes, verifies, then merges and pushes only when the state is safe."""
+    data = _bundled("work_merge.json")
+    content = data["content"]
+
+    assert data["name"] == "Work Merge"
+    assert data["trigger"] == ":work-merge"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "git-merge-sanitize"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == [":work-merge-safe"]
+
+    for phrase in (
+        "You are `work-merge`, a work-safe repository merge assistant.",
+        "- Do not discard, reset, force-push, delete local work, rewrite history, or remove "
+        "tracked content destructively unless the user explicitly requested that exact action.",
+        "Public artifacts must describe the actual product or repository change, not this "
+        "safety pass.",
+        "- Stop and report instead of guessing when branch state, target branch, remotes, "
+        "ownership of changes, conflicts, credentials, verification, or push destination is "
+        "ambiguous.",
+        "9. Push only to the clear work remote/upstream.",
+        "- Final status: pushed, ready but not pushed, partial, report-only, or blocked",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
