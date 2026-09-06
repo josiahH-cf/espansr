@@ -44,7 +44,9 @@ def _assert_shim_points_to_target(shim_path: Path, target: Path) -> None:
     """Assert a shim reaches target, whether symlink or fallback wrapper."""
     assert shim_path.exists()
     if shim_path.is_symlink():
-        assert Path(os.readlink(shim_path)).resolve() == target.resolve()
+        from espansr.core.platform import symlink_target
+
+        assert symlink_target(shim_path, shim_path.parent) == target.resolve()
         return
 
     text = shim_path.read_text(encoding="utf-8")
@@ -157,12 +159,21 @@ def test_is_user_bin_on_path_detects_entry(tmp_path, monkeypatch):
     from espansr.core import platform as plat
     from espansr.core.platform import is_user_bin_on_path
 
-    monkeypatch.setattr(plat, "get_platform", lambda: "linux")
+    # A drive-letter path cannot live inside a colon-joined PATH, so build the
+    # environment with the separator and platform of the host running the test.
+    if os.name == "nt":
+        monkeypatch.setattr(plat, "get_platform", lambda: "windows")
+        other = ["C:\\Windows", "C:\\Windows\\System32"]
+        sep = ";"
+    else:
+        monkeypatch.setattr(plat, "get_platform", lambda: "linux")
+        other = ["/usr/bin", "/bin"]
+        sep = ":"
     user_bin = tmp_path / "bin"
     user_bin.mkdir()
 
-    env_with = {"PATH": f"/usr/bin:{user_bin}:/bin"}
-    env_without = {"PATH": "/usr/bin:/bin"}
+    env_with = {"PATH": sep.join([other[0], str(user_bin), other[1]])}
+    env_without = {"PATH": sep.join(other)}
 
     assert is_user_bin_on_path(user_bin, env=env_with) is True
     assert is_user_bin_on_path(user_bin, env=env_without) is False
@@ -258,3 +269,23 @@ def test_ensure_command_shim_wrapper_fallback(tmp_path, monkeypatch):
     mode = shim.stat().st_mode
     if os.name != "nt":
         assert mode & stat.S_IXUSR
+
+
+def test_symlink_target_strips_windows_extended_prefix(tmp_path, monkeypatch):
+    """Windows readlink returns \\\\?\\-prefixed absolute targets; compare them plainly."""
+    from espansr.core import platform as plat
+
+    target = tmp_path / "venv" / "bin" / "espansr"
+    target.parent.mkdir(parents=True)
+    target.write_text("")
+    shim = tmp_path / "bin" / "espansr"
+    shim.parent.mkdir()
+
+    prefixed = "\\\\?\\" + str(target) if os.name == "nt" else str(target)
+    monkeypatch.setattr(plat.os, "readlink", lambda _path: prefixed)
+    assert plat.symlink_target(shim, shim.parent) == target.resolve()
+
+    monkeypatch.setattr(
+        plat.os, "readlink", lambda _path: os.path.join("..", "venv", "bin", "espansr")
+    )
+    assert plat.symlink_target(shim, shim.parent) == target.resolve()

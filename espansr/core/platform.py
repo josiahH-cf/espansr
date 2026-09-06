@@ -328,6 +328,21 @@ def get_user_bin_dir() -> Path:
     return Path.home() / ".local" / "bin"
 
 
+def symlink_target(shim_path: Path, bin_dir: Path) -> Path:
+    r"""Return the resolved target of the symlink at ``shim_path``.
+
+    ``os.readlink`` on Windows returns absolute targets in extended-length form
+    (``\?\C:\...``); strip that prefix so the result compares equal to a
+    normally spelled path. Relative targets resolve against ``bin_dir``.
+    """
+    raw = os.readlink(shim_path)
+    if raw.startswith("\\\\?\\UNC\\"):
+        raw = "\\\\" + raw[len("\\\\?\\UNC\\") :]
+    elif raw.startswith("\\\\?\\"):
+        raw = raw[len("\\\\?\\") :]
+    return (bin_dir / raw).resolve()
+
+
 def is_user_bin_on_path(
     user_bin: Optional[Path] = None,
     env: Optional[Mapping[str, str]] = None,
@@ -438,7 +453,7 @@ def ensure_command_shim(
     # Inspect existing entry.
     if shim_path.is_symlink():
         try:
-            current = (bin_dir / os.readlink(shim_path)).resolve()
+            current = symlink_target(shim_path, bin_dir)
         except OSError:
             current = None
         if current == target.resolve():
