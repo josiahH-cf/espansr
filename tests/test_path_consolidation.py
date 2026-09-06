@@ -174,8 +174,8 @@ def test_get_candidate_paths_wsl2_includes_windows(tmp_path):
     assert tmp_path / ".config" / "espanso" in paths
 
 
-def test_get_candidate_paths_wsl2_falls_back_to_discovered_windows_users(tmp_path):
-    """When cmd.exe username lookup fails, discovered Windows profiles are still used."""
+def test_get_candidate_paths_wsl2_falls_back_to_single_discovered_windows_user(tmp_path):
+    """When cmd.exe username lookup fails, a single discovered Windows profile is used."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
         patch("espansr.core.platform.get_windows_username", return_value=None),
@@ -189,6 +189,26 @@ def test_get_candidate_paths_wsl2_falls_back_to_discovered_windows_users(tmp_pat
     assert Path("/mnt/c/Users/Alice/AppData/Roaming/espanso") in paths
     assert Path("/mnt/c/Users/Alice/.config/espanso") in paths
     assert Path("/mnt/c/Users/Alice/.espanso") in paths
+
+
+def test_clean_stale_never_touches_other_windows_users(tmp_path):
+    """Candidate dirs (and therefore cleanup targets) exclude other Windows profiles."""
+    with (
+        patch("espansr.core.platform.get_platform", return_value="wsl2"),
+        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
+        patch(
+            "espansr.core.platform._discover_wsl_windows_usernames",
+            return_value=["Alice", "Bob", "Carol"],
+        ),
+        patch("pathlib.Path.home", return_value=tmp_path),
+    ):
+        from espansr.integrations.espanso import _get_candidate_paths
+
+        paths = _get_candidate_paths()
+
+    posix = [p.as_posix() for p in paths]
+    assert "/mnt/c/Users/Alice/AppData/Roaming/espanso" in posix
+    assert not any("/Bob/" in p or "/Carol/" in p for p in posix)
 
 
 def test_wsl_candidate_order_prefers_windows_roaming_first(tmp_path):
