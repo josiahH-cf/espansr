@@ -31,7 +31,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
+- Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
@@ -94,6 +94,18 @@ the controlling code path, plans, fixes, verifies, and reviews affected areas.
 Use `:verify` for fresh-context verification, repair, and affected documentation
 alignment. Use `:docs-qa` when the requested work is limited to documentation
 alignment.
+
+Use `:adversary-review` for an independent, read-only adversarial review of work
+that is claimed complete. It re-derives the requirements from the spec of record,
+verifies claims by running the checks rather than reading the summary, and answers
+in order whether the spec was executed in full, whether the application is stable,
+what changed outside the spec, what risk the change carries, what loose ends
+remain, what work and tests are missing, how the spec itself should be tightened,
+and which governance or documentation updates are due, closing with a PASS, PASS
+WITH FOLLOW-UPS, or FAIL verdict derived from tagged severities. It differs from
+`:verify`, which repairs clear issues and aligns docs in the same pass, and from
+`:gaps`, which challenges plans and research rather than delivered work. It never
+fixes anything; its findings are the input for a `:feedback` cycle.
 
 Use `:feedback` to apply feedback from the current prompt cycle to an existing
 project and then verify the change. It folds the accepted current-cycle

@@ -1487,10 +1487,9 @@ def test_bundled_quick_help_lists_troubleshoot_prompt():
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "espansr_help.json").read_text(encoding="utf-8"))
 
-    assert (
-        ":troubleshoot — debug with context checks, research, planning, fixing, and verification"
-        in data["content"]
-    )
+    rows = [line.strip() for line in data["content"].splitlines()]
+    row = next(line for line in rows if line.startswith(":troubleshoot "))
+    assert row.endswith("— debug with context checks, research, planning, fixing, and verification")
 
 
 def test_bundled_gaps_template_contract_preserves_review_modes():
@@ -1678,6 +1677,80 @@ def test_bundled_project_systems_template_contract():
     assert content.rstrip().endswith(
         "a fresh session resumes from files alone; and tool roles are repeatable."
     )
+
+
+def test_bundled_adversary_review_template_contract():
+    """:adversary-review is an independent, read-only review of work claimed complete."""
+    from espansr.core.output_contract import check_output
+
+    repo_root = Path(__file__).resolve().parents[1]
+    data = json.loads(
+        (repo_root / "templates" / "adversary_review.json").read_text(encoding="utf-8")
+    )
+    content = data["content"]
+
+    assert data["name"] == "Adversary Review"
+    assert data["trigger"] == ":adversary-review"
+    assert data["category"] == "review"
+    assert data["stage"] == "adversarial-review"
+    assert data["capability_id"] == "adversarial-review"
+    assert data["accepts"] == [
+        "implemented-feature",
+        "implementation-handoff",
+        "verification-report",
+        "context-packet",
+    ]
+    assert data["produces"] == ["feedback-directives"]
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    # Adversarial stance: claims are verified, the spec of record is re-derived, nothing is fixed.
+    for phrase in (
+        "You are `adversary-review`, an independent adversarial reviewer",
+        "Nothing is done until you have seen it done.",
+        "Review against the spec of record, not the implementer's restatement of it.",
+        "Prefer running to reading wherever running is possible",
+        "Report unverified as unverified.",
+        "Stay independent and read-only.",
+        "A reviewer never fixes and never accepts its own work",
+        "do not commit, push, publish, or deploy",
+        "Do not expand the request.",
+    ):
+        assert phrase in content, phrase
+
+    # Every question the review must answer has its own lens.
+    for lens in (
+        "**Spec execution.**",
+        "**Stability.**",
+        "**Collateral impact.**",
+        "**Risk.**",
+        "**Loose ends.**",
+        "**Missing work and test coverage.**",
+        "**Spec improvements.**",
+        "**Governance and documentation.**",
+    ):
+        assert lens in content, lens
+
+    # Severity scale and a verdict derived from it.
+    for phrase in ("**Blocker**", "**Major**", "**Minor**", "**Note**"):
+        assert phrase in content, phrase
+    assert "VERDICT: <PASS | PASS WITH FOLLOW-UPS | FAIL>" in content
+    assert "The verdict follows from the findings" in content
+
+    # The output headings match the checkable contract, and the contract works.
+    contract = data["output_contract"]
+    assert contract["artifact_type"] == "feedback-directives"
+    for section in contract["required_sections"]:
+        assert section in content, section
+    skeleton = "\n".join(
+        ["ADVERSARY REVIEW", "VERDICT: PASS WITH FOLLOW-UPS"]
+        + [s for s in contract["required_sections"] if s != "ADVERSARY REVIEW"]
+    )
+    assert check_output(contract, skeleton).passed
+    assert not check_output(contract, skeleton.replace("VERDICT: PASS WITH FOLLOW-UPS", "")).passed
+    assert not check_output(contract, skeleton + "\nVERDICT: FAIL").passed
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
 def test_bundled_telegram_template_contract():

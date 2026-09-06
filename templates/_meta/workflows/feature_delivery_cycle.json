@@ -15,6 +15,7 @@
     "human-litmus",
     "feature-handoff",
     "verification",
+    "adversarial-review",
     "feedback-apply",
     "context-reset"
   ],
@@ -54,6 +55,12 @@
       "role": "verification",
       "x": 690,
       "y": 116
+    },
+    {
+      "capability": "adversarial-review",
+      "role": "challenge",
+      "x": 914,
+      "y": 176
     },
     {
       "capability": "feedback-apply",
@@ -154,6 +161,34 @@
       "short": "reverify"
     },
     {
+      "source": "feature-handoff",
+      "target": "adversarial-review",
+      "label": "Review the implemented feature adversarially against the handoff after a separate implementation run.",
+      "artifact": "implementation-handoff",
+      "short": "adversary review"
+    },
+    {
+      "source": "verification",
+      "target": "adversarial-review",
+      "label": "Challenge verified work independently before it is accepted.",
+      "artifact": "verification-report",
+      "short": "challenge"
+    },
+    {
+      "source": "adversarial-review",
+      "target": "feedback-apply",
+      "label": "Apply the accepted findings from the adversarial review.",
+      "artifact": "feedback-directives",
+      "short": "apply findings"
+    },
+    {
+      "source": "feedback-apply",
+      "target": "adversarial-review",
+      "label": "Re-review the corrected implementation adversarially.",
+      "artifact": "verification-report",
+      "short": "re-review"
+    },
+    {
       "source": "context-reset",
       "target": "goal-refinement",
       "label": "Use a compact handoff as the starting context.",
@@ -198,6 +233,13 @@
     {
       "source": "context-reset",
       "target": "feedback-apply",
+      "label": "Use a compact handoff as the starting context.",
+      "artifact": "context-packet",
+      "short": "feeds any node"
+    },
+    {
+      "source": "context-reset",
+      "target": "adversarial-review",
       "label": "Use a compact handoff as the starting context.",
       "artifact": "context-packet",
       "short": "feeds any node"
