@@ -44,11 +44,37 @@ Capability IDs must stay unique. `espansr validate` warns about duplicates,
 and importing a template whose explicit ID is already owned by another
 template conservatively clears the incoming ID.
 
+## Bundled capabilities
+
+| Capability ID | Trigger | Produces |
+|---------------|---------|----------|
+| `goal-refinement` | `:goal` | `goal-contract` |
+| `research-report` | `:research` | `evidence-report` |
+| `gap-review` | `:gaps` | `gap-review` |
+| `visual-workflow` | `:visual` | `visual-artifact` |
+| `html-help-doc` | `:html-help-doc` | `interactive-html` |
+| `audit-packet` | `:audit` | `interactive-html` |
+| `experience-audit` | `:ui-ux-audit` | `interactive-html` |
+| `spec-discovery` | `:cb-transcript-feature` | `implementation-handoff` |
+| `human-litmus` | `:litmus` | `human-litmus` |
+| `feature-handoff` | `:feature` | `implementation-handoff` |
+| `verification` | `:verify` | `verification-report` |
+| `adversarial-review` | `:adversary-review` | `feedback-directives` |
+| `feedback-apply` | `:feedback` | `verification-report` |
+| `troubleshooting` | `:troubleshoot` | `verification-report` |
+| `context-reset` | `:context` | `context-packet` |
+| `reality` (derived from `reality.json`) | `:reality-max` | `evidence-report` |
+| `reality_min` (derived from `reality_min.json`) | `:reality-min` | `evidence-report` |
+
+`:verify` accepts a `verification-report` as well as implemented work and
+handoffs, so re-verifying after `:feedback` is a direct edge. The other
+bundled notes carry no capability metadata and stay directly invocable.
+
 ## Workflow manifests
 
 Bundled topology lives in exactly one place: JSON manifests under
 `templates/_meta/workflows/`. Bundled prompts keep `next_triggers` empty and
-never name another trigger in their body — at runtime the catalog derives
+never route the user to another trigger — at runtime the catalog derives
 neighboring capabilities from the manifests and shows them in `:coms`, and
 nothing is ever written back into template files.
 
@@ -82,12 +108,18 @@ Two workflows ship bundled:
 - **`evidence-research-cycle`** — research (`:research`), independent
   challenge (`:gaps`), visualization (`:visual`), interactive HTML
   presentation (`:html-help-doc`), and context transfer (`:context`). Start
-  anywhere; a gap review can loop back to research.
+  anywhere; a gap review can loop back to research, and a diagram from
+  `:visual` can be embedded by `:html-help-doc`
+  (`visual-workflow → html-help-doc`).
 - **`feature-delivery-cycle`** — goal refinement (`:goal`), research,
   challenge, human litmus (`:litmus`), implementation handoff (`:feature`),
   verification (`:verify`), adversarial review (`:adversary-review`), bounded
   feedback (`:feedback`), and context transfer. Every node is an entry point;
-  `:feature` never requires a predecessor.
+  `:feature` never requires a predecessor. A refined goal can go straight to
+  human checks (`goal-refinement → human-litmus`), and a compiled handoff can
+  have its checklist audited before the build
+  (`feature-handoff → human-litmus`) as well as feed verification and
+  adversarial review after a separate implementation run.
 
 User manifests can be added under the live template store's
 `_meta/workflows/` directory. That directory is local-only (`_meta/` is
@@ -170,6 +202,13 @@ requested_outcome: gap-review
 ...
 ```
 
+The `:context` note (`context-reset`) writes its output in exactly these seven
+`# ` sections — Objective, Confirmed facts and evidence, Decisions,
+Assumptions, Material unknowns, Evidence references, Candidate capabilities —
+with `(none)` under any section that has nothing to report and no front matter
+of its own; the packet tooling adds the front-matter header when the note is
+saved as a packet.
+
 Rules the implementation guarantees:
 
 - Preview never persists; only the explicit **Save packet** action writes a
@@ -193,12 +232,17 @@ output, reports **every** unmet obligation, and exits nonzero on failure.
 Structural conformance never claims semantic quality — a boilerplate section
 can pass structurally and still fail human review.
 
-The bundled `:feature` contract requires, among others: `INPUT COVERAGE`,
-exactly one `CLARIFICATION STATUS: REQUIRED|NOT REQUIRED` line,
-`ARCHITECTURE OUTCOME`, `BEHAVIOR OUTCOME`, `HUMAN LITMUS` with at least one
-`If this was built correctly:` entry, `PRESERVATION SET`, the
-`FINAL IMPLEMENTATION META-PROMPT`, and a `REALITY SUMMARY` — and it fails
-any output whose human verdicts were prefilled instead of left blank.
+The bundled `:feature` contract checks one final-artifact reply — the reply
+that follows your approval of the pre-write packet — and never the
+approval-round packet itself (the note says so beside the packet). It
+requires the `FINAL IMPLEMENTATION META-PROMPT` and `REALITY SUMMARY`
+sections; at least one `If this was built correctly:` litmus entry with a
+`Model verdict:` and a `Human verdict:` field; the `ALL_GATES_GREEN` and
+`BUDGET_EXHAUSTED` terminal states — and it fails any output whose human
+verdicts were prefilled instead of left blank. The `INPUT COVERAGE`,
+`CLARIFICATION STATUS`, `ARCHITECTURE OUTCOME`, `BEHAVIOR OUTCOME`, and
+`PRESERVATION SET` blocks still belong to the packet the note prints; they are
+not contract obligations.
 
 ## The `:litmus` capability
 
