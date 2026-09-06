@@ -191,7 +191,7 @@ exit 0
 
     if completed.returncode == 0:
         print(ok("Espanso install/start wrapper completed with verification"))
-        print("Next: run `espansr doctor` and `espansr setup` from WSL")
+        print("Next: run `espansr setup`, then `espansr doctor` from WSL")
         return 0
 
     if completed.returncode == 2:
