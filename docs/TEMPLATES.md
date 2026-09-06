@@ -34,7 +34,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - File helpers: `:pocket-extract`
@@ -55,8 +55,10 @@ Use `:explain` as the single command for current-context distillation,
 source-grounded summarization, and plain-English explanation. It produces a
 faithful one-page result of three paragraphs, bullets, and an occasional inline
 visual, follows optional focus and voicing direction, and stays read-only. Use
-`:reality` for a comprehensive account of what the context created or would
-create in reality, and `:gaps` for critical gap or first-principles review.
+`:reality-max` for a comprehensive account of what the context created or would
+create in reality, with tables and workflow diagrams where they help, and
+`:reality-min` for the same account as two sentences and at most ten plain
+bullets. Use `:gaps` for critical gap or first-principles review.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.
