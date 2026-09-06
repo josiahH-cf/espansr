@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+No unreleased changes yet.
+
+## [1.2.0] — 2026-09-06
+
 ### Added
 
 - **Windows launcher shim** — `install.ps1` writes
