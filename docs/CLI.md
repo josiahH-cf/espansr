@@ -18,6 +18,7 @@ The daily command lanes are:
 | Starters | `espansr starters` | Bundled starter templates | Checks or applies bundled starter updates |
 | Retire | `espansr retire TARGET` | Local live templates | Backs up, deletes, then refreshes Espanso YAML output |
 | Remote | `espansr remote ...` | Remote configuration | Sets, reports, or removes the Git remote |
+| Sync | `espansr sync` | Project checkout and recorded install | Pulls with rebase, commits and pushes local changes, then reruns the installer |
 
 ### `espansr publish`
 
@@ -136,9 +137,9 @@ espansr list
 
 ### `espansr setup`
 
-Run post-install setup: copies bundled templates, validates them, detects Espanso, performs an initial publish, and generates the launcher, commands popup trigger, and orchestratr manifest.
+Run post-install setup: copies missing bundled templates into the live store, validates them, detects Espanso, generates the `:aopen` launcher, the `:coms` commands popup trigger, and the `:sync` trigger (`espansr-launcher.yml`, `espansr-commands.yml`, and `espansr-sync.yml`), performs an initial publish, writes the orchestratr manifest when orchestratr is found, and ensures the PATH-visible `espansr` command shim.
 
-`setup` is bootstrap-only for bundled templates: it copies missing starter templates, but it does not overwrite existing live templates. Use `espansr starters --apply` if bundled starter templates change later and you want to refresh the live store.
+The bundled-template copy step never overwrites an existing live file, but the initial publish that follows (when Espanso is detected) applies bundled template updates exactly as `espansr publish` does: missing or changed bundled templates are applied to the live store, a changed local copy is backed up under `_versions/` before it is replaced, renamed starters are migrated, and retired starters are removed. Run `espansr starters` first if you want to see that drift before setup or publish applies it.
 
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.
@@ -149,6 +150,20 @@ ephemeral scratchpad pinned at the bottom of the popup where you can type or
 paste any command, add context, and copy it back out. The scratchpad is
 throwaway and never saved.
 
+The generated `:sync` trigger runs `espansr sync` through the console entry
+point, so its progress shows in a window; see [`espansr sync`](#espansr-sync).
+
+The command shim is a real `espansr` executable in the user bin directory, so
+the command resolves in non-interactive shells such as subprocess calls,
+`.desktop` launchers, systemd user units, IDE terminals, and RustDesk/RDP
+session shells, where a shell alias never does. On Linux, macOS, and WSL2 it
+is a symlink at `~/.local/bin/espansr` to the venv's executable (a small
+wrapper script where symlinks are unsupported); on Windows the user bin
+directory is the venv `Scripts` folder that `install.ps1` persists to the user
+PATH. When a stray non-symlink file blocks the shim path, setup reports a
+conflict and `--force-shim` overwrites it. On POSIX, setup warns when the bin
+directory is not on PATH.
+
 On WSL2, rerun `espansr setup` after changing install paths or launcher behavior if you need to refresh the generated Windows-side `espansr-launcher.yml` trigger file.
 
 ```bash
@@ -156,12 +171,13 @@ espansr setup                     # standard setup
 espansr setup --verbose           # show per-file detail
 espansr setup --strict            # return exit code 1 if Espanso not found
 espansr setup --dry-run           # preview without writing
+espansr setup --force-shim        # overwrite a file blocking the command shim path
 espansr setup --verbose --strict  # flags are combinable
 ```
 
 ### `espansr validate`
 
-Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers) and warning-only collisions with generated system triggers such as `:aopen` and `:coms`.
+Validate templates for common Espanso issues (empty triggers, short triggers, bad prefixes, unmatched placeholders, unused variables, duplicate triggers) and warning-only collisions with the generated system triggers `:aopen`, `:coms`, and `:sync`. Exit code 1 when any error is found; warnings alone exit 0.
 
 ```bash
 espansr validate
@@ -178,13 +194,15 @@ espansr import /path/to/templates/
 
 ### `espansr doctor`
 
-Run diagnostic health checks: Python version, config directory, templates, Espanso config, binary, launcher file, and template validation.
+Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning.
+
+Like `list`, `validate`, and `gui`, `doctor` first pulls the configured template remote when one is set and `remote.auto_pull` is on (the default); a failed auto-pull is logged and never blocks the command.
 
 ```bash
 espansr doctor
 ```
 
-Exit code 0 if all checks pass, 1 if any fail.
+Exit code 0 if no check fails, 1 if any check is `[FAIL]`. Shim and PATH warnings do not change the exit code.
 
 ### `espansr wsl-install-espanso`
 
@@ -197,6 +215,9 @@ espansr wsl-install-espanso
 Use this only when you are intentionally running `espansr` inside WSL2. It
 does not install `espansr` into Windows PowerShell, and it does not merge WSL
 PATH or shell setup with Windows.
+
+When it succeeds, run `espansr setup` and then `espansr doctor` from WSL:
+`doctor` reports failures until `setup` has generated the launcher files.
 
 ### `espansr refresh`
 
@@ -220,6 +241,60 @@ auto-detecting the repository folder from the installed package.
 
 `espansr record-install` is an installer helper that writes this metadata; you
 do not normally run it by hand.
+
+### `espansr sync`
+
+Update this machine in one step: pull the project repository, commit and push
+local changes, then reinstall.
+
+```bash
+espansr sync             # pull --rebase, commit and push local changes, reinstall
+espansr sync --no-push   # pull and reinstall only
+```
+
+`sync` resolves the repository folder and installer from the same recorded
+install metadata as `refresh`, then runs `git fetch --prune` and
+`git pull --rebase` (uncommitted changes are stashed first and restored
+afterwards). Unless `--no-push` is given it then stages everything
+(`git add -A`), commits with the fixed message `espansr sync: local changes`,
+and pushes when the branch is ahead of its upstream; a failed push is reported
+and the reinstall still runs. Finally it reruns the recorded installer exactly
+as `refresh` does.
+
+On a rebase conflict, `sync` aborts the rebase, restores the stash, lists the
+conflicted files, and skips the reinstall so a broken tree is never
+reinstalled (exit code 1); the same applies when the restored stash conflicts.
+When the folder is not a git checkout, or `git fetch` fails (for example
+offline), `sync` skips the pull and push and reinstalls the current checkout.
+
+The generated `:sync` Espanso trigger runs this command (see `setup`), and the
+GUI toolbar **Sync** button runs the same flow; the GUI refuses to start it
+while the editor has unsaved changes.
+
+### `espansr configure-remote-desktop`
+
+Tune Espanso for the machine's role so espansr expansions fire and paste
+reliably, including over RustDesk/RDP.
+
+```bash
+espansr configure-remote-desktop           # remote-desktop host mode
+espansr configure-remote-desktop --local   # local workstation mode (clipboard preserved)
+espansr configure-remote-desktop --auto    # workstation mode unless host mode was declared
+espansr configure-remote-desktop --revert  # remove the espansr-managed remote-desktop settings
+```
+
+- With no flag: remote-desktop host mode, for a machine you reach over
+  RustDesk/RDP.
+- `--local`: workstation mode, for a machine you sit at physically;
+  expansions paste correctly while your clipboard is preserved.
+- `--auto`: applies workstation mode unless the machine was previously put in
+  host mode, which then stays sticky across reinstalls and `espansr refresh`.
+- `--revert`: removes the espansr-managed remote-desktop settings.
+
+`install.ps1` runs this on every Windows install: `--auto` by default, host
+mode with `.\install.ps1 -RemoteDesktop`, and workstation mode with
+`.\install.ps1 -LocalOnly`. The command restarts Espanso after a change and
+exits 1 when no Espanso config directory is detected.
 
 ### `espansr completions`
 
@@ -265,9 +340,9 @@ output no longer contains the retired trigger.
 
 Validate a model-generated output file against a template's structural output
 contract (for templates that declare one, such as `:feature` and `:litmus`).
-For a multi-turn prompt like `:feature`, the checked file is the complete run
-transcript — the approval-round packet plus the final delivery pasted as one
-text — not a single turn in isolation.
+For `:feature`, the checked file is the final-artifact reply that follows your
+approval — the reply carrying the FINAL IMPLEMENTATION META-PROMPT and REALITY
+SUMMARY — not the approval-round packet, which the contract never checks.
 Validation is read-only, reports every unmet obligation rather than only the
 first, and proves structural conformance only — it never claims semantic
 correctness.
@@ -326,4 +401,8 @@ espansr --version
 - **`--dry-run`** — Available on `publish`, `retire`, `starters`, and `setup`. Previews changes without writing files.
 - **`--verbose`** — Available on `starters` and `setup`. Shows per-file detail.
 - **`--strict`** — Available on `setup`. Returns exit code 1 if Espanso is not detected.
+- **`--force-shim`** — Available on `setup`. Overwrites a non-symlink file that blocks the command shim path.
+- **`--no-push`** — Available on `sync`. Pulls and reinstalls without committing or pushing local changes.
+- **Auto-pull** — `doctor`, `list`, `validate`, and `gui` first pull the configured template remote when `remote.auto_pull` is on (the default). A failed pull is logged and never blocks the command.
+- **Exit codes** — `starters` exits 1 when it finds drift (without `--apply`) or when `--apply` skipped invalid local JSON, and 2 when the report has errors or `--force` is given without `--apply`. `import DIR` exits 0 whenever at least one file imported, 1 only when every file failed or the path does not exist. `validate` exits 1 on errors, `doctor` exits 1 on any failed check, `sync` exits 1 when a conflict stops the reinstall, and `check-output` uses 0/1/2/3 as described above.
 - **Colored output** — CLI output uses colors when connected to a TTY. Respects the `NO_COLOR` environment variable.

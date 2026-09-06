@@ -42,9 +42,9 @@ Use PowerShell for the Windows command, not Command Prompt. If PowerShell blocks
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, `:sync`, and template expansion.
+The installer creates a local `.venv`, installs `espansr` in editable mode, runs `espansr setup`, copies bundled starter templates, validates them, records the install location for `espansr refresh` and `espansr sync`, and smoke-tests the CLI. When Espanso is already available, setup also generates the managed Espanso files for `:aopen`, `:coms`, `:sync`, and template expansion, and it creates a PATH-visible `espansr` command shim so the command works in non-interactive shells.
 
-On Windows, the installer also looks for Espanso and attempts service registration/startup when it is available. On Linux, macOS, and WSL2, Espanso remains an external dependency.
+On Windows, the installer also looks for Espanso, attempts service registration/startup when it is available, and runs `espansr configure-remote-desktop --auto` to tune Espanso for the machine's role (`-RemoteDesktop` and `-LocalOnly` force host or workstation mode). On Linux and macOS, `install.sh` installs Espanso when it is missing (`.deb` or AppImage on Linux, Homebrew on macOS), starts it, seeds its default config, and on GNOME/Wayland offers to run Chrome, VS Code, Obsidian, and gnome-terminal under XWayland so triggers fire inside them; pass `--no-espanso` or `--no-xwayland-apps` to opt out, and see [docs/VERIFY.md](docs/VERIFY.md) for every side effect and the revert command. On WSL2, Espanso must run on the Windows side (`espansr wsl-install-espanso`).
 
 ## Fresh Reinstall Reset
 
@@ -75,7 +75,7 @@ espansr doctor
 espansr gui
 ```
 
-After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup — it lists every trigger with previews, and you can also describe the job you need ("challenge finished research") or pick what you have and what you want to produce to surface the right prompt without remembering its trigger. See [docs/PROCESS.md](docs/PROCESS.md).
+After Espanso is installed and running, type `:aopen` anywhere Espanso expands text to open the editor. Type `:coms` to open the command popup — it lists every trigger with previews, and you can also describe the job you need ("challenge finished research") or pick what you have and what you want to produce to surface the right prompt without remembering its trigger. See [docs/PROCESS.md](docs/PROCESS.md). Type `:sync` to update this machine: it runs `espansr sync`, which pulls the repository, commits and pushes your local changes, and reruns the installer; `espansr sync --no-push` pulls and reinstalls without committing or pushing.
 
 Use `espansr publish` after template changes if you want to refresh Espanso output from the CLI. The GUI also publishes from the toolbar and saves edited templates into the same local template store.
 
@@ -109,8 +109,11 @@ For an intentional WSL2 install, install/start Windows-side Espanso from WSL wit
 
 ```bash
 espansr wsl-install-espanso
+espansr setup
 espansr doctor
 ```
+
+Run `setup` before `doctor`: `doctor` fails until `setup` has generated the launcher files.
 
 If you meant to install on the Windows host instead, open Windows PowerShell in this repository and run `.\install.ps1`.
 
