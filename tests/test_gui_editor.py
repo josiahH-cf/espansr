@@ -144,9 +144,17 @@ def browser(qtbot, _patch_browser_tm):
 
 
 def test_browser_new_signal(browser, qtbot):
-    """Clicking 'New' emits the new_template_requested signal."""
+    """Clicking the real 'New' button emits the new_template_requested signal."""
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtWidgets import QPushButton
+
+    browser.show()
+    qtbot.waitExposed(browser)
+    new_buttons = [b for b in browser.findChildren(QPushButton) if b.text() == "New"]
+    assert len(new_buttons) == 1
+
     with qtbot.waitSignal(browser.new_template_requested, timeout=1000):
-        browser.new_template_requested.emit()
+        qtbot.mouseClick(new_buttons[0], Qt.MouseButton.LeftButton)
 
 
 # ── Browser: Delete with undo ──────────────────────────────────────────────

@@ -205,32 +205,11 @@ class TestThemeComboBox:
     """Toolbar contains an Auto/Dark/Light combo box for runtime switching."""
 
     @pytest.fixture()
-    def window(self, qtbot, tmp_path):
-        """Create a patched MainWindow."""
-        import contextlib
-        from unittest.mock import patch as _patch
-
+    def window(self, make_window):
+        """Create a patched MainWindow via the shared conftest factory."""
         from espansr.core.config import Config
-        from espansr.ui.main_window import MainWindow
 
-        with contextlib.ExitStack() as stack:
-            stack.enter_context(_patch("espansr.ui.main_window.get_config", return_value=Config()))
-            stack.enter_context(_patch("espansr.ui.main_window.get_config_manager"))
-            stack.enter_context(_patch("espansr.ui.template_browser.get_config"))
-            stack.enter_context(_patch("espansr.ui.template_editor.get_config"))
-            stack.enter_context(
-                _patch("espansr.integrations.espanso.get_match_dir", return_value=None)
-            )
-            stack.enter_context(
-                _patch("espansr.integrations.espanso.get_espanso_config_dir", return_value=tmp_path)
-            )
-            stack.enter_context(
-                _patch("espansr.integrations.espanso._get_candidate_paths", return_value=[])
-            )
-            stack.enter_context(_patch("espansr.ui.template_browser.get_template_manager"))
-            window = MainWindow()
-            qtbot.addWidget(window)
-            yield window
+        return make_window(Config())
 
     def test_combo_exists_in_toolbar(self, window):
         """MainWindow toolbar contains a theme QComboBox."""

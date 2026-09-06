@@ -184,8 +184,9 @@ def test_feature_accepts_upstream_artifacts_without_requiring_them():
     content = _content()
     for phrase in ("goal contract", "research report", "gap review", "human-litmus"):
         assert phrase in content.lower(), phrase
-    assert "must never require the user to run" in content or (
-        "does not require" in content.lower()
+    assert (
+        "The absence of upstream artifacts must never require the user to run another "
+        "command or produce anything first" in content
     )
 
 
@@ -203,7 +204,7 @@ def test_feature_requires_exactly_one_clarification_status():
 def test_feature_clarification_required_contract():
     content = _content()
     # When REQUIRED: stable IDs, why answers differ, recommendation, safe default.
-    assert "stable" in content.lower()
+    assert "identify each blocking decision with a stable question ID" in content
     assert "No safe default" in content
     assert "Recommendation:" in content
 

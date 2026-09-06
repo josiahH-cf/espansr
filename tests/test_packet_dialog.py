@@ -5,11 +5,7 @@ Save action writes a file; saved packets can be reloaded; and the dialog never
 records a current workflow step anywhere.
 """
 
-import pytest
-
 from espansr.core.packets import Packet, load_packet
-
-pytest.importorskip("PyQt6")
 
 
 def _make_dialog(qtbot, tmp_path, prefill=None):

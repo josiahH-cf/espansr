@@ -187,8 +187,7 @@ def test_cli_check_output_resolves_bundled_template_by_name(tmp_path, capsys):
 # ── Dialog preservation of undisplayed sections ──────────────────────────────
 
 
-def test_packet_dialog_preserves_unknown_sections_on_resave(tmp_path):
-    pytest.importorskip("PyQt6")
+def test_packet_dialog_preserves_unknown_sections_on_resave(qtbot, tmp_path):
     from espansr.ui.packet_dialog import PacketDialog
 
     packets_dir = tmp_path / "packets"
@@ -201,6 +200,7 @@ def test_packet_dialog_preserves_unknown_sections_on_resave(tmp_path):
     path.write_text(original, encoding="utf-8")
 
     dialog = PacketDialog(packets_dir=packets_dir)
+    qtbot.addWidget(dialog)
     assert dialog.load_packet_file(path)
     dialog._save()
 

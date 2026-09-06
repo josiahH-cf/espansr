@@ -2,98 +2,44 @@
 
 Covers: toolbar publish button, sync_to_espanso() call, geometry persistence,
 and last_template restore on startup.
+
+Windows come from the shared ``make_window`` factory in ``tests/conftest.py``.
 """
 
 import base64
-import contextlib
 from unittest.mock import patch
-
-import pytest
 
 from espansr.core.config import Config
 from espansr.core.templates import TemplateManager
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
-
-
-@pytest.fixture()
-def tm(tmp_path):
-    """Real TemplateManager backed by a temp directory."""
-    return TemplateManager(templates_dir=tmp_path / "templates")
-
-
-def _make_window(qtbot, config, tm=None, match_dir=None, tmp_path=None):
-    """Create a patched MainWindow. Returns the window instance."""
-    from espansr.ui.main_window import MainWindow
-
-    tm_patch = (
-        patch(
-            "espansr.ui.template_browser.get_template_manager",
-            return_value=tm,
-        )
-        if tm is not None
-        else patch("espansr.ui.template_browser.get_template_manager")
-    )
-
-    with contextlib.ExitStack() as stack:
-        stack.enter_context(patch("espansr.ui.main_window.get_config", return_value=config))
-        stack.enter_context(patch("espansr.ui.main_window.get_config_manager"))
-        stack.enter_context(patch("espansr.ui.template_browser.get_config"))
-        stack.enter_context(patch("espansr.ui.template_editor.get_config"))
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso.get_match_dir",
-                return_value=match_dir,
-            )
-        )
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso.get_espanso_config_dir",
-                return_value=tmp_path,
-            )
-        )
-        stack.enter_context(
-            patch(
-                "espansr.integrations.espanso._get_candidate_paths",
-                return_value=[],
-            )
-        )
-        stack.enter_context(tm_patch)
-
-        window = MainWindow()
-        qtbot.addWidget(window)
-
-    return window
-
-
 # ── Toolbar: Publish button ──────────────────────────────────────────────────
 
 
-def test_publish_button_in_toolbar(qtbot, tmp_path):
+def test_publish_button_in_toolbar(make_window):
     """MainWindow has a 'Publish' QPushButton in the toolbar."""
     from PyQt6.QtWidgets import QPushButton
 
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     sync_btn = window._sync_btn
     assert isinstance(sync_btn, QPushButton)
     assert "Publish" in sync_btn.text()
 
 
-def test_pull_latest_button_in_toolbar(qtbot, tmp_path):
+def test_pull_latest_button_in_toolbar(make_window):
     """MainWindow has a 'Pull Latest' QPushButton in the toolbar."""
     from PyQt6.QtWidgets import QPushButton
 
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     pull_btn = window._pull_latest_btn
     assert isinstance(pull_btn, QPushButton)
     assert "Pull" in pull_btn.text()
 
 
-def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
+def test_sync_calls_sync_to_espanso(make_window):
     """Clicking Publish calls sync_to_espanso() exactly once."""
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     with patch(
         "espansr.integrations.espanso.sync_to_espanso",
@@ -104,11 +50,11 @@ def test_sync_calls_sync_to_espanso(qtbot, tmp_path):
     mock_sync.assert_called_once_with(update_bundled=True)
 
 
-def test_pull_latest_calls_remote_and_sync(qtbot, tmp_path):
+def test_pull_latest_calls_remote_and_sync(make_window):
     """Clicking 'Pull Latest' pulls remote templates and refreshes Espanso output."""
     from espansr.core.remote import RemotePullOutcome
 
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     with (
         patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
@@ -129,11 +75,11 @@ def test_pull_latest_calls_remote_and_sync(qtbot, tmp_path):
     assert "pulled latest" in window.statusBar().currentMessage().lower()
 
 
-def test_pull_latest_failure_shows_status_message(qtbot, tmp_path):
+def test_pull_latest_failure_shows_status_message(make_window):
     """A pull failure shows a clear status-bar error."""
     from espansr.core.remote import RemoteError
 
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     with (
         patch("espansr.core.remote.RemoteManager") as mock_manager_cls,
@@ -150,11 +96,11 @@ def test_pull_latest_failure_shows_status_message(qtbot, tmp_path):
     assert "network unavailable" in msg
 
 
-def test_save_triggers_sync_without_bundled_update(qtbot, tmp_path):
+def test_save_triggers_sync_without_bundled_update(make_window, tmp_path):
     """Saving an edited template immediately regenerates Espanso output."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     template = manager.create(name="Meta", content="old body", trigger=":meta")
-    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window = make_window(Config(), tm=manager)
     window._editor.load_template(template)
     window._editor._content_edit.setPlainText("new body")
 
@@ -173,11 +119,11 @@ def test_save_triggers_sync_without_bundled_update(qtbot, tmp_path):
     mock_sync.assert_called_once_with(update_bundled=False)
 
 
-def test_sync_saves_dirty_editor_before_writing(qtbot, tmp_path):
+def test_sync_saves_dirty_editor_before_writing(make_window, tmp_path):
     """Publish persists dirty editor state before generating Espanso YAML."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     template = manager.create(name="Verify", content="old body", trigger=":verify")
-    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window = make_window(Config(), tm=manager)
     window._editor.load_template(template)
     window._editor._content_edit.setPlainText("new body")
 
@@ -196,9 +142,9 @@ def test_sync_saves_dirty_editor_before_writing(qtbot, tmp_path):
     mock_sync.assert_called_once_with(update_bundled=False)
 
 
-def test_sync_success_shows_status_message(qtbot, tmp_path):
+def test_sync_success_shows_status_message(make_window):
     """A successful publish shows a success message in the status bar."""
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     with (
         patch(
@@ -212,9 +158,9 @@ def test_sync_success_shows_status_message(qtbot, tmp_path):
     assert "successful" in window.statusBar().currentMessage().lower()
 
 
-def test_sync_failure_shows_status_message(qtbot, tmp_path):
+def test_sync_failure_shows_status_message(make_window):
     """A failed publish shows a failure message in the status bar."""
-    window = _make_window(qtbot, Config(), tmp_path=tmp_path)
+    window = make_window(Config())
 
     with patch(
         "espansr.integrations.espanso.sync_to_espanso",
@@ -225,11 +171,11 @@ def test_sync_failure_shows_status_message(qtbot, tmp_path):
     assert "fail" in window.statusBar().currentMessage().lower()
 
 
-def test_delete_publishes_remaining_templates(qtbot, tmp_path):
+def test_delete_publishes_remaining_templates(make_window, tmp_path):
     """Deleting after the undo window publishes the remaining templates."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     manager.create(name="Delete Me", content="old body", trigger=":delete")
-    window = _make_window(qtbot, Config(), tm=manager, tmp_path=tmp_path)
+    window = make_window(Config(), tm=manager)
     window._browser.select_template_by_name("Delete Me")
 
     with (
@@ -248,10 +194,10 @@ def test_delete_publishes_remaining_templates(qtbot, tmp_path):
 # ── Geometry persistence ─────────────────────────────────────────────────────
 
 
-def test_close_event_saves_geometry(qtbot, tmp_path):
+def test_close_event_saves_geometry(make_window):
     """closeEvent() persists window geometry fields to config via save_config."""
     config = Config()
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
     window.show()
 
     with patch("espansr.ui.main_window.save_config") as mock_save:
@@ -267,18 +213,18 @@ def test_close_event_saves_geometry(qtbot, tmp_path):
     assert isinstance(saved_config.ui.window_maximized, bool)
 
 
-def test_geometry_restored_from_config(qtbot, tmp_path):
+def test_geometry_restored_from_config(make_window):
     """_restore_geometry() applies a saved geometry blob on startup."""
     # Create a throwaway window to capture a real geometry blob.
     config = Config()
-    first = _make_window(qtbot, config, tmp_path=tmp_path)
+    first = make_window(config)
     first.resize(800, 500)
     first.show()
     geometry_blob = first.saveGeometry()
     config.ui.window_geometry = base64.b64encode(geometry_blob.data()).decode()
 
     # Create a second window using the saved blob.
-    second = _make_window(qtbot, config, tmp_path=tmp_path)
+    second = make_window(config)
     second.show()
 
     # The restored window must have approximately the same dimensions.
@@ -290,7 +236,7 @@ def test_geometry_restored_from_config(qtbot, tmp_path):
 # ── Last-selected template restore ───────────────────────────────────────────
 
 
-def test_last_template_restored_on_startup(qtbot, tmp_path):
+def test_last_template_restored_on_startup(make_window, tmp_path):
     """MainWindow selects the template named in UIConfig.last_template on startup."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     manager.create(name="My Snippet", content="hello", trigger=":hi")
@@ -298,30 +244,30 @@ def test_last_template_restored_on_startup(qtbot, tmp_path):
     config = Config()
     config.ui.last_template = "My Snippet"
 
-    window = _make_window(qtbot, config, tm=manager, tmp_path=tmp_path)
+    window = make_window(config, tm=manager)
 
     selected = window._browser.get_current_template()
     assert selected is not None
     assert selected.name == "My Snippet"
 
 
-def test_no_selection_when_last_template_empty(qtbot, tmp_path):
+def test_no_selection_when_last_template_empty(make_window):
     """No template is selected when UIConfig.last_template is empty."""
     config = Config()
     config.ui.last_template = ""
 
-    window = _make_window(qtbot, config, tmp_path=tmp_path)
+    window = make_window(config)
 
     assert window._browser.get_current_template() is None
 
 
-def test_last_template_saved_on_close(qtbot, tmp_path):
+def test_last_template_saved_on_close(make_window, tmp_path):
     """closeEvent() writes the currently-selected template name to UIConfig."""
     manager = TemplateManager(templates_dir=tmp_path / "templates")
     manager.create(name="Pick Me", content="body", trigger=":pick")
 
     config = Config()
-    window = _make_window(qtbot, config, tm=manager, tmp_path=tmp_path)
+    window = make_window(config, tm=manager)
 
     # Programmatically select a template.
     window._browser.select_template_by_name("Pick Me")

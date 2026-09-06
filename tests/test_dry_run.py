@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 
 def _make_bundled_dir(tmp_path: Path) -> Path:
     """Create a fake bundled templates directory with one template."""
@@ -302,21 +304,15 @@ def test_flags_in_help(capsys):
 
     # Test publish --help
     for subcmd in ("publish", "setup"):
-        try:
-            sys.argv = ["espansr", subcmd, "--help"]
+        with patch.object(sys, "argv", ["espansr", subcmd, "--help"]), pytest.raises(SystemExit):
             main()
-        except SystemExit:
-            pass
 
         output = capsys.readouterr().out
         assert "--dry-run" in output, f"--dry-run missing from {subcmd} help"
 
     # --verbose only on setup
-    try:
-        sys.argv = ["espansr", "setup", "--help"]
+    with patch.object(sys, "argv", ["espansr", "setup", "--help"]), pytest.raises(SystemExit):
         main()
-    except SystemExit:
-        pass
 
     output = capsys.readouterr().out
     assert "--verbose" in output, "--verbose missing from setup help"

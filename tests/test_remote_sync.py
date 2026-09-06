@@ -112,7 +112,10 @@ class TestRemoteStatus:
 
         status = rm.status()
         assert status["url"] == str(bare_remote)
-        assert "dirty" in status  # list of modified files
+        assert status["dirty"] == []  # nothing modified since the push
+
+        (tmp_templates / "greeting.json").write_text('{"name": "Greeting", "content": "edited"}')
+        assert rm.status()["dirty"] == ["greeting.json"]
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +299,7 @@ class TestPullSelective:
         rm_b.pull_templates(["alpha.json"])
 
         assert (clone_b / "alpha.json").exists()
+        assert not (clone_b / "beta.json").exists()
 
 
 # ---------------------------------------------------------------------------
@@ -354,14 +358,16 @@ class TestPushSelective:
         # Push only the greeting template
         rm.push_templates(["greeting.json"])
 
-        # Verify remote has greeting.json but check the push went through
+        # The pushed tree carries greeting.json but never the unselected extra.json
         result = subprocess.run(
-            ["git", "--git-dir", str(bare_remote), "log", "--oneline"],
+            ["git", "--git-dir", str(bare_remote), "ls-tree", "--name-only", "HEAD"],
             capture_output=True,
             text=True,
+            check=True,
         )
-        assert result.returncode == 0
-        assert len(result.stdout.strip()) > 0
+        pushed = result.stdout.split()
+        assert "greeting.json" in pushed
+        assert "extra.json" not in pushed
 
 
 # ---------------------------------------------------------------------------
