@@ -61,6 +61,38 @@ def test_shell_installer_prints_missing_espanso_next_steps():
     assert "espansr doctor" in text
 
 
+def test_shell_installer_missing_espanso_note_is_truthful():
+    """The script does try to install Espanso, so the note must not claim otherwise."""
+    text = _installer_text()
+
+    assert "espansr does not install Espanso itself" not in text
+    assert "espansr could not install Espanso automatically" in text
+    note_idx = text.index("espansr could not install Espanso automatically")
+    assert "https://espanso.org" in text[note_idx:]
+    assert "espansr setup" in text[note_idx:]
+
+
+def test_shell_installer_warns_when_status_smoke_fails():
+    text = _installer_text()
+
+    assert 'if STATUS_OUTPUT="$("$VENV_CMD" status 2>&1)"; then' in text
+    assert "espansr status returned non-zero (Espanso may not be installed)" in text
+    assert "status 2>&1 || true" not in text
+
+
+def test_shell_installer_kills_espanso_by_exact_process_name():
+    text = _installer_text()
+
+    assert "pkill -x espanso" in text
+    assert "pkill -f 'espanso '" not in text
+
+
+def test_shell_installer_prefers_newest_python_first():
+    text = _installer_text()
+
+    assert "for candidate in python3.14 python3.13 python3.12 python3.11 python3; do" in text
+
+
 def test_shell_installer_prints_list_output_when_smoke_test_fails():
     text = _installer_text()
 
