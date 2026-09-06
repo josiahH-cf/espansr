@@ -219,6 +219,7 @@ def test_wf_feature_manifest_matches_contract():
         "human-litmus",
         "feature-handoff",
         "verification",
+        "adversarial-review",
         "feedback-apply",
         "context-reset",
     }
@@ -238,6 +239,10 @@ def test_wf_feature_manifest_matches_contract():
         ("feature-handoff", "verification"),
         ("verification", "feedback-apply"),
         ("feedback-apply", "verification"),
+        ("feature-handoff", "adversarial-review"),
+        ("verification", "adversarial-review"),
+        ("adversarial-review", "feedback-apply"),
+        ("feedback-apply", "adversarial-review"),
     }
     required |= {("context-reset", n) for n in nodes - {"context-reset"}}
     assert required <= edges

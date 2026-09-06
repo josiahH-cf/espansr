@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:adversary-review` — independent adversarial review of finished work** — a
+	new bundled note that reviews a unit claimed complete against its spec of
+	record without fixing anything. It numbers the requirements and marks each
+	Done, Partial, Missing, or Changed with evidence, runs the build, test, lint,
+	and start-up checks itself instead of trusting the summary, traces collateral
+	impact and every unrequested change, screens security, failure-mode, and
+	rollback risk, lists loose ends, missing work, and missing tests, proposes the
+	spec wording that would have prevented the drift, names due governance and
+	documentation updates, and closes with a PASS, PASS WITH FOLLOW-UPS, or FAIL
+	verdict derived from tagged severities. Registered as the `adversarial-review`
+	capability in the feature delivery cycle, reachable after the handoff or after
+	verification and feeding the feedback cycle, with a checkable output contract.
+
 - **`:continue` — resume work already in flight** — a new bundled note that
 	picks up an agentic or AI workflow in any context without the user having
 	to restate it: it rebuilds the real state from evidence rather than from a

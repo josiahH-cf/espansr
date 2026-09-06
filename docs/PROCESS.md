@@ -85,9 +85,9 @@ Two workflows ship bundled:
   anywhere; a gap review can loop back to research.
 - **`feature-delivery-cycle`** — goal refinement (`:goal`), research,
   challenge, human litmus (`:litmus`), implementation handoff (`:feature`),
-  verification (`:verify`), bounded feedback (`:feedback`), and context
-  transfer. Every node is an entry point; `:feature` never requires a
-  predecessor.
+  verification (`:verify`), adversarial review (`:adversary-review`), bounded
+  feedback (`:feedback`), and context transfer. Every node is an entry point;
+  `:feature` never requires a predecessor.
 
 User manifests can be added under the live template store's
 `_meta/workflows/` directory. That directory is local-only (`_meta/` is

@@ -104,7 +104,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     ),
     HelpSection(
         "Project and maintenance prompts",
-        13,
+        17,
         (
             (":goal", "interpret, gap-check, and refine context into a measurable goal"),
             (
@@ -118,6 +118,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":continue", "resume work in flight and keep going to done or a real gate"),
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
+            (
+                ":adversary-review",
+                "adversarial review of finished work against its spec, with a verdict",
+            ),
             (":litmus", "create or audit a plain-language human-verification checklist"),
             (
                 ":feedback",
