@@ -11,6 +11,7 @@ from espansr.integrations import espanso
 # every test; capturing the real function at import time (before any fixture
 # runs) lets these tests exercise the actual implementation.
 _real_restart_espanso = espanso.restart_espanso
+_real_restart_espanso_wsl2 = espanso._restart_espanso_wsl2
 
 
 def _cp(argv, returncode=0, stdout="", stderr=""):
@@ -183,7 +184,7 @@ def test_restart_espanso_wsl2_helper_reports_success_only_when_running(capsys):
         patch.object(espanso.subprocess, "run", side_effect=fake_run),
         patch("time.sleep"),
     ):
-        espanso._restart_espanso_wsl2()
+        _real_restart_espanso_wsl2()
     assert "Espanso restarted successfully." in capsys.readouterr().out
     assert all(call[1] == "-NoProfile" for call in calls)
     assert calls[-1] == espanso._WSL_STATUS_ARGV
@@ -196,7 +197,7 @@ def test_restart_espanso_wsl2_helper_prints_note_when_not_running(capsys):
         patch.object(espanso.subprocess, "run", side_effect=fake_run),
         patch("time.sleep"),
     ):
-        espanso._restart_espanso_wsl2()
+        _real_restart_espanso_wsl2()
     out = capsys.readouterr().out
     assert "restarted successfully" not in out
     assert "Run 'espanso restart' from Windows PowerShell" in out

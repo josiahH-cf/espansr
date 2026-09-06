@@ -52,11 +52,6 @@ INPUT_MARKER_EXEMPT = frozenset(
     }
 )
 
-# TODO(merge): drop this set once the branch that adds the standard input
-# marker to verify.json, sanitize.json and work_merge.json has merged. They
-# are tolerated (not exempt) so this branch passes on its own until then.
-INPUT_MARKER_PENDING = frozenset({"verify.json", "sanitize.json", "work_merge.json"})
-
 
 def _load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -149,8 +144,6 @@ def test_note_carries_an_input_marker_unless_exempt(path):
     if path.name in INPUT_MARKER_EXEMPT:
         return
     has_marker = _has_input_marker(_load(path)["content"])
-    if path.name in INPUT_MARKER_PENDING and not has_marker:
-        return  # tolerated until the marker-adding branch merges (see INPUT_MARKER_PENDING)
     assert has_marker, f"{path.name} has no input marker and is not in INPUT_MARKER_EXEMPT"
 
 
