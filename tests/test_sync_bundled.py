@@ -866,6 +866,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [], []),
         "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [], []),
         "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [], []),
+        "git_sync_sh.json": (":git-sync-sh", "workflow", "git-sync", [], []),
+        "git_sync_ps.json": (":git-sync-ps", "workflow", "git-sync", [], []),
         "work_merge.json": (
             ":work-merge",
             "workflow",
@@ -1967,6 +1969,18 @@ def test_bundled_git_helper_templates_are_executable_commands():
             "Invoke-GitChecked switch -c $branchName",
             "Invoke-GitNewBranch",
         ),
+        "git_sync_sh.json": (
+            ":git-sync-sh",
+            "git_sync_reinstall()",
+            "git stash push -u",
+            "git_sync_reinstall",
+        ),
+        "git_sync_ps.json": (
+            ":git-sync-ps",
+            "function Invoke-GitSyncReinstall",
+            "Invoke-GitChecked stash push -u",
+            "Invoke-GitSyncReinstall",
+        ),
     }
 
     for filename, (trigger, definition, required_command, invocation) in expected.items():
@@ -1985,11 +1999,23 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert "Local changes are on main" in content
         assert "merge --ff-only" in content
 
-        if "yolo" in filename:
+        if "yolo" in filename or "sync" in filename:
+            # Only a rebased non-main branch is ever force-pushed, and only with a lease.
             assert "--force-with-lease" in content
-            assert "not force-pushing main" in content
+            assert re.search(r"--force(?!-with-lease)", content) is None
+            assert re.search(r"--force-with-lease[^\n]*main", content, re.IGNORECASE) is None
         else:
             assert "--force" not in content
+
+        if "yolo" in filename:
+            assert "not force-pushing main" in content
+
+        if "sync" in filename:
+            assert "espansr refresh" in content
+            assert "Reinstall espansr now?" in content
+            assert "rebase --abort" in content
+            assert "--set-upstream" in content
+            assert "Rebase stopped on conflicts." in content
 
         if "branch" in filename:
             variables = {variable["name"]: variable for variable in data.get("variables", [])}

@@ -47,6 +47,8 @@ INPUT_MARKER_EXEMPT = frozenset(
         "git_yolo_ps.json",
         "git_rebase_ps.json",
         "git_branch_ps.json",
+        "git_sync_sh.json",
+        "git_sync_ps.json",
         "pocket_extract.json",
         "tenable_scans.json",
     }
