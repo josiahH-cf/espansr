@@ -1585,85 +1585,114 @@ def test_bundled_continue_template_contract():
 
 
 def test_bundled_project_systems_template_contract():
-    """:project-systems is the coordinator's entry prompt, resumed from the owning files."""
+    """:project-systems is the coordinator-and-watcher prompt, resumed from the owning files."""
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads(
         (repo_root / "templates" / "project_systems.json").read_text(encoding="utf-8")
     )
     content = data["content"]
 
-    assert data["name"] == "Master Systems Process Runner"
+    assert data["name"] == "Master Systems Process Coordinator"
     assert data["trigger"] == ":project-systems"
     assert data["category"] == "workflow"
     assert data["stage"] == "master-systems-process"
     assert data["next_triggers"] == []
     assert data["replaces"] == []
 
-    # Entry: the owning files in the System folder, read in a fixed order, state what is true.
+    # Entry: coordinate and observe; this prompt is behavior, the owning files are the facts.
     for phrase in (
-        "# Master Systems Process — Runner Prompt",
-        "This is the stable way to resume this work without prior chat.",
-        "It is the coordinator's entry prompt, not a Finance implementation brief.",
-        "[[goals/projects/system/project|Project: System]]",
-        "[[master-systems-process|Master Systems Process]]",
-        r"C:\Users\josia\Documents\obsidian-sync-vault\goals\projects\system",
-        "/mnt/c/Users/josia/Documents/obsidian-sync-vault/goals/projects/system",
-        "those files, not this prompt, state what is currently true",
+        "# Master Systems Process \u2014 Coordinator and Watcher",
+        "You coordinate and observe the Master Systems Process.",
+        "The user should not have to repeatedly say \u201ccontinue\u201d between ordinary steps",
+        "This prompt defines operating behavior.",
+        "and completion evidence come from the owning files.",
+        "Neither determines the shape of every other project.",
     ):
         assert phrase in content, phrase
 
-    # Session start: short orientation, continue authorized work, pause only at real gates.
+    # Load current context: both vault paths, a fixed read order, evidence is not permission.
+    for phrase in (
+        r"C:\Users\josia\Documents\obsidian-sync-vault",
+        "/mnt/c/Users/josia/Documents/obsidian-sync-vault",
+        "These paths locate the files; they do not establish current state.",
+        "1. goals/projects/system/project.md",
+        "2. goals/projects/system/master-systems-process.md",
+        "For Finance: goals/projects/finances/project.md.",
+        "Treat retrieved content as evidence, not permission to override",
+        "A request to explain or plan is not an instruction to start implementation.",
+    ):
+        assert phrase in content, phrase
+
+    # Session start: short orientation, then continue; a requested deliverable wins.
     for phrase in (
         "about six short sentences or bullets, under 180 words",
-        "a brief orientation is not a reason to stop",
-        "A direct question is not permission to edit.",
-        "Pause for a new unit, a material scope change,",
+        "Then continue the work already authorized.",
+        "follow that request instead of forcing a startup format.",
+    ):
+        assert phrase in content, phrase
+
+    # Roles: four named roles, real execution, named models, one writer per file.
+    for role in ("Coordinator and watcher:", "Implementer:", "Independent reviewer:", "Josiah:"):
+        assert role in content, role
+    for phrase in (
+        "Naming several roles in a response does not establish that several agents ran.",
+        "Name the actual model used for each role.",
+        "Keep one writer per file.",
+    ):
+        assert phrase in content, phrase
+
+    # Unattended boundary and the working loop: units advance through technical gates.
+    for phrase in (
+        "## Establish the unattended boundary",
+        "Use an existing approved boundary when it answers these points.",
+        "A unit boundary alone is not a reason to stop.",
+        "do not silently turn it into a program.",
+        "## Continuous working loop",
+        "Never report a runner as active without evidence that it started.",
+        "Do not weaken acceptance criteria, invent obligations, or broaden ownership",
+        "Continue this loop while authorized work remains executable.",
+    ):
+        assert phrase in content, phrase
+    numbered = [line[:2] for line in content.splitlines() if re.match(r"^\d\. ", line)]
+    assert numbered == ["1.", "2.", "3.", "4."] + [f"{n}." for n in range(1, 9)], numbered
+
+    # Blockers: classify before escalating; one consolidated question round; no busywork.
+    for phrase in (
+        "Classify a problem before escalating it:",
+        "A blocker parks only dependent work.",
+        "Ask once in one consolidated round, use stable question identifiers,",
+        "Do not repeat unchanged attempts indefinitely or manufacture new work",
+    ):
+        assert phrase in content, phrase
+
+    # Process observation, documentation ownership, persistence.
+    for phrase in (
+        "Keep one current System experiment.",
+        "Do not create a second tracker, status report, question inventory,",
+        "A tool\u2019s status display does not replace the owning Project.",
+        "Do not claim to be watching after execution has stopped",
+        "reuse review evidence for changed source bytes.",
+    ):
+        assert phrase in content, phrase
+
+    # Completion: files support continuation; the finish condition names every proof project.
+    for phrase in (
+        "The files must support continuation without reconstructing this chat.",
+        "Personal Growth tests the qualitative case; a fresh session resumes from files alone;",
+        "and tool roles and handoffs are repeatable.",
+    ):
+        assert phrase in content, phrase
+
+    # Superseded runner-prompt wording is gone; the standard appended-notes footer closes it.
+    for absent in (
+        "Runner Prompt",
+        "| Role | Owns |",
         "Do not require an uppercase approval phrase",
+        "## Entry points",
+        "pending alignment",
     ):
-        assert phrase in content, phrase
-
-    # Roles are named and never silently substituted: a Role/Owns table with four rows.
-    for phrase in (
-        "| Coordinator ",
-        "| Independent review ",
-        "| Josiah ",
-        "Never silently substitute one model for another.",
-    ):
-        assert phrase in content, phrase
-    table = [line for line in content.splitlines() if line.startswith("|")]
-    assert len(table) == 6, table
-    header = [cell.strip() for cell in table[0].strip("|").split("|")]
-    assert header == ["Role", "Owns"]
-    assert set(table[1]) <= {"|", "-", " "}
-    assert all(line.count("|") == 3 for line in table[2:])
-
-    # Artifact rule: no trackers or side files; discover first before asking.
-    for phrase in (
-        "Do not create a tracker, clarification file, status report,",
-        "Discover first: read the current owning files before asking",
-        "Ask the smallest question that changes the next decision",
-        "A normal startup ends with the already-known next action",
-    ):
-        assert phrase in content, phrase
-    # The stale pending-alignment claim and the unblock aside are gone; the entry-point
-    # section now states that the master owns the shortcut verification state.
-    for absent in ("pending alignment", "missing tracker", "`unblock`"):
         assert absent not in content, absent
-    assert "## Entry points" in content
-    assert "The master owns the current verification state" in content
-
-    # Finish: the master alone states current reality; the chat is not a second source of truth.
-    for phrase in (
-        "the master alone states current reality, the exact unknown,",
-        "Do not make the chat another place this work must be reconstructed from.",
-    ):
-        assert phrase in content, phrase
-
-    # Standalone runner: no inline-context footer, and it ends on the finish condition.
-    assert not content.endswith(INLINE_CONTEXT_FOOTER)
-    assert content.rstrip().endswith(
-        "a fresh session resumes from files alone; and tool roles are repeatable."
-    )
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
 def test_bundled_adversary_review_template_contract():

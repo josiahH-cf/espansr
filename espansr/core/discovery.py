@@ -166,7 +166,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (
                 ":project-systems",
-                "resume the Master Systems Process from its owning files",
+                "coordinate and watch the Master Systems Process from its owning files",
             ),
             (
                 ":project-decision-helper",

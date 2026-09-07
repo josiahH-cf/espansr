@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:project-systems` — Coordinator and Watcher** — the note now carries the
+	Master Systems Process coordinator-and-watcher prompt verbatim: continue
+	authorized work without repeated “continue” prompts, load the vault context
+	in a fixed order, name the actual execution and review roles and models,
+	establish the unattended boundary, run the continuous working loop, classify
+	blockers before escalating, observe and improve the process, keep
+	documentation with its owners, and finish with the result, evidence, unknown,
+	and next decision. It gains the standard appended-notes footer.
 - **Store reconciliation** — retires the unreleased `:git-sync-sh`/`:git-sync-ps`
 	and `:refresh-espansr-sh`/`:refresh-espansr-ps` helper copies from installed
 	template stores. `espansr sync` and the generated `:sync` trigger already
