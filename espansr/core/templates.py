@@ -729,6 +729,8 @@ _RENAMED_BUNDLED_TEMPLATE_FILES = {
     "telegram.json": ("pocket_note.json",),
     "work_merge.json": ("work_merge_safe.json",),
     "cliche.json": ("humanize.json",),
+    "refresh_espansr_sh.json": ("git_sync_sh.json",),
+    "refresh_espansr_ps.json": ("git_sync_ps.json",),
 }
 
 # Bundled starter templates that were removed from the product. A copy seeded

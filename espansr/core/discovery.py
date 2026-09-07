@@ -176,7 +176,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     ),
     HelpSection(
         "Git helpers",
-        15,
+        19,
         (
             (":git-yolo-sh", "Bash yolo commit, update main when needed, and push safely"),
             (":git-rebase-sh", "Bash safe main update or branch rebase with stash restore"),
@@ -188,11 +188,11 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "PowerShell update main when safe, then create and switch to a branch",
             ),
             (
-                ":git-sync-sh",
+                ":refresh-espansr-sh",
                 "Bash fetch, rebase, push or merge as asked, then reinstall espansr",
             ),
             (
-                ":git-sync-ps",
+                ":refresh-espansr-ps",
                 "PowerShell fetch, rebase, push or merge as asked, then reinstall espansr",
             ),
         ),
