@@ -866,8 +866,20 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [], []),
         "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [], []),
         "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [], []),
-        "git_sync_sh.json": (":git-sync-sh", "workflow", "git-sync", [], []),
-        "git_sync_ps.json": (":git-sync-ps", "workflow", "git-sync", [], []),
+        "refresh_espansr_sh.json": (
+            ":refresh-espansr-sh",
+            "workflow",
+            "refresh-espansr",
+            [],
+            [":git-sync-sh"],
+        ),
+        "refresh_espansr_ps.json": (
+            ":refresh-espansr-ps",
+            "workflow",
+            "refresh-espansr",
+            [],
+            [":git-sync-ps"],
+        ),
         "work_merge.json": (
             ":work-merge",
             "workflow",
@@ -907,6 +919,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "work_merge_safe.json",
         "distill.json",
         "summarize.json",
+        "git_sync_sh.json",
+        "git_sync_ps.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -1969,17 +1983,17 @@ def test_bundled_git_helper_templates_are_executable_commands():
             "Invoke-GitChecked switch -c $branchName",
             "Invoke-GitNewBranch",
         ),
-        "git_sync_sh.json": (
-            ":git-sync-sh",
-            "git_sync_reinstall()",
+        "refresh_espansr_sh.json": (
+            ":refresh-espansr-sh",
+            "refresh_espansr()",
             "git stash push -u",
-            "git_sync_reinstall",
+            "refresh_espansr",
         ),
-        "git_sync_ps.json": (
-            ":git-sync-ps",
-            "function Invoke-GitSyncReinstall",
+        "refresh_espansr_ps.json": (
+            ":refresh-espansr-ps",
+            "function Invoke-EspansrRefresh",
             "Invoke-GitChecked stash push -u",
-            "Invoke-GitSyncReinstall",
+            "Invoke-EspansrRefresh",
         ),
     }
 
@@ -1999,7 +2013,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert "Local changes are on main" in content
         assert "merge --ff-only" in content
 
-        if "yolo" in filename or "sync" in filename:
+        if "yolo" in filename or "refresh" in filename:
             # Only a rebased non-main branch is ever force-pushed, and only with a lease.
             assert "--force-with-lease" in content
             assert re.search(r"--force(?!-with-lease)", content) is None
@@ -2010,7 +2024,7 @@ def test_bundled_git_helper_templates_are_executable_commands():
         if "yolo" in filename:
             assert "not force-pushing main" in content
 
-        if "sync" in filename:
+        if "refresh" in filename:
             assert "espansr refresh" in content
             assert "Reinstall espansr now?" in content
             assert "rebase --abort" in content

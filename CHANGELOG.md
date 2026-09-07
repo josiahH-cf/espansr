@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **`:git-sync-sh` and `:git-sync-ps` — one-command update and reinstall** — Bash
+- **`:refresh-espansr-sh` and `:refresh-espansr-ps` — one-command update and reinstall** — Bash
 	and PowerShell notes that fetch `origin`, ask what to do with uncommitted
 	work, fast-forward or rebase `main`, rebase a feature branch onto its remote
 	copy and onto `main`, then push, publish, or merge into `main` as answered,
