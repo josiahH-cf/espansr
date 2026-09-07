@@ -187,14 +187,6 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":git-branch-ps",
                 "PowerShell update main when safe, then create and switch to a branch",
             ),
-            (
-                ":git-sync-sh",
-                "Bash fetch, rebase, push or merge as asked, then reinstall espansr",
-            ),
-            (
-                ":git-sync-ps",
-                "PowerShell fetch, rebase, push or merge as asked, then reinstall espansr",
-            ),
         ),
     ),
     HelpSection(

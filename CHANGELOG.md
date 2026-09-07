@@ -6,16 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
-
-- **`:git-sync-sh` and `:git-sync-ps` — one-command update and reinstall** — Bash
-	and PowerShell notes that fetch `origin`, ask what to do with uncommitted
-	work, fast-forward or rebase `main`, rebase a feature branch onto its remote
-	copy and onto `main`, then push, publish, or merge into `main` as answered,
-	restore stashed work, and reinstall espansr through `espansr refresh` (or the
-	repository's installer). A rebase conflict asks whether to abort and restore
-	everything, every prompt shows its default, and `main` is never force-pushed.
-
 ### Changed
 
 - **Project metadata** — `pyproject.toml` now declares the author, and the
