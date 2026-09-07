@@ -759,6 +759,10 @@ _RETIRED_BUNDLED_TEMPLATE_FILES = {
     "project_scaffold.json": ":project-scaffold",
     "scaffold_feature_process.json": ":scaffold-feature-process",
     "pocket.json": ":pocket",
+    "git_sync_sh.json": ":git-sync-sh",
+    "git_sync_ps.json": ":git-sync-ps",
+    "refresh_espansr_sh.json": ":refresh-espansr-sh",
+    "refresh_espansr_ps.json": ":refresh-espansr-ps",
 }
 
 
