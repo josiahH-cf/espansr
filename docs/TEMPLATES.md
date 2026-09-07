@@ -34,7 +34,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
-- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:refresh-espansr-sh`, `:refresh-espansr-ps`
+- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:git-sync-sh`, `:git-sync-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
@@ -162,7 +162,7 @@ name, validate it with `git check-ref-format --branch`, refuse a name that
 already exists or starts with `-`, and create and switch to the branch; from a
 clean `main` they update `main` before branching, and from a dirty `main` they
 carry the work onto the new branch and rebase it from the updated `main`.
-`:refresh-espansr-sh` and `:refresh-espansr-ps` are the one-command update: they fetch
+`:git-sync-sh` and `:git-sync-ps` are the one-command update: they fetch
 `origin`, ask what to do with uncommitted work (commit it, stash and restore
 it after the update, or abort), fast-forward or rebase `main`, rebase a
 feature branch onto its remote copy and onto `main`, then ask whether to push
@@ -191,7 +191,6 @@ keeps every retired trigger out of the discovery surfaces.
 | `:pocket-note` | `:telegram` |
 | `:work-merge-safe` | `:work-merge` |
 | `:reality` | `:reality-max` and `:reality-min` |
-| `:git-sync-sh`, `:git-sync-ps` | `:refresh-espansr-sh`, `:refresh-espansr-ps` |
 
 ## Schema
 
