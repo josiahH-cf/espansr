@@ -34,7 +34,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
-- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`, `:refresh-espansr-sh`, `:refresh-espansr-ps`
+- Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
@@ -162,17 +162,6 @@ name, validate it with `git check-ref-format --branch`, refuse a name that
 already exists or starts with `-`, and create and switch to the branch; from a
 clean `main` they update `main` before branching, and from a dirty `main` they
 carry the work onto the new branch and rebase it from the updated `main`.
-`:refresh-espansr-sh` and `:refresh-espansr-ps` are the one-command update: they fetch
-`origin`, ask what to do with uncommitted work (commit it, stash and restore
-it after the update, or abort), fast-forward or rebase `main`, rebase a
-feature branch onto its remote copy and onto `main`, then ask whether to push
-the branch (with `--force-with-lease` after the rebase), publish a new branch,
-or merge it into `main` with `--no-ff` and push `main` (optionally deleting
-the merged branch), and finally ask before running `espansr refresh` (or the
-repository's installer when `espansr` is not on PATH). Every prompt shows its
-default, a rebase conflict asks whether to abort and restore everything, and
-`main` is never force-pushed. `espansr sync` and the `:sync` trigger are the
-non-interactive counterpart: they commit everything and push without asking.
 
 ### Retired triggers
 
@@ -191,7 +180,6 @@ keeps every retired trigger out of the discovery surfaces.
 | `:pocket-note` | `:telegram` |
 | `:work-merge-safe` | `:work-merge` |
 | `:reality` | `:reality-max` and `:reality-min` |
-| `:git-sync-sh`, `:git-sync-ps` | `:refresh-espansr-sh`, `:refresh-espansr-ps` |
 
 ## Schema
 

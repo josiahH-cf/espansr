@@ -866,20 +866,6 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "git_yolo_ps.json": (":git-yolo-ps", "workflow", "git-yolo", [], []),
         "git_rebase_ps.json": (":git-rebase-ps", "workflow", "git-rebase", [], []),
         "git_branch_ps.json": (":git-branch-ps", "workflow", "git-branch", [], []),
-        "refresh_espansr_sh.json": (
-            ":refresh-espansr-sh",
-            "workflow",
-            "refresh-espansr",
-            [],
-            [":git-sync-sh"],
-        ),
-        "refresh_espansr_ps.json": (
-            ":refresh-espansr-ps",
-            "workflow",
-            "refresh-espansr",
-            [],
-            [":git-sync-ps"],
-        ),
         "work_merge.json": (
             ":work-merge",
             "workflow",
@@ -921,6 +907,8 @@ def test_bundled_prompt_taxonomy_and_renamed_triggers():
         "summarize.json",
         "git_sync_sh.json",
         "git_sync_ps.json",
+        "refresh_espansr_sh.json",
+        "refresh_espansr_ps.json",
     }
 
     existing_files = {path.name for path in templates_dir.glob("*.json")}
@@ -1983,18 +1971,6 @@ def test_bundled_git_helper_templates_are_executable_commands():
             "Invoke-GitChecked switch -c $branchName",
             "Invoke-GitNewBranch",
         ),
-        "refresh_espansr_sh.json": (
-            ":refresh-espansr-sh",
-            "refresh_espansr()",
-            "git stash push -u",
-            "refresh_espansr",
-        ),
-        "refresh_espansr_ps.json": (
-            ":refresh-espansr-ps",
-            "function Invoke-EspansrRefresh",
-            "Invoke-GitChecked stash push -u",
-            "Invoke-EspansrRefresh",
-        ),
     }
 
     for filename, (trigger, definition, required_command, invocation) in expected.items():
@@ -2013,23 +1989,11 @@ def test_bundled_git_helper_templates_are_executable_commands():
         assert "Local changes are on main" in content
         assert "merge --ff-only" in content
 
-        if "yolo" in filename or "refresh" in filename:
-            # Only a rebased non-main branch is ever force-pushed, and only with a lease.
+        if "yolo" in filename:
             assert "--force-with-lease" in content
-            assert re.search(r"--force(?!-with-lease)", content) is None
-            assert re.search(r"--force-with-lease[^\n]*main", content, re.IGNORECASE) is None
+            assert "not force-pushing main" in content
         else:
             assert "--force" not in content
-
-        if "yolo" in filename:
-            assert "not force-pushing main" in content
-
-        if "refresh" in filename:
-            assert "espansr refresh" in content
-            assert "Reinstall espansr now?" in content
-            assert "rebase --abort" in content
-            assert "--set-upstream" in content
-            assert "Rebase stopped on conflicts." in content
 
         if "branch" in filename:
             variables = {variable["name"]: variable for variable in data.get("variables", [])}
@@ -2164,6 +2128,19 @@ def test_sync_bundled_apply_retires_removed_bundled_prompts(tmp_path, capsys):
         templates_dir / "feature_init.json",
         {"name": "Feature Init", "content": "old feature-init prompt", "trigger": ":feature-init"},
     )
+    # The withdrawn update-and-reinstall helpers, under both short-lived names.
+    _write_json(
+        templates_dir / "git_sync_sh.json",
+        {"name": "Git Sync Linux", "content": "old sync script", "trigger": ":git-sync-sh"},
+    )
+    _write_json(
+        templates_dir / "refresh_espansr_ps.json",
+        {
+            "name": "Refresh Espansr PowerShell",
+            "content": "old refresh script",
+            "trigger": ":refresh-espansr-ps",
+        },
+    )
 
     with (
         patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
@@ -2179,12 +2156,16 @@ def test_sync_bundled_apply_retires_removed_bundled_prompts(tmp_path, capsys):
     assert not (templates_dir / "pocket.json").exists()
     assert not (templates_dir / "agent_scaffold.json").exists()
     assert not (templates_dir / "feature_init.json").exists()
+    assert not (templates_dir / "git_sync_sh.json").exists()
+    assert not (templates_dir / "refresh_espansr_ps.json").exists()
 
     assert (templates_dir / "_versions" / "merge_and_push" / "v1.json").exists()
     assert (templates_dir / "_versions" / "save_project_state" / "v1.json").exists()
     assert (templates_dir / "_versions" / "pocket" / "v1.json").exists()
     assert (templates_dir / "_versions" / "agent_scaffold" / "v1.json").exists()
     assert (templates_dir / "_versions" / "feature_init" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "git_sync_linux" / "v1.json").exists()
+    assert (templates_dir / "_versions" / "refresh_espansr_powershell" / "v1.json").exists()
 
 
 def test_sync_bundled_preserves_user_template_reusing_retired_filename(tmp_path):

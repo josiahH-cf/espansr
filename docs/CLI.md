@@ -301,10 +301,6 @@ emulator that waits for Enter, or, when none is available, logs to `sync.log`
 in the espansr config directory and reports through `notify-send` when that is
 installed. On macOS it opens Terminal.
 
-For an interactive update that asks before committing, pushing, or merging and
-then reinstalls, paste the `:refresh-espansr-sh` or `:refresh-espansr-ps` note instead (see
-[docs/TEMPLATES.md](TEMPLATES.md)).
-
 ### `espansr configure-remote-desktop`
 
 Tune Espanso for the machine's role so espansr expansions fire and paste
