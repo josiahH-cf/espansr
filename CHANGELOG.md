@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	constraint admits a logged closure disposition, and the Output Rules move in
 	coherent batches instead of one question at a time. Metadata and the
 	appended-notes footer are unchanged.
+- **`:project-decision-helper` — dated value-model mirror** — the prompt now
+	states that the vault's `Values Working System v1.md` is authoritative when it
+	is accessible and that the embedded baseline mirrors it as of 2026-09-02 for
+	use only when the vault is unavailable. The value model itself is unchanged.
 - **`:reality-max` / `:reality-min` — explicit capability IDs** — both notes now
 	declare `capability_id` values `reality-max` and `reality-min` instead of
 	relying on the file-stem fallback, so consumers that do not derive IDs see the
