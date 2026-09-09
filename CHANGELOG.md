@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:project-personal-growth` — regenerated from the vault** — the note's body
+	is again a projection of the vault's `Personal Growth - Meta-Prompt.md`
+	(2026-09-02 revision): the active project is the one the tracker names,
+	the Litmus Rules gain the explicit closure dispositions, the dependency-order
+	constraint admits a logged closure disposition, and the Output Rules move in
+	coherent batches instead of one question at a time. Metadata and the
+	appended-notes footer are unchanged.
 - **`:reality-max` / `:reality-min` — explicit capability IDs** — both notes now
 	declare `capability_id` values `reality-max` and `reality-min` instead of
 	relying on the file-stem fallback, so consumers that do not derive IDs see the
