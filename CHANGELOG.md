@@ -25,6 +25,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	same identity `docs/PROCESS.md` lists. `:reality-max` also tells the user which
 	other prompt or command to run next instead of naming espansr, keeping the
 	body tool-neutral.
+- **Claude Code hook** — the repository's `PostToolUse` hook runs `ruff check`
+	on edited Python files instead of a `prettier` step that never applied to
+	this Python project.
 - **`:project-systems` — Coordinator and Watcher** — the note now carries the
 	Master Systems Process coordinator-and-watcher prompt verbatim: continue
 	authorized work without repeated “continue” prompts, load the vault context
