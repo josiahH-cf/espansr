@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:project-personal-growth` — regenerated from the vault** — the note's body
+	is again a projection of the vault's `Personal Growth - Meta-Prompt.md`
+	(2026-09-02 revision): the active project is the one the tracker names,
+	the Litmus Rules gain the explicit closure dispositions, the dependency-order
+	constraint admits a logged closure disposition, and the Output Rules move in
+	coherent batches instead of one question at a time. Metadata and the
+	appended-notes footer are unchanged.
+- **`:project-decision-helper` — dated value-model mirror** — the prompt now
+	states that the vault's `Values Working System v1.md` is authoritative when it
+	is accessible and that the embedded baseline mirrors it as of 2026-09-02 for
+	use only when the vault is unavailable. The value model itself is unchanged.
+- **`:reality-max` / `:reality-min` — explicit capability IDs** — both notes now
+	declare `capability_id` values `reality-max` and `reality-min` instead of
+	relying on the file-stem fallback, so consumers that do not derive IDs see the
+	same identity `docs/PROCESS.md` lists. `:reality-max` also tells the user which
+	other prompt or command to run next instead of naming espansr, keeping the
+	body tool-neutral.
+- **Claude Code hook** — the repository's `PostToolUse` hook runs `ruff check`
+	on edited Python files instead of a `prettier` step that never applied to
+	this Python project.
 - **`:project-systems` — Coordinator and Watcher** — the note now carries the
 	Master Systems Process coordinator-and-watcher prompt verbatim: continue
 	authorized work without repeated “continue” prompts, load the vault context
