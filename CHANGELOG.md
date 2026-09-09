@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:reality-max` / `:reality-min` — explicit capability IDs** — both notes now
+	declare `capability_id` values `reality-max` and `reality-min` instead of
+	relying on the file-stem fallback, so consumers that do not derive IDs see the
+	same identity `docs/PROCESS.md` lists. `:reality-max` also tells the user which
+	other prompt or command to run next instead of naming espansr, keeping the
+	body tool-neutral.
 - **`:project-systems` — Coordinator and Watcher** — the note now carries the
 	Master Systems Process coordinator-and-watcher prompt verbatim: continue
 	authorized work without repeated “continue” prompts, load the vault context

@@ -63,8 +63,8 @@ template conservatively clears the incoming ID.
 | `feedback-apply` | `:feedback` | `verification-report` |
 | `troubleshooting` | `:troubleshoot` | `verification-report` |
 | `context-reset` | `:context` | `context-packet` |
-| `reality` (derived from `reality.json`) | `:reality-max` | `evidence-report` |
-| `reality_min` (derived from `reality_min.json`) | `:reality-min` | `evidence-report` |
+| `reality-max` | `:reality-max` | `evidence-report` |
+| `reality-min` | `:reality-min` | `evidence-report` |
 
 `:verify` accepts a `verification-report` as well as implemented work and
 handoffs, so re-verifying after `:feedback` is a direct edge. The other

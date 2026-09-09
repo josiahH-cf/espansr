@@ -1804,7 +1804,7 @@ def test_bundled_reality_max_template_contract():
         "Report reality; do not perform the underlying work.",
         "conduct gap analysis or a first-principles critique",
         "recommend improvements, alternate approaches, or next steps",
-        "tell the user which espansr command to run next",
+        "tell the user which other prompt or command to run next",
         "Be comprehensive rather than artificially short",
     ):
         assert phrase in content, phrase
