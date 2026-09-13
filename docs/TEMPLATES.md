@@ -32,10 +32,10 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:show-me`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - File helpers: `:pocket-extract`
@@ -64,6 +64,17 @@ create in reality, with tables and workflow diagrams where they help, and
 bullets). Use `:gaps` for critical gap or first-principles review: it is a
 review-category note with a single optional callout area at its end, and it
 treats your callouts as hypotheses to test against the evidence.
+
+Use `:show-me` when the goal is to make material substantially easier to
+understand and present it well. It is audience-aware and reaches for meaningful
+emoji, visual hierarchy, tables, charts, analogies, examples, and walkthroughs,
+expanding the presentation to fit the material with no imposed length limit, and
+it shows the result inline in the console or chat by default (HTML or another
+export only on explicit request). It differs from `:explain`, a faithful
+one-page distillation, and from `:reality-min`, a tightly bounded
+one-or-two-sentence account: `:show-me` scales presentation to the material
+instead of compressing to a fixed size, and it never triggers project cleanup,
+approval gates, or task execution merely to explain something.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.
