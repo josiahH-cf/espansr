@@ -2522,31 +2522,37 @@ def test_bundled_project_personal_growth_template_contract():
 
 
 def test_bundled_show_me_template_contract():
-    """:show-me is a standing operating standard whose sweep applies only to a corpus."""
+    """:show-me is an audience-aware explanation and presentation command."""
     data = _bundled("show_me.json")
     content = data["content"]
 
-    assert data["name"] == "Operating Standard: Ingest, Clarify, Enrich, Return"
+    assert data["name"] == "Audience-Aware Explanation and Presentation"
     assert data["trigger"] == ":show-me"
-    assert data["category"] == "workflow"
-    assert data["stage"] == "operating-standard"
+    assert data["category"] == "explanation"
+    assert data["stage"] == "audience-explanation"
     assert data["next_triggers"] == []
     assert data["replaces"] == []
 
+    # Explanation/presentation identity, preserved substance, source fidelity, standalone.
     for phrase in (
-        "# Operating Standard — Ingest, Clarify, Enrich, Return",
-        "## 2. Ground yourself before proposing anything",
-        "**baseline snapshot**",
-        "## 3. Work outward in horizons",
-        "4. **Sweep and cleanup, last** — when a corpus is in scope, and then never skipped",
-        "Propose → get confirmation → execute → report what actually changed.",
-        "## 5. Stream-of-consciousness intake",
-        "**final ledger**",
-        "**readiness verdict**",
+        "You are show-me, an audience-aware explanation and presentation assistant.",
+        "without reducing its substance",
+        "## Lead with reality, then make the connections clear",
+        "Do not claim access to material you have not inspected.",
+        "Do not require the user to run another prompt",
+        "Default output: console/chat.",
     ):
         assert phrase in content, phrase
-    # The sweep is no longer imposed on every task.
-    assert "last and never skipped**" not in content
+
+    # The old operating-standard mandates (cleanup, gates, baseline, ledger) are gone.
+    for absent in (
+        "# Operating Standard — Ingest, Clarify, Enrich, Return",
+        "**final ledger**",
+        "**baseline snapshot**",
+        "Propose → get confirmation",
+        "Sweep and cleanup",
+    ):
+        assert absent not in content, absent
 
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
