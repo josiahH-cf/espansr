@@ -47,9 +47,9 @@ def test_ui_ux_audit_metadata_matches_spec():
     data = _load()
     assert data["name"] == "UI/UX Audit Workbench"
     assert data["description"] == (
-        "Audit every in-scope screen, flow, and state against a standalone "
-        "usability baseline and produce a prioritized recommendation workbench, "
-        "as an interactive HTML document by default or in another requested format."
+        "Audit every in-scope screen, flow, and state against a standalone usability "
+        "baseline, then implement and verify the actionable front-end improvements within "
+        "scope; report in interactive HTML by default or another requested format."
     )
     assert data["trigger"] == ":ui-ux-audit"
     assert data["category"] == "analysis"
@@ -321,11 +321,13 @@ def test_ui_ux_audit_defines_markdown_copyback_contract():
 # ── Change safety ────────────────────────────────────────────────────────────
 
 
-def test_ui_ux_audit_is_read_only_by_default():
-    """The prompt is audit-first and read-only unless implementation is requested."""
+def test_ui_ux_audit_applies_by_default_after_auditing():
+    """The default is audit-and-apply: audit first, then implement front-end improvements."""
     content = _content()
-    assert "read-only by default" in content
     assert "audit-first" in content
+    assert "audit-and-apply" in content
+    assert "Your primary deliverable is the improved user-facing experience" in content
+    assert "read-only by default" not in content
 
 
 def test_ui_ux_audit_implementation_requires_audit_first():
