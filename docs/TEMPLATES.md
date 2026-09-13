@@ -80,15 +80,17 @@ eligible prose already in view when its marker is blank. It preserves meaning
 and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
 
-Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit. It inventories
-every in-scope screen, flow, and state, audits them against a self-contained
-usability baseline before making any recommendation, scores findings by
-frequency and impact, and produces a prioritized recommendation workbench as an
-interactive, self-contained HTML document by default, or in another format such
-as Markdown when you request one. It is read-only by default and is
-independent of `:audit` (the generic decision packet), `:sanitize`, and
-`:cliche`: it does not sanitize workspaces or rewrite prose, and it never
-directs you to run another trigger.
+Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit that then
+improves the interface. It inventories every in-scope screen, flow, and state,
+audits them against a self-contained usability baseline before making any
+change, scores findings by frequency and impact, and then, by default,
+implements the evidence-supported, actionable front-end improvements within the
+authorized scope and verifies the changed experience. It records that work in
+an audit-and-improvement report — an interactive, self-contained HTML document
+by default, or another format such as Markdown when you request one — and you
+can ask for an audit without edits. It is independent of `:audit` (the generic
+decision packet), `:sanitize`, and `:cliche`: it does not sanitize workspaces or
+rewrite prose, and it never directs you to run another trigger.
 
 Append `:tddh` to almost any request as a compact reliability instruction. It
 asks the model to reason carefully, stay grounded in the available evidence,

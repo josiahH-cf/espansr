@@ -221,7 +221,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (
                 ":ui-ux-audit",
-                "audit screens, flows, and states against a standalone usability baseline",
+                "audit against a usability baseline, then apply and verify front-end fixes",
             ),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),
