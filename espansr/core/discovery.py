@@ -154,6 +154,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":work-merge",
                 "sanitize, verify, then merge and push only when the repo state is safe",
             ),
+            (
+                ":prune",
+                "audit what to update, simplify, or delete across code, process, and governance",
+            ),
         ),
     ),
     HelpSection(
