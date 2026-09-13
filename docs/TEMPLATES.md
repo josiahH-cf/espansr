@@ -83,8 +83,9 @@ no guarantee about AI-detector outcomes.
 Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit. It inventories
 every in-scope screen, flow, and state, audits them against a self-contained
 usability baseline before making any recommendation, scores findings by
-frequency and impact, and produces one self-contained interactive HTML
-workbench plus a copy-back Markdown response. It is read-only by default and is
+frequency and impact, and produces a prioritized recommendation workbench as an
+interactive, self-contained HTML document by default, or in another format such
+as Markdown when you request one. It is read-only by default and is
 independent of `:audit` (the generic decision packet), `:sanitize`, and
 `:cliche`: it does not sanitize workspaces or rewrite prose, and it never
 directs you to run another trigger.

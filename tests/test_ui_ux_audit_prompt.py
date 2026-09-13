@@ -48,8 +48,8 @@ def test_ui_ux_audit_metadata_matches_spec():
     assert data["name"] == "UI/UX Audit Workbench"
     assert data["description"] == (
         "Audit every in-scope screen, flow, and state against a standalone "
-        "usability baseline and produce an interactive, prioritized "
-        "recommendation workbench."
+        "usability baseline and produce a prioritized recommendation workbench, "
+        "as an interactive HTML document by default or in another requested format."
     )
     assert data["trigger"] == ":ui-ux-audit"
     assert data["category"] == "analysis"

@@ -214,7 +214,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":template-builder", "draft command templates"),
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
             (":research", "research a topic with strong evidence handling and synthesis"),
-            (":audit", "build an interactive HTML audit/decision packet to resolve findings"),
+            (":audit", "build an audit/decision packet, HTML by default, to resolve findings"),
             (
                 ":html-help-doc",
                 "build an interactive HTML runbook with result tracking and model-ready copy-back",
