@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
 - File helpers: `:pocket-extract`

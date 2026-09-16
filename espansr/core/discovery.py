@@ -217,6 +217,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "build an interactive HTML runbook with result tracking and model-ready copy-back",
             ),
             (
+                ":playbook",
+                "source-grounded, emoji-guided playbook with plain-language, copyable steps",
+            ),
+            (
                 ":ui-ux-audit",
                 "audit against a usability baseline, then apply and verify front-end fixes",
             ),
