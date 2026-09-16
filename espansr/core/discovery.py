@@ -251,6 +251,16 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
+        "Media prompts",
+        16,
+        (
+            (
+                ":image-generator",
+                "create or edit an image from short inputs with visual style direction",
+            ),
+        ),
+    ),
+    HelpSection(
         "File helpers",
         15,
         (
