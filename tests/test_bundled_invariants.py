@@ -31,13 +31,14 @@ INPUT_MARKERS = (
     "OPTIONAL CALLOUTS (IGNORE IF EMPTY BULLET):",
 )
 
-# Notes with no user-supplied input by design: the quick help, shell
-# snippets, and self-contained utilities.
+# Notes that do not use the trailing free-text marker: the quick help, shell
+# snippets, self-contained utilities, and notes with their own fill-in list.
 INPUT_MARKER_EXEMPT = frozenset(
     {
         "q_and_a.json",
         "docs_qa.json",
         "speechify.json",
+        "image_generator.json",
         "project_decision_helper.json",
         "espansr_help.json",
         "git_yolo_sh.json",

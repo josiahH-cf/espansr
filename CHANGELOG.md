@@ -29,6 +29,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	five plain-language bullets describing what actually happened. It is separate
 	from `:troubleshoot`, which is unchanged. Surfaced in the `:espansr` quick
 	help and the `docs/TEMPLATES.md` note list.
+- **`:image-generator` — short-input image creation and editing** — a new
+	bundled prompt that turns brief instructions and any supplied reference images
+	into concrete visual direction, covering professional headshot, cartoon,
+	photorealistic, and custom styles. It supplies explicit defaults for the
+	Use/layout, Keep/avoid, and Words inputs and leaves Make/change and Style to
+	creative intent, then generates or edits the image directly. Surfaced in the
+	`:espansr` quick help and the `docs/TEMPLATES.md` note list.
 
 ### Changed
 

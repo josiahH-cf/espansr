@@ -38,6 +38,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
+- Media prompts: `:image-generator`
 - File helpers: `:pocket-extract`
 - Security helpers: `:tenable-scans`
 <!-- END generated note list -->
