@@ -133,6 +133,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":troubleshoot",
                 "debug with context checks, research, planning, fixing, and verification",
             ),
+            (
+                ":fix-this",
+                "fix the in-context issue at its root and update the affected downstream material",
+            ),
             (":continue", "resume work in flight and keep going to done or a real gate"),
             (":unblock", "clear blockers with bulk decisions and safe actions"),
             (":verify", "verify, repair, and align affected docs"),
