@@ -142,6 +142,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":litmus", "create or audit a plain-language human-verification checklist"),
             (
+                ":canary-runner",
+                "exercise developed work with synthetic data, then remove the canary data",
+            ),
+            (
                 ":feedback",
                 "apply current-cycle feedback to the existing project and verify the changes",
             ),

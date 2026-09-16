@@ -15,6 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	in chat or the console, with plain-language steps and copyable commands,
 	meta-prompts, or settings only where needed. Surfaced in the `:espansr`
 	quick help and the `docs/TEMPLATES.md` note list.
+- **`:canary-runner` — synthetic-data canary test with automatic cleanup** — a
+	new bundled prompt that exercises developed work through a small, real run on
+	synthetic inputs, reports the observed result, and then removes all
+	attributable canary data across the locations actually used once the selected
+	workflows pass or when cleanup is explicitly requested. A cleanup-only
+	instruction removes the data without starting another run. Surfaced in the
+	`:espansr` quick help and the `docs/TEMPLATES.md` note list.
 
 ### Changed
 
