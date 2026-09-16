@@ -260,22 +260,6 @@ def test_blank_human_verdict_template_line_is_not_a_false_positive():
     assert report.passed, [f.message for f in report.failures]
 
 
-def test_litmus_template_declares_output_contract():
-    data = json.loads((TEMPLATES_DIR / "litmus.json").read_text(encoding="utf-8"))
-    contract = normalize_contract(data.get("output_contract"))
-    assert contract is not None
-    litmus_output = """HUMAN LITMUS
-
-### Remote unlock works
-
-**If this was built correctly:** A person clicks unlock and the door opens.
-
-- Model verdict: PASS | FAIL - why: <filled after implementation verification>
-- Human verdict: PASS | FAIL - why:
-"""
-    assert check_output(contract, litmus_output).passed
-
-
 # ── CLI: espansr check-output ────────────────────────────────────────────────
 
 
