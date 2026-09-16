@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **`:playbook` — source-grounded, emoji-guided playbook builder** — a new
+	bundled prompt that contextualizes around the user's current project or
+	process, verifies the relevant instructions, asks only the necessary
+	clarifying questions, and presents a simple, emoji-guided playbook directly
+	in chat or the console, with plain-language steps and copyable commands,
+	meta-prompts, or settings only where needed. Surfaced in the `:espansr`
+	quick help and the `docs/TEMPLATES.md` note list.
+
 ### Changed
 
 - **`:project-personal-growth` — regenerated from the vault** — the note's body
