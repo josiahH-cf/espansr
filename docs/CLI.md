@@ -391,7 +391,7 @@ output no longer contains the retired trigger.
 ### `espansr check-output`
 
 Validate a model-generated output file against a template's structural output
-contract (for templates that declare one, such as `:feature` and `:litmus`).
+contract (for templates that declare one, such as `:feature` and `:adversary-review`).
 For `:feature`, the checked file is the final-artifact reply that follows your
 approval — the reply carrying the FINAL IMPLEMENTATION META-PROMPT and REALITY
 SUMMARY — not the approval-round packet, which the contract never checks.
@@ -401,7 +401,7 @@ correctness.
 
 ```bash
 espansr check-output --template :feature run-output.txt
-espansr check-output --template :litmus checklist.md --json
+espansr check-output --template :adversary-review review.md --json
 ```
 
 Exit codes: `0` contract passed, `1` contract failed, `2` the template

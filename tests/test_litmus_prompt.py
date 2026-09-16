@@ -1,12 +1,13 @@
-"""Contract tests for the standalone :litmus human-verification prompt.
+"""Contract tests for the standalone :litmus criteria-author prompt.
 
 These read the checked-in ``templates/litmus.json`` and guard its identity,
 metadata, discovery surfacing, and core behavioral requirements without
 overfitting exact prose. ``:litmus`` is an independent bundled note with the
-stable capability ID ``human-litmus``: it creates, audits, or revises one
-consolidated plain-language human-verification checklist for supplied
-material. It never implements the feature, never claims the feature is
-verified, never chains to another trigger, and leaves human verdicts blank.
+stable capability ID ``human-litmus``: it consolidates the agreed requirements
+for supplied material into self-contained, deterministic Yes/No criteria another
+model can evaluate without the originating conversation. It authors the criteria
+only — it never implements the work, runs tests, answers the statements, chains
+to another trigger, or declares an output contract.
 """
 
 import json
@@ -45,7 +46,7 @@ def test_litmus_exists_and_parses():
 
 def test_litmus_metadata_matches_spec():
     data = _load()
-    assert data["name"] == "Human Litmus"
+    assert data["name"] == "Litmus"
     assert data["trigger"] == ":litmus"
     assert data["capability_id"] == "human-litmus"
     assert data["category"] == "review"
@@ -103,61 +104,72 @@ def test_litmus_registered_once_in_all_surfaces():
 # ── Standalone role and behavior ─────────────────────────────────────────────
 
 
-def test_litmus_declares_standalone_checklist_role():
+def test_litmus_declares_yes_no_criteria_role():
     content = _content()
-    assert content.startswith("You are `litmus`, a standalone human-verification contract author.")
-
-
-def test_litmus_defines_the_canonical_entry_shape():
-    content = _content()
-    assert "**If this was built correctly:**" in content
-    assert "Model verdict: PASS | FAIL - why:" in content
-    assert "Human verdict: PASS | FAIL - why:" in content
-
-
-def test_litmus_keeps_human_verdicts_blank():
-    content = _content()
-    assert "blank" in content.lower()
-    assert "left blank" in content.lower()
-
-
-def test_litmus_entries_stay_plain_language():
-    """Entries must avoid internal references a non-technical person can't judge.
-
-    The output contract cannot detect a file or class name in an entry (its
-    forbidden markers only cover prefilled verdicts), so the prohibition is
-    pinned as the exact sentence rather than by the presence of the words.
-    """
-    assert (
-        "No file, class, function, schema, or internal architecture references in the "
-        "human-facing statement." in _content()
+    assert content.startswith(
+        "You are `litmus`, a context-grounded author of deterministic Yes/No criteria."
     )
 
 
-def test_litmus_covers_non_visual_and_operator_outcomes():
+def test_litmus_requires_flat_bullet_statements():
     content = _content()
-    assert "non-visual" in content.lower() or "not visual" in content.lower()
-    assert "operator" in content.lower()
-    assert "maintainer" in content.lower()
-    assert "downstream" in content.lower()
+    assert "Return only flat `- ` bulleted statements." in content
 
 
-def test_litmus_audits_existing_checklists_for_missing_coverage():
+def test_litmus_forbids_answers_verdicts_and_retired_format():
     content = _content()
-    assert "audit" in content.lower()
-    assert "missing" in content.lower()
-    assert "coverage" in content.lower()
+    assert (
+        "Do not supply Yes/No answers, verdicts, scores, checkboxes, answer fields, "
+        "or placeholders." in content
+    )
+    for token in (
+        "HUMAN LITMUS",
+        "If this was built correctly:",
+        "Model verdict:",
+        "Human verdict:",
+    ):
+        assert token not in content, token
 
 
-def test_litmus_inspects_before_asking():
+def test_litmus_requires_self_contained_bullets():
     content = _content()
-    assert "before asking" in content.lower() or "inspect before" in content.lower()
+    assert "Make every bullet self-contained." in content
 
 
-def test_litmus_does_not_implement_or_certify():
+def test_litmus_applies_across_artifact_types():
     content = _content()
-    assert "Do not implement the feature, and do not claim the feature is verified" in content
-    assert "verification itself has not occurred here" in content
+    assert (
+        "The work may be an implementation, article, research output, specification, "
+        "prompt, process, or another artifact" in content
+    )
+    assert "Do not assume the subject is software" in content
+
+
+def test_litmus_consolidates_supplied_checklists():
+    content = _content()
+    assert (
+        "If an existing checklist is supplied, consolidate it against the controlling "
+        "requirements and return only the resulting statements." in content
+    )
+
+
+def test_litmus_grounds_criteria_in_available_context():
+    content = _content()
+    assert (
+        "Inspect relevant available material only as needed to establish the criteria." in content
+    )
+
+
+def test_litmus_authors_criteria_without_implementing_or_evaluating():
+    content = _content()
+    assert (
+        "Author the criteria only. Do not perform the underlying work, run tests, "
+        "assess the result, or answer the statements." in content
+    )
+    assert (
+        "Do not implement changes, run tests, assess the work, or claim that any "
+        "criterion has been met." in content
+    )
 
 
 def test_litmus_does_not_chain_to_adjacent_triggers():
@@ -182,8 +194,6 @@ def test_litmus_requires_no_workflow_or_feature_invocation():
     assert data["next_triggers"] == []
 
 
-def test_litmus_declares_output_contract():
+def test_litmus_declares_no_output_contract():
     data = _load()
-    contract = data.get("output_contract")
-    assert isinstance(contract, dict) and contract
-    assert "HUMAN LITMUS" in contract.get("required_sections", [])
+    assert "output_contract" not in data

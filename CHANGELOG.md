@@ -32,6 +32,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:litmus` — recast as a self-contained Yes/No criteria author** — the note
+	now consolidates the agreed requirements from an iterative conversation into
+	self-contained, deterministic Yes/No criteria another model can evaluate
+	without that conversation, and its output is only flat `- ` bulleted
+	statements. This replaces the previous consolidated `HUMAN LITMUS` checklist
+	with model and human verdict fields, and the note no longer declares an
+	`output_contract`; the `human-litmus` capability identity and artifact-type
+	metadata are unchanged. The `:espansr` blurb and the affected `docs/`
+	descriptions were updated to match.
 - **`:project-personal-growth` — regenerated from the vault** — the note's body
 	is again a projection of the vault's `Personal Growth - Meta-Prompt.md`
 	(2026-09-02 revision): the active project is the one the tracker names,

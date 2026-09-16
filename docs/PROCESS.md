@@ -246,14 +246,15 @@ not contract obligations.
 
 ## The `:litmus` capability
 
-`:litmus` (capability ID `human-litmus`) creates, audits, or revises one
-consolidated plain-language human-verification checklist for whatever
-material you supply — rough intent, a goal contract, a report, a review, a
-handoff, or an existing checklist. Entries describe what a person would do
-and observe (visual and non-visual, operator and maintainer and downstream
-included), never files or classes; model verdicts are preserved for later
-implementation evidence and human verdicts always stay blank. It is fully
-standalone: no workflow, no packet, and no `:feature` run is ever required.
+`:litmus` (capability ID `human-litmus`) consolidates the agreed requirements
+for whatever material you supply — rough intent, a goal contract, a report, a
+review, a handoff, or an existing checklist — into self-contained, deterministic
+Yes/No criteria another model can evaluate without access to the originating
+conversation. Its output is only flat `- ` bulleted statements, one concrete
+criterion each, where Yes means the work satisfies it and No means it does not;
+the note authors the statements and never answers, scores, implements, or runs
+them. It is fully standalone: no workflow, no packet, and no `:feature` run is
+ever required.
 
 ## What this layer never does
 
