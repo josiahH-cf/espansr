@@ -22,6 +22,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	workflows pass or when cleanup is explicitly requested. A cleanup-only
 	instruction removes the data without starting another run. Surfaced in the
 	`:espansr` quick help and the `docs/TEMPLATES.md` note list.
+- **`:fix-this` — context-first repair command** — a new bundled prompt that
+	takes the issue already visible in the conversation and repository,
+	investigates the underlying cause, plans and implements the repair, updates
+	the downstream project material that repair affects, and finishes with exactly
+	five plain-language bullets describing what actually happened. It is separate
+	from `:troubleshoot`, which is unchanged. Surfaced in the `:espansr` quick
+	help and the `docs/TEMPLATES.md` note list.
 
 ### Changed
 
