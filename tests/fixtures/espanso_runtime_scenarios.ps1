@@ -24,11 +24,11 @@ function Invoke-WebRequest {
     if ($Scenario -eq 'network-failure') { throw 'synthetic network failure' }
     Set-Content -LiteralPath $OutFile -Value 'synthetic verified installer'
 }
-function Get-FileHash {
-    param($LiteralPath, $Algorithm)
+function Get-EspansoInstallerHash {
+    param($Path)
     $hash = $EspansoInstallerSha256
     if ($Scenario -eq 'bad-hash') { $hash = 'wrong' }
-    return [PSCustomObject]@{ Hash = $hash }
+    return $hash
 }
 function Start-Process {
     param($FilePath, $ArgumentList, [switch]$PassThru, $WindowStyle)

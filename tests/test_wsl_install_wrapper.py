@@ -42,7 +42,7 @@ def test_wsl_install_wrapper_uses_shared_verified_runtime_installer(capsys):
     assert "powershell.exe" in captured["cmd"][0]
     assert "$espansoExe = Ensure-EspansoRuntime" in joined
     assert "Espanso-Win-Installer-x86_64.exe" in joined
-    assert "Get-FileHash -LiteralPath" in joined
+    assert "Get-EspansoInstallerHash -Path" in joined
     assert "Get-EspansoRuntimeVersion -Executable $espansoExe" in joined
     assert "ACTION_REQUIRED" in joined
 

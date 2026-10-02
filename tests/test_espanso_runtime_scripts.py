@@ -1,5 +1,6 @@
 """Execute the real installer decision paths without changing the workstation."""
 
+import hashlib
 import json
 import os
 import shutil
@@ -10,6 +11,39 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Native PowerShell hash; tested on Windows CI")
+def test_windows_runtime_hash_does_not_require_get_file_hash(tmp_path):
+    data = tmp_path / "installer with spaces.exe"
+    data.write_bytes(bytes(range(256)) * 31)
+    script = tmp_path / "hash.ps1"
+    script.write_text(
+        "param([string]$Helper, [string]$InputFile)\n"
+        ". $Helper\nGet-EspansoInstallerHash -Path $InputFile\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        [
+            "powershell.exe",
+            "-NoProfile",
+            "-NonInteractive",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(script),
+            "-Helper",
+            str(ROOT / "espansr/resources/espanso_runtime.ps1"),
+            "-InputFile",
+            str(data),
+        ],
+        env={**os.environ, "PSModulePath": ""},
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=20,
+    )
+    assert result.stdout.strip() == hashlib.sha256(data.read_bytes()).hexdigest()
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Native PowerShell installer; tested on Windows CI")

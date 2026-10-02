@@ -47,6 +47,20 @@ function Get-EspansoRuntimeVersion {
     return $null
 }
 
+function Get-EspansoInstallerHash {
+    param([string]$Path)
+    # Get-FileHash can be absent in PS 5.1 launched from a PS 7 environment.
+    $algorithm = [Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try {
+            return [BitConverter]::ToString($algorithm.ComputeHash($stream)).Replace('-', '').ToLowerInvariant()
+        }
+        finally { $stream.Dispose() }
+    }
+    finally { $algorithm.Dispose() }
+}
+
 function Ensure-EspansoRuntime {
     param([switch]$NoEspanso)
     $existing = Find-Espanso
@@ -78,7 +92,7 @@ function Ensure-EspansoRuntime {
         Write-Host "[INFO] Installing/upgrading Espanso to $EspansoMinimumVersion (official per-user installer)..."
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
         Invoke-WebRequest -Uri $EspansoInstallerUrl -OutFile $download -UseBasicParsing -TimeoutSec 120 -ErrorAction Stop
-        if ((Get-FileHash -LiteralPath $download -Algorithm SHA256 -ErrorAction Stop).Hash -ine $EspansoInstallerSha256) {
+        if ((Get-EspansoInstallerHash -Path $download) -ine $EspansoInstallerSha256) {
             throw 'Espanso installer checksum did not match the verified release'
         }
         # Download and verify first, so network errors do not stop a working daemon.
