@@ -31,7 +31,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 `python scripts/sync_discovery.py` after adding or renaming a bundled note.
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
-- Agent feature prompts: `:project-init-llm`, `:feature`, `:cb-transcript-feature`
+- Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
 - Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`
 - Personal program prompts: `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
@@ -76,6 +76,26 @@ one-page distillation, and from `:reality-min`, a tightly bounded
 one-or-two-sentence account: `:show-me` scales presentation to the material
 instead of compressing to a fixed size, and it never triggers project cleanup,
 approval gates, or task execution merely to explain something.
+
+Use `:clarify-features` for a recurring specification-writing session over a
+batch of rough ideas, dictated notes, or edits. It first inspects the actual
+project and automatically uses its established specification format and agent
+loop authoring mechanism when available, falling back to simple Markdown specs
+when none exists. It aligns each change with the intended outcome, asks as many
+grouped clarification questions and follow-up rounds as needed, accepts
+best-effort stream-of-consciousness speech-to-text answers, and checks material
+wording and transcription ambiguities. Once unblocked, it creates or revises
+finalized specs and required native registrations, verifies them, and asks for
+the next batch. It can write immediately when the initial context is sufficient.
+
+Clarification and review always appear directly in the console or chat; no
+additional review file or interactive questionnaire is created. Final specs are
+written to the project by default, or returned inline when the user requests
+console output in the appended context (or no writable project is available).
+It does not start implementation. Unlike `:feature`'s single approval round and
+default implementation meta-prompt, it is an ongoing spec-authoring loop that
+automatically adopts the native process. Unlike `:cb-transcript-feature`, its
+entry point is any batch of ideas and it explicitly asks for the next batch.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.

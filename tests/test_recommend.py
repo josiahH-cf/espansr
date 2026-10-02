@@ -61,6 +61,14 @@ def test_search_rough_intent_to_handoff_surfaces_feature():
 # ── BEH-06: artifact compatibility ───────────────────────────────────────────
 
 
+def test_search_dictated_ideas_to_specs_surfaces_clarify_features():
+    entries = _bundled_entries()
+    assert (
+        _top_trigger(entries, {"text": "clarify a stream of consciousness into finalized specs"})
+        == ":clarify-features"
+    )
+
+
 def test_artifact_evidence_report_to_visual_artifact_surfaces_visual():
     entries = _bundled_entries()
     assert (

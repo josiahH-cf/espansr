@@ -56,6 +56,7 @@ template conservatively clears the incoming ID.
 | `audit-packet` | `:audit` | `interactive-html` |
 | `experience-audit` | `:ui-ux-audit` | `interactive-html` |
 | `spec-discovery` | `:cb-transcript-feature` | `implementation-handoff` |
+| `feature-clarification` | `:clarify-features` | `implementation-handoff` |
 | `human-litmus` | `:litmus` | `human-litmus` |
 | `feature-handoff` | `:feature` | `implementation-handoff` |
 | `verification` | `:verify` | `verification-report` |
