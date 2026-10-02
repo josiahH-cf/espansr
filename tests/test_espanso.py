@@ -372,6 +372,33 @@ def test_find_espanso_falls_back_to_localappdata(tmp_path):
     assert result == str(espanso_cmd)
 
 
+def test_find_espanso_prefers_windows_daemon_beside_path_wrapper(tmp_path):
+    from espansr.integrations.espanso import _find_espanso_executable
+
+    wrapper = tmp_path / "espanso.cmd"
+    wrapper.write_text("@echo off")
+    daemon = tmp_path / "espansod.exe"
+    daemon.write_bytes(b"")
+    with (
+        patch("shutil.which", return_value=str(wrapper)),
+        patch("espansr.integrations.espanso.is_windows", return_value=True),
+    ):
+        assert _find_espanso_executable() == str(daemon)
+
+
+def test_find_espanso_prefers_localappdata_daemon_without_path_wrapper(tmp_path, monkeypatch):
+    from espansr.integrations.espanso import _find_espanso_executable
+
+    install_dir = tmp_path / "Programs" / "Espanso"
+    install_dir.mkdir(parents=True)
+    daemon = install_dir / "espansod.exe"
+    daemon.write_bytes(b"")
+    (install_dir / "espanso.cmd").write_text("@echo off")
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    with patch("shutil.which", return_value=None):
+        assert _find_espanso_executable() == str(daemon)
+
+
 def test_find_espanso_returns_none_when_not_found(tmp_path):
     """_find_espanso_executable() returns None when Espanso is not on PATH or LOCALAPPDATA."""
     import os

@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Windows publish/reinstall verification reads Espanso's daemon directly,
+  avoiding false restart warnings from its silent batch wrapper. Unix
+  installers quote command aliases through both shell parsing layers and
+  refresh stale aliases while preserving other shell settings. macOS uses
+  the current Homebrew install route without the obsolete Espanso tap.
+- Native macOS CI and installer canaries on Linux, macOS, and Windows now
+  exercise fresh installation, real Git pull/push and reinstall, bundled-note
+  upgrades, custom-template preservation, and prompt copying in Qt.
+
 ### Added
 
 - **`:coms` task-based browsing** — nine overlapping command groups, compact

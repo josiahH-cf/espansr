@@ -197,7 +197,7 @@ def test_shell_installer_uses_homebrew_on_macos():
     text = _installer_text()
 
     assert "brew install espanso" in text
-    assert "brew tap espanso/espanso" in text
+    assert "brew tap espanso/espanso" not in text
     assert "https://brew.sh" in text
 
 

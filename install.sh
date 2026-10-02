@@ -247,7 +247,7 @@ install_espanso_macos() {
     if ! command -v brew &>/dev/null; then
         warn "Homebrew not found. espansr does not auto-install brew."
         info "Install Homebrew from https://brew.sh, then run:"
-        echo "  brew tap espanso/espanso && brew install espanso"
+        echo "  brew install espanso"
         echo "  espanso service register && espanso service start"
         echo "  bash install.sh   # rerun once Espanso is installed"
         return 1
@@ -259,15 +259,12 @@ install_espanso_macos() {
     fi
 
     info "Installing Espanso via Homebrew…"
-    if ! brew tap espanso/espanso &>/dev/null; then
-        warn "Could not tap espanso/espanso (continuing — formula may already be available)"
-    fi
     if brew install espanso; then
         ok "Espanso installed via Homebrew"
         return 0
     fi
     warn "brew install espanso failed"
-    info "Install manually: brew tap espanso/espanso && brew install espanso"
+    info "Install manually: brew install espanso"
     return 1
 }
 
@@ -654,15 +651,39 @@ setup_shell_alias() {
         shell_rc="$HOME/.bashrc"
     fi
 
-    local alias_line="alias espansr='$VENV_CMD'"
+    # An alias has two parsing layers: the rc assignment and the eventual
+    # command. Quote both so spaces, apostrophes and shell metacharacters in
+    # the install path remain literal. Refresh old aliases on reinstall.
+    local alias_status
+    alias_status="$("$VENV_PYTHON" - "$shell_rc" "$VENV_CMD" <<'PY'
+import shlex
+import sys
+from pathlib import Path
 
-    if grep -qF "espansr" "$shell_rc" 2>/dev/null; then
-        ok "Shell alias already present in $shell_rc"
+from espansr.core.atomic import atomic_write_bytes
+
+rc = Path(sys.argv[1])
+alias = ("alias espansr=" + shlex.quote(shlex.quote(sys.argv[2]))).encode("utf-8")
+original = rc.read_bytes() if rc.exists() else b""
+lines = original.splitlines(keepends=True)
+found = False
+for index, line in enumerate(lines):
+    if line.lstrip().startswith(b"alias espansr="):
+        newline = b"\r\n" if line.endswith(b"\r\n") else b"\n"
+        lines[index] = alias + newline
+        found = True
+updated = b"".join(lines) if found else original + b"\n# espansr\n" + alias + b"\n"
+if updated == original:
+    print("unchanged")
+else:
+    atomic_write_bytes(rc, updated)
+    print("updated" if found else "added")
+PY
+)"
+    if [[ "$alias_status" == "unchanged" ]]; then
+        ok "Shell alias already current in $shell_rc"
     else
-        echo "" >> "$shell_rc"
-        echo "# espansr" >> "$shell_rc"
-        echo "$alias_line" >> "$shell_rc"
-        ok "Added alias to $shell_rc"
+        ok "Shell alias $alias_status in $shell_rc"
         info "Run: source $shell_rc  (or open a new terminal)"
     fi
 }
