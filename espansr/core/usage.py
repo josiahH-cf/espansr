@@ -35,7 +35,7 @@ def command_key(entry) -> str:
 
 
 @lru_cache(maxsize=8)
-def _version_for(executable: str, wsl: bool) -> str:
+def _version_for(executable: str, wsl: bool, revision: int) -> str:
     if wsl:
         argv = [
             "powershell.exe",
@@ -68,7 +68,14 @@ def native_version() -> str:
 
     wsl = is_wsl2()
     executable = "powershell.exe" if wsl else _find_espanso_executable()
-    return _version_for(executable, wsl) if executable else ""
+    if not executable:
+        return ""
+    try:
+        # A runtime upgrade at the same path must refresh an already-open GUI.
+        revision = int(time.monotonic() // 60) if wsl else Path(executable).stat().st_mtime_ns
+    except OSError:
+        return ""
+    return _version_for(executable, wsl, revision)
 
 
 def _supported(version: str) -> bool:

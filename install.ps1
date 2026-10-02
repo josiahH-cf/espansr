@@ -3,13 +3,14 @@
 # Supports: Windows 10/11 with PowerShell 5.1+ or PowerShell 7+
 # Prerequisites: Python 3.11+ installed (on PATH or via the `py` launcher)
 #
-# Usage: .\install.ps1 [-RemoteDesktop | -LocalOnly]
+# Usage: .\install.ps1 [-RemoteDesktop | -LocalOnly] [-NoEspanso]
 
 #Requires -Version 5.1
 
 param(
     [switch]$RemoteDesktop,
-    [switch]$LocalOnly
+    [switch]$LocalOnly,
+    [switch]$NoEspanso
 )
 
 Set-StrictMode -Version Latest
@@ -103,35 +104,7 @@ function Find-Python {
     return $null
 }
 
-function Find-Espanso {
-    $cmd = Get-Command espanso -ErrorAction SilentlyContinue
-    if ($null -ne $cmd) {
-        $cmdDir = Split-Path -Parent $cmd.Source
-        $daemon = Join-Path $cmdDir "espansod.exe"
-        if (Test-Path $daemon) {
-            return $daemon
-        }
-        return $cmd.Source
-    }
-
-    $candidates = @(
-        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espansod.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.CMD"),
-        (Join-Path $env:LOCALAPPDATA "Programs\Espanso\espanso.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espansod.exe"),
-        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.CMD"),
-        (Join-Path $env:LOCALAPPDATA "Programs\espanso\espanso.exe"),
-        (Join-Path $env:LOCALAPPDATA "Microsoft\WindowsApps\espanso.exe")
-    )
-
-    foreach ($candidate in $candidates) {
-        if ($candidate -and (Test-Path $candidate)) {
-            return $candidate
-        }
-    }
-
-    return $null
-}
+. (Join-Path $ScriptDir 'espansr\resources\espanso_runtime.ps1')
 
 # Run a command in a background job and wait up to $TimeoutSec seconds.
 # Returns a PSCustomObject with Output (string), ExitCode (int), TimedOut (bool).
@@ -435,7 +408,7 @@ Ok "Package installed"
 # launcher, commands popup, sync trigger, and templates into Espanso's config
 # directory, which only exists once Espanso has run at least once.
 
-$EspansoBin = Find-Espanso
+$EspansoBin = Ensure-EspansoRuntime -NoEspanso:$NoEspanso
 $EspansoFound = $null -ne $EspansoBin
 $EspansoJustStarted = $false
 if ($EspansoFound) {

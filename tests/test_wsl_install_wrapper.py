@@ -15,8 +15,8 @@ def test_wsl_install_wrapper_fails_outside_wsl(capsys):
     assert "only supported" in out
 
 
-def test_wsl_install_wrapper_invokes_powershell_with_winget(capsys):
-    """Wrapper should call PowerShell with non-interactive winget install flags."""
+def test_wsl_install_wrapper_uses_shared_verified_runtime_installer(capsys):
+    """Native Windows and WSL must install and verify the same supported version."""
     from espansr.__main__ import cmd_wsl_install_espanso
 
     captured = {}
@@ -40,7 +40,10 @@ def test_wsl_install_wrapper_invokes_powershell_with_winget(capsys):
     assert "completed with verification" in out
     joined = " ".join(captured["cmd"])
     assert "powershell.exe" in captured["cmd"][0]
-    assert "winget install --id Espanso.Espanso" in joined
+    assert "$espansoExe = Ensure-EspansoRuntime" in joined
+    assert "Espanso-Win-Installer-x86_64.exe" in joined
+    assert "Get-EspansoInstallerHash -Path" in joined
+    assert "Get-EspansoRuntimeVersion -Executable $espansoExe" in joined
     assert "ACTION_REQUIRED" in joined
 
 

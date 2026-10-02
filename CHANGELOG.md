@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Installers now install or upgrade standard Espanso runtimes to 2.4.1+ so
+  native usage counters work after installation. Windows and WSL share the
+  official, checksum-verified per-user installer; Linux preserves existing
+  X11/Wayland Debian packages or managed AppImages; macOS upgrades through
+  Homebrew. Current runtimes skip downloads, custom installs get guidance,
+  and explicit runtime opt-outs remain available on every platform. Failed
+  downloads do not stop a working runtime. Usage version caching refreshes
+  when the executable changes during an upgrade.
+- Real runtime canaries on native CI verify Windows/Linux upgrades from 2.3.0,
+  the macOS Homebrew route, statistics enablement and counter availability.
+
 - Windows publish/reinstall verification reads Espanso's daemon directly,
   avoiding false restart warnings from its silent batch wrapper. Unix
   installers quote command aliases through both shell parsing layers and

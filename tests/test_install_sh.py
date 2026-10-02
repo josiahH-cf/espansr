@@ -180,7 +180,7 @@ def test_shell_installer_downloads_appimage_for_linux():
 
     # X11 AppImage is the universal Linux fallback. The URL is composed from
     # a base + asset variable, so check the parts.
-    assert "https://github.com/espanso/espanso/releases/latest/download/" in text
+    assert "https://github.com/espanso/espanso/releases/download/v2.4.1" in text
     assert "Espanso-X11.AppImage" in text
 
 

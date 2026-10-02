@@ -36,7 +36,7 @@ where = ["."]
 include = ["espansr*"]
 
 [tool.setuptools.package-data]
-espansr = ["../templates/*.json", "../templates/_meta/workflows/*.json"]
+espansr = ["../templates/*.json", "../templates/_meta/workflows/*.json", "resources/*.ps1"]
 
 [tool.ruff]
 line-length = 100

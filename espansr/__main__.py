@@ -94,7 +94,7 @@ def _print_wsl_install_action_required() -> None:
 def cmd_wsl_install_espanso(args) -> int:
     """Install and start Espanso on Windows host from WSL.
 
-    This command is WSL2-only. It uses PowerShell to install Espanso via winget,
+    This command is WSL2-only. It uses the shared Windows runtime installer,
     then attempts to start Espanso using known executable locations to handle
     PATH/session lag after install. It manages Windows-side Espanso only;
     Windows PowerShell and WSL remain separate espansr environments.
@@ -103,50 +103,24 @@ def cmd_wsl_install_espanso(args) -> int:
         print(fail("wsl-install-espanso is only supported when running inside WSL2"))
         return 1
 
-    script = r"""
+    from importlib.resources import files
+
+    runtime_script = files("espansr").joinpath("resources/espanso_runtime.ps1").read_text("utf-8")
+    script = runtime_script + r"""
 $ErrorActionPreference = 'Continue'
 
-$installOk = $true
-try {
-    winget install --id Espanso.Espanso -e --accept-package-agreements --accept-source-agreements
-} catch {
-    $installOk = $false
-}
+$espansoExe = Ensure-EspansoRuntime
+$version = Get-EspansoRuntimeVersion -Executable $espansoExe
 
-$candidates = @(
-    "$Env:LOCALAPPDATA\Programs\Espanso\espanso.exe",
-    "$Env:LOCALAPPDATA\Programs\espanso\espanso.exe",
-    "$Env:ProgramFiles\Espanso\espanso.exe",
-    "$Env:ProgramFiles(x86)\Espanso\espanso.exe",
-    "$Env:LOCALAPPDATA\Microsoft\WindowsApps\espanso.exe"
-)
-
-$espansoExe = $null
-foreach ($candidate in $candidates) {
-    if (Test-Path $candidate) {
-        $espansoExe = $candidate
-        break
-    }
-}
-
-if (-not $espansoExe) {
-    $cmd = Get-Command espanso -ErrorAction SilentlyContinue
-    if ($cmd) {
-        $espansoExe = $cmd.Source
-    }
-}
-
-if (-not $espansoExe) {
-    Write-Host "ACTION_REQUIRED: Espanso executable not detected in this PowerShell session."
-    if (-not $installOk) {
-        Write-Host "winget did not report a clean install. Complete the .exe installer if prompted."
-    }
+if (-not $version -or $version -lt $EspansoMinimumVersion) {
+    Write-Host "ACTION_REQUIRED: Espanso 2.4.1+ installation/upgrade could not be verified."
     exit 2
 }
 
 $startOk = $true
 try {
     & $espansoExe start
+    if ($LASTEXITCODE -ne 0) { $startOk = $false }
 } catch {
     $startOk = $false
 }
@@ -172,6 +146,7 @@ if (-not $startOk -or -not $configDetected) {
 }
 
 & $espansoExe status
+if ($LASTEXITCODE -ne 0) { exit 2 }
 exit 0
 """
 
