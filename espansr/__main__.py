@@ -332,7 +332,11 @@ def cmd_setup(args) -> int:
             print("[dry-run] Would generate sync trigger")
             print("[dry-run] Would publish templates to Espanso")
         else:
+            from espansr.core.usage import enable_native_stats
             from espansr.integrations.espanso import sync_to_espanso
+
+            if enable_native_stats(espanso_dir):
+                print("Local usage: enabled native Espanso statistics")
 
             clean_stale_espanso_files()
             generated = {

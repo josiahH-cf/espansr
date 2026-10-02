@@ -826,6 +826,15 @@ def sync_to_espanso(
 
     try:
         _write_match_file(output_path, {"matches": matches})
+        # Credit pending native events to their old owners, then reconcile
+        # ownership only after renamed/reused triggers publish successfully.
+        from espansr.core.command_catalog import build_command_catalog
+        from espansr.core.usage import refresh_usage
+
+        try:
+            refresh_usage(build_command_catalog())
+        except Exception as exc:
+            logger.debug("Usage sampling skipped: %s", exc)
 
         _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")

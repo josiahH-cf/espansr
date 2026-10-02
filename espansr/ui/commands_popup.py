@@ -98,6 +98,14 @@ class CommandRowWidget(QFrame):
         self._name_label.setWordWrap(True)
         header.addWidget(self._name_label, 1)
 
+        monitor = self._actions.get("usage_monitor")
+        if monitor is not None:
+            from espansr.core.usage import command_key
+            from espansr.ui.usage_labels import UsageLabel
+
+            self._usage_label = UsageLabel(monitor, command_key(entry), self)
+            header.addWidget(self._usage_label)
+
         self._workflow_label = QLabel(entry.workflow_label)
         self._workflow_label.setMargin(4)
         self._workflow_label.setFrameShape(QFrame.Shape.Box)
@@ -333,6 +341,9 @@ class CommandsPopupDialog(QDialog):
             if entries is not None
             else build_command_catalog(workflow_catalog=self._workflow_catalog)
         )
+        from espansr.ui.usage_labels import UsageMonitor
+
+        self._usage_monitor = UsageMonitor(lambda: self._entries, self)
         self._group_id = ""
         self._shown_entries: list[CommandCatalogEntry] = []
         self._selected_entry: Optional[CommandCatalogEntry] = None
@@ -879,7 +890,7 @@ class CommandsPopupDialog(QDialog):
             old.deleteLater()
         self._detail_widget = CommandRowWidget(
             entry,
-            actions=self._entry_actions(entry),
+            actions={**self._entry_actions(entry), "usage_monitor": self._usage_monitor},
             related_html=self._related_html(entry),
             font_size=self._config.ui.font_size,
         )

@@ -127,6 +127,16 @@ def _mock_restart_espanso():
 
 
 @pytest.fixture(autouse=True)
+def _isolate_usage():
+    """Tests never probe the real runtime or start background usage readers."""
+    with (
+        patch("espansr.core.usage.native_version", return_value=""),
+        patch("espansr.ui.usage_labels.UsageMonitor._start", lambda self: None),
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def _no_real_shim_mutation(request, tmp_path):
     """Keep ``cmd_setup`` / ``cmd_doctor`` from re-pointing a real command shim.
 

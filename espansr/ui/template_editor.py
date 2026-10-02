@@ -159,6 +159,13 @@ class TemplateEditorWidget(QWidget):
         save_btn.clicked.connect(self._save)
         layout.addWidget(save_btn)
 
+        from espansr.core.command_catalog import build_command_catalog
+        from espansr.ui.usage_labels import UsageLabel, UsageMonitor
+
+        self._usage_monitor = UsageMonitor(build_command_catalog, self)
+        self._usage_label = UsageLabel(self._usage_monitor, parent=self)
+        layout.addWidget(self._usage_label)
+
     def _connect_preview_signals(self) -> None:
         """Wire field changes to YAML and output preview updates."""
         self._trigger_edit.textChanged.connect(self._update_yaml_preview)
@@ -176,6 +183,9 @@ class TemplateEditorWidget(QWidget):
     def load_template(self, template: Template) -> None:
         """Populate editor fields from a Template object."""
         self._current_template = template
+        from espansr.core.capabilities import effective_capability_id
+
+        self._usage_label.set_key(f"template:{effective_capability_id(template)}")
         self._name_edit.setText(template.name)
         self._trigger_edit.setText(template.trigger)
         self._content_edit.setPlainText(template.content)
@@ -192,6 +202,7 @@ class TemplateEditorWidget(QWidget):
     def clear(self) -> None:
         """Clear all fields for creating a new template."""
         self._current_template = None
+        self._usage_label.set_key("")
         self._name_edit.clear()
         self._trigger_edit.clear()
         self._content_edit.clear()
@@ -302,6 +313,10 @@ class TemplateEditorWidget(QWidget):
 
             if emit_signal:
                 self.template_saved.emit(self._current_template)
+            from espansr.core.capabilities import effective_capability_id
+
+            self._usage_label.set_key(f"template:{effective_capability_id(self._current_template)}")
+            self._usage_monitor._start()
             return self._current_template
         except Exception as exc:
             self.status_message.emit(f"Save failed: {exc}", 5000)

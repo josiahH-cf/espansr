@@ -543,11 +543,15 @@ def test_migrate_config_dir_skips_when_no_old(tmp_path):
 def test_get_config_dir_triggers_migration(tmp_path):
     """get_config_dir() automatically migrates old config dir."""
     import os
+    import platform as _platform_mod
 
     from espansr.core.config import get_config_dir
     from espansr.core.platform import get_platform_config
 
-    old_dir = tmp_path / "automatr-espanso"
+    native_platform = _platform_mod.system()
+    base = tmp_path / "Library" / "Application Support" if native_platform == "Darwin" else tmp_path
+    base.mkdir(parents=True, exist_ok=True)
+    old_dir = base / "automatr-espanso"
     old_dir.mkdir()
     (old_dir / "config.json").write_text('{"migrated": true}')
 
@@ -555,9 +559,7 @@ def test_get_config_dir_triggers_migration(tmp_path):
     # On Windows it reads APPDATA; on Linux/WSL2 it reads XDG_CONFIG_HOME.
     # Patch the correct variable for this platform and clear the cache so the
     # patched value is picked up, then restore afterwards.
-    import platform as _platform_mod
-
-    env_key = "APPDATA" if _platform_mod.system() == "Windows" else "XDG_CONFIG_HOME"
+    env_key = {"Windows": "APPDATA", "Darwin": "HOME"}.get(native_platform, "XDG_CONFIG_HOME")
     get_platform_config.cache_clear()
     try:
         with patch.dict(os.environ, {env_key: str(tmp_path)}):
@@ -565,7 +567,7 @@ def test_get_config_dir_triggers_migration(tmp_path):
     finally:
         get_platform_config.cache_clear()
 
-    assert config_dir == tmp_path / "espansr"
+    assert config_dir == base / "espansr"
     assert not old_dir.exists()
     assert (config_dir / "config.json").read_text() == '{"migrated": true}'
 

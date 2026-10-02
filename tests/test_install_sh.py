@@ -9,6 +9,11 @@ def _installer_text() -> str:
     return (ROOT / "install.sh").read_text(encoding="utf-8")
 
 
+def test_shell_installer_keeps_posix_line_endings_in_windows_checkouts():
+    assert b"\r\n" not in (ROOT / "install.sh").read_bytes()
+    assert "*.sh text eol=lf" in (ROOT / ".gitattributes").read_text(encoding="utf-8")
+
+
 def test_shell_installer_records_install_metadata_for_refresh():
     text = _installer_text()
 

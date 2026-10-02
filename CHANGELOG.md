@@ -13,11 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   installers quote command aliases through both shell parsing layers and
   refresh stale aliases while preserving other shell settings. macOS uses
   the current Homebrew install route without the obsolete Espanso tap.
+  Bash scripts retain LF line endings in Windows checkouts for WSL use.
 - Native macOS CI and installer canaries on Linux, macOS, and Windows now
   exercise fresh installation, real Git pull/push and reinstall, bundled-note
   upgrades, custom-template preservation, and prompt copying in Qt.
 
 ### Added
+
+- **Local expansion counters** — small counters in `:coms` command details
+  and the `:aopen` editor read actual native Espanso 2.4+ statistics, with
+  background refresh and no hooks in copying or expansion. Setup enables
+  native statistics on supported runtimes while preserving other config text.
+  Local `usage.json` checkpoints retain totals across restarts, reinstall,
+  trigger renames, and native statistics resets; they stay outside template
+  sync. Older runtimes show unavailable and continue working normally.
 
 - **`:coms` task-based browsing** — nine overlapping command groups, compact
 	"Choose it when" cues and role labels, selected-command details, and optional
