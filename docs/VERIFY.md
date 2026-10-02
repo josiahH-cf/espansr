@@ -11,6 +11,27 @@ local Git remote, cleans them up, and restores the Windows runner's user PATH.
 It skips Espanso runtime installation and desktop typing; those require a real
 desktop, permissions, and the checks below. Clipboard checks use Qt offscreen.
 
+A separate `scripts/verify_espanso_runtime.py` canary installs the real official
+2.3.0 runtime and runs the real upgrade route on Windows and Linux. On macOS it
+runs the Homebrew route. It verifies the installed version, enables statistics
+and checks counter availability using the real version probe. It runs only on
+disposable CI runners, without starting services or typing into desktop apps.
+
+Installers target Espanso **2.4.1+**. Missing runtimes are installed; older
+standard installations are upgraded; supported versions skip network downloads.
+Windows uses the official per-user installer, Linux preserves an installed
+X11/Wayland Debian package or the managed AppImage, and macOS uses Homebrew.
+Windows/Linux downloads are pinned to 2.4.1 and SHA-256 verified before stopping
+an existing runtime. The configuration and prompt store remain outside the
+runtime's installation folder. Custom/system installs, unavailable package
+managers, unsupported architectures and failed upgrades get guidance without
+blocking espansr. On macOS, Accessibility/Input Monitoring permissions may
+still need to be granted through the OS; an installer cannot grant them.
+
+Use Windows `-NoEspanso`, POSIX `--no-espanso`, or `ESPANSR_NO_ESPANSO=1` to skip
+runtime installation/upgrade. Existing Espanso can still be used. WSL's explicit
+`espansr wsl-install-espanso` command shares the Windows runtime helper.
+
 ### Local expansion counts
 
 On Espanso 2.4+, setup enables `stats.enabled` in `config/default.yml`, preserving

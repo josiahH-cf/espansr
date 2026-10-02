@@ -17,6 +17,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VENV_DIR="$SCRIPT_DIR/.venv"
 PYTHON_MIN="3.11"
+ESPANSO_MIN="2.4.1"
+ESPANSO_RELEASE_URL="https://github.com/espanso/espanso/releases/download/v2.4.1"
 
 # ─── Argument parsing ─────────────────────────────────────────────────────────
 NO_ESPANSO=0
@@ -165,6 +167,37 @@ install_system_deps
 
 ESPANSO_INSTALLED_THIS_RUN=0
 
+espanso_version_supported() {
+    # 2.3 prints a version but exits 1; compare its output, not its exit code.
+    "$PYTHON_BIN" - "$ESPANSO_MIN" <<'PY'
+import re
+import subprocess
+import sys
+try:
+    result = subprocess.run(['espanso', '--version'], capture_output=True, text=True, timeout=5)
+    match = re.fullmatch(r"(?:espanso\s+)?(\d+\.\d+\.\d+)", result.stdout.strip())
+    supported = match and tuple(map(int, match[1].split('.'))) >= tuple(map(int, sys.argv[1].split('.')))
+except (OSError, subprocess.SubprocessError):
+    supported = False
+raise SystemExit(0 if supported else 1)
+PY
+}
+
+verify_espanso_download() {
+    "$PYTHON_BIN" - "$1" "$2" <<'PY'
+import hashlib
+import sys
+from pathlib import Path
+raise SystemExit(0 if hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest() == sys.argv[2] else 1)
+PY
+}
+
+stop_espanso_for_update() {
+    if command -v espanso &>/dev/null; then
+        espanso service stop &>/dev/null || true
+    fi
+}
+
 install_espanso_linux() {
     # Espanso's Wayland build (kdotool-based) only works on KDE/KWin and
     # hangs on GNOME Wayland and other compositors. The X11 build runs under
@@ -182,7 +215,11 @@ install_espanso_linux() {
 install_espanso_deb() {
     local session="$1"
     local asset="espanso-debian-${session}-amd64.deb"
-    local url="https://github.com/espanso/espanso/releases/latest/download/$asset"
+    local url="$ESPANSO_RELEASE_URL/$asset"
+    local checksum="190305ea01b6fe24c87867532fb1786ad5622fd2d5deeefb0ecace26ef4078c7"
+    if [[ "$session" == "wayland" ]]; then
+        checksum="d4b3b284c6fabf6f2a73dc269189fb5a06611547529853c87b58d07aa7d295ae"
+    fi
     local tmp
     tmp="$(mktemp --suffix=.deb 2>/dev/null || mktemp)"
 
@@ -192,8 +229,14 @@ install_espanso_deb() {
         rm -f "$tmp"
         return 1
     fi
+    if ! verify_espanso_download "$tmp" "$checksum"; then
+        warn "Espanso package checksum failed; keeping the current installation"
+        rm -f "$tmp"
+        return 1
+    fi
 
     info "Installing $asset (requires sudo)…"
+    stop_espanso_for_update
     if sudo apt-get install -y -q "$tmp" 2>&1 | tail -5; then
         ok "Espanso installed via Debian package"
         rm -f "$tmp"
@@ -208,7 +251,7 @@ install_espanso_appimage_x11() {
     local user_bin="$HOME/.local/bin"
     local dest="$user_bin/espanso"
     local asset="Espanso-X11.AppImage"
-    local url="https://github.com/espanso/espanso/releases/latest/download/$asset"
+    local url="$ESPANSO_RELEASE_URL/$asset"
 
     mkdir -p "$user_bin"
     info "Fetching $url"
@@ -218,26 +261,40 @@ install_espanso_appimage_x11() {
         info "Install Espanso manually from https://espanso.org/install/linux/, then rerun ./install.sh"
         return 1
     fi
-    mv "$dest.tmp" "$dest"
-    chmod +x "$dest"
-    ok "Espanso AppImage installed at $dest"
-
-    # AppImage needs FUSE; on hosts without libfuse2, fall back to
-    # --appimage-extract-and-run via a wrapper.
-    if ! "$dest" --version &>/dev/null; then
+    if ! verify_espanso_download "$dest.tmp" "58b1b9c270c2416f3c6cb9069dfbcfb882d82de3369cf675861102936fc5f540"; then
+        warn "Espanso AppImage checksum failed; keeping the current installation"
+        rm -f "$dest.tmp"
+        return 1
+    fi
+    chmod +x "$dest.tmp"
+    local extract=0
+    # Prove the staged replacement works before stopping/replacing a working
+    # installation. AppImage extraction is its built-in fallback without FUSE.
+    if ! "$dest.tmp" --version &>/dev/null; then
         warn "Espanso AppImage cannot run directly (FUSE may be unavailable); falling back to extract-and-run"
-        local appimage="$user_bin/.espanso.AppImage"
-        mv "$dest" "$appimage"
-        cat > "$dest" <<EOF
-#!/usr/bin/env bash
-exec "$appimage" --appimage-extract-and-run "\$@"
-EOF
-        chmod +x "$dest"
-        if ! "$dest" --version &>/dev/null; then
-            warn "Espanso still cannot run; manual install may be required"
+        if ! "$dest.tmp" --appimage-extract-and-run --version &>/dev/null; then
+            warn "Downloaded Espanso cannot run; keeping the current installation"
+            rm -f "$dest.tmp"
             return 1
         fi
+        extract=1
+    fi
+    stop_espanso_for_update
+    if (( extract == 1 )); then
+        local appimage="$user_bin/.espanso.AppImage"
+        mv "$dest.tmp" "$appimage"
+        "$PYTHON_BIN" - "$appimage" "$dest.launcher" <<'PY'
+import shlex
+import sys
+from pathlib import Path
+Path(sys.argv[2]).write_text('#!/usr/bin/env bash\nexec ' + shlex.quote(sys.argv[1]) + ' --appimage-extract-and-run "$@"\n', encoding='utf-8')
+PY
+        chmod +x "$dest.launcher"
+        mv "$dest.launcher" "$dest"
         ok "Espanso fallback wrapper configured (extract-and-run mode)"
+    else
+        mv "$dest.tmp" "$dest"
+        ok "Espanso AppImage installed at $dest"
     fi
 
     return 0
@@ -254,7 +311,8 @@ install_espanso_macos() {
     fi
 
     if brew list espanso &>/dev/null 2>&1; then
-        ok "Espanso already installed via Homebrew"
+        info "Upgrading Espanso via Homebrew…"
+        brew upgrade --cask espanso || return 1
         return 0
     fi
 
@@ -367,23 +425,50 @@ install_espanso() {
         return 0
     fi
 
-    if command -v espanso &>/dev/null; then
-        ok "Espanso already on PATH ($(command -v espanso))"
+    if command -v espanso &>/dev/null && espanso_version_supported; then
+        ok "Espanso already on PATH and meets $ESPANSO_MIN ($(command -v espanso)); no upgrade needed"
         return 0
     fi
+    if [[ "$PLATFORM" == "linux" && "$(uname -m)" != "x86_64" ]]; then
+        warn "Official Linux packages are x86_64; upgrade Espanso $ESPANSO_MIN+ for your architecture manually."
+        return 1
+    fi
 
-    case "$PLATFORM" in
-        linux)
-            install_espanso_linux || return 1
-            ;;
-        macos)
+    if command -v espanso &>/dev/null; then
+        info "Espanso $ESPANSO_MIN+ is needed for counters; checking upgrade route"
+        if [[ "$PLATFORM" == "linux" ]]; then
+            local current package=""
+            current="$("$PYTHON_BIN" -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).resolve())' "$(command -v espanso)")"
+            if [[ "$current" == "$HOME/.local/bin/espanso" ]]; then
+                install_espanso_appimage_x11 || return 1
+            else
+                if command -v dpkg-query &>/dev/null; then
+                    package="$(dpkg-query -S "$current" 2>/dev/null | head -1 | cut -d: -f1 || true)"
+                fi
+                case "$package" in
+                    espanso) install_espanso_deb x11 || return 1 ;;
+                    espanso-wayland) install_espanso_deb wayland || return 1 ;;
+                    *)
+                        warn "Custom/distro Espanso installation: upgrade through its original package manager to $ESPANSO_MIN+."
+                        return 1
+                        ;;
+                esac
+            fi
+        else
             install_espanso_macos || return 1
-            ;;
-        *)
-            warn "Unsupported platform for Espanso auto-install: $PLATFORM"
-            return 1
-            ;;
-    esac
+        fi
+    else
+        case "$PLATFORM" in
+            linux) install_espanso_linux || return 1 ;;
+            macos) install_espanso_macos || return 1 ;;
+            *) warn "Unsupported platform for Espanso auto-install: $PLATFORM"; return 1 ;;
+        esac
+    fi
+
+    if ! espanso_version_supported; then
+        warn "Espanso upgrade did not provide $ESPANSO_MIN+ on PATH; counters remain unavailable."
+        return 1
+    fi
 
     ESPANSO_INSTALLED_THIS_RUN=1
     start_espanso_service "$(command -v espanso || echo "$HOME/.local/bin/espanso")" || true

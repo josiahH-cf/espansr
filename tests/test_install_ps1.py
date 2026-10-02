@@ -6,7 +6,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def _installer_text() -> str:
-    return (ROOT / "install.ps1").read_text(encoding="utf-8")
+    return (ROOT / "install.ps1").read_text(encoding="utf-8") + (
+        ROOT / "espansr/resources/espanso_runtime.ps1"
+    ).read_text(encoding="utf-8")
 
 
 def test_windows_installer_records_install_metadata_for_refresh():
@@ -71,10 +73,10 @@ def test_windows_installer_polls_service_start_long_enough_to_settle():
 def test_windows_installer_prefers_espanso_daemon_for_service_output_capture():
     text = _installer_text()
 
-    assert '$daemon = Join-Path $cmdDir "espansod.exe"' in text
+    assert "$daemon = Join-Path $cmdDir 'espansod.exe'" in text
     assert "return $daemon" in text
-    assert "Programs\\Espanso\\espansod.exe" in text
-    assert "Programs\\espanso\\espansod.exe" in text
+    assert "Programs\\Espanso" in text
+    assert "@('espansod.exe', 'espanso.CMD', 'espanso.exe')" in text
 
 
 def test_windows_installer_captures_espanso_service_output_inside_jobs():

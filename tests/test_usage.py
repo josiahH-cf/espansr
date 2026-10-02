@@ -1,6 +1,7 @@
 """Native-schema canaries for local expansion counts and identity changes."""
 
 import json
+import os
 import sqlite3
 import subprocess
 import sys
@@ -12,7 +13,37 @@ import pytest
 import yaml
 
 from espansr.core.command_catalog import CommandCatalogEntry
-from espansr.core.usage import command_key, enable_native_stats, refresh_usage
+from espansr.core.usage import command_key, enable_native_stats, native_version, refresh_usage
+
+
+def test_runtime_upgrade_invalidates_version_cache(tmp_path, monkeypatch):
+    from espansr.core.usage import _version_for
+
+    executable = tmp_path / "espansod.exe"
+    executable.write_bytes(b"old executable")
+    monkeypatch.setattr("espansr.core.platform.is_wsl2", lambda: False)
+    monkeypatch.setattr(
+        "espansr.integrations.espanso._find_espanso_executable", lambda: str(executable)
+    )
+    outputs = iter(["2.4.0\n", "2.4.1\n"])
+    calls = []
+
+    def run(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, stdout=next(outputs))
+
+    monkeypatch.setattr(subprocess, "run", run)
+    _version_for.cache_clear()
+    try:
+        assert native_version().strip() == "2.4.0"
+        assert native_version().strip() == "2.4.0"
+        previous = executable.stat().st_mtime_ns
+        executable.write_bytes(b"new executable")
+        os.utime(executable, ns=(previous + 1000000000, previous + 1000000000))
+        assert native_version().strip() == "2.4.1"
+        assert len(calls) == 2
+    finally:
+        _version_for.cache_clear()
 
 
 def entry(identity="one", trigger=":one"):

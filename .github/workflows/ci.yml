@@ -54,6 +54,10 @@ jobs:
         if: matrix.python-version == '3.12'
         run: python scripts/verify_install.py
 
+      - name: Real Espanso runtime upgrade canary
+        if: matrix.python-version == '3.12'
+        run: python scripts/verify_espanso_runtime.py
+
   ci-windows:
     runs-on: windows-latest
 
@@ -92,6 +96,9 @@ jobs:
       - name: Native installer and sync canary
         run: python scripts/verify_install.py
 
+      - name: Real Espanso runtime upgrade canary
+        run: python scripts/verify_espanso_runtime.py
+
   ci-macos:
     runs-on: macos-latest
 
@@ -129,3 +136,6 @@ jobs:
 
       - name: Native installer and sync canary
         run: python scripts/verify_install.py
+
+      - name: Real Espanso runtime install canary
+        run: python scripts/verify_espanso_runtime.py
