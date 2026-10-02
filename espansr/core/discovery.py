@@ -120,7 +120,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         22,
         (
             (":project-init-llm", "initialize AGENTS.md-centered repo instructions"),
-            (":feature", "three-outcome implementation meta-prompt or project-native flow"),
+            (
+                ":feature",
+                "clarify feature intent into a ready native spec or implementation handoff",
+            ),
             (
                 ":clarify-features",
                 "dense clarification loop to finalized project-native feature specs",
@@ -142,7 +145,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "fix the in-context issue at its root and update the affected downstream material",
             ),
             (":continue", "resume work in flight and keep going to done or a real gate"),
-            (":unblock", "clear blockers with bulk decisions and safe actions"),
+            (":unblock", "clarify blockers in the console and finish authorized remaining work"),
             (":verify", "verify, repair, and align affected docs"),
             (
                 ":adversary-review",
@@ -223,7 +226,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":template-builder", "draft command templates"),
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
             (":research", "research a topic with strong evidence handling and synthesis"),
-            (":audit", "build an audit/decision packet, HTML by default, to resolve findings"),
+            (":audit", "assess evidence and clarify findings in the console; export on request"),
             (
                 ":html-help-doc",
                 "build an interactive HTML runbook with result tracking and model-ready copy-back",
@@ -234,7 +237,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (
                 ":ui-ux-audit",
-                "audit against a usability baseline, then apply and verify front-end fixes",
+                "audit, apply, and verify front-end improvements; report in the console",
             ),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
         ),

@@ -129,7 +129,7 @@ def test_cli_check_output_handles_non_utf8_file(tmp_path, capsys):
     root = Path(__file__).resolve().parents[1]
     bad = tmp_path / "bad.txt"
     bad.write_bytes(b"\xff\xfe garbage")
-    args = argparse.Namespace(template=":feature", path=str(bad), json=False)
+    args = argparse.Namespace(template=":adversary-review", path=str(bad), json=False)
     with patch("espansr.__main__.get_templates_dir", return_value=root / "templates"):
         rc = cmd_check_output(args)
     assert rc == 3
@@ -177,7 +177,7 @@ def test_cli_check_output_resolves_bundled_template_by_name(tmp_path, capsys):
     empty_live.mkdir()
     out_file = tmp_path / "out.txt"
     out_file.write_text("unstructured", encoding="utf-8")
-    args = argparse.Namespace(template="Feature", path=str(out_file), json=False)
+    args = argparse.Namespace(template="Adversary Review", path=str(out_file), json=False)
     with patch("espansr.__main__.get_templates_dir", return_value=empty_live):
         rc = cmd_check_output(args)
     # Resolved by bundled template *name* and failed the contract (not rc 3).

@@ -1074,11 +1074,9 @@ def test_bundled_project_init_template_contract():
 
 
 def test_bundled_feature_template_contract():
-    """The :feature prompt defaults to one three-outcome implementation meta-prompt."""
-    repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "feature.json").read_text(encoding="utf-8"))
+    """The feature identity survives its move to adaptive native authoring."""
+    data = _bundled("feature.json")
     content = data["content"]
-
     assert data["name"] == "Feature"
     assert data["trigger"] == ":feature"
     assert data["category"] == "workflow"
@@ -1087,165 +1085,67 @@ def test_bundled_feature_template_contract():
     assert data["replaces"] == []
     assert data.get("variables", []) == []
     assert content.endswith(INLINE_CONTEXT_FOOTER)
-
-    # Default delivery is one implementation meta-prompt; a project-native flow is an
-    # explicit appended-context override, and process existence alone is not an override.
-    for phrase in [
-        "feature-handoff architect",
-        "Do not implement the requested feature.",
-        "Core Feature Outcome",
-        "FEATURE SPECIFICATION DECISIONS",
-        "accept all recommendations",
-        "Adversarial Specification Review",
-        "implementation meta-prompt",
-        "one implementation meta-prompt",
-        "explicit appended-context override",
-        "is not an override",
-        "Override: Project-Native Flow",
-        "REALITY SUMMARY",
-    ]:
-        assert phrase in content, phrase
-
-    # All three verification outcomes are mandatory and adaptively packaged, not three
-    # forced documents, and the architecture/behavior checks must be fail-first.
-    for phrase in [
-        "Three Verification Outcomes",
-        "Architecture Outcome",
-        "Behavior Outcome",
-        "Human Litmus Outcome",
-        "three processes the feature must satisfy",
-        "single combined specification",
-        "fails against the starting state",
-        "If this was built correctly:",
-        "Model verdict:",
-        "Human verdict:",
-    ]:
-        assert phrase in content, phrase
-
-    # Preservation gate, external completion predicate, honest budget, mechanical
-    # extraction, scope traceability, and a consolidated package are all required.
-    for phrase in [
-        "Preservation Gate",
-        "Acceptance and Preservation Matrix",
-        "ALL_GATES_GREEN",
-        "BUDGET_EXHAUSTED",
-        "BLOCKED",
-        "Do not invent a numeric",
-        "Mechanical Deliverable Extraction",
-        "derived mechanically",
-        "Scope Traceability",
-        "Consolidated Delivery Package",
-    ]:
-        assert phrase in content, phrase
-
-    # Gold-standard harness hardening: deterministic-over-judge, evidence-cited
-    # checks, recorded fail-first baseline, surfaced human kickoff inputs, an
-    # auditable single transcript, and the runnable-check invariant under any packaging.
-    for phrase in [
-        "KICKOFF INPUTS",
-        "deterministic checks over model judgment",
-        "cite the evidence",
-        "failing baseline",
-        "separate from implementation code",
-        "re-runnable verification",
-        "one linear transcript",
-        "read-only",
-    ]:
-        assert phrase in content, phrase
-
-    # Delivery is a single pre-write approval round: recommendations plus a "what
-    # would be" reality summary, then the final artifact is written after the reply.
-    for phrase in [
-        "Pre-Write and Single Approval Round",
-        "consolidated approval round",
-        "DECISIONS AND RECOMMENDATIONS",
-        "triggers the final write",
-    ]:
-        assert phrase in content, phrase
-
-    # Standalone: one self-contained prompt with no companion command.
-    assert (
-        "This is one standalone prompt. Do not require, invoke, reference, or direct the user "
-        "to another prompt or command."
-    ) in content
-
-    # No dependency on the retired loop artifacts, triggers, or sibling prompts.
-    for forbidden in [
+    assert "Do not implement the requested feature." in content
+    assert "Use the verified project-native flow by default" in content
+    assert "output_contract" not in data
+    for retired in (
         "features/STATE.json",
-        "features/README.md",
         ":feat-plan",
         ":feat-runner",
         ":agent-scaffold",
         ":feedback-loop",
-        ":meta",
-        ":reality",
-        ":cb-transcript-feature",
-    ]:
-        assert forbidden not in content, forbidden
-
-    # Identifier examples follow the packet's Q1/Q1B scheme; retired loop wording is gone;
-    # the note says the approval packet is not what the output contract checks.
-    assert "stable identifiers such as Q1" in content
-    assert "feature-loop artifacts" not in content
-    assert "the structural output contract checks only the final-artifact reply" in content
+    ):
+        assert retired not in content
 
 
 def test_bundled_unblock_template_contract():
-    """The :unblock prompt is a standalone bulk-input blocker-resolution workflow."""
-    repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "unblock.json").read_text(encoding="utf-8"))
+    """Unblocking clarifies in the console and completes the authorized remainder."""
+    data = _bundled("unblock.json")
     content = data["content"]
-
     assert data["name"] == "Unblock"
     assert data["trigger"] == ":unblock"
     assert data["category"] == "workflow"
     assert data["stage"] == "unblocking"
+    assert data["capability_id"] == "unblock"
+    assert data["produces"] == ["verification-report"]
     assert data["next_triggers"] == []
     assert data["replaces"] == []
     assert data.get("variables", []) == []
     assert content.endswith(INLINE_CONTEXT_FOOTER)
-
-    # Works from blank context and inspects/resolves before escalating.
-    assert "Additional notes after the final marker are optional" in content
-    assert "Inspect before asking" in content
-    assert "Resolve Everything the Agent Can" in content
-
-    # Consolidated bulk packet with stable IDs and flexible reply formats.
-    for phrase in [
-        "B01",
+    for phrase in (
+        "Additional notes after the final marker are optional",
+        "Inspect before asking.",
+        "Resolve Everything the Agent Can",
         "UNBLOCK PACKET",
-        "ALREADY CLEARED",
         "DECISIONS AND INFORMATION NEEDED",
         "ACTIONS FOR YOU",
         "EXTERNAL OR WAITING ITEMS",
         "REPLY FORMAT",
-        "accept all recommendations",
-        "stream-of-consciousness",
-        "A1 done",
         "reduced delta packet",
-        "Prevent Repeated Blocking",
-        "UNBLOCKED",
         "PARTIALLY UNBLOCKED",
-    ]:
+        "Prevent Repeated Blocking",
+        "Print clarification, decisions, unblock instructions, and the final report "
+        "directly in the console",
+        "with no arbitrary question or round limit",
+        "Accept partial, out-of-order, informal, and dictated responses",
+        "Do not use a question tool",
+        "Do not hand back merely because the path is clear.",
+        "If the underlying objective is authoring specifications, finish the specifications",
+        "Do not claim a blocker is cleared until",
+        "Never request that the user paste passwords",
+        "untrusted data",
+    ):
         assert phrase in content, phrase
-
-    # accept-all is decision-scoped, not blanket authorization.
     assert (
         "`accept all recommendations` applies only to the explicitly recommended decision options"
         in content
     )
-    # Proof required before a blocker is cleared, plus safety handling.
-    assert "Do not claim a blocker is cleared until" in content
-    assert (
-        "Once the path is clear, hand back; sustained execution is another note's job." in content
-    )
-    assert "Never request that the user paste passwords" in content
-    assert "untrusted data" in content
-    assert "```<detected-language>" in content
-
-    # Standalone: no feature-loop, router, state file, or platform coupling.
-    for forbidden in ["features/", ":feature", ":feat-plan", "GitHub"]:
-        assert forbidden not in content, forbidden
+    assert "Authorization persists across turns." in content
+    assert "Do not request approval again for an action already authorized" in content
+    assert "HTML packet, review file, form, questionnaire artifact" in content
+    assert "Once the path is clear, hand back" not in content
+    for forbidden in ("features/", ":feature", ":feat-plan", "GitHub"):
+        assert forbidden not in content
 
 
 def test_bundled_explain_template_contract():
@@ -1364,12 +1264,9 @@ def test_bundled_goal_template_contract():
 
 
 def test_bundled_sanitize_template_contract():
-    """The sanitize prompt preserves its broader sanitization and planning contract."""
-    repo_root = Path(__file__).resolve().parents[1]
-    data = json.loads((repo_root / "templates" / "sanitize.json").read_text(encoding="utf-8"))
-
+    """Sanitization assesses actual sharing risk and preserves functional controls."""
+    data = _bundled("sanitize.json")
     content = data["content"]
-
     assert data["trigger"] == ":sanitize"
     assert data["category"] == "safety"
     assert data["stage"] == "scrub"
@@ -1377,29 +1274,36 @@ def test_bundled_sanitize_template_contract():
     assert data["replaces"] == [":hide-ai"]
     assert "comprehensive" in data["description"].lower()
     assert "recommendation" in data["description"].lower()
-
-    assert "analyze the project comprehensively" in content.lower()
-    assert "development artifacts" in content.lower()
-    assert "source code" in content.lower()
-    assert "comments" in content.lower()
-    assert "docstrings" in content.lower()
-    assert "internal-control and governance files" in content.lower()
-    assert "AGENTS.md" in content
-    assert "CLAUDE.md" in content
-    assert ".github/" in content
-    assert ".claude/" in content
-    assert ".codex/" in content
-    assert "governance/" in content
-    assert "workflow/" in content
-    assert "specs/" in content
-    assert "tasks/" in content
-    assert "decisions/" in content
-    assert "recommend `.gitignore` first" in content
-    assert "already tracked or already shared" in content
-    assert "Recommended Sanitization Plan" in content
-    assert "Hyper-safe" in content
-    assert "Minimum-safe" in content
-    assert "when the risk is non-trivial" in content.lower()
+    for phrase in (
+        "Analyze the project comprehensively within the requested sharing scope.",
+        "source code, tests, comments, docstrings",
+        "Determine what is being shared, with whom",
+        "These names do not make a file private or unsafe.",
+        "Preserve legitimate repository instructions, CI workflows, specifications, "
+        "reusable prompts, and product assets.",
+        "Do not recommend ignoring them merely because they relate to tools or agents.",
+        "AI references, model or tool names, attribution, and provenance may be accurate",
+        "Do not print secret values",
+        "Recommend .gitignore only for files actually established as local-only",
+        "already tracked or already shared",
+        "Recommended Sanitization Plan",
+        "Omit empty categories",
+    ):
+        assert phrase in content, phrase
+    for location in (
+        "AGENTS.md",
+        "CLAUDE.md",
+        ".github/",
+        ".claude/",
+        ".codex/",
+        "governance/",
+        "workflow/",
+        "specs/",
+        "tasks/",
+        "decisions/",
+    ):
+        assert location in content
+    assert "recommend `.gitignore` first unless" not in content
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
@@ -1568,14 +1472,16 @@ def test_bundled_continue_template_contract():
     for phrase in (
         "CONTINUE CHECKPOINT",
         "one compact packet",
-        "consolidate every gate into this one round",
+        "consolidate the currently known material questions into this batch",
         "Reply: naturally, or `1A`, or `1 done` with the output, or `accept all`.",
         "`accept all` adopts the recommended options only.",
     ):
         assert phrase in content, phrase
 
-    # Continuing is never implicit authorization to ship.
-    assert "Being told to continue the work is not permission to ship it." in content
+    # Continuing preserves prior authorization without inventing new permission.
+    assert "Being told to continue does not by itself authorize new shipping" in content
+    assert "Honor authorization the user already gave" in content
+    assert "do not ask for the same yes again" in content
 
     # Both verdict headers are defined.
     assert "CONTINUED TO COMPLETION" in content
@@ -1725,7 +1631,7 @@ def test_bundled_adversary_review_template_contract():
         "You are `adversary-review`, an independent adversarial reviewer",
         "Nothing is done until you have seen it done.",
         "Review against the spec of record, not the implementer's restatement of it.",
-        "Prefer running to reading wherever running is possible",
+        "Prefer direct evidence on the affected path.",
         "Report unverified as unverified.",
         "Stay independent and read-only.",
         "A reviewer never fixes and never accepts its own work",
@@ -2590,10 +2496,9 @@ def test_bundled_tenable_scans_template_contract():
 
 
 def test_bundled_audit_template_contract():
-    """:audit builds an interactive decision packet and states its boundary with the runbook."""
+    """Audit reports and clarifies in the console; export is an explicit choice."""
     data = _bundled("audit_packet.json")
     content = data["content"]
-
     assert data["name"] == "Audit Packet"
     assert data["trigger"] == ":audit"
     assert data["category"] == "analysis"
@@ -2605,39 +2510,32 @@ def test_bundled_audit_template_contract():
         "verification-report",
         "context-packet",
     ]
-    assert data["produces"] == ["interactive-html"]
+    assert data["produces"] == ["evidence-report"]
     assert data["intent_tags"] and data["use_when"] and data["avoid_when"]
     assert data["next_triggers"] == []
     assert data["replaces"] == []
-
-    boundary = (
-        "Use this for a decision packet that resolves findings; for a runbook or navigable "
-        "reference, a separate interactive HTML note exists."
-    )
     for phrase in (
-        "You are `audit`, an assistant that turns incomplete project context into a single, "
-        "self-contained, interactive HTML audit and decision packet.",
-        boundary,
-        "Give every decision a stable ID such as D01, D02, and D03.",
+        "Default to ordinary console or chat text.",
+        "Export HTML or another file only when explicitly requested.",
+        "A report is the outcome of an audit-only request.",
+        "carry that authorization forward",
         "Do not turn every uncertainty into a human question.",
-        "Do not use external libraries, remote fonts, frameworks, CDNs, build steps, or "
-        "network requests.",
+        "Give every decision a stable ID such as D01, D02, and D03",
+        "There is no fixed maximum number of questions or rounds.",
         "## Multi-round behavior",
-        "Selecting options in the artifact records intent only; it never authorizes execution, "
-        "deployment, sending, purchasing, or external writes.",
+        "An HTML report can be a simple readable document.",
+        "Do not use external libraries, remote fonts, frameworks, CDNs, build steps, "
+        "or network requests.",
+        "is not proof of execution or automatic authorization",
     ):
         assert phrase in content, phrase
-    assert content.index(boundary) < content.index("## Inputs")
+    assert "plain prose report is enough" not in data["avoid_when"]
     assert content.endswith(INLINE_CONTEXT_FOOTER)
-
-    # The runbook note carries the mirror sentence, equally without naming a trigger.
-    mirror = (
-        "Use this for a runbook or navigable reference; for a decision packet that resolves "
-        "findings, a separate interactive HTML note exists."
-    )
     runbook = _bundled("html_help_doc.json")["content"]
-    assert mirror in runbook
-    assert runbook.index(mirror) < runbook.index("## Inputs")
+    assert (
+        "for an evidence assessment and decision clarification, a separate console-first "
+        "audit note exists" in runbook
+    )
 
 
 def test_bundled_listen_template_contract():
@@ -2719,7 +2617,7 @@ def test_bundled_research_template_contract():
         "- Reconcile important source conflicts instead of flattening them.",
         "- Do not invent facts, citations, links, quotes, dates, statistics, or claims of "
         "access.",
-        "### 5) Uncertainty and Open Questions",
+        "material uncertainty where relevant",
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
@@ -2819,28 +2717,33 @@ def test_bundled_context_template_emits_a_valid_packet_body():
 
 
 def test_bundled_meta_template_contract():
-    """:meta drafts one scope-bound meta-prompt and stays silent about gaps."""
+    """Meta stays within scope while clarifying rather than hiding essential gaps."""
     data = _bundled("meta.json")
     content = data["content"]
-
     assert data["name"] == "Meta-Prompt Generator"
     assert data["trigger"] == ":meta"
     assert data["category"] == "prompting"
     assert data["stage"] == "prompt-draft"
     assert data["next_triggers"] == []
-
     for phrase in (
         "You are a Context-Safe Meta-Prompt Generator.",
-        "This prompt generates a future task prompt; it must not perform the user's underlying "
-        "task.",
+        "This prompt generates a future task prompt; it must not perform the user's "
+        "underlying task.",
         "- The user's request defines the scope.",
-        "Do not call out gaps, unknowns, missing information, assumptions, or open questions.",
-        "- Always produce a final drafted meta-prompt.",
-        "Return only the drafted meta-prompt.",
+        "do not silently omit a stated requirement",
+        "Clarify materially different interpretations",
+        "proportionate verification",
+        "There is no fixed question or round limit.",
+        "speech-to-text replies",
+        "When the initial information is sufficient, draft immediately",
+        "Do not present an essential unresolved decision as a final ready prompt.",
+        "return only the drafted meta-prompt",
         "If the notes below the marker are blank and no connected context exists, return "
         "exactly `No task supplied to draft from.` and nothing else.",
     ):
         assert phrase in content, phrase
+    assert "Do not call out gaps, unknowns" not in content
+    assert "Do not ask follow-up questions." not in content
     assert content.index("No task supplied to draft from.") > content.index("## Output Rules")
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
@@ -2922,8 +2825,8 @@ def test_bundled_template_builder_template_contract():
         "Help create or update one command template.",
         "- Prefer the existing command schema, trigger naming, categories, stages, and wording "
         "style.",
-        "- Ask no more than one short clarification only if the target command cannot be "
-        "identified.",
+        "Ask as many questions and follow-up rounds as needed",
+        "Do not use a questionnaire tool or create an additional review file",
         "- Do not redesign unrelated commands.",
         "1. A concise template draft with name, trigger, category, stage, description, and "
         "content.",
@@ -2953,8 +2856,9 @@ def test_bundled_work_merge_template_contract():
         "- Stop and report instead of guessing when branch state, target branch, remotes, "
         "ownership of changes, conflicts, credentials, verification, or push destination is "
         "ambiguous.",
-        "9. Push only to the clear work remote/upstream.",
-        "- Final status: pushed, ready but not pushed, partial, report-only, or blocked",
+        "9. Push to the clearly established user-authorized remote/upstream.",
+        "Use existing session authorization for the actual repository and delivery actions",
+        "State the resulting commit, merge, and push status",
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)

@@ -49,6 +49,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Console-first audits and completion after unblocking** — `:unblock` now
+	clarifies unresolved work directly in the console, retains existing
+	authorization, and completes the authorized remainder once unblocked.
+	`:audit` and `:ui-ux-audit` default to console reports, with HTML or other
+	exports only on request; UI/UX audit-and-apply behavior remains intact.
+- **Adaptive feature handoffs and clarification** — `:feature` uses the
+	project's native specification process by default, asks as many material
+	questions as needed, and writes once unblocked. Removed its universal
+	three-outcome, budget, human-verdict, and fixed-section output contract.
+	`:meta`, `:template-builder`, and transcript discovery clarify material
+	ambiguity without arbitrary question limits or additional review files.
+- **Proportionate review and preservation** — generic review reports omit
+	empty categories; `:adversary-review` retains scope, verification, and its
+	verdict contract. `:continue` and `:work-merge` preserve session authorization,
+	`:fix-this` includes necessary verification, and sanitization evaluates the
+	actual sharing boundary and file purpose instead of treating repository
+	instructions, CI, prompts, or tool provenance as automatically private.
+	Updated discovery descriptions and default output metadata, including
+	explicit `:unblock` capability metadata.
+
 - **`:litmus` — recast as a self-contained Yes/No criteria author** — the note
 	now consolidates the agreed requirements from an iterative conversation into
 	self-contained, deterministic Yes/No criteria another model can evaluate

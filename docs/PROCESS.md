@@ -53,8 +53,8 @@ template conservatively clears the incoming ID.
 | `gap-review` | `:gaps` | `gap-review` |
 | `visual-workflow` | `:visual` | `visual-artifact` |
 | `html-help-doc` | `:html-help-doc` | `interactive-html` |
-| `audit-packet` | `:audit` | `interactive-html` |
-| `experience-audit` | `:ui-ux-audit` | `interactive-html` |
+| `audit-packet` | `:audit` | `evidence-report` |
+| `experience-audit` | `:ui-ux-audit` | `verification-report` |
 | `spec-discovery` | `:cb-transcript-feature` | `implementation-handoff` |
 | `feature-clarification` | `:clarify-features` | `implementation-handoff` |
 | `human-litmus` | `:litmus` | `human-litmus` |
@@ -63,6 +63,7 @@ template conservatively clears the incoming ID.
 | `adversarial-review` | `:adversary-review` | `feedback-directives` |
 | `feedback-apply` | `:feedback` | `verification-report` |
 | `troubleshooting` | `:troubleshoot` | `verification-report` |
+| `unblock` | `:unblock` | `verification-report` |
 | `context-reset` | `:context` | `context-packet` |
 | `reality-max` | `:reality-max` | `evidence-report` |
 | `reality-min` | `:reality-min` | `evidence-report` |
@@ -70,6 +71,21 @@ template conservatively clears the incoming ID.
 `:verify` accepts a `verification-report` as well as implemented work and
 handoffs, so re-verifying after `:feedback` is a direct edge. The other
 bundled notes carry no capability metadata and stay directly invocable.
+
+Generic audits, clarification, and unblocking report directly in the console or
+chat. They create review files or HTML exports only when requested. `:unblock`
+investigates unfinished items, resolves agent-owned blockers, asks as many
+material clarification questions as needed, and completes the authorized
+remainder once unblocked. Existing authorization carries across replies.
+
+`:feature` uses the project's established specification authoring mechanism by
+default. Without one, it returns a standalone implementation meta-prompt. It
+clarifies until materially unblocked, then authors the ready handoff without a
+ceremonial approval round. Verification requirements fit the actual feature
+and the project's rules; authoring does not implement or start execution.
+`:ui-ux-audit` still audits and applies supported improvements by default, or
+performs an audit only when asked. Its usability baseline guides the actual
+reviewed scope rather than requiring a whole-product report for a focused fix.
 
 ## Workflow manifests
 
@@ -228,22 +244,21 @@ Use `espansr packet list|show|validate|delete` from the CLI.
 
 A template may declare an `output_contract`: required sections, required
 literal or regex markers with occurrence bounds, and forbidden markers.
-`espansr check-output --template :feature <path>` validates a saved model
+`espansr check-output --template :adversary-review <path>` validates a saved model
 output, reports **every** unmet obligation, and exits nonzero on failure.
 Structural conformance never claims semantic quality — a boilerplate section
 can pass structurally and still fail human review.
 
-The bundled `:feature` contract checks one final-artifact reply — the reply
-that follows your approval of the pre-write packet — and never the
-approval-round packet itself (the note says so beside the packet). It
-requires the `FINAL IMPLEMENTATION META-PROMPT` and `REALITY SUMMARY`
-sections; at least one `If this was built correctly:` litmus entry with a
-`Model verdict:` and a `Human verdict:` field; the `ALL_GATES_GREEN` and
-`BUDGET_EXHAUSTED` terminal states — and it fails any output whose human
-verdicts were prefilled instead of left blank. The `INPUT COVERAGE`,
-`CLARIFICATION STATUS`, `ARCHITECTURE OUTCOME`, `BEHAVIOR OUTCOME`, and
-`PRESERVATION SET` blocks still belong to the packet the note prints; they are
-not contract obligations.
+The bundled `:adversary-review` contract requires `ADVERSARY REVIEW`,
+`SCOPE REVIEWED`, `STABILITY`, and exactly one PASS, PASS WITH FOLLOW-UPS, or
+FAIL verdict. Other finding sections appear only when relevant; empty
+categories and optional suggestions are not structural obligations.
+
+`:feature` does not declare a universal output contract because its final
+format follows the target project's native mechanism or the user's requested
+handoff format. Check native specifications with the target's actual schema
+and tools. `check-output` returns exit code 2 for a template without a contract;
+that means no structural contract was declared, not that the output passed.
 
 ## The `:litmus` capability
 

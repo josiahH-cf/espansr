@@ -55,88 +55,26 @@ def _litmus_entries(count, human_verdict_blank=True):
     )
 
 
-def _feature_packet(
-    *,
-    clarification="CLARIFICATION STATUS: NOT REQUIRED\nBasis: the supplied "
-    "specification resolves goal, scope, behavior, architecture, verification, "
-    "and preservation.",
-    litmus_entries=1,
-    human_verdict_blank=True,
-):
-    """Build the first :feature turn: the approval packet, after which the model stops."""
-    entries = _litmus_entries(litmus_entries, human_verdict_blank)
-    litmus_block = f"HUMAN LITMUS\n\n{entries}\n" if litmus_entries else "HUMAN LITMUS\n\n(none)\n"
-    return f"""FEATURE SPECIFICATION DECISIONS
+HUMAN_VERDICT_CONTRACT = {
+    "schema": 1,
+    "required_markers": [{"pattern": "Human verdict:", "min_count": 1}],
+    "forbidden_markers": [
+        {"pattern": r"Human verdict:\s*PASS(?!\s*\|)", "regex": True},
+        {"pattern": r"Human verdict:\s*FAIL", "regex": True},
+    ],
+}
 
-CONTEXTUALIZED FEATURE
 
-The feature in its project context.
+def _review_output():
+    return """ADVERSARY REVIEW
+VERDICT: PASS
 
-INPUT COVERAGE
+SCOPE REVIEWED
+The documentation change and its stated requirements.
 
-Goal contract: supplied. Project evidence: inspected. External research: not requested.
-Independent gap review: not performed. Human litmus: model-derived.
-Human-approved acceptance tests: not supplied. Preservation set: model-selected.
-Project-native feature process: verified. Material unresolved decisions: none.
-
-{clarification}
-
-KICKOFF INPUTS
-
-All seven inputs fixed.
-
-ARCHITECTURE OUTCOME
-
-AR-01 stands.
-
-BEHAVIOR OUTCOME
-
-BE-01 stands.
-
-{litmus_block}
-PRESERVATION SET
-
-PR-01 existing suite stays green.
-
-DECISIONS AND RECOMMENDATIONS
-
-Q1. Nothing materially needs the user.
-
-REALITY SUMMARY
-
-If built as drafted, the user would see the thing.
-
-REPLY FORMAT
-
-Reply with `accept all recommendations` or targeted corrections such as `Q1B`.
+STABILITY
+Inspected the changed references and checked the documented command.
 """
-
-
-def _feature_final_artifact(*, litmus_entries=1, human_verdict_blank=True):
-    """Build the second :feature turn: the final artifact the output contract checks."""
-    entries = _litmus_entries(litmus_entries, human_verdict_blank) or "(no litmus entries)"
-    return f"""FINAL IMPLEMENTATION META-PROMPT
-
-```text
-Implement the feature in the target project.
-
-Human litmus checklist:
-
-{entries}
-
-Terminal states: ALL_GATES_GREEN, BUDGET_EXHAUSTED.
-```
-
-REALITY SUMMARY
-
-The artifact above was returned; the target feature is not yet implemented.
-"""
-
-
-def _feature_output(**kwargs):
-    """Build a whole two-turn :feature transcript saved to one file."""
-    final_kwargs = {k: v for k, v in kwargs.items() if k != "clarification"}
-    return _feature_packet(**kwargs) + "\n" + _feature_final_artifact(**final_kwargs)
 
 
 # ── Core checker semantics ───────────────────────────────────────────────────
@@ -191,79 +129,57 @@ def test_malformed_marker_entries_are_skipped_conservatively():
     assert report.passed
 
 
-# ── BEH-10: the :feature contract ────────────────────────────────────────────
+# ── Bundled adaptive contracts and regex semantics ───────────────────────────
 
 
-def _feature_contract():
-    data = json.loads((TEMPLATES_DIR / "feature.json").read_text(encoding="utf-8"))
+def _review_contract():
+    data = json.loads((TEMPLATES_DIR / "adversary_review.json").read_text(encoding="utf-8"))
     contract = normalize_contract(data.get("output_contract"))
-    assert contract is not None, "feature.json must declare an output contract"
+    assert contract is not None
     return contract
 
 
-def test_feature_contract_passes_on_complete_output():
-    """A saved two-turn transcript (packet, then final artifact) passes."""
-    report = check_output(_feature_contract(), _feature_output())
+def test_review_contract_passes_without_empty_finding_categories():
+    report = check_output(_review_contract(), _review_output())
     assert report.passed, [f.message for f in report.failures]
+    assert "OPTIONAL" not in _review_contract()["required_sections"]
 
 
-def test_feature_final_artifact_reply_passes_alone():
-    """The contract targets the second turn: the final artifact by itself passes."""
-    final = _feature_final_artifact()
-    for packet_only in ("CLARIFICATION STATUS", "INPUT COVERAGE", "KICKOFF INPUTS"):
-        assert packet_only not in final
-    report = check_output(_feature_contract(), final)
-    assert report.passed, [f.message for f in report.failures]
-
-
-def test_feature_packet_only_reply_fails():
-    """The first-turn approval packet is not the deliverable and does not pass."""
-    report = check_output(_feature_contract(), _feature_packet())
+def test_review_contract_requires_scope_verification_and_one_verdict():
+    report = check_output(_review_contract(), "ADVERSARY REVIEW")
     assert not report.passed
-    messages = [f.message for f in report.failures]
-    assert any("FINAL IMPLEMENTATION META-PROMPT" in m for m in messages)
-    assert any("ALL_GATES_GREEN" in m for m in messages)
-    assert any("BUDGET_EXHAUSTED" in m for m in messages)
+    messages = "\n".join(f.message for f in report.failures)
+    for obligation in ("SCOPE REVIEWED", "STABILITY", "VERDICT"):
+        assert obligation in messages
+    assert not check_output(_review_contract(), _review_output() + "\nVERDICT: FAIL").passed
 
 
-def test_feature_output_missing_reality_summary_fails():
-    output = _feature_final_artifact().replace("REALITY SUMMARY", "SOMETHING ELSE")
-    report = check_output(_feature_contract(), output)
+def test_adaptive_feature_does_not_declare_fixed_format_contract():
+    data = json.loads((TEMPLATES_DIR / "feature.json").read_text(encoding="utf-8"))
+    assert normalize_contract(data.get("output_contract")) is None
+
+
+def test_regex_forbids_prefilled_pass_human_verdict():
+    report = check_output(HUMAN_VERDICT_CONTRACT, _litmus_entries(1, human_verdict_blank=False))
     assert not report.passed
-    assert any("REALITY SUMMARY" in f.message for f in report.failures)
 
 
-def test_feature_output_with_no_litmus_entries_fails():
-    report = check_output(_feature_contract(), _feature_final_artifact(litmus_entries=0))
-    assert not report.passed
-    assert any("If this was built correctly" in f.message for f in report.failures)
-
-
-def test_feature_output_with_prefilled_human_verdict_fails():
-    report = check_output(_feature_contract(), _feature_final_artifact(human_verdict_blank=False))
-    assert not report.passed
-    assert any("human verdict" in f.message.lower() for f in report.failures)
-
-
-def test_feature_output_with_prefilled_fail_human_verdict_fails():
-    output = _feature_final_artifact().replace(
+def test_regex_forbids_prefilled_fail_human_verdict():
+    output = _litmus_entries(1).replace(
         "Human verdict: PASS | FAIL - why:", "Human verdict: FAIL - why: broken"
     )
-    report = check_output(_feature_contract(), output)
-    assert not report.passed
-    assert any("human verdict" in f.message.lower() for f in report.failures)
+    assert not check_output(HUMAN_VERDICT_CONTRACT, output).passed
 
 
 def test_blank_human_verdict_template_line_is_not_a_false_positive():
-    """The canonical blank 'PASS | FAIL - why:' line must never trip the check."""
-    report = check_output(_feature_contract(), _feature_final_artifact(litmus_entries=3))
-    assert report.passed, [f.message for f in report.failures]
+    """A PASS | FAIL template must not be mistaken for fabricated acceptance."""
+    assert check_output(HUMAN_VERDICT_CONTRACT, _litmus_entries(3)).passed
 
 
 # ── CLI: espansr check-output ────────────────────────────────────────────────
 
 
-def _run_check_output(tmp_path, output_text, template=":feature", templates_dir=None):
+def _run_check_output(tmp_path, output_text, template=":adversary-review", templates_dir=None):
     from espansr.__main__ import cmd_check_output
 
     out_file = tmp_path / "output.txt"
@@ -277,17 +193,18 @@ def _run_check_output(tmp_path, output_text, template=":feature", templates_dir=
 
 
 def test_cli_check_output_passes_on_conforming_output(tmp_path, capsys):
-    assert _run_check_output(tmp_path, _feature_output()) == 0
+    assert _run_check_output(tmp_path, _review_output()) == 0
     out = capsys.readouterr().out
     assert "pass" in out.lower()
 
 
 def test_cli_check_output_fails_nonzero_and_reports_all(tmp_path, capsys):
-    bad = _feature_packet(litmus_entries=0)
+    bad = "ADVERSARY REVIEW"
     assert _run_check_output(tmp_path, bad) == 1
     out = capsys.readouterr().out
-    assert "FINAL IMPLEMENTATION META-PROMPT" in out
-    assert "If this was built correctly" in out
+    assert "SCOPE REVIEWED" in out
+    assert "STABILITY" in out
+    assert "VERDICT" in out
 
 
 def test_cli_check_output_distinguishes_missing_contract(tmp_path, capsys):
@@ -312,7 +229,9 @@ def test_cli_check_output_distinguishes_unknown_template(tmp_path, capsys):
 def test_cli_check_output_distinguishes_unreadable_output_file(tmp_path, capsys):
     from espansr.__main__ import cmd_check_output
 
-    args = argparse.Namespace(template=":feature", path=str(tmp_path / "missing.txt"), json=False)
+    args = argparse.Namespace(
+        template=":adversary-review", path=str(tmp_path / "missing.txt"), json=False
+    )
     with patch("espansr.__main__.get_templates_dir", return_value=TEMPLATES_DIR):
         rc = cmd_check_output(args)
     assert rc == 3
@@ -322,15 +241,21 @@ def test_cli_check_output_distinguishes_unreadable_output_file(tmp_path, capsys)
 def test_cli_check_output_is_read_only(tmp_path):
     """Validation never mutates the output file or the template store."""
     out_file = tmp_path / "output.txt"
-    out_file.write_text(_feature_output(), encoding="utf-8")
+    out_file.write_text(_review_output(), encoding="utf-8")
     before = out_file.read_text(encoding="utf-8")
-    feature_before = (TEMPLATES_DIR / "feature.json").read_text(encoding="utf-8")
+    review_before = (TEMPLATES_DIR / "adversary_review.json").read_text(encoding="utf-8")
 
     from espansr.__main__ import cmd_check_output
 
-    args = argparse.Namespace(template=":feature", path=str(out_file), json=False)
+    args = argparse.Namespace(template=":adversary-review", path=str(out_file), json=False)
     with patch("espansr.__main__.get_templates_dir", return_value=TEMPLATES_DIR):
         cmd_check_output(args)
 
     assert out_file.read_text(encoding="utf-8") == before
-    assert (TEMPLATES_DIR / "feature.json").read_text(encoding="utf-8") == feature_before
+    assert (TEMPLATES_DIR / "adversary_review.json").read_text(encoding="utf-8") == review_before
+
+
+def test_cli_adaptive_feature_reports_missing_contract_not_success(tmp_path, capsys):
+    rc = _run_check_output(tmp_path, "A native specification", template=":feature")
+    assert rc == 2
+    assert "no output contract" in capsys.readouterr().out.lower()
