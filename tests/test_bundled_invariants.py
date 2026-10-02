@@ -35,6 +35,8 @@ INPUT_MARKERS = (
 # snippets, self-contained utilities, and notes with their own fill-in list.
 INPUT_MARKER_EXEMPT = frozenset(
     {
+        "use_recommendation.json",
+        "accept_all_recommendations.json",
         "q_and_a.json",
         "docs_qa.json",
         "speechify.json",

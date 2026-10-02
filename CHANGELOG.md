@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:rec` and `:acc` — short recommendation replies** — new one-sentence
+	bundled notes for accepting the current recommendation or all current
+	recommendations, respectively. Both preserve exactly one trailing space for
+	appended context, adjustments, or item-specific exceptions and are surfaced
+	in `:coms`, the `:espansr` quick help, and the template note list.
 - **`:clarify-features` — iterative clarification and specification writing** —
 	a new bundled prompt that contextualizes a batch of rough ideas or dictated
 	notes, identifies and uses the project's native specification and agent-loop

@@ -1,0 +1,15 @@
+{
+  "name": "Use Recommendation",
+  "description": "Accept the recommendation for the current item, with room to append adjustments.",
+  "trigger": ":rec",
+  "category": "preference",
+  "stage": "recommendation-reply",
+  "next_triggers": [],
+  "replaces": [],
+  "content": "Use your recommendation, subject to any adjustments I specify. ",
+  "intent_tags": [
+    "use your recommendation",
+    "accept one recommended option",
+    "answer one clarification item"
+  ]
+}
