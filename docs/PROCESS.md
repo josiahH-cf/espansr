@@ -262,15 +262,27 @@ that means no structural contract was declared, not that the output passed.
 
 ## The `:litmus` capability
 
-`:litmus` (capability ID `human-litmus`) consolidates the agreed requirements
-for whatever material you supply — rough intent, a goal contract, a report, a
-review, a handoff, or an existing checklist — into self-contained, deterministic
-Yes/No criteria another model can evaluate without access to the originating
-conversation. Its output is only flat `- ` bulleted statements, one concrete
-criterion each, where Yes means the work satisfies it and No means it does not;
-the note authors the statements and never answers, scores, implements, or runs
-them. It is fully standalone: no workflow, no packet, and no `:feature` run is
-ever required.
+`:litmus` (capability ID `human-litmus`) authors one paste-ready handoff for a
+fresh model: a compact project and feature brief followed by unanswered,
+binary checks of the intended human outcomes. It grounds the selected scope in
+user decisions, native specifications, and relevant recent changes, preserving
+real feature identifiers and consequential nuances. Checks can cover behavior,
+rendered appearance, task completion, or artifact properties; they do not equate
+code written or tests passed with the user's intended result.
+
+The generated brief directs the receiving model to inspect the selected work,
+exercise real workflows and bounded synthetic canaries, repair observed
+in-scope failures and recheck by default, and clean up its temporary resources.
+An explicit verify-only request omits repairs. Determined outcomes receive
+Yes/No answers with evidence; missing evidence is reported as UNVERIFIED rather
+than fabricated success or failure. Results stay in the console unless another
+destination is requested.
+
+The `:litmus` invocation itself only authors this handoff. It does not run the
+checks, fix the implementation, or prefill acceptance. It clarifies material
+ambiguity in the console when needed and includes the small brief automatically,
+with an explicit criteria-only override. It remains independently invocable;
+no workflow manifest, predecessor, or separate prompt command is required.
 
 ## What this layer never does
 
