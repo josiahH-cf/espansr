@@ -251,6 +251,8 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         "Utility prompts",
         9,
         (
+            (":rec", "accept the current recommendation; append adjustments as needed"),
+            (":acc", "accept all current recommendations; append exceptions as needed"),
             (":tddh", "think deeply, verify facts, and never make things up"),
             (":listen", "convert research to listenable article"),
             (":revise", "clean up messaging while preserving meaning and direction"),

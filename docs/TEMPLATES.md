@@ -37,7 +37,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
-- Utility prompts: `:tddh`, `:listen`, `:revise`, `:cliche`
+- Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
 - File helpers: `:pocket-extract`
 - Security helpers: `:tenable-scans`
@@ -132,6 +132,18 @@ asks the model to reason carefully, stay grounded in the available evidence,
 keep facts separate from inferences and unknowns, state uncertainty plainly,
 and never invent information. Add optional response instructions below its final
 `IGNORE IF BLANK` marker. It imposes no Markdown or other fixed response format.
+
+Use `:rec` to reply "Use your recommendation, subject to any adjustments I
+specify." for the current item, or `:acc` to reply "Accept all current
+recommendations, subject to any exceptions or adjustments I specify." for the
+current batch. Both expand to one sentence followed by exactly one space, so
+you can immediately append context. For example, `1 - :rec keep the existing
+name` accepts item 1's recommendation with that adjustment; `:acc except item
+2: use option B` accepts the other current recommendations while overriding
+item 2. Explicit corrections take precedence. These replies adopt recommended
+choices; unanswered factual questions still need answers, and existing task
+scope and authorization continue to apply. Both notes appear in `:coms` and
+`:espansr` and require no form or additional review file.
 
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
