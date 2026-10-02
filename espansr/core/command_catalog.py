@@ -143,6 +143,7 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             source="system",
             category="system",
             stage="launcher",
+            capability_id="espansr-launcher",
         ),
         CommandCatalogEntry(
             trigger=COMMANDS_POPUP_TRIGGER,
@@ -152,6 +153,7 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             source="system",
             category="system",
             stage="reference",
+            capability_id="espansr-commands",
         ),
         CommandCatalogEntry(
             trigger=sync_trigger,
@@ -161,6 +163,7 @@ def _build_system_entries(config: Config) -> list[CommandCatalogEntry]:
             source="system",
             category="system",
             stage="maintenance",
+            capability_id="espansr-sync",
         ),
     ]
 

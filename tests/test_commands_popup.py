@@ -119,7 +119,7 @@ def test_build_command_catalog_exposes_workflow_metadata(tmp_path):
 
 
 def test_commands_popup_dialog_renders_entries(qtbot):
-    """Dialog renders one standardized row widget per entry."""
+    """Compact command rows select one full detail and preview."""
     from espansr.ui.commands_popup import CommandRowWidget, CommandsPopupDialog
 
     entries = [
@@ -148,16 +148,17 @@ def test_commands_popup_dialog_renders_entries(qtbot):
         dialog = CommandsPopupDialog(entries=entries)
         qtbot.addWidget(dialog)
 
-    assert dialog._list.count() == 2
     assert dialog._summary_table.rowCount() == 2
     assert dialog._summary_table.columnCount() == 3
     assert dialog._summary_table.horizontalHeaderItem(0).text() == "Command"
-    assert dialog._summary_table.horizontalHeaderItem(1).text() == "Workflow"
-    assert dialog._summary_table.horizontalHeaderItem(2).text() == "Description"
+    assert dialog._summary_table.horizontalHeaderItem(1).text() == "Choose it when"
+    assert dialog._summary_table.horizontalHeaderItem(2).text() == "Role"
     assert dialog._summary_table.item(0, 0).text() == ":alpha"
-    assert dialog._summary_table.item(0, 1).text() == "workflow / feature-scope"
-    assert dialog._summary_table.item(0, 2).text() == "First command"
-    first_widget = dialog._list.itemWidget(dialog._list.item(0))
+    assert dialog._summary_table.item(0, 1).text() == "First command"
+    assert dialog._summary_table.item(0, 2).text() == "workflow"
+    assert dialog._detail_widget is None
+    dialog._summary_table.setCurrentCell(0, 0)
+    first_widget = dialog._detail_widget
     assert isinstance(first_widget, CommandRowWidget)
     assert first_widget._trigger_label.text() == ":alpha"
     assert first_widget._workflow_label.text() == "workflow / feature-scope"
@@ -191,7 +192,7 @@ def test_commands_popup_dialog_has_ephemeral_scratchpad(qtbot):
 
     # Pinned below the command list in the layout.
     main_layout = dialog.layout()
-    list_index = main_layout.indexOf(dialog._list)
+    list_index = main_layout.indexOf(dialog._body)
     scratchpad_index = main_layout.indexOf(dialog._scratchpad)
     assert scratchpad_index > list_index
 

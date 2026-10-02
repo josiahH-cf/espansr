@@ -180,6 +180,7 @@ def test_popup_packet_button_opens_dialog_prefilled(qtbot):
     popup.show()
     qtbot.waitExposed(popup)
 
+    popup._summary_table.setCurrentCell(0, 0)
     rows = [row for row in popup.findChildren(CommandRowWidget) if row._entry is entry]
     assert len(rows) == 1
     assert popup.findChild(PacketDialog) is None

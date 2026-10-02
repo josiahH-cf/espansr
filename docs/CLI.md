@@ -146,8 +146,14 @@ The bundled-template copy step never overwrites an existing live file, but the i
 On native Windows, the generated `:aopen` launcher prefers `pythonw.exe` when
 available so the GUI opens without an extra console window.
 
-The generated `:coms` popup trigger opens a lightweight command reference
-showing your currently available Espanso triggers. It also includes an
+The generated `:coms` popup trigger opens a command reference with overlapping
+task groups, compact "Choose it when" cues, and optional combination guides.
+Select a command for its full details and copy actions. Search and artifact
+filters narrow the selected group; **Show all commands** clears every filter.
+Favorites, Recent, Recommended, and Processes remain available. **Refresh
+catalog** reads the live template files again while the window stays open.
+Window geometry and **Stay on top** are local preferences that survive restart
+and reinstall. The window opens in unfiltered Browse mode. It also includes an
 ephemeral scratchpad pinned at the bottom of the popup where you can type or
 paste any command, add context, and copy it back out. The scratchpad is
 throwaway and never saved.

@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:coms` task-based browsing** — nine overlapping command groups, compact
+	"Choose it when" cues and role labels, selected-command details, and optional
+	Continue/Unblock/Context and fresh-model verification guides. Groups use
+	stable command identities, with a visible fallback for custom commands.
+	Search, Favorites, Recent, and recommendations intersect the selected group;
+	Show all commands clears filters. Refresh catalog reloads live templates
+	without losing the scratchpad. Window geometry and a configurable Stay on top
+	preference are saved locally. Combination guidance shares the workflow
+	manifests with the diagrams; Litmus relationships now describe its current
+	brief-and-outcome-checks behavior. No new runtime dependency is required.
 - **`:rec` and `:acc` — short recommendation replies** — new one-sentence
 	bundled notes for accepting the current recommendation or all current
 	recommendations, respectively. Both preserve exactly one trailing space for

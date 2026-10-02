@@ -172,20 +172,37 @@ prompt; nodes only select.
 
 ## Discovery in `:coms`
 
-The popup keeps the full alphabetical reference, previews, system entries,
-scratchpad, escape behavior, and theming — and adds:
+The popup opens in **Browse** with the complete live catalog and visible,
+overlapping groups: Keep work moving; Carry context & hand off; Clarify ideas
+& specs; Research & challenge; Check & improve work; Explain & communicate;
+Create images & prompts; Personal programs; and Git, setup & files.
 
-- a fuzzy search field ("challenge finished research" surfaces `:gaps`
-  without knowing the trigger);
-- "I currently have" / "I need to produce" artifact selectors;
-- views: **All Commands** (default — the complete catalog is always one
-  selection away), **Recommended**, **Processes** (the workflow graphs),
-  **Recent**, and **Favorites**;
-- per-command `use_when` / `avoid_when` guidance, workflow membership, and
-  optional-next hints;
-- direct actions: copy the trigger, copy the full prompt, place the full
-  prompt in the scratchpad ("Prompt to scratchpad"), open the template in the
-  full editor, star a favorite, and preview a handoff packet.
+Groups use stable capability IDs, so a trigger rename preserves membership.
+The provided definitions and recognition cues live in
+`espansr/core/command_groups.py`; new bundled commands should receive a useful
+membership there. Unknown custom commands appear in **Custom / ungrouped** and
+**All Commands**. Only commands in the live catalog are listed. Groups and
+their members have stable ordering; a command can appear in several groups.
+
+Compact rows show the trigger, **Choose it when**, and a role such as **Draft
+checks**, **Review only**, or **Verify & repair**. Selecting a row shows the
+full live description, preview, use/avoid guidance, optional relationships,
+and existing actions: copy trigger, copy full prompt, send the prompt to the
+scratchpad, open the editor, favorite, or preview a handoff packet.
+
+Group guides use the same workflow manifests as the diagrams. **Resume work
+or clear blockers** distinguishes Continue from Unblock and explains when a
+Context note helps. **Verify outcomes with a fresh model** distinguishes the
+Litmus command from its generated brief and describes optional extra Context.
+Links select the current command; they never execute it or concatenate prompts.
+
+Search and the expandable **Filter by artifacts** controls narrow the selected
+group. The **Favorites**, **Recent**, and **Recommended** views also intersect
+that group. **Search all commands** widens an empty group result while retaining
+the query; **Show all commands** clears every filter. **Processes** shows the
+optional diagrams in a separate view with command filters disabled. **Ctrl+F**
+focuses search; Enter in search selects the first result for inspection; Esc
+closes the reference.
 
 Ranking is local and deterministic — capability metadata, artifact
 compatibility, workflow proximity, favorites, and recency. No model, no
@@ -194,8 +211,13 @@ recommendation or a workflow edge only changes what is displayed or copies
 text; it never runs a prompt, shell command, installer, sync, or network
 action.
 
-Favorites and recents are stored in the local `config.json` under
-`discovery`; they are convenience state, never workflow position.
+Favorites, recents, window geometry, and **Stay on top** are stored in the local
+`config.json` under `discovery`; they survive restart and reinstall and are
+never synced as templates or recorded as workflow position. Saving a window
+preference preserves other settings changed while the reference was open.
+Reopening starts in unfiltered Browse, and scratchpad text is never saved.
+**Refresh catalog** reloads live templates and manifests without losing the
+current scratchpad, so the window can stay alongside your work.
 
 ## Handoff packets
 

@@ -132,7 +132,7 @@ class RemoteConfig:
 
 @dataclass
 class DiscoveryConfig:
-    """Local discovery state for the commands popup (favorites and recents).
+    """Local reference-window preferences, favorites, and recents.
 
     This is convenience state only — never workflow position, never a current
     step. It stays in the local config file and is never synced anywhere.
@@ -141,6 +141,8 @@ class DiscoveryConfig:
     favorite_triggers: list = field(default_factory=list)
     recent_triggers: list = field(default_factory=list)
     max_recent: int = 10
+    stay_on_top: bool = True
+    window_geometry: str = ""  # Base64 encoded Qt geometry, local to this host
 
 
 @dataclass

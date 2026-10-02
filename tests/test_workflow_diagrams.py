@@ -250,11 +250,11 @@ def test_processes_view_shows_interactive_diagram(qtbot):
 
     dialog = _make_popup(qtbot)
     dialog._view_combo.setCurrentText("Processes")
-    assert dialog._list.count() == 1
+    assert dialog._pages.currentWidget() is dialog._process_page
     panel = dialog._workflow_panel
     assert isinstance(panel, WorkflowPanel)
     assert sorted(panel.diagram().node_capabilities()) == ["a", "b", "c", "ctx"]
-    assert dialog._summary_table.item(0, 0).text() == "demo"
+    assert dialog._process_table.item(0, 0).text() == "demo"
 
 
 def test_processes_diagram_actions_use_the_selected_capability(qtbot):
