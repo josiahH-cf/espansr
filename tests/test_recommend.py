@@ -69,6 +69,17 @@ def test_search_dictated_ideas_to_specs_surfaces_clarify_features():
     )
 
 
+def test_search_end_of_run_blockers_surfaces_unblock():
+    entries = _bundled_entries()
+    for text in ("unblock the remaining work", "clarify and unblock unfinished tasks"):
+        assert _top_trigger(entries, {"text": text}) == ":unblock"
+
+
+def test_search_project_audit_surfaces_console_audit():
+    entries = _bundled_entries()
+    assert _top_trigger(entries, {"text": "audit the current project"}) == ":audit"
+
+
 def test_artifact_evidence_report_to_visual_artifact_surfaces_visual():
     entries = _bundled_entries()
     assert (

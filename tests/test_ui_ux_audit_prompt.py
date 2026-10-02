@@ -47,9 +47,9 @@ def test_ui_ux_audit_metadata_matches_spec():
     data = _load()
     assert data["name"] == "UI/UX Audit Workbench"
     assert data["description"] == (
-        "Audit every in-scope screen, flow, and state against a standalone usability "
-        "baseline, then implement and verify the actionable front-end improvements within "
-        "scope; report in interactive HTML by default or another requested format."
+        "Audit the in-scope interface against a standalone usability baseline, apply and verify "
+        "supported front-end improvements, and report directly in the console unless an export "
+        "is requested."
     )
     assert data["trigger"] == ":ui-ux-audit"
     assert data["category"] == "analysis"
@@ -57,6 +57,7 @@ def test_ui_ux_audit_metadata_matches_spec():
     assert data["next_triggers"] == []
     assert data["replaces"] == []
     assert data.get("variables", []) == []
+    assert data["produces"] == ["verification-report"]
 
 
 def test_ui_ux_audit_filename_is_exact():
@@ -194,7 +195,7 @@ def test_ui_ux_audit_defines_result_states():
         assert state in content, state
 
 
-# ── Deterministic scoring model ──────────────────────────────────────────────
+# ── Optional scoring model ──────────────────────────────────────────────────
 
 
 def test_ui_ux_audit_defines_frequency_and_impact_scales():
@@ -214,6 +215,8 @@ def test_ui_ux_audit_defines_priority_formula_and_bands():
         assert band in content, band
     for span in ("20-25", "12-19", "6-11", "1-5"):
         assert span in content, span
+    assert "## Optional scoring model" in content
+    assert "Do not require numerical scoring to make an obvious authorized correction." in content
 
 
 def test_ui_ux_audit_defines_hard_gates():
@@ -256,12 +259,14 @@ def test_ui_ux_audit_requires_experience_and_state_inventory():
     assert "Do not mark a state reviewed" in content
 
 
-# ── Self-contained HTML artifact ─────────────────────────────────────────────
+# ── Console default and optional export ──────────────────────────────────────
 
 
-def test_ui_ux_audit_builds_a_self_contained_offline_artifact():
-    """The prompt requires one self-contained, offline HTML workbench."""
+def test_ui_ux_audit_only_exports_an_artifact_when_requested():
+    """The report stays in the console; an explicit HTML export works offline."""
     content = _content()
+    assert "Report directly in the console or ordinary chat by default." in content
+    assert "Create a file only when requested" in content
     assert "self-contained" in content
     assert "without a server" in content
     assert "file://" in content
@@ -276,46 +281,33 @@ def test_ui_ux_audit_prohibits_external_dependencies():
         assert banned in content, banned
 
 
-def test_ui_ux_audit_defines_interaction_requirements():
-    """Accessibility, persistence, copy fallback, reset, and print are required."""
+def test_ui_ux_audit_optional_export_has_accessible_presentation():
+    """Requested HTML remains accessible without forcing a decision application."""
     content = _content()
     for req in (
-        "aria-live",
-        "localStorage",
-        "navigator.clipboard.writeText",
-        "window.print()",
+        "accessible labels",
+        "full keyboard operation",
         "visible focus",
         "responsive",
-        "confirmed reset",
-        "data-*",
         "fallback",
     ):
         assert req in content, req
     assert "no color-only status" in content
 
 
-# ── Generated Markdown contract ──────────────────────────────────────────────
+# ── Proportionate scope and report structure ─────────────────────────────────
 
 
-def test_ui_ux_audit_defines_markdown_copyback_contract():
-    """The generated Markdown response contract is present and non-authorizing."""
+def test_ui_ux_audit_does_not_force_copyback_or_full_product_census():
+    """A focused correction does not require an unrelated whole-product workflow."""
     content = _content()
-    assert "UI/UX audit response" in content
-    for heading in (
-        "## Scope and coverage",
-        "## Readiness assessment",
-        "## Finding decisions",
-        "## Accepted recommendations",
-        "## Revised recommendations",
-        "## Deferred or rejected recommendations",
-        "## Evidence requests and unresolved items",
-        "## Accepted exceptions",
-        "## Implementation direction",
-        "## Additional reviewer context",
-    ):
-        assert heading in content, heading
-    assert "No response yet" in content
-    assert "does not authorize" in content
+    assert "does not require a whole-product census" in content
+    assert "Omit empty categories" in content
+    assert (
+        "Do not require localStorage, filtering, reset controls, or a generated Markdown contract"
+        in content
+    )
+    assert "separately established authorization remains valid" in content
 
 
 # ── Change safety ────────────────────────────────────────────────────────────

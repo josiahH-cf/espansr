@@ -1,10 +1,7 @@
-"""Contract tests for the refined :feature feature-handoff prompt.
+"""Contract tests for the adaptive :feature authoring prompt.
 
-These freeze the refined ``templates/feature.json`` contract: the established
-nine-phase handoff workflow and A–M meta-prompt sections are preserved, and the
-refinement adds honest input coverage, an explicit clarification status, a
-structural output contract, and manifest-owned process navigation (no trigger
-routing inside the prompt body).
+Guard authoring, grounding, clarification, and native delivery without freezing
+a universal runner or verification grammar.
 """
 
 import json
@@ -15,9 +12,7 @@ from espansr.core.templates import Template
 from espansr.integrations.validate import validate_template
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES_DIR = ROOT / "templates"
-FEATURE_PATH = TEMPLATES_DIR / "feature.json"
-
+FEATURE_PATH = ROOT / "templates" / "feature.json"
 INLINE_MARKER = "USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n"
 
 
@@ -27,18 +22,6 @@ def _load() -> dict:
 
 def _content() -> str:
     return _load()["content"]
-
-
-def _assert_ordered(content: str, anchors: list) -> None:
-    pos = -1
-    for anchor in anchors:
-        idx = content.find(anchor)
-        assert idx != -1, f"missing anchor: {anchor}"
-        assert idx > pos, f"anchor out of order: {anchor}"
-        pos = idx
-
-
-# ── Identity ─────────────────────────────────────────────────────────────────
 
 
 def test_feature_identity_and_capability_metadata():
@@ -56,7 +39,7 @@ def test_feature_identity_and_capability_metadata():
         "gap-review",
         "human-litmus",
     ):
-        assert artifact in data["accepts"], artifact
+        assert artifact in data["accepts"]
 
 
 def test_feature_validates_and_ends_with_marker():
@@ -70,215 +53,114 @@ def test_feature_registered_in_discovery():
     assert any(line.strip().startswith(":feature ") for line in render_quick_help().splitlines())
 
 
-# ── Preserved internal workflow ──────────────────────────────────────────────
-
-
-def test_feature_preserves_nine_phase_sequence():
-    _assert_ordered(
-        _content(),
-        [
-            "# Phase 1: Contextualize",
-            "# Phase 2: Establish the Core Feature Outcome",
-            "# Phase 3: Ground Requirements in Evidence",
-            "# Phase 4: Compile the Three Verification Outcomes",
-            "# Phase 5: Pin the Preservation Gate",
-            "# Phase 6: Establish the Kickoff Inputs",
-            "# Phase 7: Adversarial Specification Review",
-            "# Phase 8: Pre-Write and Single Approval Round",
-            "# Phase 9: Incorporate the Reply and Produce the Delivery",
-        ],
-    )
-
-
-def test_feature_preserves_meta_prompt_sections_a_through_m():
+def test_feature_authors_without_implementing_or_starting_execution():
     content = _content()
-    sections = [
-        "### A. Role and Mission",
-        "### B. Authority and Source Priority",
-        "### C. Core Feature Outcome",
-        "### D. Evidence Map and Clean-Start Audit",
-        "### E. Three-Outcome Package",
-        "### F. Acceptance and Preservation Matrix",
-        "### G. Simple Linear Implementation Loop",
-        "### H. Localized Feedback",
-        "### I. External Completion Predicate and Budget",
-        "### J. Verification and Adversarial Review",
-        "### K. Mechanical Deliverable Extraction",
-        "### L. Scope Traceability",
-        "### M. Consolidated Delivery Package",
-    ]
-    _assert_ordered(content, sections)
+    assert "Do not implement the requested feature." in content
+    assert "Do not start an agent loop, deploy, or ship it" in content
+    assert "Do not defer ready authoring work to another command" in content
 
 
-def test_feature_preserves_core_strengths():
+def test_feature_uses_verified_native_mechanism_by_default():
     content = _content()
-    for anchor in (
-        "fail-first",
-        "accept all recommendations",
-        "ALL_GATES_GREEN",
-        "BUDGET_EXHAUSTED",
-        "BLOCKED",
-        "REALITY SUMMARY",
-        "preservation",
-        "adversarial",
-        "kickoff input",
-        "self-certif",
-        "Human verdict",
-        "Model verdict",
-        "**If this was built correctly:**",
-    ):
-        assert anchor in content, anchor
+    assert "Use the verified project-native flow by default" in content
+    assert "historical example, unused folder, or mentioned loop" in content
+    assert "file locations, schema, readiness rules, and required registration" in content
 
 
-def test_feature_stays_single_approval_round():
+def test_feature_respects_format_override_and_standalone_fallback():
     content = _content()
-    assert "one consolidated approval round" in content
-    assert "single reply" in content
+    assert "console-only delivery, or another format overrides this packaging default" in content
+    assert "When no native mechanism exists, return one self-contained" in content
+    assert "Do not scaffold a spec runner, create a state file" in content
 
 
-# ── Refinement: honest input coverage ────────────────────────────────────────
-
-
-def test_feature_approval_packet_headings_in_order():
-    _assert_ordered(
-        _content(),
-        [
-            "FEATURE SPECIFICATION DECISIONS",
-            "CONTEXTUALIZED FEATURE",
-            "INPUT COVERAGE",
-            "CLARIFICATION STATUS",
-            "KICKOFF INPUTS",
-            "ARCHITECTURE OUTCOME",
-            "BEHAVIOR OUTCOME",
-            "HUMAN LITMUS",
-            "PRESERVATION SET",
-            "DECISIONS AND RECOMMENDATIONS",
-            "REALITY SUMMARY",
-            "REPLY FORMAT",
-        ],
-    )
-
-
-def test_feature_input_coverage_classifies_every_upstream_artifact():
+def test_feature_inspects_implementation_and_shared_consumers():
     content = _content()
-    for row in (
-        "Goal contract",
-        "Project evidence",
-        "External research",
-        "Independent gap review",
-        "Human litmus",
-        "Human-approved acceptance tests",
-        "Preservation set",
-        "Project-native feature process",
-        "Material unresolved decisions",
-    ):
-        assert row in content, row
+    assert "actual implementation and relevant consumers" in content
+    assert "Preserve valid existing behavior, unrelated work, and shared consumers." in content
 
 
-def test_feature_never_implies_unperformed_processes():
+def test_feature_preserves_scope_and_evidence_honesty():
     content = _content()
+    assert "do not silently narrow it to the easiest portion" in content
     assert "occurred when it did not" in content
+    assert "current behavior, desired behavior, supported inference" in content
 
 
-def test_feature_accepts_upstream_artifacts_without_requiring_them():
+def test_feature_upstream_artifacts_are_optional():
     content = _content()
-    for phrase in ("goal contract", "research report", "gap review", "human-litmus"):
-        assert phrase in content.lower(), phrase
+    for artifact in ("goal contract", "research report", "gap review", "human-litmus"):
+        assert artifact in content
+    assert "none is a compulsory upstream artifact" in content
+
+
+def test_feature_clarifies_in_console_without_review_artifacts():
+    content = _content()
+    assert "Print clarification and review directly in the console or ordinary chat." in content
+    assert "Do not create a separate review file" in content
+    assert "do not use a question tool" in content
+
+
+def test_feature_clarification_repeats_until_materially_unblocked():
+    content = _content()
+    assert "There is no fixed question count, turn count, or approval-round limit." in content
+    assert "Ask follow-ups on unresolved or newly exposed material issues" in content
+    assert "Accept partial, out-of-order, dictated, or natural answers" in content
+    assert "speech-to-text mistakes" in content
+
+
+def test_feature_ready_context_writes_without_ceremonial_approval():
+    content = _content()
+    assert "write the final handoff immediately" in content
+    assert "proceed once unblocked without a ceremonial approval round" in content
+    assert "Authorization persists across turns" in content
+    assert "any genuine native approval requirement" in content
+
+
+def test_feature_distinguishes_blocking_and_nonblocking_unknowns():
+    content = _content()
+    assert "Nonblocking unknowns may remain" in content
     assert (
-        "The absence of upstream artifacts must never require the user to run another "
-        "command or produce anything first" in content
+        "Do not present an essential unresolved product decision as implementation-ready."
+        in content
     )
 
 
-# ── Refinement: clarification status ─────────────────────────────────────────
-
-
-def test_feature_requires_exactly_one_clarification_status():
+def test_feature_acceptance_and_verification_fit_the_change():
     content = _content()
-    assert "CLARIFICATION STATUS" in content
-    assert "REQUIRED" in content
-    assert "NOT REQUIRED" in content
-    assert "exactly one" in content.lower()
+    assert "observable acceptance criteria" in content
+    assert "verification proportional to the actual change and its risks" in content
+    assert "Required project checks remain required." in content
+    assert "Do not weaken a requirement or a meaningful existing check" in content
+    assert "Never prefill human acceptance" in content
 
 
-def test_feature_clarification_required_contract():
+def test_feature_does_not_require_universal_runner_grammar():
     content = _content()
-    # When REQUIRED: stable IDs, why answers differ, recommendation, safe default.
-    assert "identify each blocking decision with a stable question ID" in content
-    assert "No safe default" in content
-    assert "Recommendation:" in content
+    assert "Do not force every feature into three verification outcomes" in content
+    assert "Do not invent numeric budgets, metrics, or tests" in content
+    assert "output_contract" not in _load()
+    for retired in ("ALL_GATES_GREEN", "BUDGET_EXHAUSTED", "# Phase 8:", "### M."):
+        assert retired not in content
 
 
-def test_feature_clarification_not_required_needs_evidence_basis():
+def test_feature_adversarial_review_checks_intent_and_scope():
     content = _content()
-    assert "evidence-based" in content.lower() or "evidence-backed" in content.lower()
+    assert "adversarial specification review" in content
+    assert "satisfy the words while missing the purpose" in content
+    assert "leave an essential decision unresolved" in content
 
 
-# ── Refinement: process navigation stays outside the prompt ──────────────────
+def test_feature_delivery_is_ready_and_truthful():
+    content = _content()
+    assert "create or revise the final native specifications" in content
+    assert "complete copy-ready content and the exact limitation" in content
+    assert "Describe future implementation conditionally" in content
+    assert "do not claim the target feature exists because its handoff is complete" in content
 
 
 def test_feature_does_not_route_to_other_triggers():
     content = _content()
     for token in (":goal", ":research", ":gaps", ":litmus", ":verify", ":feedback", ":context"):
-        assert token not in content, token
+        assert token not in content
     assert "Do not require, invoke, reference, or direct the user to another prompt" in content
-
-
-# ── Refinement: output contract ──────────────────────────────────────────────
-
-
-PACKET_ONLY_HEADINGS = (
-    "INPUT COVERAGE",
-    "CLARIFICATION STATUS",
-    "KICKOFF INPUTS",
-    "ARCHITECTURE OUTCOME",
-    "BEHAVIOR OUTCOME",
-    "HUMAN LITMUS",
-    "PRESERVATION SET",
-    "DECISIONS AND RECOMMENDATIONS",
-)
-
-
-def test_feature_declares_structural_output_contract():
-    """The contract describes one final-artifact reply, never the earlier approval packet."""
-    data = _load()
-    contract = data.get("output_contract")
-    assert isinstance(contract, dict) and contract
-    assert contract["artifact_type"] == "implementation-handoff"
-    assert contract["required_sections"] == [
-        "FINAL IMPLEMENTATION META-PROMPT",
-        "REALITY SUMMARY",
-    ]
-    patterns = [marker["pattern"] for marker in contract["required_markers"]]
-    for pattern in (
-        "If this was built correctly:",
-        "Model verdict:",
-        "Human verdict:",
-        "ALL_GATES_GREEN",
-        "BUDGET_EXHAUSTED",
-    ):
-        assert pattern in patterns, pattern
-    # Packet headings are printed a turn earlier and are not contract obligations.
-    for heading in PACKET_ONLY_HEADINGS:
-        assert heading not in contract["required_sections"], heading
-    assert not any("CLARIFICATION STATUS" in pattern for pattern in patterns)
-    # Prefilled human verdicts stay forbidden because litmus entries travel in the artifact.
-    forbidden = [marker["pattern"] for marker in contract["forbidden_markers"]]
-    assert len(forbidden) == 2 and all("Human verdict" in pattern for pattern in forbidden)
-
-
-def test_feature_note_says_the_packet_is_not_the_contract_target():
-    content = _content()
-    sentence = (
-        "The approval packet is a checkpoint, not the deliverable: the structural output "
-        "contract checks only the final-artifact reply that follows the user's response, "
-        "never this packet."
-    )
-    assert sentence in content
-    assert content.index("After printing this packet, stop.") < content.index(sentence)
-    assert content.index(sentence) < content.index("# Phase 9:")
-
-
-def test_feature_final_delivery_names_the_meta_prompt():
-    content = _content()
-    assert "FINAL IMPLEMENTATION META-PROMPT" in content

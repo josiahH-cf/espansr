@@ -391,16 +391,15 @@ output no longer contains the retired trigger.
 ### `espansr check-output`
 
 Validate a model-generated output file against a template's structural output
-contract (for templates that declare one, such as `:feature` and `:adversary-review`).
-For `:feature`, the checked file is the final-artifact reply that follows your
-approval — the reply carrying the FINAL IMPLEMENTATION META-PROMPT and REALITY
-SUMMARY — not the approval-round packet, which the contract never checks.
+contract (for templates that declare one, such as `:adversary-review` and
+`:reality-max`). Adaptive handoffs such as `:feature` follow the target project's
+format and do not declare a universal structural contract.
 Validation is read-only, reports every unmet obligation rather than only the
 first, and proves structural conformance only — it never claims semantic
 correctness.
 
 ```bash
-espansr check-output --template :feature run-output.txt
+espansr check-output --template :adversary-review review.md
 espansr check-output --template :adversary-review review.md --json
 ```
 
