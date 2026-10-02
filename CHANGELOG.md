@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:clarify-features` — iterative clarification and specification writing** —
+	a new bundled prompt that contextualizes a batch of rough ideas or dictated
+	notes, identifies and uses the project's native specification and agent-loop
+	authoring mechanism, and asks as many console-only clarification rounds as
+	needed. It accepts stream-of-consciousness speech-to-text answers, resolves
+	material wording ambiguities, writes finalized specs once unblocked, validates
+	native registrations, and asks for the next batch. Final specs default to
+	project files with an explicit console-output override; projects without a
+	native mechanism use simple Markdown specs. Surfaced in `:coms`, the
+	`:espansr` quick help, and the `docs/TEMPLATES.md` note list.
 - **`:playbook` — source-grounded, emoji-guided playbook builder** — a new
 	bundled prompt that contextualizes around the user's current project or
 	process, verifies the relevant instructions, asks only the necessary

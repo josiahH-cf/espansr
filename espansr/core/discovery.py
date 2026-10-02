@@ -121,6 +121,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (":project-init-llm", "initialize AGENTS.md-centered repo instructions"),
             (":feature", "three-outcome implementation meta-prompt or project-native flow"),
+            (
+                ":clarify-features",
+                "dense clarification loop to finalized project-native feature specs",
+            ),
             (":cb-transcript-feature", "transcript to implementation-ready feature specs"),
         ),
     ),
