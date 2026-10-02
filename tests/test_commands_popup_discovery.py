@@ -107,20 +107,19 @@ def _make_dialog(qtbot, entries=None, config=None):
     return dialog
 
 
-# ── Full catalog stays the default (BEH-07) ──────────────────────────────────
+# ── Browse opens with the complete catalog ──────────────────────────────────
 
 
 def test_popup_defaults_to_full_catalog(qtbot):
     dialog = _make_dialog(qtbot)
-    assert dialog._view_combo.currentText() == "All Commands"
-    assert dialog._list.count() == 3
+    assert dialog._view_combo.currentText() == "Browse"
     assert dialog._summary_table.rowCount() == 3
 
 
 def test_popup_view_choices(qtbot):
     dialog = _make_dialog(qtbot)
     views = [dialog._view_combo.itemText(i) for i in range(dialog._view_combo.count())]
-    assert views == ["All Commands", "Recommended", "Processes", "Recent", "Favorites"]
+    assert views == ["Browse", "All Commands", "Recommended", "Processes", "Recent", "Favorites"]
 
 
 def test_scratchpad_still_present_and_ephemeral(qtbot):
@@ -308,10 +307,9 @@ def test_favorites_view_lists_favorites(qtbot):
 def test_processes_view_shows_workflow_information(qtbot):
     dialog = _make_dialog(qtbot)
     dialog._view_combo.setCurrentText("Processes")
-    assert dialog._list.count() >= 1
-    # The summary table shows the workflow rather than commands in this view.
+    assert dialog._pages.currentWidget() is dialog._process_page
     texts = [
-        dialog._summary_table.item(row, 0).text() for row in range(dialog._summary_table.rowCount())
+        dialog._process_table.item(row, 0).text() for row in range(dialog._process_table.rowCount())
     ]
     assert any("evidence-research-cycle" in t for t in texts)
 
@@ -332,4 +330,4 @@ def test_all_commands_view_keeps_three_column_summary(qtbot):
     dialog = _make_dialog(qtbot)
     assert dialog._summary_table.columnCount() == 3
     headers = [dialog._summary_table.horizontalHeaderItem(i).text() for i in range(3)]
-    assert headers == ["Command", "Workflow", "Description"]
+    assert headers == ["Command", "Choose it when", "Role"]

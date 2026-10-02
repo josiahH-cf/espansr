@@ -142,16 +142,16 @@
     {
       "source": "human-litmus",
       "target": "feature-handoff",
-      "label": "Include the completed human-verification contract in the handoff.",
+      "label": "Include the intended outcome checks in the specification or implementation handoff.",
       "artifact": "human-litmus",
-      "short": "include contract"
+      "short": "include checks"
     },
     {
       "source": "feature-handoff",
       "target": "human-litmus",
-      "label": "Audit or revise the handoff's human-verification checklist before the build.",
+      "label": "Draft a grounded verification brief and outcome checks for the specified or delivered feature.",
       "artifact": "implementation-handoff",
-      "short": "audit litmus"
+      "short": "draft litmus"
     },
     {
       "source": "feature-handoff",
@@ -259,5 +259,5 @@
       "short": "feeds any node"
     }
   ],
-  "notes": "The user may invoke the feature handoff directly with rough notes, or with a goal contract, research report, review, or litmus artifact. Discovery may recommend predecessors or successors, but prompt bodies never route the user. Verification stays usable independently for already completed work, and the feedback node stays one bounded apply-and-verify cycle."
+  "notes": "Use Goal or Clarify Features when intent still needs shaping, and Feature when a bounded idea is ready for specification. Research and Gap Review help when evidence or assumptions need examination. Litmus drafts a self-contained brief and unanswered outcome checks for a fresh model; it does not claim the checks have passed. Give the generated brief to the receiving model to perform the verification. Verify checks and repairs completed work directly; Adversary Review provides an independent read-only verdict. Feedback applies current-cycle changes. Every command is independently usable and each relationship is optional."
 }

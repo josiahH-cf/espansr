@@ -1,0 +1,18 @@
+{
+  "workflow_schema": 1,
+  "id": "session-continuity",
+  "name": "Resume work or clear blockers",
+  "description": "Choose the right way to move unfinished AI work forward, and carry its context when needed.",
+  "tags": ["continuation", "clarification", "context"],
+  "entry_points": ["continue", "unblock", "context-reset"],
+  "nodes": [
+    {"capability": "continue", "role": "Resume unfinished work when the next supported action can be established.", "x": 0, "y": 0},
+    {"capability": "unblock", "role": "Clarify blockers, omissions, and unresolved decisions, then finish the authorized remainder.", "x": 320, "y": 0},
+    {"capability": "context-reset", "role": "Condense the relevant state when work needs a new conversation or handoff.", "x": 160, "y": 190}
+  ],
+  "edges": [
+    {"source": "context-reset", "target": "continue", "label": "Use the generated context note as starting material when resuming in another session.", "artifact": "context-packet", "short": "resume elsewhere"},
+    {"source": "context-reset", "target": "unblock", "label": "Carry the objective, unfinished work, and known blockers into a new clarification session when necessary.", "artifact": "context-packet", "short": "carry blockers"}
+  ],
+  "notes": "Choose Continue when you want existing work carried forward; choose Unblock when a run has left unresolved questions, omissions, or other blockers. Both carry authorized work toward completion. Unblock already continues after clarification, so another Continue invocation is only useful if work later needs resuming. Context is optional: carry its generated note into another conversation when the relevant state would otherwise be lost. Every command works independently."
+}

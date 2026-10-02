@@ -1,0 +1,16 @@
+{
+  "workflow_schema": 1,
+  "id": "fresh-model-verification",
+  "name": "Verify outcomes with a fresh model",
+  "description": "Prepare a grounded verification brief and carry any additional essential context to the receiving model.",
+  "tags": ["verification", "handoff", "context"],
+  "entry_points": ["human-litmus", "context-reset"],
+  "nodes": [
+    {"capability": "human-litmus", "role": "Draft a self-contained project brief and unanswered checks of intended outcomes.", "x": 300, "y": 0},
+    {"capability": "context-reset", "role": "Optionally condense additional trusted project state that the handoff needs.", "x": 0, "y": 0}
+  ],
+  "edges": [
+    {"source": "context-reset", "target": "human-litmus", "label": "Supply condensed project state when it adds essential facts to the verification handoff.", "artifact": "context-packet", "short": "optional context"}
+  ],
+  "notes": "Run Litmus in the project or conversation that knows the delivered work. Give the generated brief and outcome checks to the fresh model; copying the Litmus command itself does not provide the project evidence. Litmus already includes the context needed for its checks. Add a generated Context note only when it supplies additional essential state. The receiving model performs the observations, canaries, and scoped repairs described in the brief, then reports evidence. These are optional relationships, and Context also works without Litmus."
+}
