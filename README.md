@@ -131,7 +131,16 @@ If you meant to install on the Windows host instead, open Windows PowerShell in 
 - Optional Git-backed template sync through `espansr remote`, `pull`, and `push`.
 - Optional workflow manifests describing how bundled prompts relate (`espansr workflows`), user-saved handoff packets in the config directory (`espansr packet`), and structural output-contract checks (`espansr check-output`).
 
-It does not replace Espanso, manage Espanso YAML beyond that block and its own match files, or delete unmanaged Espanso files. The process layer is optional: every trigger works directly, no workflow tracks a current step, and nothing runs automatically.
+It does not replace Espanso or delete unmanaged Espanso files. It manages its own
+match files, the marked backend block, and enables native statistics on Espanso
+2.4+. The process layer is optional: every trigger works directly, no workflow
+tracks a current step, and nothing runs automatically.
+
+Local expansion counts appear in `:coms` command details and the editor on
+Espanso 2.4+. Setup enables native statistics; older Espanso versions show
+unavailable. Copying a prompt does not count as an expansion. Totals and trigger
+aliases are checkpointed in `usage.json` beside the local `config.json`, outside
+template sync. See [verification](docs/VERIFY.md) for platform coverage.
 
 ## More Help
 

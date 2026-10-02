@@ -2,6 +2,37 @@
 
 Use this checklist after installing from a fresh checkout or after changing setup/install behavior.
 
+CI runs the full suite on native Linux, macOS, and Windows. On Linux/Python
+3.12, macOS, and Windows it also runs `scripts/verify_install.py`: a fresh
+install into a path with spaces, actual Git pull/push with local edits, repeat
+installation, starter upgrades, preserved custom templates and preferences,
+and exact prompt copying through Qt. The canary uses a temporary home and a
+local Git remote, cleans them up, and restores the Windows runner's user PATH.
+It skips Espanso runtime installation and desktop typing; those require a real
+desktop, permissions, and the checks below. Clipboard checks use Qt offscreen.
+
+### Local expansion counts
+
+On Espanso 2.4+, setup enables `stats.enabled` in `config/default.yml`, preserving
+other settings, comments and a one-time original backup. Expand a prompt using
+its actual trigger, then inspect its small `Runs` label in `:coms` details or
+the `:aopen` editor. While a window is open, counts refresh every ten seconds.
+Copy trigger, Copy prompt and scratchpad actions never increment the count.
+Older or undetectable runtimes show unavailable; a failed read does not prevent
+copying or publishing. Existing expansions before native tracking was enabled
+cannot be recovered.
+
+The local `usage.json` beside `config.json` contains a schema version, native
+database checkpoint, trigger ownership, and command records with lifetime
+counts and trigger aliases. It contains no prompt bodies and is outside the
+template Git repository. Stable capability IDs (or the existing filename
+fallback) keep totals through trigger renames. Reusing a tracked trigger for
+another command assigns only later records to that command. History before
+the first espansr checkpoint can only be attributed by its native trigger name.
+Native statistics clear/prune retains totals already checkpointed by espansr;
+unread records removed from the native database cannot be recovered. Nothing
+in espansr clears or prunes native statistics.
+
 ## 1. Install From The Repo Folder
 
 ```bash
@@ -42,7 +73,7 @@ side effects before running it:
 - When `espanso` is not on PATH it installs it: the upstream X11 `.deb` on
   apt distros (falling back to the X11 AppImage at `~/.local/bin/espanso`,
   wrapped in extract-and-run mode when FUSE is unavailable), or
-  `brew tap espanso/espanso && brew install espanso` on macOS (Homebrew itself
+  `brew install espanso` on macOS (Homebrew itself
   is never installed). After installing it, the script seeds
   `config/default.yml` with `show_icon: false` and `show_notifications: false`
   when that file does not exist, writes and enables a user systemd unit

@@ -826,6 +826,15 @@ def sync_to_espanso(
 
     try:
         _write_match_file(output_path, {"matches": matches})
+        # Credit pending native events to their old owners, then reconcile
+        # ownership only after renamed/reused triggers publish successfully.
+        from espansr.core.command_catalog import build_command_catalog
+        from espansr.core.usage import refresh_usage
+
+        try:
+            refresh_usage(build_command_catalog())
+        except Exception as exc:
+            logger.debug("Usage sampling skipped: %s", exc)
 
         _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
@@ -959,20 +968,29 @@ def _find_espanso_executable() -> str | None:
     """Return the path to the Espanso executable, or None if not found.
 
     Checks (in order):
-    1. PATH (shutil.which)
-    2. Known Windows per-user install location: %LOCALAPPDATA%/Programs/Espanso/espanso.cmd
+    1. PATH (shutil.which), preferring the sibling Windows daemon executable
+    2. Known Windows per-user install location: %LOCALAPPDATA%/Programs/Espanso
+
+    The Windows batch wrapper can return no captured status output. Calling
+    espansod.exe directly lets restart verification observe the real result.
     """
     import os
     import shutil
 
     if found := shutil.which("espanso"):
+        if is_windows():
+            daemon = Path(found).with_name("espansod.exe")
+            if daemon.is_file():
+                return str(daemon)
         return found
 
     localappdata = os.environ.get("LOCALAPPDATA", "")
     if localappdata:
-        candidate = Path(localappdata) / "Programs" / "Espanso" / "espanso.cmd"
-        if candidate.exists():
-            return str(candidate)
+        install_dir = Path(localappdata) / "Programs" / "Espanso"
+        for name in ("espansod.exe", "espanso.cmd", "espanso.exe"):
+            candidate = install_dir / name
+            if candidate.is_file():
+                return str(candidate)
 
     return None
 

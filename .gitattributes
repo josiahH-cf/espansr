@@ -1,0 +1,2 @@
+# Bash installers must also work from Windows checkouts used by WSL.
+*.sh text eol=lf
