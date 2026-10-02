@@ -186,7 +186,7 @@ install_espanso_deb() {
     local tmp
     tmp="$(mktemp --suffix=.deb 2>/dev/null || mktemp)"
 
-    info "Downloading $asset…"
+    info "Downloading ${asset}…"
     if ! curl -fSL --retry 2 --connect-timeout 15 "$url" -o "$tmp" 2>/dev/null; then
         warn "Download failed: $url"
         rm -f "$tmp"
@@ -605,12 +605,12 @@ if [[ -d "$VENV_DIR" ]]; then
     else
         warn "Existing venv is incomplete - recreating $VENV_DIR"
         rm -rf "$VENV_DIR"
-        info "Creating virtual environment at $VENV_DIR…"
+        info "Creating virtual environment at ${VENV_DIR}…"
         "$PYTHON_BIN" -m venv "$VENV_DIR"
         ok "Venv created"
     fi
 else
-    info "Creating virtual environment at $VENV_DIR…"
+    info "Creating virtual environment at ${VENV_DIR}…"
     "$PYTHON_BIN" -m venv "$VENV_DIR"
     ok "Venv created"
 fi

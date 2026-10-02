@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1]
@@ -249,11 +250,9 @@ def main() -> None:
             original_path = winreg.QueryValueEx(registry, "Path")
         except FileNotFoundError:
             pass
+    temporary = tempfile.TemporaryDirectory(prefix="espansr-install-")
     try:
-        with tempfile.TemporaryDirectory(prefix="espansr-install-") as directory:
-            verify(Path(directory).resolve())
-        assert not Path(directory).exists(), "Canary data was not cleaned up"
-        print("Temporary installation and local remote removed.")
+        verify(Path(temporary.name).resolve())
     finally:
         if registry is not None:
             if original_path is None:
@@ -264,6 +263,18 @@ def main() -> None:
             else:
                 winreg.SetValueEx(registry, "Path", 0, original_path[1], original_path[0])
             winreg.CloseKey(registry)
+        # Windows console launchers can retain a directory handle briefly
+        # after the installer exits. Retry cleanup, but never hide a leak.
+        for attempt in range(10):
+            try:
+                temporary.cleanup()
+                break
+            except PermissionError:
+                if os.name != "nt" or attempt == 9:
+                    raise
+                time.sleep(0.5)
+    assert not Path(temporary.name).exists(), "Canary data was not cleaned up"
+    print("Temporary installation and local remote removed.")
 
 
 if __name__ == "__main__":

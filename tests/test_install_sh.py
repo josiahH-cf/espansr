@@ -1,5 +1,6 @@
 """Regression tests for the Linux/macOS/WSL shell installer."""
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,6 +13,12 @@ def _installer_text() -> str:
 def test_shell_installer_keeps_posix_line_endings_in_windows_checkouts():
     assert b"\r\n" not in (ROOT / "install.sh").read_bytes()
     assert "*.sh text eol=lf" in (ROOT / ".gitattributes").read_text(encoding="utf-8")
+
+
+def test_shell_installer_braces_variables_before_unicode_punctuation():
+    # macOS Bash 3 can consume the punctuation as part of an unbraced name,
+    # aborting a fresh install under set -u before the venv is created.
+    assert not re.search(r"\$[A-Za-z_][A-Za-z0-9_]*[^\x00-\x7f]", _installer_text())
 
 
 def test_shell_installer_records_install_metadata_for_refresh():

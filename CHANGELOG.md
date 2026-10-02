@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   installers quote command aliases through both shell parsing layers and
   refresh stale aliases while preserving other shell settings. macOS uses
   the current Homebrew install route without the obsolete Espanso tap.
-  Bash scripts retain LF line endings in Windows checkouts for WSL use.
+  Bash scripts retain LF line endings in Windows checkouts for WSL use,
+  and macOS Bash correctly expands variables before Unicode punctuation.
 - Native macOS CI and installer canaries on Linux, macOS, and Windows now
   exercise fresh installation, real Git pull/push and reinstall, bundled-note
   upgrades, custom-template preservation, and prompt copying in Qt.
