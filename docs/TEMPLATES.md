@@ -47,10 +47,11 @@ Use `:espansr` for the current quick reference list.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
-contract, and `:feature` turns feature intent into one implementation meta-prompt
-that drives architecture, behavior, and human-litmus verification outcomes by
-default — or a verified project-native flow on explicit request — and stops
-before implementing the feature itself.
+contract, and `:feature` clarifies feature intent into a ready native
+specification by default, or a standalone implementation meta-prompt when no
+native authoring mechanism exists or that format is requested. Verification
+fits the actual feature and project requirements. It stops before implementing
+the feature itself.
 
 `:project-init` was replaced by `:project-init-llm`; the old trigger does not
 expand (see [Retired triggers](#retired-triggers)).
@@ -92,9 +93,10 @@ Clarification and review always appear directly in the console or chat; no
 additional review file or interactive questionnaire is created. Final specs are
 written to the project by default, or returned inline when the user requests
 console output in the appended context (or no writable project is available).
-It does not start implementation. Unlike `:feature`'s single approval round and
-default implementation meta-prompt, it is an ongoing spec-authoring loop that
-automatically adopts the native process. Unlike `:cb-transcript-feature`, its
+It does not start implementation. Unlike `:feature`'s bounded handoff,
+it is an ongoing spec-authoring loop that asks for the next batch. Both
+commands use a verified native authoring process and clarify until materially
+unblocked. Unlike `:cb-transcript-feature`, its
 entry point is any batch of ideas and it explicitly asks for the next batch.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
@@ -113,13 +115,14 @@ and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
 
 Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit that then
-improves the interface. It inventories every in-scope screen, flow, and state,
-audits them against a self-contained usability baseline before making any
-change, scores findings by frequency and impact, and then, by default,
+improves the interface. It inspects the affected screens, flows, and states,
+audits them against the applicable self-contained usability principles before
+making changes, prioritizes by impact and dependency (numeric scoring when
+useful and supported), and then, by default,
 implements the evidence-supported, actionable front-end improvements within the
 authorized scope and verifies the changed experience. It records that work in
-an audit-and-improvement report — an interactive, self-contained HTML document
-by default, or another format such as Markdown when you request one — and you
+an audit-and-improvement report directly in the console or chat, with HTML or
+another export only when requested, and you
 can ask for an audit without edits. It is independent of `:audit` (the generic
 decision packet), `:sanitize`, and `:cliche`: it does not sanitize workspaces or
 rewrite prose, and it never directs you to run another trigger.
@@ -169,16 +172,28 @@ contract without implementing the goal or writing a plan.
 
 ### Review-family notes at a glance
 
+Use `:litmus` after a feature delivery, or while preparing its acceptance
+checks, to generate a short prompt for an outside model followed by concrete
+human-outcome checks. Supply feature IDs, specification paths, or a commit
+range to select the work, or leave the context blank to infer the recent
+coherent delivery. The handoff carries the necessary scope and nuanced intent
+into a fresh session; it does not assume that model remembers the earlier work.
+The receiving model exercises actual workflows and authorized synthetic
+canaries, repairs scoped failures and rechecks by default, and reports evidence
+for each Yes/No result. `verify only` requests assessment without repairs, and
+`criteria only` omits the normally included brief. Missing evidence stays
+UNVERIFIED. The authoring invocation does not execute these actions itself.
+
 | Trigger | Input | Changes files? | Output | Not for |
 |---------|-------|----------------|--------|---------|
 | `:verify` | Work claimed complete (implemented feature, handoff, prior verification report, or context packet) plus optional appended notes | Yes — fixes clear, safe, in-scope issues and aligns affected docs; stops and reports when a fix needs product decisions, broad refactors, destructive operations, credentials, or external access | Report of what was verified, fixed, documented, and still risky | Work that has not been implemented yet |
-| `:adversary-review` | A unit claimed complete and its spec of record (diff, branch, PR, commit range, files, checks to run) | No — read-only; runs non-destructive checks, never fixes, never commits or pushes | `ADVERSARY REVIEW` with one `VERDICT:` line (PASS, PASS WITH FOLLOW-UPS, or FAIL) and headed sections from SCOPE REVIEWED to OPTIONAL | Getting issues repaired in the same pass, or work not yet implemented |
-| `:gaps` | Finished material to challenge (research, a plan, a report, a goal contract, a handoff) plus optional callouts | No — reviews only the provided material and what it directly names | Markdown review in eight sections, from What Looks Off to Bottom Line, with a confidence rating per issue | Material that does not exist yet |
-| `:litmus` | Any material: rough intent, a goal contract, a report, a review, a handoff, or an existing checklist | No — authors self-contained Yes/No criteria only | A flat list of `- ` statements, each one self-contained criterion where Yes means satisfied and No means not, with no verdicts, headings, or answers | The work implemented, tests executed, or the criteria answered |
+| `:adversary-review` | A unit claimed complete and its spec of record (diff, branch, PR, commit range, files, checks to run) | No — read-only; runs relevant non-destructive checks, never fixes, never commits or pushes | Console review with scope, verification, one PASS/PASS WITH FOLLOW-UPS/FAIL verdict, and relevant findings sections | Getting issues repaired in the same pass, or work not yet implemented |
+| `:gaps` | Finished material to challenge (research, a plan, a report, a goal contract, a handoff) plus optional callouts | No — reviews only the provided material and what it directly names | Console review of material findings, evidence, confidence, priorities, and decisions, without empty categories | Material that does not exist yet |
+| `:litmus` | Selected features or deliverables, specifications, accepted decisions, recent changes, or an existing checklist | No during authoring — its generated prompt directs the receiving model's verification and scoped repairs | Compact fresh-model brief plus unanswered binary checks of human, visual, behavioral, and artifact outcomes | Executing the verification in the authoring invocation, or accepting code written as proof of the intended outcome |
 | `:feedback` | Accepted current-cycle feedback, directives appended after the marker, and project evidence (verification report, feedback directives, gap review, context packet) | Yes — applies the narrowest coherent change and updates affected tests, docs, and generated surfaces; returns patch-ready content when it cannot write | Evidence-based summary ending in a status of applied, partial, patch-ready, or blocked | An open-ended feedback loop, new scope, or persistent feedback memory |
 | `:troubleshoot` | Symptoms, reproduction steps, failing output, files, constraints, and prior attempts | Yes — test-first minimal fix plus the in-scope follow-ups the affected-area review requires | Summary of what failed, the cause, what changed, what verification passed, and which affected areas were checked | Nothing is failing (verify or review the work instead) |
-| `:continue` | Work already in flight; optional notes, otherwise the objective is inferred from the evidence | Yes — performs the next correct work within the existing authorization; never commits, pushes, publishes, or deploys without an explicit yes | `CONTINUED TO COMPLETION` or `CONTINUED — PARTIAL` report, or one `CONTINUE CHECKPOINT` when genuinely blocked | Sweeping a whole field of blockers (that is `:unblock`), or shipping the work |
-| `:unblock` | A stalled or starting work sequence; optional notes, otherwise the state is inferred from the evidence | Yes, for safe, reversible agent-owned fixes and durable prevention; never destructive, privileged, costly, or public actions | `UNBLOCK PACKET` for human decisions and actions, then an `UNBLOCKED` or `PARTIALLY UNBLOCKED` report | Sustained execution once the path is clear (it hands back) |
+| `:continue` | Work already in flight; optional notes, otherwise the objective is inferred from the evidence | Yes — performs the next correct work and delivery steps within existing authorization; asks only for genuinely missing decisions or permissions | Console completion or partial report, with a compact checkpoint when genuinely blocked | A comprehensive blocker sweep |
+| `:unblock` | Unfinished work, omitted updates, approval claims, or stalled steps; optional notes | Yes — clears agent-owned blockers and finishes the remaining authorized work, carrying prior authorization forward | Console clarification batches as needed, then verified completion or the exact remaining boundary | An independent read-only assessment or unrelated new work |
 
 Git helper templates are self-invoking snippets in Bash (`-sh`) and PowerShell
 (`-ps`) that share one safety rule: before relying on `main` they fetch

@@ -80,6 +80,22 @@ def test_search_project_audit_surfaces_console_audit():
     assert _top_trigger(entries, {"text": "audit the current project"}) == ":audit"
 
 
+def test_search_fresh_model_verification_prompt_surfaces_litmus():
+    entries = _bundled_entries()
+    for text in ("fresh model verification prompt", "outside model verification prompt"):
+        assert _top_trigger(entries, {"text": text}) == ":litmus"
+
+
+def test_implemented_feature_to_human_checks_surfaces_litmus():
+    entries = _bundled_entries()
+    assert (
+        _top_trigger(
+            entries, {"have_artifact": "implemented-feature", "want_artifact": "human-litmus"}
+        )
+        == ":litmus"
+    )
+
+
 def test_artifact_evidence_report_to_visual_artifact_surfaces_visual():
     entries = _bundled_entries()
     assert (

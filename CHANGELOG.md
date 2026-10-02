@@ -49,6 +49,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:litmus` — fresh-model outcome verification handoff** — automatically
+	prepends a compact, grounded project and feature brief to unanswered binary
+	checks of the intended human, visual, behavioral, or artifact outcomes.
+	Preserves real feature IDs, relevant spec and revision anchors, and nuanced
+	clarification decisions; clarifies material ambiguity rather than dropping
+	qualitative requirements. The generated prompt directs the receiving model
+	to exercise actual workflows and synthetic canaries, repair scoped failures
+	and recheck by default (with a verify-only override), clean up test resources,
+	and report evidence or UNVERIFIED limits. The authoring invocation remains
+	read-only and does not run the checks or prefill results. Updated capability
+	metadata, discovery, and detailed template documentation while preserving
+	the `human-litmus` identity and artifact type.
+
 - **Console-first audits and completion after unblocking** — `:unblock` now
 	clarifies unresolved work directly in the console, retains existing
 	authorization, and completes the authorized remainder once unblocked.
@@ -69,15 +82,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	Updated discovery descriptions and default output metadata, including
 	explicit `:unblock` capability metadata.
 
-- **`:litmus` — recast as a self-contained Yes/No criteria author** — the note
-	now consolidates the agreed requirements from an iterative conversation into
-	self-contained, deterministic Yes/No criteria another model can evaluate
-	without that conversation, and its output is only flat `- ` bulleted
-	statements. This replaces the previous consolidated `HUMAN LITMUS` checklist
-	with model and human verdict fields, and the note no longer declares an
-	`output_contract`; the `human-litmus` capability identity and artifact-type
-	metadata are unchanged. The `:espansr` blurb and the affected `docs/`
-	descriptions were updated to match.
 - **`:project-personal-growth` — regenerated from the vault** — the note's body
 	is again a projection of the vault's `Personal Growth - Meta-Prompt.md`
 	(2026-09-02 revision): the active project is the one the tracker names,

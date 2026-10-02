@@ -151,7 +151,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":adversary-review",
                 "adversarial review of finished work against its spec, with a verdict",
             ),
-            (":litmus", "consolidate agreed requirements into self-contained Yes/No criteria"),
+            (":litmus", "draft a fresh-model verification brief and binary human-outcome checks"),
             (
                 ":canary-runner",
                 "exercise developed work with synthetic data, then remove the canary data",
