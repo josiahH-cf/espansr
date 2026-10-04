@@ -44,6 +44,7 @@ def probe(repo: Path) -> dict:
     from espansr.core.workflows import load_workflow_catalog
     from espansr.integrations.espanso import get_match_dir
     from espansr.ui.commands_popup import CommandsPopupDialog
+    from espansr.ui.main_window import MainWindow
 
     assert Path(espansr.__file__).resolve().is_relative_to(repo), "Wrong installation imported"
     assert get_bundled_templates_dir().resolve() == repo / "templates"
@@ -106,12 +107,56 @@ def probe(repo: Path) -> dict:
     assert dialog.windowFlags() & Qt.WindowType.WindowStaysOnTopHint == (
         Qt.WindowType.WindowStaysOnTopHint if get_config().discovery.stay_on_top else 0
     )
+    assert dialog.windowFlags() & Qt.WindowType.WindowMinMaxButtonsHint
+    dialog.show()
+    dialog.showNormal()
+    dialog.resize(1280, 1100)
+    app.processEvents()
+    dialog._body.setSizes([420, 760])
+    dialog._reference_splitter.setSizes([500, 350])
+    app.processEvents()
+    assert dialog._groups.width() > 300
+    assert dialog._scratchpad.height() > 110
+    dialog._scratchpad.setPlainText("ephemeral installer canary")
+    dialog.showMaximized()
+    app.processEvents()
+    assert dialog.isMaximized()
+    original_pin = dialog._pin_check.isChecked()
+    dialog._pin_check.setChecked(not original_pin)
+    app.processEvents()
+    assert dialog.isMaximized() and dialog.isVisible()
+    dialog._pin_check.setChecked(original_pin)
+    app.processEvents()
+    dialog.reject()
+    reopened = CommandsPopupDialog(entries=entries, workflow_catalog=workflows)
+    reopened.show()
+    app.processEvents()
+    assert reopened.isMaximized()
+    assert reopened._scratchpad.toPlainText() == ""
+    assert get_config().discovery.panel_sizes.get("sidebar")
+    reopened.close()
+    reopened.deleteLater()
+
+    editor = MainWindow()
+    editor.show()
+    editor._editor.set_previews_visible(True)
+    editor._browser.select_template_by_name(bundled["finance_review.json"]["name"])
+    editor.showMaximized()
+    app.processEvents()
+    assert editor.isMaximized()
+    assert editor._editor._content_edit.toPlainText() == bundled["finance_review.json"]["content"]
+    editor.showNormal()
+    app.processEvents()
+    assert not editor.isMaximized()
+    editor.close()
+    editor.deleteLater()
     dialog.deleteLater()
     return {
         "bundled_templates": len(bundled),
         "copied_prompts": copied,
         "groups": len(COMMAND_GROUPS),
         "workflows": len(workflows.workflows),
+        "desktop_windows": 2,
         "config_dir": str(live.parent),
     }
 
@@ -185,7 +230,10 @@ def verify(task: Path) -> None:
     python = repo / ".venv" / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
     probe_command = [str(python), str(Path(__file__).resolve()), "--probe", str(repo)]
     initial = json.loads(run(probe_command, cwd=task, env=env))
-    print(f"Fresh install: {initial['bundled_templates']} templates; copy and discovery passed.")
+    print(
+        f"Fresh install: {initial['bundled_templates']} templates; "
+        "copy, discovery, and desktop window checks passed."
+    )
     live = config_root / "templates"
     custom = {
         "name": "User note",

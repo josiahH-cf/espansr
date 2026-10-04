@@ -105,6 +105,7 @@ class UIConfig:
 
     # Layout persistence
     splitter_sizes: list = field(default_factory=lambda: [300, 660])
+    panel_sizes: dict = field(default_factory=dict)
 
     # Selection persistence
     last_template: str = ""
@@ -143,6 +144,7 @@ class DiscoveryConfig:
     max_recent: int = 10
     stay_on_top: bool = True
     window_geometry: str = ""  # Base64 encoded Qt geometry, local to this host
+    panel_sizes: dict = field(default_factory=dict)
 
 
 @dataclass
