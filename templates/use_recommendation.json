@@ -1,12 +1,12 @@
 {
   "name": "Use Recommendation",
-  "description": "Accept the recommendation for the current item, with room to append adjustments.",
+  "description": "Accept the current recommendation and continue, with optional added context.",
   "trigger": ":rec",
   "category": "preference",
   "stage": "recommendation-reply",
   "next_triggers": [],
   "replaces": [],
-  "content": "Use your recommendation, subject to any adjustments I specify. ",
+  "content": "Use your recommendation for the current item and continue the work. ",
   "intent_tags": [
     "use your recommendation",
     "accept one recommended option",
