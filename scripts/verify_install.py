@@ -249,6 +249,14 @@ def verify(task: Path) -> None:
     config["discovery"]["stay_on_top"] = False
     config["discovery"]["favorite_triggers"] = [":rec"]
     config_file.write_text(json.dumps(config), encoding="utf-8")
+    command = repo / ".venv" / ("Scripts/espansr.exe" if os.name == "nt" else "bin/espansr")
+    run([str(command), "configure-remote-desktop"], cwd=repo, env=env)
+    clipboard_file = espanso_dir / "config" / "default.yml"
+    clipboard_file.write_text(
+        clipboard_file.read_text(encoding="utf-8").replace("key_delay: 30", "key_delay: 65"),
+        encoding="utf-8",
+    )
+    host_settings = clipboard_file.read_bytes()
     # Exercise the real pull + dirty stash + rebase + commit + push + reinstall
     # path against a bare local remote, including an incoming remote change.
     peer = task / "peer"
@@ -261,8 +269,8 @@ def verify(task: Path) -> None:
     run(["git", "push"], cwd=peer, env=env)
     with (repo / "README.md").open("a", encoding="utf-8") as handle:
         handle.write("\nLocal sync canary.\n")
-    command = repo / ".venv" / ("Scripts/espansr.exe" if os.name == "nt" else "bin/espansr")
     run([str(command), "sync"], cwd=repo, env=env)
+    assert clipboard_file.read_bytes() == host_settings, "Sync changed remote clipboard tuning"
     assert run(["git", "status", "--porcelain"], cwd=repo, env=env) == ""
     assert run(["git", "rev-parse", "HEAD"], cwd=repo, env=env) == run(
         ["git", "rev-parse", "origin/main"], cwd=repo, env=env
@@ -275,8 +283,19 @@ def verify(task: Path) -> None:
     assert config["discovery"]["stay_on_top"] is False
     assert config["discovery"]["favorite_triggers"] == [":rec"]
     assert updated["copied_prompts"] == initial["copied_prompts"] + 1
+    run([str(command), "configure-remote-desktop", "--local"], cwd=repo, env=env)
+    clipboard_file.write_text(
+        clipboard_file.read_text(encoding="utf-8").replace(
+            "restore_clipboard_delay: 1500", "restore_clipboard_delay: 3500"
+        ),
+        encoding="utf-8",
+    )
+    workstation_settings = clipboard_file.read_bytes()
+    run([str(command), "refresh"], cwd=repo, env=env)
+    assert clipboard_file.read_bytes() == workstation_settings, "Refresh changed clipboard tuning"
     print(
-        "Sync/reinstall: pulled and pushed; starters updated; user note and preferences preserved."
+        "Sync/reinstall: pulled and pushed; starters updated; user note, preferences, "
+        "and both clipboard modes preserved."
     )
 
 

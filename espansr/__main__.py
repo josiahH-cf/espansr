@@ -1138,27 +1138,27 @@ def cmd_record_install(args) -> int:
 def cmd_configure_remote_desktop(args) -> int:
     """Configure Espanso's backend for a machine's role.
 
-    ``--auto`` (used by the default install) applies the clipboard-preserving
-    workstation tuning unless the machine was declared a remote-desktop host,
-    which it then keeps. ``--local`` forces workstation mode; plain applies
+    ``--auto`` (used by the default install) keeps existing managed settings,
+    including local clipboard tuning, or seeds workstation mode on first use.
+    ``--local`` forces workstation mode; plain applies
     remote-desktop host mode; ``--revert`` removes the espansr-managed keys.
     Invoked by ``install.ps1``.
     """
     from espansr.integrations.espanso import (
         apply_remote_desktop_config,
         apply_workstation_config,
-        default_config_has_remote_desktop_marker,
+        get_managed_default_config_mode,
     )
 
     if getattr(args, "auto", False):
-        if default_config_has_remote_desktop_marker():
-            applied = apply_remote_desktop_config()
-            label = "remote-desktop host"
-        else:
-            applied = apply_workstation_config()
-            label = "workstation"
+        mode = get_managed_default_config_mode()
+        if mode is not None:
+            label = "remote-desktop host" if mode == "host" else "workstation"
+            print(ok(f"Kept existing Espanso {label} config (clipboard settings unchanged)"))
+            return 0
+        applied = apply_workstation_config()
         if applied:
-            print(ok(f"Applied Espanso {label} config"))
+            print(ok("Applied Espanso workstation config"))
             return 0
         print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
         return 1
@@ -1995,7 +1995,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--auto",
         action="store_true",
         default=False,
-        help="Apply workstation tuning, or keep host mode if already declared",
+        help="Keep existing managed clipboard settings, or seed workstation mode",
     )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"

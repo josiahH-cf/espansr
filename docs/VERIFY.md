@@ -7,15 +7,20 @@ CI runs the full suite on native Linux, macOS, and Windows. On Linux/Python
 install into a path with spaces, actual Git pull/push with local edits, repeat
 installation, starter upgrades, preserved custom templates and preferences,
 exact prompt copying through Qt, and maximization, reopening, and pane resizing
-in both desktop windows. The canary uses a temporary home and a
+in both desktop windows. It also retains custom clipboard timing in host mode
+through Git sync/reinstall and in workstation mode through another refresh.
+The canary uses a temporary home and a
 local Git remote, cleans them up, and restores the Windows runner's user PATH.
 It skips Espanso runtime installation and desktop typing; those require a real
 desktop, permissions, and the checks below. Clipboard checks use Qt offscreen.
 
 A separate `scripts/verify_espanso_runtime.py` canary installs the real official
 2.3.0 runtime and runs the real upgrade route on Windows and Linux. On macOS it
-runs the Homebrew route. It verifies the installed version, enables statistics
-and checks counter availability using the real version probe. It runs only on
+runs the Homebrew route. It verifies the installed version, preserves existing
+clipboard configuration through upgrade and a repeated install pass, enables
+statistics without changing those settings, and checks counter availability
+using the real version probe. It restores the runner's original default config.
+It runs only on
 disposable CI runners, without starting services or typing into desktop apps.
 
 Installers target Espanso **2.4.1+**. Missing runtimes are installed; older
@@ -86,6 +91,20 @@ Espanso before running setup. It refuses `-RemoteDesktop` together with
 success banner. The remote-desktop step edits only one marked block in
 Espanso's `config/default.yml` and keeps a one-time `default.yml.espansr-orig`
 backup; `espansr configure-remote-desktop --revert` restores the file.
+The default `--auto` path leaves existing managed clipboard settings unchanged;
+only explicit host/workstation selection resets their defaults. **Remote paste**
+in either desktop window makes that selection and persists locally. Check actual
+copy/paste in both directions in an active RustDesk session as well; CI's
+clipboard checks cannot exercise a connection between your workstations.
+Explicit trigger, prompt, and packet copies retry a busy Windows clipboard for
+up to three seconds on the Qt event loop; the newest copy cancels any pending
+older request. Successful copying preserves the complete text, including Unicode
+and trailing whitespace. A persistent lock displays a retry hint.
+When Espanso is installed but a Windows restart fails, publishing/setup now
+returns failure even though the match files were written. Do not treat the
+installer's package step as proof that the running worker reloaded. For an
+IPC `Access is denied` error, close the existing Espanso instance and relaunch
+it in the same Windows account/session as the app, then retry the installer.
 
 On Linux and macOS, `install.sh` does more than install `espansr`. Know its
 side effects before running it:

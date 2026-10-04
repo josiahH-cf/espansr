@@ -2,6 +2,7 @@
 
 Windows and Linux start with the official 2.3.0 package and exercise the real
 upgrade scripts. macOS exercises the actual Homebrew install/upgrade route.
+Existing clipboard configuration is checked after upgrade and a repeat pass.
 Services and desktop typing are skipped; version probing, config enablement,
 and counter availability use the real installed runtime. Never run locally.
 """
@@ -57,6 +58,25 @@ def verify(root):
 
     env = dict(os.environ)
     env.pop("ESPANSR_NO_ESPANSO", None)
+    # Use the real runtime's standard config location. On Windows Espanso uses
+    # known folders, so changing APPDATA alone would not test its actual file.
+    config_dir = (
+        Path(os.environ["APPDATA"]) / "espanso"
+        if os.name == "nt"
+        else (
+            Path.home() / "Library" / "Application Support" / "espanso"
+            if sys.platform == "darwin"
+            else Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "espanso"
+        )
+    )
+    settings = config_dir / "config" / "default.yml"
+    settings.parent.mkdir(parents=True, exist_ok=True)
+    original_settings = settings.read_bytes() if settings.exists() else None
+    clipboard_settings = (
+        "# existing clipboard settings\nbackend: Clipboard\npreserve_clipboard: true\n"
+        "restore_clipboard_delay: 3500\npre_paste_delay: 800\nshow_icon: false\n"
+    ).encode("utf-8")
+    settings.write_bytes(clipboard_settings)
     uninstall = None
     try:
         if os.name == "nt":
@@ -100,7 +120,24 @@ def verify(root):
                 env,
             )
             assert "Verified Espanso" in output, output
+            assert settings.read_bytes() == clipboard_settings, "Upgrade changed clipboard settings"
+            repeat = run(
+                [
+                    "powershell.exe",
+                    "-NoProfile",
+                    "-NonInteractive",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    str(wrapper),
+                    "-Helper",
+                    str(helper),
+                ],
+                env,
+            )
+            assert "no upgrade needed" in repeat, repeat
             version = run([str(binary), "--version"], env).strip()
+            config_path = run([str(binary), "path", "config"], env).strip()
         else:
             if sys.platform != "darwin":
                 package = legacy_package(root, "linux")
@@ -132,31 +169,40 @@ def verify(root):
                 script='set -euo pipefail\ninfo() { echo "$*"; }\n'
                 'ok() { echo "$*"; }\nwarn() { echo "$*"; }\n'
                 + body
-                + "\nstart_espanso_service() { :; }\ninstall_espanso\n",
+                + "\nstart_espanso_service() { :; }\ninstall_espanso\ninstall_espanso\n",
             )
             version = run(["espanso", "--version"], env).strip()
+            config_path = run(["espanso", "path", "config"], env).strip()
+        assert Path(config_path).resolve() == config_dir.resolve(), "Unexpected runtime config path"
+        assert (
+            settings.read_bytes() == clipboard_settings
+        ), "Repeat install changed clipboard settings"
         match = re.fullmatch(r"(?:espanso\s+)?(\d+\.\d+\.\d+)", version)
         assert match and tuple(map(int, match[1].split("."))) >= (2, 4, 1), version
-        # Resolve the same executable as the production usage reader. Only
-        # app-data locations are temporary; no fake version is supplied.
+        # Resolve the same executable as the production usage reader. The
+        # Windows runtime installation is temporary; no fake version is supplied.
         original_local = os.environ.get("LOCALAPPDATA")
         if os.name == "nt":
             os.environ["LOCALAPPDATA"] = env["LOCALAPPDATA"]
         try:
             assert native_version().strip() == version
-            config_dir = root / "espanso config"
-            (config_dir / "config").mkdir(parents=True)
-            settings = config_dir / "config" / "default.yml"
-            settings.write_text("# preserve this setting\nshow_icon: false\n", encoding="utf-8")
             assert enable_native_stats(config_dir)
-            assert settings.read_text().startswith("# preserve this setting\nshow_icon: false\n")
+            assert settings.read_bytes().startswith(clipboard_settings)
             entry = CommandCatalogEntry(
                 ":native-canary", "Canary", "", "", "template", capability_id="runtime-canary"
             )
             snapshot = refresh_usage([entry], config_dir=config_dir, usage_path=root / "usage.json")
             assert snapshot.available, snapshot.reason
             assert snapshot.counts["template:runtime-canary"] == 0
-            print(json.dumps({"runtime": version, "native_counter_available": True}))
+            print(
+                json.dumps(
+                    {
+                        "runtime": version,
+                        "native_counter_available": True,
+                        "clipboard_settings_preserved": True,
+                    }
+                )
+            )
         finally:
             if os.name == "nt":
                 if original_local is None:
@@ -164,6 +210,10 @@ def verify(root):
                 else:
                     os.environ["LOCALAPPDATA"] = original_local
     finally:
+        if original_settings is None:
+            settings.unlink(missing_ok=True)
+        else:
+            settings.write_bytes(original_settings)
         if uninstall and uninstall.exists():
             run([str(uninstall), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"], env)
 
