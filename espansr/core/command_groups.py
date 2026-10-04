@@ -77,9 +77,10 @@ COMMAND_GROUPS = (
     CommandGroup(
         "check-work",
         "Check & improve work",
-        "Choose between drafting outcome checks, reviewing work, and verifying repairs.",
+        "Draft outcome checks, review work, verify repairs, or speed up the test suite.",
         (
             "human-litmus",
+            "test-speed-optimization",
             "verification",
             "adversarial-review",
             "canary_runner",
@@ -186,6 +187,10 @@ _CUES = {
     "deletion-simplification-audit": (
         "Review only",
         "You want recommendations on what to simplify, update, or remove.",
+    ),
+    "test-speed-optimization": (
+        "Speed up tests",
+        "Tests or CI take too long and you want measured, correctness-preserving speedups.",
     ),
     "experience-audit": (
         "Improve interface",
