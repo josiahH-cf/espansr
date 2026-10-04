@@ -46,6 +46,7 @@ from espansr.core.command_groups import COMMAND_GROUPS, CUSTOM_GROUP, command_cu
 from espansr.core.config import get_config, load_config_fresh, save_config
 from espansr.core.recommend import RecommendationQuery, recommend
 from espansr.ui.theme import get_theme_stylesheet
+from espansr.ui.window_layout import capture_panel_sizes, panel_sizes, prepare_splitter
 
 _VIEWS = ("Browse", "All Commands", "Recommended", "Processes", "Recent", "Favorites")
 
@@ -352,15 +353,18 @@ class CommandsPopupDialog(QDialog):
 
         self.setWindowTitle("Command Reference")
         self.setModal(False)
+        self.setWindowFlags(
+            Qt.WindowType.Window
+            | Qt.WindowType.WindowTitleHint
+            | Qt.WindowType.WindowSystemMenuHint
+            | Qt.WindowType.WindowMinMaxButtonsHint
+            | Qt.WindowType.WindowCloseButtonHint
+        )
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint, self._config.discovery.stay_on_top)
         self.resize(1040, 820)
         self.setStyleSheet(
             get_theme_stylesheet(theme=self._config.ui.theme, font_size=self._config.ui.font_size)
         )
-        geometry = self._config.discovery.window_geometry
-        if isinstance(geometry, str) and geometry:
-            self.restoreGeometry(QByteArray.fromBase64(geometry.encode("ascii", errors="ignore")))
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(12, 12, 12, 12)
         layout.setSpacing(8)
@@ -435,7 +439,6 @@ class CommandsPopupDialog(QDialog):
         self._groups.setTextElideMode(Qt.TextElideMode.ElideNone)
         self._groups.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._groups.setMinimumWidth(180)
-        self._groups.setMaximumWidth(300)
         self._groups.viewport().installEventFilter(self)
         self._groups.installEventFilter(self)
         self._groups.currentItemChanged.connect(self._group_changed)
@@ -444,7 +447,9 @@ class CommandsPopupDialog(QDialog):
         self._body.addWidget(self._pages)
         self._body.setStretchFactor(1, 1)
         self._body.setSizes([230, 810])
-        layout.addWidget(self._body, 1)
+        self._reference_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._reference_splitter.addWidget(self._body)
+        layout.addWidget(self._reference_splitter, 1)
 
         self._command_page = QWidget()
         command_layout = QVBoxLayout(self._command_page)
@@ -508,39 +513,65 @@ class CommandsPopupDialog(QDialog):
         process_hint.setWordWrap(True)
         process_layout.addWidget(process_hint)
         self._process_table = self._make_table(["Process", "Entry points", "Description"])
-        self._process_table.setMaximumHeight(150)
+        self._process_table.setMinimumHeight(80)
         self._process_table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeMode.Stretch
         )
         self._process_table.currentCellChanged.connect(self._process_selected)
-        process_layout.addWidget(self._process_table)
-        self._process_layout = process_layout
+        self._process_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._process_splitter.addWidget(self._process_table)
+        process_layout.addWidget(self._process_splitter, 1)
         self._pages.addWidget(self._process_page)
 
         # Only the reference window preferences are durable. This text is throwaway.
+        self._scratchpad_container = QWidget()
+        scratchpad_layout = QVBoxLayout(self._scratchpad_container)
+        scratchpad_layout.setContentsMargins(0, 0, 0, 0)
         self._scratchpad_label = QLabel("Scratchpad")
         scratchpad_font = QFont(self._scratchpad_label.font())
         scratchpad_font.setBold(True)
         self._scratchpad_label.setFont(scratchpad_font)
-        layout.addWidget(self._scratchpad_label)
+        scratchpad_layout.addWidget(self._scratchpad_label)
         self._scratchpad_hint = QLabel(
             "Ephemeral — type or paste a command, add context, then copy it. Nothing here is saved."
         )
         self._scratchpad_hint.setWordWrap(True)
-        layout.addWidget(self._scratchpad_hint)
+        scratchpad_layout.addWidget(self._scratchpad_hint)
         self._scratchpad = QPlainTextEdit()
         self._scratchpad.setObjectName("scratchpad")
         self._scratchpad.setPlaceholderText("Type or paste any command here…")
         self._scratchpad.setLineWrapMode(QPlainTextEdit.LineWrapMode.WidgetWidth)
         self._scratchpad.setMinimumHeight(64)
-        self._scratchpad.setMaximumHeight(110)
-        layout.addWidget(self._scratchpad)
+        scratchpad_layout.addWidget(self._scratchpad, 1)
         self._scratchpad_packet_btn = QPushButton("Create packet from scratchpad…")
         self._scratchpad_packet_btn.setAutoDefault(False)
         self._scratchpad_packet_btn.clicked.connect(self._packet_from_scratchpad)
-        layout.addWidget(self._scratchpad_packet_btn)
+        scratchpad_layout.addWidget(self._scratchpad_packet_btn)
+        self._reference_splitter.addWidget(self._scratchpad_container)
+        self._layout_splitters = {
+            "sidebar": self._body,
+            "commands": self._command_splitter,
+            "scratchpad": self._reference_splitter,
+            "processes": self._process_splitter,
+        }
+        defaults = {
+            "sidebar": [230, 810],
+            "commands": [300, 240],
+            "scratchpad": [540, 160],
+            "processes": [150, 390],
+        }
+        for name, splitter in self._layout_splitters.items():
+            prepare_splitter(
+                splitter,
+                name,
+                panel_sizes(self._config.discovery.panel_sizes, name, defaults[name]),
+            )
+            splitter.splitterMoved.connect(self._save_layout)
         self._populate_groups()
         self._refresh_view()
+        geometry = self._config.discovery.window_geometry
+        if isinstance(geometry, str) and geometry:
+            self.restoreGeometry(QByteArray.fromBase64(geometry.encode("ascii", errors="ignore")))
 
         self._shortcut_close = QShortcut(QKeySequence("Esc"), self)
         self._shortcut_close.activated.connect(self.reject)
@@ -910,7 +941,12 @@ class CommandsPopupDialog(QDialog):
                 ],
             )
             self._workflow_panel.capability_activated.connect(self._show_capability_command)
-            self._process_layout.addWidget(self._workflow_panel, 1)
+            self._process_splitter.addWidget(self._workflow_panel)
+            prepare_splitter(
+                self._process_splitter,
+                "processes",
+                panel_sizes(self._config.discovery.panel_sizes, "processes", [150, 390]),
+            )
         self._workflow_panel.set_catalog(
             self._workflow_catalog, capability_infos_from_entries(self._entries)
         )
@@ -976,11 +1012,19 @@ class CommandsPopupDialog(QDialog):
         self._config.discovery.stay_on_top = checked
         self._persist_discovery("stay_on_top")
 
+    def _save_layout(self, *_args) -> None:
+        self._config.discovery.panel_sizes = capture_panel_sizes(
+            self._layout_splitters, self._config.discovery.panel_sizes
+        )
+        self._persist_discovery("panel_sizes")
+
     def done(self, result: int) -> None:
         geometry = bytes(self.saveGeometry().toBase64()).decode("ascii")
-        if geometry != self._config.discovery.window_geometry:
-            self._config.discovery.window_geometry = geometry
-            self._persist_discovery("window_geometry")
+        self._config.discovery.window_geometry = geometry
+        self._config.discovery.panel_sizes = capture_panel_sizes(
+            self._layout_splitters, self._config.discovery.panel_sizes
+        )
+        self._persist_discovery("window_geometry", "panel_sizes")
         super().done(result)
 
     def _record_recent(self, trigger: str) -> None:
@@ -1123,9 +1167,15 @@ def launch_commands_popup(entries: Optional[list[CommandCatalogEntry]] = None) -
         app = QApplication(sys.argv)
 
     dialog = CommandsPopupDialog(entries=entries)
-    if owns_app:
-        dialog.exec()
-        return
-
     dialog.show()
     dialog.activateWindow()
+    if owns_app:
+        app.exec()
+        return
+
+    # Keep modeless windows alive when called from an existing Qt application.
+    windows = getattr(app, "_espansr_references", [])
+    app._espansr_references = windows
+    windows.append(dialog)
+    dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+    dialog.destroyed.connect(lambda: windows.remove(dialog) if dialog in windows else None)

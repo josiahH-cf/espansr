@@ -84,6 +84,13 @@ After Espanso is installed and running, type `:aopen` anywhere Espanso expands t
 
 Use `espansr publish` after template changes if you want to refresh Espanso output from the CLI. The GUI also publishes from the toolbar and saves edited templates into the same local template store.
 
+Both `:coms` and `:aopen` are resizable desktop windows with native minimize and
+maximize controls. Drag the highlighted dividers to resize the sidebar, command
+list/detail, scratchpad, editor previews, and workflow areas. Window geometry,
+maximization, and pane sizes are remembered locally when you close and reopen
+them. The reference can stay open throughout the day; its scratchpad remains
+ephemeral and starts empty when reopened.
+
 To reinstall `espansr` in place after pulling updates or if an install looks broken, run `espansr refresh`. It reruns the correct OS installer (`install.ps1` on Windows, `install.sh` on Linux/macOS/WSL2), prints `ok` with a short desktop notification when it finishes, and opens the install folder if the reinstall fails.
 
 ## Verify From Windows PowerShell

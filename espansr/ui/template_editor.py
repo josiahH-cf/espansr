@@ -8,13 +8,15 @@ from datetime import datetime
 from typing import Optional
 
 import yaml
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
@@ -26,6 +28,7 @@ from espansr.integrations.espanso import (
     _convert_to_espanso_placeholders,
 )
 from espansr.ui.variable_editor import VariableEditorWidget
+from espansr.ui.window_layout import panel_sizes, prepare_splitter
 
 
 class TemplateEditorWidget(QWidget):
@@ -53,17 +56,20 @@ class TemplateEditorWidget(QWidget):
 
         config = get_config()
         label_size = config.ui.font_size + 1
+        form = QWidget()
+        form_layout = QVBoxLayout(form)
+        form_layout.setContentsMargins(0, 0, 0, 0)
 
         # Header
         header = QLabel("Editor")
         header.setStyleSheet(f"font-weight: bold; font-size: {label_size}pt;")
-        layout.addWidget(header)
+        form_layout.addWidget(header)
 
         # Name field
-        layout.addWidget(QLabel("Name:"))
+        form_layout.addWidget(QLabel("Name:"))
         self._name_edit = QLineEdit()
         self._name_edit.setPlaceholderText("Template name")
-        layout.addWidget(self._name_edit)
+        form_layout.addWidget(self._name_edit)
 
         # Trigger field
         trigger_row = QHBoxLayout()
@@ -72,21 +78,22 @@ class TemplateEditorWidget(QWidget):
         hint.setStyleSheet("color: #808080;")
         trigger_row.addWidget(hint)
         trigger_row.addStretch()
-        layout.addLayout(trigger_row)
+        form_layout.addLayout(trigger_row)
 
         self._trigger_edit = QLineEdit()
         self._trigger_edit.setPlaceholderText(":mytrigger")
-        layout.addWidget(self._trigger_edit)
+        form_layout.addWidget(self._trigger_edit)
 
         # Content field
-        layout.addWidget(QLabel("Content:"))
+        form_layout.addWidget(QLabel("Content:"))
         self._content_edit = QPlainTextEdit()
         self._content_edit.setPlaceholderText("Template content…")
-        layout.addWidget(self._content_edit)
+        self._content_edit.setMinimumHeight(120)
+        form_layout.addWidget(self._content_edit, 1)
 
         # Variable editor
         self._variable_editor = VariableEditorWidget()
-        layout.addWidget(self._variable_editor)
+        form_layout.addWidget(self._variable_editor)
 
         # Capability metadata (optional, collapsed by default so simple
         # template editing stays simple)
@@ -94,7 +101,7 @@ class TemplateEditorWidget(QWidget):
         self._metadata_toggle.setCheckable(True)
         self._metadata_toggle.setChecked(False)
         self._metadata_toggle.toggled.connect(self._toggle_metadata_section)
-        layout.addWidget(self._metadata_toggle)
+        form_layout.addWidget(self._metadata_toggle)
 
         self._metadata_container = QWidget()
         metadata_layout = QVBoxLayout(self._metadata_container)
@@ -123,36 +130,60 @@ class TemplateEditorWidget(QWidget):
         self._avoid_when_edit = _metadata_field("Avoid when:", "one-line counter-guidance")
 
         self._metadata_container.setVisible(False)
-        layout.addWidget(self._metadata_container)
+        form_layout.addWidget(self._metadata_container)
+
+        self._form_scroll = QScrollArea()
+        self._form_scroll.setWidgetResizable(True)
+        self._form_scroll.setWidget(form)
+        self._form_scroll.setMinimumHeight(180)
+        self._editor_splitter = QSplitter(Qt.Orientation.Vertical)
+        self._editor_splitter.addWidget(self._form_scroll)
+        layout.addWidget(self._editor_splitter, 1)
 
         # Preview container (togglable)
-        self._preview_container = QWidget()
-        preview_layout = QVBoxLayout(self._preview_container)
-        preview_layout.setContentsMargins(0, 0, 0, 0)
+        self._preview_container = QSplitter(Qt.Orientation.Vertical)
+        yaml_container = QWidget()
+        yaml_layout = QVBoxLayout(yaml_container)
+        yaml_layout.setContentsMargins(0, 0, 0, 0)
 
         # YAML preview
         preview_label = QLabel("YAML Preview:")
         preview_label.setStyleSheet("font-weight: bold;")
-        preview_layout.addWidget(preview_label)
+        yaml_layout.addWidget(preview_label)
 
         self._yaml_preview = QPlainTextEdit()
         self._yaml_preview.setReadOnly(True)
         self._yaml_preview.setPlaceholderText("Set a trigger to see YAML preview…")
-        self._yaml_preview.setMaximumHeight(200)
-        preview_layout.addWidget(self._yaml_preview)
+        self._yaml_preview.setMinimumHeight(60)
+        yaml_layout.addWidget(self._yaml_preview, 1)
+        self._preview_container.addWidget(yaml_container)
 
         # Output preview
+        output_container = QWidget()
+        output_layout = QVBoxLayout(output_container)
+        output_layout.setContentsMargins(0, 0, 0, 0)
         output_label = QLabel("Output Preview:")
         output_label.setStyleSheet("font-weight: bold;")
-        preview_layout.addWidget(output_label)
+        output_layout.addWidget(output_label)
 
         self._output_preview = QPlainTextEdit()
         self._output_preview.setReadOnly(True)
         self._output_preview.setPlaceholderText("Enter content to see expanded output…")
-        self._output_preview.setMaximumHeight(200)
-        preview_layout.addWidget(self._output_preview)
+        self._output_preview.setMinimumHeight(60)
+        output_layout.addWidget(self._output_preview, 1)
+        self._preview_container.addWidget(output_container)
 
-        layout.addWidget(self._preview_container)
+        self._editor_splitter.addWidget(self._preview_container)
+        prepare_splitter(
+            self._editor_splitter,
+            "editor and previews",
+            panel_sizes(config.ui.panel_sizes, "editor", [400, 240]),
+        )
+        prepare_splitter(
+            self._preview_container,
+            "YAML and output previews",
+            panel_sizes(config.ui.panel_sizes, "previews", [120, 120]),
+        )
 
         # Save button
         save_btn = QPushButton("Save")

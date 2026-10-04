@@ -19,11 +19,17 @@ from PyQt6.QtWidgets import (
     QToolBar,
 )
 
-from espansr.core.config import get_config, get_config_manager, save_config
+from espansr.core.config import get_config, get_config_manager, load_config_fresh, save_config
 from espansr.core.workflows import load_workflow_catalog
 from espansr.ui.template_browser import TemplateBrowserWidget
 from espansr.ui.template_editor import TemplateEditorWidget
 from espansr.ui.theme import get_theme_stylesheet
+from espansr.ui.window_layout import (
+    capture_panel_sizes,
+    panel_sizes,
+    prepare_splitter,
+    restore_splitter_sizes,
+)
 
 AUTO_SYNC_INTERVAL_MS = 5 * 60 * 1000  # 5 minutes
 
@@ -57,6 +63,7 @@ class MainWindow(QMainWindow):
         self._apply_theme()
         self._apply_preview_state()
         self._restore_geometry()
+        QTimer.singleShot(0, self._restore_panel_sizes)
         self._clean_stale_espanso_files()
         self._check_launcher()
         self._restore_last_template()
@@ -134,9 +141,7 @@ class MainWindow(QMainWindow):
         self._editor = TemplateEditorWidget()
         self._splitter.addWidget(self._editor)
 
-        sizes = self._config.ui.splitter_sizes
-        if len(sizes) >= 2:
-            self._splitter.setSizes(sizes)
+        prepare_splitter(self._splitter, "templates and editor", self._config.ui.splitter_sizes)
 
         self._splitter.splitterMoved.connect(self._on_splitter_moved)
 
@@ -157,6 +162,18 @@ class MainWindow(QMainWindow):
         self._vertical_splitter.addWidget(self._workflow_panel)
         self._vertical_splitter.setStretchFactor(0, 3)
         self._vertical_splitter.setStretchFactor(1, 2)
+        prepare_splitter(
+            self._vertical_splitter,
+            "editor and workflows",
+            panel_sizes(self._config.ui.panel_sizes, "workflows", [420, 280]),
+        )
+        self._layout_splitters = {
+            "workflows": self._vertical_splitter,
+            "editor": self._editor._editor_splitter,
+            "previews": self._editor._preview_container,
+        }
+        for splitter in self._layout_splitters.values():
+            splitter.splitterMoved.connect(self._on_splitter_moved)
         self.setCentralWidget(self._vertical_splitter)
 
         # Status bar
@@ -218,7 +235,7 @@ class MainWindow(QMainWindow):
         new_state = not self._config.ui.show_workflows
         self._config.ui.show_workflows = new_state
         self._set_workflows_visible(new_state)
-        save_config(self._config)
+        self._persist_ui("show_workflows")
 
     def _set_workflows_visible(self, visible: bool) -> None:
         if visible and not self._workflow_panel_loaded:
@@ -260,7 +277,7 @@ class MainWindow(QMainWindow):
         self._config.ui.show_previews = new_state
         self._editor.set_previews_visible(new_state)
         self._update_preview_button(new_state)
-        save_config(self._config)
+        self._persist_ui("show_previews")
 
     def _update_preview_button(self, visible: bool) -> None:
         """Update preview toggle button text and tooltip."""
@@ -284,14 +301,25 @@ class MainWindow(QMainWindow):
         self._config.ui.theme = text.lower()
         self._apply_theme()
         self._workflow_panel.diagram().set_theme(self._config.ui.theme)
-        save_config(self._config)
+        self._persist_ui("theme")
+
+    def _persist_ui(self, *fields: str) -> None:
+        """Keep another open reference window's preferences when saving ours."""
+        fresh = load_config_fresh()
+        for name in fields:
+            setattr(fresh.ui, name, getattr(self._config.ui, name))
+        if not save_config(fresh):
+            self.statusBar().showMessage("Could not save window preferences", 5000)
 
     def _restore_geometry(self) -> None:
         """Restore window geometry from config."""
         ui = self._config.ui
-        if ui.window_geometry:
-            self.restoreGeometry(QByteArray(base64.b64decode(ui.window_geometry)))
-        else:
+        restored = False
+        if isinstance(ui.window_geometry, str) and ui.window_geometry:
+            restored = self.restoreGeometry(
+                QByteArray.fromBase64(ui.window_geometry.encode("ascii", errors="ignore"))
+            )
+        if not restored:
             self.resize(ui.window_width, ui.window_height)
             if ui.window_x >= 0 and ui.window_y >= 0:
                 self.move(ui.window_x, ui.window_y)
@@ -303,6 +331,12 @@ class MainWindow(QMainWindow):
         name = self._config.ui.last_template
         if name:
             self._browser.select_template_by_name(name)
+
+    def _restore_panel_sizes(self) -> None:
+        """Restore proportions after visibility and maximized geometry have settled."""
+        restore_splitter_sizes(self._splitter, self._config.ui.splitter_sizes)
+        for name, splitter in self._layout_splitters.items():
+            restore_splitter_sizes(splitter, panel_sizes(self._config.ui.panel_sizes, name, []))
 
     def _clean_stale_espanso_files(self) -> None:
         """Remove espansr-managed files from non-canonical Espanso dirs."""
@@ -559,7 +593,10 @@ class MainWindow(QMainWindow):
     def _on_splitter_moved(self, pos: int, index: int) -> None:
         """Persist splitter position when the user drags it."""
         self._config.ui.splitter_sizes = list(self._splitter.sizes())
-        save_config(self._config)
+        self._config.ui.panel_sizes = capture_panel_sizes(
+            self._layout_splitters, self._config.ui.panel_sizes
+        )
+        self._persist_ui("splitter_sizes", "panel_sizes")
 
     def closeEvent(self, event) -> None:
         """Persist window geometry and state on close."""
@@ -571,9 +608,20 @@ class MainWindow(QMainWindow):
         ui.window_maximized = self.isMaximized()
         ui.window_geometry = base64.b64encode(self.saveGeometry().data()).decode()
         ui.splitter_sizes = list(self._splitter.sizes())
+        ui.panel_sizes = capture_panel_sizes(self._layout_splitters, ui.panel_sizes)
         t = self._browser.get_current_template()
         ui.last_template = t.name if t else ""
-        save_config(self._config)
+        self._persist_ui(
+            "window_width",
+            "window_height",
+            "window_x",
+            "window_y",
+            "window_maximized",
+            "window_geometry",
+            "splitter_sizes",
+            "panel_sizes",
+            "last_template",
+        )
         super().closeEvent(event)
 
 

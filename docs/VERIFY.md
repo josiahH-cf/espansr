@@ -6,7 +6,8 @@ CI runs the full suite on native Linux, macOS, and Windows. On Linux/Python
 3.12, macOS, and Windows it also runs `scripts/verify_install.py`: a fresh
 install into a path with spaces, actual Git pull/push with local edits, repeat
 installation, starter upgrades, preserved custom templates and preferences,
-and exact prompt copying through Qt. The canary uses a temporary home and a
+exact prompt copying through Qt, and maximization, reopening, and pane resizing
+in both desktop windows. The canary uses a temporary home and a
 local Git remote, cleans them up, and restores the Windows runner's user PATH.
 It skips Espanso runtime installation and desktop typing; those require a real
 desktop, permissions, and the checks below. Clipboard checks use Qt offscreen.

@@ -191,9 +191,8 @@ def test_commands_popup_dialog_has_ephemeral_scratchpad(qtbot):
     assert dialog._scratchpad.isReadOnly() is False
 
     # Pinned below the command list in the layout.
-    main_layout = dialog.layout()
-    list_index = main_layout.indexOf(dialog._body)
-    scratchpad_index = main_layout.indexOf(dialog._scratchpad)
+    list_index = dialog._reference_splitter.indexOf(dialog._body)
+    scratchpad_index = dialog._reference_splitter.indexOf(dialog._scratchpad_container)
     assert scratchpad_index > list_index
 
     # Round-trips typed/pasted text so it can be copied back out.
@@ -258,8 +257,8 @@ def test_cmd_gui_main_view_launches_editor():
     mock_launch.assert_called_once()
 
 
-def test_launch_commands_popup_uses_dialog_exec_when_owning_app():
-    """Standalone launch uses the dialog's own event loop so the popup stays open."""
+def test_launch_commands_popup_uses_modeless_window_and_app_loop_when_owning_app():
+    """Standalone launch keeps a normal modeless window in the application's event loop."""
     from espansr.ui.commands_popup import launch_commands_popup
 
     fake_dialog = MagicMock()
@@ -274,8 +273,9 @@ def test_launch_commands_popup_uses_dialog_exec_when_owning_app():
 
         launch_commands_popup()
 
-    fake_dialog.exec.assert_called_once()
-    fake_dialog.show.assert_not_called()
+    fake_dialog.show.assert_called_once()
+    fake_dialog.exec.assert_not_called()
+    fake_app.exec.assert_called_once()
 
 
 def test_build_command_catalog_always_reflects_current_files(tmp_path):

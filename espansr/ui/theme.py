@@ -113,11 +113,15 @@ QSplitter::handle {
 }
 
 QSplitter::handle:horizontal {
-    width: 2px;
+    width: 8px;
 }
 
 QSplitter::handle:vertical {
-    height: 2px;
+    height: 8px;
+}
+
+QSplitter::handle:hover {
+    background-color: #0078d4;
 }
 
 QScrollBar:vertical {
@@ -430,11 +434,15 @@ QSplitter::handle {
 }
 
 QSplitter::handle:horizontal {
-    width: 2px;
+    width: 8px;
 }
 
 QSplitter::handle:vertical {
-    height: 2px;
+    height: 8px;
+}
+
+QSplitter::handle:hover {
+    background-color: #0078d4;
 }
 
 QScrollBar:vertical {
