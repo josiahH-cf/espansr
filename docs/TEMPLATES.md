@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -126,6 +126,18 @@ another export only when requested, and you
 can ask for an audit without edits. It is independent of `:audit` (the generic
 decision packet), `:sanitize`, and `:cliche`: it does not sanitize workspaces or
 rewrite prose, and it never directs you to run another trigger.
+
+Use `:test-speed` to make a project's tests and CI faster without weakening what
+they prove. It measures the real baseline with the project's own commands,
+inspects the actual machine (CPU, memory, disk, and any container or runner
+limits) before choosing a worker count, finds the slow tests, weak or
+order-dependent test cases, unsafe or missing parallelization, and CI
+bottlenecks, then applies the supported improvements and reports measured
+before/after results alongside the correctness comparison: tests collected,
+pass/fail/skip counts, coverage or the project's own gate, and repeat-run
+stability. It never reports a timing it did not measure, and it does not buy
+speed by deleting, skipping, or loosening tests — a change that would reduce
+what the suite proves is presented to you as a decision instead.
 
 Append `:tddh` to almost any request as a compact reliability instruction. It
 asks the model to reason carefully, stay grounded in the available evidence,

@@ -169,6 +169,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":prune",
                 "audit what to update, simplify, or delete across code, process, and governance",
             ),
+            (
+                ":test-speed",
+                "measure and cut test and CI time without weakening correctness evidence",
+            ),
         ),
     ),
     HelpSection(
