@@ -176,6 +176,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         24,
         (
             (
+                ":finance-review",
+                "review household finances, clarify decisions, and deliver a financial PDF",
+            ),
+            (
                 ":project-personal-growth",
                 "guide Personal Growth sessions and keep the program records true",
             ),

@@ -106,7 +106,9 @@ def cmd_wsl_install_espanso(args) -> int:
     from importlib.resources import files
 
     runtime_script = files("espansr").joinpath("resources/espanso_runtime.ps1").read_text("utf-8")
-    script = runtime_script + r"""
+    script = (
+        runtime_script
+        + r"""
 $ErrorActionPreference = 'Continue'
 
 $espansoExe = Ensure-EspansoRuntime
@@ -149,6 +151,7 @@ if (-not $startOk -or -not $configDetected) {
 if ($LASTEXITCODE -ne 0) { exit 2 }
 exit 0
 """
+    )
 
     print("Running Windows-side Espanso install/start from WSL...")
     completed = subprocess.run(

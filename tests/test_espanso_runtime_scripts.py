@@ -127,7 +127,10 @@ def test_unix_runtime_upgrade_decisions(tmp_path, platform, owner, version, opto
     log.touch()
     script = tmp_path / "runtime.sh"
     script.write_text(
-        "set -eu\ninfo() { :; }\nok() { :; }\nwarn() { :; }\n" + body + "\n" + r"""
+        "set -eu\ninfo() { :; }\nok() { :; }\nwarn() { :; }\n"
+        + body
+        + "\n"
+        + r"""
 uname() { echo x86_64; }
 dpkg-query() { printf '%s: %s\n' "$TEST_OWNER" "$TEST_EXECUTABLE"; }
 upgrade() { echo "$1" >> "$TEST_LOG"; echo 2.4.1 > "$TEST_VERSION_FILE"; }
