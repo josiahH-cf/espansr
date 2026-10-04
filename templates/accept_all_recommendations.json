@@ -1,12 +1,12 @@
 {
   "name": "Accept All Recommendations",
-  "description": "Accept all current recommendations, with room to append exceptions or adjustments.",
+  "description": "Accept all current recommendations and continue, with optional added context.",
   "trigger": ":acc",
   "category": "preference",
   "stage": "batch-recommendation-reply",
   "next_triggers": [],
   "replaces": [],
-  "content": "Accept all current recommendations, subject to any exceptions or adjustments I specify. ",
+  "content": "Accept all current recommendations and continue the work. ",
   "intent_tags": [
     "accept all recommendations",
     "accept every recommended option",

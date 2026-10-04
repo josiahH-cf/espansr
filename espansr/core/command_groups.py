@@ -246,11 +246,11 @@ _CUES = {
     ),
     "use_recommendation": (
         "Answer one item",
-        "Accept the current recommendation, with room for an adjustment.",
+        "Accept the current recommendation and continue, with optional added context.",
     ),
     "accept_all_recommendations": (
         "Answer a batch",
-        "Accept current recommendations, with room for item-specific exceptions.",
+        "Accept all current recommendations and continue, with optional added context.",
     ),
     "sanitize": (
         "Review sharing",
