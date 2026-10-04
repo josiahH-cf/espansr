@@ -133,17 +133,15 @@ keep facts separate from inferences and unknowns, state uncertainty plainly,
 and never invent information. Add optional response instructions below its final
 `IGNORE IF BLANK` marker. It imposes no Markdown or other fixed response format.
 
-Use `:rec` to reply "Use your recommendation, subject to any adjustments I
-specify." for the current item, or `:acc` to reply "Accept all current
-recommendations, subject to any exceptions or adjustments I specify." for the
-current batch. Both expand to one sentence followed by exactly one space, so
-you can immediately append context. For example, `1 - :rec keep the existing
-name` accepts item 1's recommendation with that adjustment; `:acc except item
-2: use option B` accepts the other current recommendations while overriding
-item 2. Explicit corrections take precedence. These replies adopt recommended
-choices; unanswered factual questions still need answers, and existing task
-scope and authorization continue to apply. Both notes appear in `:coms` and
-`:espansr` and require no form or additional review file.
+Use `:rec` to reply "Use your recommendation for the current item and continue
+the work." or `:acc` to reply "Accept all current recommendations and continue
+the work." for the current batch. Either reply works on its own. Both expand
+to one sentence followed by exactly one space, so you can immediately append
+context without framing it as an exception or adjustment. Added context is part
+of the reply, and explicit corrections take precedence. These replies adopt
+recommended choices; unanswered factual questions still need answers, and
+existing task scope and authorization continue to apply. Both notes appear
+in `:coms` and `:espansr` and require no form or additional review file.
 
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
