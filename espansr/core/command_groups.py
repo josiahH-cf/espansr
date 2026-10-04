@@ -119,8 +119,8 @@ COMMAND_GROUPS = (
     CommandGroup(
         "personal-programs",
         "Personal programs",
-        "Work through personal decisions, growth sessions, or the Master Systems Process.",
-        ("project_personal_growth", "project_systems", "project_decision_helper"),
+        "Review finances, work through personal decisions or growth, or coordinate your systems.",
+        ("finance_review", "project_personal_growth", "project_systems", "project_decision_helper"),
     ),
     CommandGroup(
         "tools-setup",
@@ -312,6 +312,10 @@ _CUES = {
     "project_personal_growth": (
         "Growth session",
         "You want a guided Personal Growth session and accurate program records.",
+    ),
+    "finance_review": (
+        "Review finances",
+        "You want a household money review with clarification and a verified financial PDF.",
     ),
     "project_systems": (
         "Coordinate work",
