@@ -814,6 +814,8 @@ def sync_to_espanso(
                         "Note: Run 'espanso restart' from a new PowerShell window "
                         "to reload triggers."
                     )
+                    if _find_espanso_executable() is not None:
+                        return False
         else:
             print("No templates with triggers found")
         return True
@@ -851,6 +853,8 @@ def sync_to_espanso(
                 print(
                     "Note: Run 'espanso restart' from a new PowerShell window to reload triggers."
                 )
+                if _find_espanso_executable() is not None:
+                    return False
 
         return True
     except Exception as e:

@@ -315,7 +315,7 @@ reliably, including over RustDesk/RDP.
 ```bash
 espansr configure-remote-desktop           # remote-desktop host mode
 espansr configure-remote-desktop --local   # local workstation mode (clipboard preserved)
-espansr configure-remote-desktop --auto    # workstation mode unless host mode was declared
+espansr configure-remote-desktop --auto    # keep existing settings; seed a new workstation
 espansr configure-remote-desktop --revert  # remove the espansr-managed remote-desktop settings
 ```
 
@@ -323,8 +323,9 @@ espansr configure-remote-desktop --revert  # remove the espansr-managed remote-d
   RustDesk/RDP.
 - `--local`: workstation mode, for a machine you sit at physically;
   expansions paste correctly while your clipboard is preserved.
-- `--auto`: applies workstation mode unless the machine was previously put in
-  host mode, which then stays sticky across reinstalls and `espansr refresh`.
+- `--auto`: keeps existing managed settings byte for byte, including clipboard
+  timing tuned for this workstation. It seeds workstation mode only when no
+  managed mode exists. Sync and reinstall use this behavior on Windows.
 - `--revert`: removes the espansr-managed remote-desktop settings.
 
 espansr edits `config/default.yml` as text and owns exactly one block between
@@ -338,14 +339,23 @@ works for both modes, also removes the workstation keys, and deletes
 that has no managed block, a one-time backup is written next to it as
 `default.yml.espansr-orig`. Files written by the older layout (a first-line
 `# espansr-remote-desktop` or `# espansr-workstation` marker) migrate on the
-next apply. Edit your own settings outside the block: anything changed inside
-it is discarded on the next apply or revert.
+next explicit mode selection. `--auto` preserves those older settings too.
+Explicit host/workstation selection resets that mode's managed settings to the
+defaults below; `--revert` removes the managed settings. Keep unrelated settings
+outside the block.
 
 Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`,
 `preserve_clipboard: false`, `show_icon: false`, `show_notifications: false`,
 `key_delay: 30`, and `backspace_delay: 30`. Workstation mode sets
 `win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and
 `restore_clipboard_delay: 1500`.
+
+The **Remote paste** switch in `:coms` and `:aopen` selects these same modes:
+on selects host mode; off selects workstation mode. It leaves copy-trigger and
+copy-prompt text unchanged. The choice is local to each workstation, not shared
+through the template repository. Opening or activating either window reads the
+current choice without rewriting it. RustDesk clipboard sharing is configured
+in RustDesk itself.
 
 `install.ps1` runs this on every Windows install: `--auto` by default, host
 mode with `.\install.ps1 -RemoteDesktop`, and workstation mode with

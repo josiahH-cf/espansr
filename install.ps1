@@ -466,9 +466,9 @@ else {
 }
 
 # Espanso backend is role-based and configured automatically. Default (--auto)
-# applies the clipboard-preserving workstation tuning, unless this machine was
-# declared a remote-desktop host (-RemoteDesktop), which stays sticky across
-# reinstalls and `espansr refresh`. -LocalOnly forces workstation mode.
+# keeps existing managed clipboard settings, including local tuning, across
+# reinstalls and `espansr refresh`. New machines get workstation tuning.
+# -RemoteDesktop and -LocalOnly explicitly reset to the selected mode.
 if ($RemoteDesktop) {
     Info "Configuring Espanso for remote-desktop HOST mode (clipboard backend)..."
     & $VenvCmd configure-remote-desktop
@@ -490,7 +490,7 @@ elseif ($LocalOnly) {
     }
 }
 else {
-    Info "Configuring Espanso backend (auto: workstation unless a remote-desktop host)..."
+    Info "Configuring Espanso backend (auto: keep existing clipboard settings)..."
     & $VenvCmd configure-remote-desktop --auto
     if ($LASTEXITCODE -eq 0) {
         Ok "Espanso backend configured"

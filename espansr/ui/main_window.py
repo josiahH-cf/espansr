@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 
 from espansr.core.config import get_config, get_config_manager, load_config_fresh, save_config
 from espansr.core.workflows import load_workflow_catalog
+from espansr.ui.clipboard_mode import RemotePasteToggle
 from espansr.ui.template_browser import TemplateBrowserWidget
 from espansr.ui.template_editor import TemplateEditorWidget
 from espansr.ui.theme import get_theme_stylesheet
@@ -103,6 +104,12 @@ class MainWindow(QMainWindow):
         self._auto_sync_cb.setChecked(self._config.espanso.auto_sync)
         self._auto_sync_cb.stateChanged.connect(self._toggle_auto_sync)
         toolbar.addWidget(self._auto_sync_cb)
+
+        self._remote_paste_toggle = RemotePasteToggle(self)
+        self._remote_paste_toggle.status_message.connect(
+            lambda message: self.statusBar().showMessage(message, 7000)
+        )
+        toolbar.addWidget(self._remote_paste_toggle)
 
         # Preview toggle
         self._preview_toggle_btn = QPushButton()
@@ -516,6 +523,7 @@ class MainWindow(QMainWindow):
     def _on_repo_sync_done(self, rc: int) -> None:
         """Re-enable the Sync button and report the outcome."""
         self._sync_repo_btn.setEnabled(True)
+        self._remote_paste_toggle.refresh()
         if rc == 0:
             self.statusBar().showMessage(
                 "Sync complete: pulled latest, pushed local changes, and reinstalled",
