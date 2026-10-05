@@ -232,8 +232,8 @@ def test_windows_installer_runs_non_interactive_resolution_smoke():
 def test_windows_installer_configures_espanso_backend_by_role():
     """install.ps1 configures the Espanso backend by machine role, automatically.
 
-    Default (--auto) applies the workstation tuning unless the machine is a
-    declared remote-desktop host; -RemoteDesktop and -LocalOnly force a role.
+    Default (--auto) preserves managed clipboard settings, or seeds a new
+    workstation; -RemoteDesktop and -LocalOnly explicitly reset a role.
     Runs after record-install so a failure never blocks `espansr refresh`.
     """
     text = _installer_text()

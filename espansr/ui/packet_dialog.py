@@ -31,6 +31,7 @@ from espansr.core.packets import (
     render_packet,
     save_packet,
 )
+from espansr.ui.clipboard import copy_text
 
 
 class PacketDialog(QDialog):
@@ -154,13 +155,15 @@ class PacketDialog(QDialog):
         self._preview_text.setPlainText(render_packet(self.build_packet()))
 
     def _copy_to_clipboard(self) -> None:
-        from PyQt6.QtWidgets import QApplication
-
         self._update_preview()
-        clipboard = QApplication.clipboard()
-        if clipboard is not None:
-            clipboard.setText(self._preview_text.toPlainText())
-        self._status_label.setText("Packet copied to clipboard (not saved).")
+        self._status_label.setText("Copying packet…")
+        copy_text(
+            self._preview_text.toPlainText(),
+            on_success=lambda: self._status_label.setText(
+                "Packet copied to clipboard (not saved)."
+            ),
+            on_failure=lambda: self._status_label.setText("Clipboard is busy; try copying again."),
+        )
 
     def _save(self) -> None:
         """The one explicit persistence action."""

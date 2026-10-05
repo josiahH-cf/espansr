@@ -91,6 +91,15 @@ maximization, and pane sizes are remembered locally when you close and reopen
 them. The reference can stay open throughout the day; its scratchpad remains
 ephemeral and starts empty when reopened.
 
+Both windows include **Remote paste**. Turn it on for remote-desktop paste
+compatibility (the expansion stays on the clipboard), or off to preserve your
+copied text after expansions. The setting belongs to this workstation and
+survives Sync and reinstall; opening a window leaves existing settings alone.
+RustDesk's own clipboard sharing must also be enabled for copying between hosts.
+Copy trigger, Copy prompt, and packet copying retry briefly when another
+application holds the Windows clipboard, without freezing the window. A newer
+copy replaces an older pending request; a persistent lock produces a retry hint.
+
 To reinstall `espansr` in place after pulling updates or if an install looks broken, run `espansr refresh`. It reruns the correct OS installer (`install.ps1` on Windows, `install.sh` on Linux/macOS/WSL2), prints `ok` with a short desktop notification when it finishes, and opens the install folder if the reinstall fails.
 
 ## Verify From Windows PowerShell

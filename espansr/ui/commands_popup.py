@@ -1,8 +1,8 @@
 """Local command reference: browse intentions, compare jobs, and see combinations.
 
-Groups overlap and relationships stay optional. Discovery only displays or
-copies material; the existing explicit editor and packet actions are retained.
-Only window preferences, favorites, and recents are saved, never scratchpad text.
+Groups overlap and relationships stay optional. Discovery displays or copies
+material; explicit editor, packet, and clipboard-mode actions are retained.
+Local preferences and clipboard mode are saved; scratchpad text never is.
 """
 
 import html
@@ -45,6 +45,8 @@ from espansr.core.command_catalog import CommandCatalogEntry, build_command_cata
 from espansr.core.command_groups import COMMAND_GROUPS, CUSTOM_GROUP, command_cue, groups_for
 from espansr.core.config import get_config, load_config_fresh, save_config
 from espansr.core.recommend import RecommendationQuery, recommend
+from espansr.ui.clipboard import copy_text
+from espansr.ui.clipboard_mode import RemotePasteToggle
 from espansr.ui.theme import get_theme_stylesheet
 from espansr.ui.window_layout import capture_panel_sizes, panel_sizes, prepare_splitter
 
@@ -216,14 +218,11 @@ class CommandRowWidget(QFrame):
             return _handler
 
         def _copy_trigger_fallback():
-            clipboard = QApplication.clipboard()
-            if clipboard is not None:
-                clipboard.setText(self._entry.trigger)
+            copy_text(self._entry.trigger)
 
         def _copy_prompt_fallback():
-            clipboard = QApplication.clipboard()
-            if clipboard is not None and self._entry.content:
-                clipboard.setText(self._entry.content)
+            if self._entry.content:
+                copy_text(self._entry.content)
 
         self._copy_trigger_btn = QPushButton("Copy trigger")
         self._copy_trigger_btn.clicked.connect(_run("copy_trigger", _copy_trigger_fallback))
@@ -383,6 +382,9 @@ class CommandsPopupDialog(QDialog):
         self._pin_check.setChecked(self._config.discovery.stay_on_top)
         self._pin_check.toggled.connect(self._set_stay_on_top)
         title_row.addWidget(self._pin_check)
+        self._remote_paste_toggle = RemotePasteToggle(self)
+        self._remote_paste_toggle.status_message.connect(self._hint_label_message)
+        title_row.addWidget(self._remote_paste_toggle)
         layout.addLayout(title_row)
         self._hint_label = QLabel(
             "Browse what you want to accomplish, or search. Ctrl+F to search; Esc to close."
@@ -696,6 +698,9 @@ class CommandsPopupDialog(QDialog):
             if self._summary_table.currentRow() < 0:
                 self._summary_table.setCurrentCell(0, 0)
 
+    def _hint_label_message(self, message: str) -> None:
+        self._hint_label.setText(message)
+
     def _refresh_catalog(self) -> None:
         """Reload the live files explicitly without touching scratchpad contents."""
         try:
@@ -705,6 +710,7 @@ class CommandsPopupDialog(QDialog):
             self._hint_label.setText(f"Could not refresh the catalog: {exc}")
             return
         self._entries = entries
+        self._remote_paste_toggle.refresh()
         self._workflow_catalog = workflows
         self._populate_groups()
         self._refresh_view()
@@ -1036,17 +1042,23 @@ class CommandsPopupDialog(QDialog):
         self._persist_discovery("recent_triggers")
 
     def _copy_trigger(self, entry: CommandCatalogEntry) -> None:
-        clipboard = QApplication.clipboard()
-        if clipboard is not None:
-            clipboard.setText(entry.trigger)
+        self._hint_label_message("Copying trigger…")
+        copy_text(
+            entry.trigger,
+            on_success=lambda: self._hint_label_message("Trigger copied."),
+            on_failure=lambda: self._hint_label_message("Clipboard is busy; try copying again."),
+        )
         self._record_recent(entry.trigger)
 
     def _copy_prompt(self, entry: CommandCatalogEntry) -> None:
         if not entry.content:
             return
-        clipboard = QApplication.clipboard()
-        if clipboard is not None:
-            clipboard.setText(entry.content)
+        self._hint_label_message("Copying prompt…")
+        copy_text(
+            entry.content,
+            on_success=lambda: self._hint_label_message("Prompt copied."),
+            on_failure=lambda: self._hint_label_message("Clipboard is busy; try copying again."),
+        )
         self._record_recent(entry.trigger)
 
     def _send_to_scratchpad(self, entry: CommandCatalogEntry) -> None:
