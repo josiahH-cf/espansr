@@ -173,6 +173,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":test-speed",
                 "measure and cut test and CI time without weakening correctness evidence",
             ),
+            (
+                ":friction",
+                "measure test, install, and instruction upkeep, then fix only proven friction",
+            ),
         ),
     ),
     HelpSection(

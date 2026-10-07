@@ -32,6 +32,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:friction` — maintenance friction pass** — measures where a project's
+	tests, installation path, and agent context or instructions actually cost
+	upkeep, then applies and verifies only the bounded, evidence-backed fixes, or
+	reports a measured no-change result. It preserves local templates, user
+	configuration, and concurrent work, keeps installer success separate from
+	observed behavior, never weakens tests to improve timing, and adds no
+	governance layer.
+
 - **Local expansion counters** — small counters in `:coms` command details
   and the `:aopen` editor read actual native Espanso 2.4+ statistics, with
   background refresh and no hooks in copying or expansion. Setup enables
