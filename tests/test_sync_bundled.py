@@ -1654,6 +1654,9 @@ def test_bundled_adversary_review_template_contract():
         "and name the observation that would settle it.",
         "Do not add publication, installation, deployment, or use requirements to work whose "
         "spec does not need them, such as a document-only change.",
+        "A link is required only when the spec of record requires it; report a link beyond "
+        "that as not required, or as an advisory human observation when it would still help, "
+        "never as a Blocker.",
         "each delivery link when delivery is required",
     ):
         assert phrase in content, phrase

@@ -128,6 +128,8 @@ def test_artifact_gap_review_to_implementation_handoff_surfaces_feature():
 
 
 def test_artifact_implemented_feature_to_verification_report_surfaces_verify():
+    # :journey also produces verification reports; it omits implemented-feature from
+    # its accepts so this pairing keeps :verify on top.
     entries = _bundled_entries()
     assert (
         _top_trigger(
