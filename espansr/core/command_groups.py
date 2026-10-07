@@ -85,6 +85,7 @@ COMMAND_GROUPS = (
             "verification",
             "adversarial-review",
             "canary_runner",
+            "observed-journey",
             "experience-audit",
             "docs_qa",
             "feedback-apply",
@@ -196,6 +197,10 @@ _CUES = {
     "maintenance-friction": (
         "Reduce friction",
         "Tests, installs, or instructions cost too much upkeep and you want only measured fixes.",
+    ),
+    "observed-journey": (
+        "Walk a journey",
+        "You want one real sample walked end to end and only the demonstrated gap fixed.",
     ),
     "experience-audit": (
         "Improve interface",

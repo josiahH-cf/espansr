@@ -177,6 +177,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":friction",
                 "measure test, install, and instruction upkeep, then fix only proven friction",
             ),
+            (
+                ":journey",
+                "walk one real user journey with a real sample and fix the demonstrated gap",
+            ),
         ),
     ),
     HelpSection(
