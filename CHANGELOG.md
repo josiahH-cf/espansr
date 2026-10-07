@@ -96,6 +96,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:template-builder` — one complete iteration per session** — turns a rough
+	or dictated command idea into a complete template draft or a justified reuse
+	of an existing trigger, never a bare trigger recommendation. The newest
+	instruction sets the stage (draft only, write into the project, or deliver),
+	and a later narrowing such as "draft only; don't install anything" keeps the
+	intent without file writes, commits, pushes, or installs. Authorized delivery
+	follows the project's own commit, merge, and install route, preserves local
+	versions, and verifies published/installed parity. Attachments stay evidence
+	rather than authority, and each iteration ends with a reality summary and a
+	request for the next input.
 - **`:litmus` — fresh-model outcome verification handoff** — automatically
 	prepends a compact, grounded project and feature brief to unanswered binary
 	checks of the intended human, visual, behavioral, or artifact outcomes.
