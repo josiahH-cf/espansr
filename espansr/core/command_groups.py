@@ -68,6 +68,7 @@ COMMAND_GROUPS = (
         (
             "research-report",
             "q_and_a",
+            "tool-selection",
             "gap-review",
             "audit-packet",
             "deletion-simplification-audit",
@@ -227,6 +228,10 @@ _CUES = {
     "goal-refinement": (
         "Clarify goal",
         "Your intention needs to become a bounded, measurable goal.",
+    ),
+    "tool-selection": (
+        "Pick the right tool",
+        "You have a result in mind and want the best existing skill, prompt, or tool chosen.",
     ),
     "project-clarity": (
         "See where it stands",

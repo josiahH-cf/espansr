@@ -242,6 +242,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":gaps", "critical review modes for gaps and principles"),
             (":meta", "context-safe meta-prompt generator"),
+            (
+                ":right-tool",
+                "pick the right existing skill, prompt, or tool from evidence, with a ready prompt",
+            ),
             (":context", "condense drifted prompt context"),
             (
                 ":template-builder",
