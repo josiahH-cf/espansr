@@ -69,6 +69,7 @@ COMMAND_GROUPS = (
             "research-report",
             "q_and_a",
             "tool-selection",
+            "architecture-stabilization",
             "gap-review",
             "audit-packet",
             "deletion-simplification-audit",
@@ -232,6 +233,10 @@ _CUES = {
     "tool-selection": (
         "Pick the right tool",
         "You have a result in mind and want the best existing skill, prompt, or tool chosen.",
+    ),
+    "architecture-stabilization": (
+        "Stabilize architecture",
+        "Logic is duplicated or bypasses its owner and you want one bounded fix handed off.",
     ),
     "project-clarity": (
         "See where it stands",
