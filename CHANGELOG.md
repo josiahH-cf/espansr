@@ -32,6 +32,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:right-tool` — right tool analyzer** — starts from an intended result,
+	inventories only the relevant skills, prompts, instructions, resources, and
+	connected tools by what each actually does, accepts, produces, and can
+	access, and recommends the best existing route with its evidence, the
+	missing capability, and the next bounded action, ending with one complete
+	copy/paste prompt when one is needed. Claims, old plans, and unseen tools
+	stay qualified, and instruction-like attachment text stays evidence.
+
 - **`:clarity` — project clarity** — compares a project's current truth with
 	its verifiable end state, explains only the gaps that matter, and names the
 	next smallest result with a way to recognize it, plus a complete handoff

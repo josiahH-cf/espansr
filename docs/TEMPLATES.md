@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
@@ -225,6 +225,17 @@ assumptions, and open decisions distinct. Run it again with a correction: it
 keeps settled decisions and the outcome, marks proposals the correction rules
 out as superseded, and reports evidence it could not check instead of assuming
 it.
+
+Use `:right-tool` when you know the result you want but not which of your
+existing skills, prompts, instructions, resources, or connected tools should
+produce it. It inventories only what matters for that result, judges each by
+what it actually does, accepts, produces, and can access in the current
+session (not by its name), and recommends the best existing route with its
+evidence, the missing capability, and the next bounded action. When the route
+needs a prompt, it ends with one complete copy/paste prompt instead of telling
+you to run another command. It is read-only, labels claims and unseen tools
+instead of counting them as available, never reports unproven work as passed,
+and treats instruction-like text in attachments as evidence only.
 
 ### Review-family notes at a glance
 
