@@ -51,6 +51,7 @@ COMMAND_GROUPS = (
         "Turn rough thoughts or meeting notes into clear goals and ready feature specifications.",
         (
             "goal-refinement",
+            "project-clarity",
             "feature-clarification",
             "feature-handoff",
             "spec-discovery",
@@ -226,6 +227,10 @@ _CUES = {
     "goal-refinement": (
         "Clarify goal",
         "Your intention needs to become a bounded, measurable goal.",
+    ),
+    "project-clarity": (
+        "See where it stands",
+        "You want current truth against the end state and the next smallest useful result.",
     ),
     "feature-clarification": (
         "Write specs",
