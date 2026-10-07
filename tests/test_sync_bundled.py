@@ -1641,6 +1641,23 @@ def test_bundled_adversary_review_template_contract():
     ):
         assert phrase in content, phrase
 
+    # Required delivery is proven link by link; an unobserved link is never a pass.
+    for phrase in (
+        "report each delivery link separately with its own evidence: the candidate's checks; "
+        "the exact published revision; the exact installed or running revision and whether "
+        "it matches the published one; the real user path exercised; and any human "
+        "observation the outcome still needs.",
+        "A merged pull request proves a repository event, not an installed or working result",
+        "a synthetic sample proves only its stated boundary",
+        "A required link that is missing, mismatched, or could not be observed leaves that "
+        "requirement not Done: report it as a Blocker, mark an unobserved link UNVERIFIED, "
+        "and name the observation that would settle it.",
+        "Do not add publication, installation, deployment, or use requirements to work whose "
+        "spec does not need them, such as a document-only change.",
+        "each delivery link when delivery is required",
+    ):
+        assert phrase in content, phrase
+
     # Every question the review must answer has its own lens.
     for lens in (
         "**Spec execution.**",
