@@ -32,6 +32,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:journey` — observed journey sample** — walks one real user journey end
+	to end with a real sample (discover, understand, copy or invoke, use,
+	receive the result), records an expected/observed/evidence table, and fixes
+	only the demonstrated gap behind a failing check before repeating the exact
+	sample. Unobserved interface, clipboard, or model steps stay UNVERIFIED with
+	the one human observation needed; installer success and restarts never stand
+	in for observed use.
+
 - **`:friction` — maintenance friction pass** — measures where a project's
 	tests, installation path, and agent context or instructions actually cost
 	upkeep, then applies and verifies only the bounded, evidence-backed fixes, or

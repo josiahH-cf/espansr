@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -149,6 +149,18 @@ worth changing. It preserves local templates, user configuration, and other
 sessions' work, keeps a passing installer separate from an observed working
 result, never weakens tests to improve a number, and never adds a governance
 layer.
+
+Use `:journey` to find out whether a person can actually accomplish one task
+with your project, using one real sample. It records the starting source and
+installed state, splits the journey into the steps a person takes (for example
+discover, understand, copy or invoke, use, and receive the result), writes each
+step's expected result before running anything, and then observes each step
+separately in the real interface, command, clipboard, or receiving model. It
+returns an expected/observed/evidence table that names the seam behind each
+failure, fixes only demonstrated gaps behind a failing check, and repeats the
+exact sample. Steps it cannot observe stay UNVERIFIED with the one human
+observation that would settle them; a visible row, a clipboard call, or an
+installer exit never counts as the user's outcome.
 
 Append `:tddh` to almost any request as a compact reliability instruction. It
 asks the model to reason carefully, stay grounded in the available evidence,
