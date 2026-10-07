@@ -32,6 +32,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:clarity` — project clarity** — compares a project's current truth with
+	its verifiable end state, explains only the gaps that matter, and names the
+	next smallest result with a way to recognize it, plus a complete handoff
+	when another session should carry it out. Current behavior, end state,
+	evidence, proposals, assumptions, and open decisions stay distinct; repeated
+	use keeps settled decisions, marks proposals a correction rules out as
+	superseded, and reports inaccessible evidence instead of assuming it.
+
 - **`:journey` — observed journey sample** — walks one real user journey end
 	to end with a real sample (discover, understand, copy or invoke, use,
 	receive the result), records an expected/observed/evidence table, and fixes
