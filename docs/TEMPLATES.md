@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`
+- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -138,6 +138,17 @@ pass/fail/skip counts, coverage or the project's own gate, and repeat-run
 stability. It never reports a timing it did not measure, and it does not buy
 speed by deleting, skipping, or loosening tests — a change that would reduce
 what the suite proves is presented to you as a decision instead.
+
+Use `:friction` when a project's tests, installation path, or agent context and
+instructions cost more upkeep than they should. It measures a baseline for each
+surface in scope (the real test run, what a repeat install actually changes,
+and which instruction files are duplicated, stale, or in conflict), applies
+only the bounded fixes whose measured gain outweighs their own upkeep, and
+reports before/after results — or a measured no-change result when nothing is
+worth changing. It preserves local templates, user configuration, and other
+sessions' work, keeps a passing installer separate from an observed working
+result, never weakens tests to improve a number, and never adds a governance
+layer.
 
 Append `:tddh` to almost any request as a compact reliability instruction. It
 asks the model to reason carefully, stay grounded in the available evidence,

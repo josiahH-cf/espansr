@@ -81,6 +81,7 @@ COMMAND_GROUPS = (
         (
             "human-litmus",
             "test-speed-optimization",
+            "maintenance-friction",
             "verification",
             "adversarial-review",
             "canary_runner",
@@ -191,6 +192,10 @@ _CUES = {
     "test-speed-optimization": (
         "Speed up tests",
         "Tests or CI take too long and you want measured, correctness-preserving speedups.",
+    ),
+    "maintenance-friction": (
+        "Reduce friction",
+        "Tests, installs, or instructions cost too much upkeep and you want only measured fixes.",
     ),
     "experience-audit": (
         "Improve interface",
