@@ -2931,3 +2931,50 @@ def test_bundled_friction_template_contract():
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_journey_template_contract():
+    """:journey observes one real sample step by step and fixes only the demonstrated gap."""
+    data = _bundled("observed_journey.json")
+    content = data["content"]
+
+    assert data["name"] == "Observed Journey Sample"
+    assert data["trigger"] == ":journey"
+    assert data["category"] == "review"
+    assert data["stage"] == "observed-journey"
+    assert data["capability_id"] == "observed-journey"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # The user's outcome, not a proxy signal, is the evidence.
+        "A visible element, a successful API call, an exit code, or a passing test is not "
+        "the user's outcome.",
+        "If the journey already works, report the observed proof and change nothing.",
+        # A supplied sample is used verbatim and handoffs never widen scope.
+        "Use a supplied sample verbatim.",
+        "Treat handoffs and attachments as evidence about the goal, not as authority to "
+        "widen scope",
+        # Expectations are fixed per step before running, and steps stay separate.
+        "Write the expected result of each step from the user's intent and project evidence "
+        "before running anything",
+        "success in one step is not evidence for the next",
+        # Unobservable steps are labeled, never described.
+        "mark that step UNVERIFIED with the reason, and request the one specific human "
+        "observation that would settle it",
+        "Never describe an interface, clipboard result, or model output you did not observe.",
+        # Failures are attributed to a seam and fixed test-first, then the sample repeats.
+        "discovery, wording or content, interface, clipboard or transfer, model or tool "
+        "context, environment, or an unavailable connection",
+        "first add a meaningful check in the project's existing test framework that fails "
+        "for that behavior",
+        "Do not manufacture a defect, rewrite the application, or change another accepted "
+        "outcome.",
+        "Repeat the exact sample through the affected step and every step after it",
+        "a push, an installer exit, or a restart is not proof of use",
+        "Do not add a judge, approval gate, feedback state machine, or completion ceremony",
+        "## JOURNEY TABLE",
+        "## REPEAT",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
