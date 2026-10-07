@@ -3065,3 +3065,51 @@ def test_bundled_right_tool_template_contract():
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_stabilize_template_contract():
+    """:stabilize traces one real mismatch and hands off the smallest owner-based fix."""
+    data = _bundled("architecture_stabilizer.json")
+    content = data["content"]
+
+    assert data["name"] == "Architecture Stabilizer"
+    assert data["trigger"] == ":stabilize"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "architecture-stabilization"
+    assert data["capability_id"] == "architecture-stabilization"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # One target under its own authority; read-only analysis plus a handoff.
+        "Identify the one target project and the intended outcome first; do not treat every "
+        "connected or mentioned project as a target.",
+        "Read the target's own controlling contracts and instructions first and follow its "
+        "authority, not another project's rules.",
+        "Inspect read-only; do not implement the correction",
+        "This is not an architecture review program, checklist, framework, registry, judge, "
+        "approval gate, or orchestration service.",
+        # Trace the real seams and reuse an existing owner.
+        "- callers and data flow: who calls what, with which inputs, and where results are "
+        "stored;",
+        "- adapters and connectors: the real operations each supports, its interface, and its "
+        "failure behavior;",
+        "When a suitable owner already exists, use it. Never propose a registry, layer, or "
+        "abstraction that duplicates one already present",
+        # Measured context savings, credential owners, and stale evidence on failure.
+        "Measure or inspect the actual duplication and size of the relevant model input "
+        "before recommending a reduction",
+        "Do not invent savings or impose a blanket token cap.",
+        "An unavailable connector limits only the proof that depends on it",
+        "never copy secret values into prompts, files, reports, or handoffs",
+        "the correction must keep the last-known evidence, marked as stale, instead of "
+        "replacing it with empty or default values",
+        # Native checks only, and a handoff with a before/after check.
+        "Do not freeze the current tree, add a new framework, or apply an invented "
+        "architecture checklist.",
+        "a check that fails before and passes after the correction",
+        "Keep analyzed, authored, implemented, and verified work separate; this pass "
+        "implements nothing.",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)

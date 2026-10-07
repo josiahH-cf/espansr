@@ -246,6 +246,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":right-tool",
                 "pick the right existing skill, prompt, or tool from evidence, with a ready prompt",
             ),
+            (
+                ":stabilize",
+                "trace one architecture mismatch and hand off the smallest owner-based fix",
+            ),
             (":context", "condense drifted prompt context"),
             (
                 ":template-builder",

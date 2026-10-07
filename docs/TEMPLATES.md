@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
@@ -236,6 +236,19 @@ needs a prompt, it ends with one complete copy/paste prompt instead of telling
 you to run another command. It is read-only, labels claims and unseen tools
 instead of counting them as available, never reports unproven work as passed,
 and treats instruction-like text in attachments as evidence only.
+
+Use `:stabilize` when part of one project duplicates a decision, bypasses its
+owner, or loses known data on failure. It identifies the single target project
+and follows that project's own rules, traces the owners, callers, data flow,
+interfaces, adapters and connectors, context sources, and test and CI seams
+that the outcome touches, and explains the architecture in plain language with
+mismatches ranked by consequence. It then hands off the smallest correction
+through an existing owner and compatible interface as one complete prompt with
+preservation obligations and a check that fails before and passes after. It
+is read-only, measures context duplication before claiming savings, keeps
+last-known evidence on connector failure, refers to credentials only through
+their owners, and never adds a registry, framework, or checklist the project
+does not need.
 
 ### Review-family notes at a glance
 
