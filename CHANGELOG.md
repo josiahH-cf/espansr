@@ -32,6 +32,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:stabilize` — architecture stabilizer** — traces one selected project's
+	real architecture mismatch through its owners, callers, interfaces,
+	connectors, context sources, and checks, explains it in plain language, and
+	hands off the smallest correction through an existing owner with
+	preservation obligations and a before/after check. It measures context
+	duplication before claiming savings, keeps last-known evidence on connector
+	failure, refers to credentials only through their owners, and never adds a
+	registry, framework, or checklist that is not needed.
+
 - **`:right-tool` — right tool analyzer** — starts from an intended result,
 	inventories only the relevant skills, prompts, instructions, resources, and
 	connected tools by what each actually does, accepts, produces, and can
