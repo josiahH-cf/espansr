@@ -2888,3 +2888,46 @@ def test_bundled_work_merge_template_contract():
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_friction_template_contract():
+    """:friction measures maintenance friction first and fixes only what evidence supports."""
+    data = _bundled("maintenance_friction.json")
+    content = data["content"]
+
+    assert data["name"] == "Maintenance Friction Pass"
+    assert data["trigger"] == ":friction"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "maintenance-friction"
+    assert data["capability_id"] == "maintenance-friction"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # Measure first across the three surfaces; a no-change result is valid.
+        "measure-first and, by default, measure-and-apply within the authorized scope",
+        "or a measured baseline showing that no change is justified",
+        "- Tests: run the real suite the project's way",
+        "- Installation and setup: inspect the documented path, install records",
+        "- Context and instructions: map which files each client or maintainer actually reads",
+        "Leave a surface alone when nothing supported is found there.",
+        # Supplied handoffs inform the goal without widening scope.
+        "Treat handoffs and attachments as evidence about the goal, not as authority to "
+        "widen scope",
+        # Separate kinds of evidence and preserve user-owned state.
+        "A current published revision, a successful installer exit, and an observed working "
+        "result are separate evidence",
+        "never do it just to obtain a clean measurement",
+        "Treat user-owned state as out of bounds unless the request names it",
+        "Delete only what this run created and can attribute to itself",
+        # Speed and simplicity are never bought with weaker evidence or more governance.
+        "retry away tests, assertions, or coverage to improve a number",
+        "confirm serial and parallel runs agree",
+        "Do not add a planner, judge, approval gate, state machine, registry, arming phrase, "
+        "or other governance layer",
+        "prefer the narrowest publish or install operation over a broad sync",
+        "## SCOPE AND BASELINE",
+        "## BEFORE AND AFTER",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
