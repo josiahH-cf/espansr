@@ -193,7 +193,13 @@ in order whether the spec was executed in full, whether the application is stabl
 what changed outside the spec, what risk the change carries, what loose ends
 remain, what work and tests are missing, how the spec itself should be tightened,
 and which governance or documentation updates are due, closing with a PASS, PASS
-WITH FOLLOW-UPS, or FAIL verdict derived from tagged severities. It differs from
+WITH FOLLOW-UPS, or FAIL verdict derived from tagged severities. When the spec
+requires the work to be published, installed, or used, it reports each delivery
+link separately (candidate checks, published revision, installed or running
+revision, real user path, and any needed human observation); a merged pull
+request or a synthetic sample is not treated as an installed or working result,
+and a required link that is missing or could not be observed is a Blocker marked
+UNVERIFIED. Document-only work gets no delivery requirements. It differs from
 `:verify`, which repairs clear issues and aligns docs in the same pass, and from
 `:gaps`, which challenges plans and research rather than delivered work. It never
 fixes anything; its findings are the input for a `:feedback` cycle.

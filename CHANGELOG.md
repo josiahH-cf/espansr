@@ -137,6 +137,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:adversary-review` — delivery proven link by link** — when the spec
+	requires publication, installation, or use, the Stability lens reports the
+	candidate's checks, the published revision, the installed or running
+	revision, the real user path, and any needed human observation separately.
+	A merged pull request or synthetic sample no longer stands in for an
+	installed or working result, and a required link that is missing or could
+	not be observed is a Blocker marked UNVERIFIED instead of a passing follow-up.
+	Document-only work gets no delivery requirements.
+
 - **`:template-builder` — one complete iteration per session** — turns a rough
 	or dictated command idea into a complete template draft or a justified reuse
 	of an existing trigger, never a bare trigger recommendation. The newest
