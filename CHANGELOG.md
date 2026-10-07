@@ -144,7 +144,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 	A merged pull request or synthetic sample no longer stands in for an
 	installed or working result, and a required link that is missing or could
 	not be observed is a Blocker marked UNVERIFIED instead of a passing follow-up.
+	Only links the spec requires count as required; any other link is reported
+	as not required or as an advisory human observation, never as a Blocker.
 	Document-only work gets no delivery requirements.
+- **`:coms` "Check & improve work" description** — now names its newer members:
+	"…walk real journeys, verify repairs, or cut test and upkeep friction." The
+	`docs/TEMPLATES.md` review-family table gains a `:journey` row.
 
 - **`:template-builder` — one complete iteration per session** — turns a rough
 	or dictated command idea into a complete template draft or a justified reuse

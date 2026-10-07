@@ -80,7 +80,8 @@ COMMAND_GROUPS = (
     CommandGroup(
         "check-work",
         "Check & improve work",
-        "Draft outcome checks, review work, verify repairs, or speed up the test suite.",
+        "Draft outcome checks, review work, walk real journeys, verify repairs, or cut test and "
+        "upkeep friction.",
         (
             "human-litmus",
             "test-speed-optimization",
