@@ -2978,3 +2978,46 @@ def test_bundled_journey_template_contract():
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_clarity_template_contract():
+    """:clarity compares current truth with the end state and carries corrections forward."""
+    data = _bundled("project_clarity.json")
+    content = data["content"]
+
+    assert data["name"] == "Project Clarity"
+    assert data["trigger"] == ":clarity"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "project-clarity"
+    assert data["capability_id"] == "project-clarity"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # A read-only clarity pass, not the work or a management system.
+        "This is a clarity pass, not the work itself. Inspect read-only",
+        "This is not a project-management system, tracker, or standard.",
+        # Current truth, end state, and their evidence stay distinct.
+        "Keep these distinct and labeled: current behavior with its source, the desired end "
+        "state, evidence, proposals, assumptions, and unresolved decisions.",
+        "A passing test, generated document, merged change, or running service does not stand "
+        "in for the end state unless it is the end state.",
+        "Count what already works as part of the current truth, and do not plan to rebuild it.",
+        "A tool, platform, or build route belongs in the end state only when the user made it "
+        "a boundary.",
+        # Inaccessible evidence is reported, never assumed.
+        "never fill the gap with an assumed state",
+        # Iterations keep intent and supersede only what a correction rules out.
+        "Keep the exact project and task identity and every settled decision.",
+        "Mark earlier proposals it rules out as superseded, and keep the outcome and preserved "
+        "behavior unless the user changed them.",
+        "Silence does not authorize a new outcome, broader scope, or a different method.",
+        # The result names a recognizable next result and hands off when useful.
+        "the smallest useful result to produce next, preferring what already exists over a new "
+        "surface, and how to recognize that it occurred",
+        "add a complete, self-contained handoff it can act on without this conversation",
+        "Do not claim the project or the next result is complete because this clarity pass is "
+        "written.",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)

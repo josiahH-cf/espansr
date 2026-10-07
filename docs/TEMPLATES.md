@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -214,6 +214,17 @@ bounded, measurable or verifiable goal. It restates the interpreted goal, runs a
 context-grounded gap and misinterpretation analysis, asks recommendation-backed
 clarifications in a single batch when needed, and returns a copy-ready goal
 contract without implementing the goal or writing a plan.
+
+Use `:clarity` when you want to see where a project really stands against what
+you are aiming for. It compares the current truth (what already works, with its
+evidence) with the verifiable end state, explains only the gaps that matter,
+and names the next smallest result with a way to recognize that it occurred,
+adding a complete handoff when another session should carry it out. It is
+read-only and keeps current behavior, end state, evidence, proposals,
+assumptions, and open decisions distinct. Run it again with a correction: it
+keeps settled decisions and the outcome, marks proposals the correction rules
+out as superseded, and reports evidence it could not check instead of assuming
+it.
 
 ### Review-family notes at a glance
 

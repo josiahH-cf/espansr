@@ -137,6 +137,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (":goal", "interpret, gap-check, and refine context into a measurable goal"),
             (
+                ":clarity",
+                "compare current truth with the verifiable end state and name the next result",
+            ),
+            (
                 ":troubleshoot",
                 "debug with context checks, research, planning, fixing, and verification",
             ),
