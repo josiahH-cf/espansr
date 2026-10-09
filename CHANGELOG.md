@@ -32,6 +32,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:one-shot` — end-to-end delivery in one pass** — takes a request typed
+	after the trigger and, without questions, contextualizes it from project
+	instructions and current state, plans internally, implements, verifies with
+	the project's checks and a hunt for outliers and missing information,
+	updates affected documentation, runs an adversarial review, and delivers:
+	commit, push, pull request, merge once required checks pass, and the
+	project's install or deploy step. In a plain chat the finished result is the
+	deliverable. Project rules take precedence; it never force-pushes, bypasses
+	protections, or merges failing checks, and it reports blockers instead of
+	asking or guessing.
+
 - **`:reverse-engineer` — improve the source from a good result** — treats
 	the result a session iterated to as the target, reconstructs the path from
 	the starting request through each correction and manual edit, and sorts

@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -216,6 +216,19 @@ failure, and `:context` only condenses context without changing the project.
 `:feedback` keeps no persistent feedback log or cross-session memory; the retired
 `:feedback-loop` command that used persistent capture and specification
 generation remains retired.
+
+Use `:one-shot` when you want a request done end to end without questions:
+type the trigger, then say what you want. It contextualizes from the project's
+own instructions and current state (or, in a plain chat, the question's scope
+and evidence), makes a short internal plan, implements it, verifies it with
+the project's checks and a hunt for outliers and missing information, updates
+affected documentation, and runs an adversarial review before delivering. In a
+repository it commits, pushes, opens a pull request where the project uses
+them, merges once required checks pass, and runs the project's install or
+deploy step; elsewhere the finished result itself is the deliverable. Project
+instructions and permissions take precedence, it never force-pushes, bypasses
+protections, or merges failing checks, and it reports blockers instead of
+asking or guessing.
 
 Use `:goal` to interpret the current context or optional notes into one tightly
 bounded, measurable or verifiable goal. It restates the interpreted goal, runs a
