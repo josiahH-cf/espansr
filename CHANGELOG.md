@@ -137,6 +137,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **`:finance-review` — replaced with the expanded household review** — the
+	note now spells out an authoring-only override, exact review-week,
+	rolling-month, and history windows with an explicit last-month
+	reconciliation, non-overlapping account totals, unknown student-loan
+	payments that never become $0, record-specific exclusions, receipt-link
+	confidence, the dated budget baseline with its reserve counted once, one
+	consolidated decision packet, and a searchable 3–5-page PDF (normally four)
+	inspected page by page before delivery.
 - **`:adversary-review` — delivery proven link by link** — when the spec
 	requires publication, installation, or use, the Stability lens reports the
 	candidate's checks, the published revision, the installed or running

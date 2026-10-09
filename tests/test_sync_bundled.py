@@ -2421,6 +2421,66 @@ def test_bundled_project_decision_helper_template_contract():
     assert content.rstrip().endswith("quick, or deep.")
 
 
+def test_bundled_finance_review_template_contract():
+    """:finance-review runs the household review in chat and delivers a verified PDF."""
+    data = _bundled("finance_review.json")
+    content = data["content"]
+
+    assert data["name"] == "Finance Review"
+    assert data["trigger"] == ":finance-review"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "finance-review"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # Authoring requests never execute the review or touch records.
+        "AUTHORING-ONLY OVERRIDE: If my actual request is to edit, test, critique, or rewrite "
+        "this prompt or its workflow, perform only that authoring task.",
+        "Do not execute the financial review, access financial/email records, or modify a "
+        "live automation.",
+        # Read-only authority; no external changes or background work.
+        "They do not authorize provider-category writes, payments, cancellations, loan-plan "
+        "changes, trades, mailbox changes, or financial-memory writes.",
+        "Do not schedule reviews, monitor in the background, install apps, create tasks, or "
+        "publish private material externally.",
+        "Discovery alone is not access.",
+        # Unknown loan payments stay unknown; credentials never enter chat.
+        "Missing required payments remain unknown, not $0.",
+        "Never ask for credentials or one-time codes in chat.",
+        "unknown debt payments cannot become zero.",
+        # Exclusions are record-specific, nothing is fabricated, the reserve counts once.
+        "These are record-specific exclusions, not merchant-wide rules",
+        "report unlocated exclusions without fabricating records.",
+        "Do not subtract $14,500 and then subtract that same $25 again.",
+        # One decision packet, then automatic delivery of a checked PDF.
+        "“Review to finalize — [period]”",
+        "Do not create a questionnaire tool, review file, or approval form.",
+        "After my answers, resume calculation and delivery automatically without a new "
+        "command or final approval request.",
+        "Produce 3–5 actual searchable-text pages, normally four",
+        "Return an attachment/link only after confirming the file exists.",
+    ):
+        assert phrase in content, phrase
+
+    # The dated budget baseline adds up: category rows sum to the stated subtotal and total.
+    rows = {}
+    for line in content.splitlines():
+        cells = [cell.strip() for cell in line.split("|")]
+        if len(cells) == 3 and cells[1].startswith("$"):
+            low, high = cells[2].split("–")
+            rows[cells[0]] = tuple(
+                int(v.lstrip("$").replace(",", "")) for v in (cells[1], low, high)
+            )
+    total = rows.pop("TOTAL including reserve")
+    subtotal = rows.pop("ORDINARY SPENDING subtotal, excluding reserve")
+    reserve = rows.pop("Annual subscription reserve — allocation")
+    assert len(rows) == 16
+    assert tuple(sum(row[i] for row in rows.values()) for i in range(3)) == subtotal
+    assert tuple(s + r for s, r in zip(subtotal, reserve)) == total
+    assert total == (14_500, 14_500, 20_800)
+
+
 def test_bundled_project_personal_growth_template_contract():
     """:project-personal-growth guides sessions and keeps records without doing my thinking."""
     data = _bundled("project_personal_growth.json")
