@@ -2422,7 +2422,7 @@ def test_bundled_project_decision_helper_template_contract():
 
 
 def test_bundled_finance_review_template_contract():
-    """:finance-review runs the household review in chat and delivers a verified PDF."""
+    """:finance-review keeps the household's structure and rules but hard-codes no values."""
     data = _bundled("finance_review.json")
     content = data["content"]
 
@@ -2449,36 +2449,41 @@ def test_bundled_finance_review_template_contract():
         "Missing required payments remain unknown, not $0.",
         "Never ask for credentials or one-time codes in chat.",
         "unknown debt payments cannot become zero.",
+        # Current values come from the finance context; the household's intent stays here.
+        "Current values come from my finance context, never from this prompt.",
+        "the finance context of the place I run this review",
+        "never invent a value.",
+        "my Nelnet account and my wife's separate Nelnet account",
+        "Fidelity's employer 401(k) belongs in household retirement",
+        "Coalfire and All Care Health are ongoing ordinary payroll",
+        "Budget categories, unless my finance context defines a newer set:",
         # Exclusions are record-specific, nothing is fabricated, the reserve counts once.
         "These are record-specific exclusions, not merchant-wide rules",
         "report unlocated exclusions without fabricating records.",
-        "Do not subtract $14,500 and then subtract that same $25 again.",
-        # One decision packet, then automatic delivery of a checked PDF.
+        "do not subtract a total that already includes a reserve and then subtract that "
+        "reserve again.",
+        # One decision packet, then automatic delivery and a reusable carry-forward note.
         "“Review to finalize — [period]”",
         "Do not create a questionnaire tool, review file, or approval form.",
         "After my answers, resume calculation and delivery automatically without a new "
         "command or final approval request.",
         "Produce 3–5 actual searchable-text pages, normally four",
         "Return an attachment/link only after confirming the file exists.",
+        "a compact dated carry-forward note that the next review can use as its complete "
+        "baseline",
     ):
         assert phrase in content, phrase
 
-    # The dated budget baseline adds up: category rows sum to the stated subtotal and total.
-    rows = {}
-    for line in content.splitlines():
-        cells = [cell.strip() for cell in line.split("|")]
-        if len(cells) == 3 and cells[1].startswith("$"):
-            low, high = cells[2].split("–")
-            rows[cells[0]] = tuple(
-                int(v.lstrip("$").replace(",", "")) for v in (cells[1], low, high)
-            )
-    total = rows.pop("TOTAL including reserve")
-    subtotal = rows.pop("ORDINARY SPENDING subtotal, excluding reserve")
-    reserve = rows.pop("Annual subscription reserve — allocation")
-    assert len(rows) == 16
-    assert tuple(sum(row[i] for row in rows.values()) for i in range(3)) == subtotal
-    assert tuple(s + r for s, r in zip(subtotal, reserve)) == total
-    assert total == (14_500, 14_500, 20_800)
+    # No actual values: amounts, last-four labels, years, and dated records stay out.
+    # "$0" is the unknown-loan rule and "$25" the range rounding step.
+    assert set(re.findall(r"\$\d[\d,]*(?:\.\d+)?", content)) <= {"$0", "$25"}
+    assert not re.search(r"(?<!\d)\d{4}(?!\d)", content)
+    month = (
+        r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+    )
+    assert not re.search(month + r" \d", content)
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
 def test_bundled_project_personal_growth_template_contract():
