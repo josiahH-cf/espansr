@@ -148,6 +148,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":fix-this",
                 "fix the in-context issue at its root and update the affected downstream material",
             ),
+            (
+                ":one-shot",
+                "plan, build, verify, review, document, and deliver a request in one pass",
+            ),
             (":continue", "resume work in flight and keep going to done or a real gate"),
             (":unblock", "clarify blockers in the console and finish authorized remaining work"),
             (":verify", "verify, repair, and align affected docs"),

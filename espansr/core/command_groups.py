@@ -24,8 +24,10 @@ COMMAND_GROUPS = (
     CommandGroup(
         "keep-moving",
         "Keep work moving",
-        "Resume unfinished work, resolve blockers, apply feedback, or answer recommendations.",
+        "Do a request end to end, resume unfinished work, resolve blockers, apply feedback, or "
+        "answer recommendations.",
         (
+            "one_shot",
             "continue",
             "unblock",
             "context-reset",
@@ -163,6 +165,10 @@ CUSTOM_GROUP = CommandGroup(
 # Role and recognition cue. These describe the bundled job; full, live template
 # descriptions and use/avoid guidance remain visible in the selected detail.
 _CUES = {
+    "one_shot": (
+        "One shot",
+        "You want a request planned, built, verified, reviewed, and delivered without questions.",
+    ),
     "continue": (
         "Resume work",
         "Work is unfinished and you want the next supported action carried through.",

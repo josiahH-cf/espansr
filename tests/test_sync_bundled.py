@@ -3200,6 +3200,61 @@ def test_bundled_stabilize_template_contract():
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
+def test_bundled_one_shot_template_contract():
+    """:one-shot carries one request to a delivered result without questions."""
+    data = _bundled("one_shot.json")
+    content = data["content"]
+
+    assert data["name"] == "One Shot"
+    assert data["trigger"] == ":one-shot"
+    assert data["category"] == "workflow"
+    assert data["stage"] == "one-shot-delivery"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    # No questions, no stopping at a plan, and the environment's rules still win.
+    for phrase in (
+        "This invocation is full authorization to contextualize, plan, implement, verify, "
+        "review, document, and deliver that request without asking questions",
+        "Do not ask questions, request confirmation, or stop at a plan.",
+        "record each material assumption and keep going.",
+        "Follow the environment's and project's own instructions and permissions; they take "
+        "precedence over this prompt where they conflict.",
+        "Never claim a step, check, or result you did not observe.",
+    ):
+        assert phrase in content, phrase
+
+    # Every stage is present, in order.
+    stages = (
+        "## 1. Contextualize",
+        "## 2. Plan",
+        "## 3. Implement",
+        "## 4. Verify and close the gaps",
+        "## 5. Update documentation",
+        "## 6. Adversarial review",
+        "## 7. Deliver",
+    )
+    positions = [content.index(stage) for stage in stages]
+    assert positions == sorted(positions)
+
+    for phrase in (
+        # Gaps, outliers, and an independent skeptic.
+        "edge cases and outliers, missing or inconsistent information",
+        "Review the finished work as an independent skeptic against the original request",
+        # Delivery through the project's route, with hard safety limits.
+        "wait for required checks to pass, merge with the project's usual method",
+        "confirm that the delivered revision is what is installed or running.",
+        "Never force-push, rewrite shared history, bypass hooks or branch protection, merge "
+        "failing checks, or commit secrets or private data.",
+        "Outside a repository, the deliverable is the finished result itself",
+        # Blockers are reported, never asked about or guessed past.
+        "do not ask and do not guess.",
+        "Delivery evidence: commit, pull request, merge, and install or deploy",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
 def test_bundled_reverse_engineer_template_contract():
     """:reverse-engineer folds an iterated result back into the source that produced it."""
     data = _bundled("reverse_engineer.json")
