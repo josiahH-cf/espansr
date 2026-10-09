@@ -120,8 +120,9 @@ COMMAND_GROUPS = (
     CommandGroup(
         "create-assets",
         "Create images & prompts",
-        "Create an image, reusable command template, or scoped prompt for future work.",
-        ("image_generator", "template_builder", "meta"),
+        "Create an image, reusable command template, or scoped prompt for future work, or "
+        "improve one from a good result.",
+        ("image_generator", "template_builder", "reverse_engineer", "meta"),
     ),
     CommandGroup(
         "personal-programs",
@@ -335,6 +336,10 @@ _CUES = {
     "template_builder": (
         "Build template",
         "You need a reusable command template that fits the current project.",
+    ),
+    "reverse_engineer": (
+        "Reverse engineer",
+        "You iterated to a good result and want its source improved for next time.",
     ),
     "telegram": (
         "Act on source",

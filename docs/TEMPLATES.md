@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
@@ -257,6 +257,17 @@ is read-only, measures context duplication before claiming savings, keeps
 last-known evidence on connector failure, refers to credentials only through
 their owners, and never adds a registry, framework, or checklist the project
 does not need.
+
+Use `:reverse-engineer` after several rounds of prompting, edits, or skill
+changes finally produce the result you wanted. It treats that accepted result
+as the target, reconstructs the path from the starting request through each
+correction and manual edit, and separates recurring lessons from details of
+this one case and from preferences. Each lesson goes into the most specific
+existing owner, such as a prompt, template, skill, instruction file,
+configuration, script, or check, as the smallest build, edit, add, or remove,
+so a fresh run starts closer to the result. It leaves the result itself alone,
+keeps personal and sensitive values out of reusable sources, verifies only
+what it observes, and does not commit, push, or install unless you ask.
 
 ### Review-family notes at a glance
 

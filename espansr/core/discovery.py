@@ -255,6 +255,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":template-builder",
                 "carry one command template to a full draft, justified reuse, or delivery",
             ),
+            (
+                ":reverse-engineer",
+                "work back from a good result and improve the prompt or skill that produced it",
+            ),
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
             (":research", "research a topic with strong evidence handling and synthesis"),
             (":audit", "assess evidence and clarify findings in the console; export on request"),

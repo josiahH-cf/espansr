@@ -32,6 +32,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`:reverse-engineer` — improve the source from a good result** — treats
+	the result a session iterated to as the target, reconstructs the path from
+	the starting request through each correction and manual edit, and sorts
+	every change into recurring lessons, instance details, slips already
+	covered, and preferences. Each lesson goes into the most specific existing
+	owner, such as a prompt, skill, instruction file, configuration, or check,
+	as the smallest build, edit, add, or remove, keeping instance and personal
+	values out of reusable sources. It leaves the final result alone, verifies
+	only what it observes, and never commits, pushes, or installs unless asked.
+
 - **`:stabilize` — architecture stabilizer** — traces one selected project's
 	real architecture mismatch through its owners, callers, interfaces,
 	connectors, context sources, and checks, explains it in plain language, and
