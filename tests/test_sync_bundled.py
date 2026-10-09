@@ -3198,3 +3198,44 @@ def test_bundled_stabilize_template_contract():
     ):
         assert phrase in content, phrase
     assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
+def test_bundled_reverse_engineer_template_contract():
+    """:reverse-engineer folds an iterated result back into the source that produced it."""
+    data = _bundled("reverse_engineer.json")
+    content = data["content"]
+
+    assert data["name"] == "Reverse Engineer"
+    assert data["trigger"] == ":reverse-engineer"
+    assert data["category"] == "prompting"
+    assert data["stage"] == "result-reverse-engineering"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # The accepted end state is the target; the source changes, not the result.
+        "Treat the accepted final state as the target",
+        "Improve the source, not the result",
+        "If it is unclear which state is final or whether it was accepted, ask before "
+        "changing anything.",
+        "When the user changed things outside the visible context, inspect the difference "
+        "or ask.",
+        # Every change on the path is sorted; only recurring lessons reach a source.
+        "**Lesson**",
+        "**Instance detail**",
+        "**Already covered**",
+        "**Preference**",
+        "place each lesson in the step that first went wrong.",
+        "out of reusable sources; point to where they live instead.",
+        # Smallest change in the existing owner, generalized, without piling on.
+        "choose the most specific existing owner and make the smallest change there: build, "
+        "edit, add, or remove.",
+        "instead of piling corrections on top.",
+        "Create a new asset only when no existing owner fits, and say why.",
+        # Observed verification only, and no delivery unless asked.
+        "Never claim a replay, test, or improvement you did not observe.",
+        "Do not commit, push, publish, install, or change live configuration unless the "
+        "user explicitly asks.",
+    ):
+        assert phrase in content, phrase
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
