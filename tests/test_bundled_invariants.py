@@ -42,7 +42,6 @@ INPUT_MARKER_EXEMPT = frozenset(
         "speechify.json",
         "image_generator.json",
         "project_decision_helper.json",
-        "finance_review.json",
         "espansr_help.json",
         "git_yolo_sh.json",
         "git_rebase_sh.json",

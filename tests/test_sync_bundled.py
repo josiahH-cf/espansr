@@ -2421,6 +2421,71 @@ def test_bundled_project_decision_helper_template_contract():
     assert content.rstrip().endswith("quick, or deep.")
 
 
+def test_bundled_finance_review_template_contract():
+    """:finance-review keeps the household's structure and rules but hard-codes no values."""
+    data = _bundled("finance_review.json")
+    content = data["content"]
+
+    assert data["name"] == "Finance Review"
+    assert data["trigger"] == ":finance-review"
+    assert data["category"] == "analysis"
+    assert data["stage"] == "finance-review"
+    assert data["next_triggers"] == []
+    assert data["replaces"] == []
+
+    for phrase in (
+        # Authoring requests never execute the review or touch records.
+        "AUTHORING-ONLY OVERRIDE: If my actual request is to edit, test, critique, or rewrite "
+        "this prompt or its workflow, perform only that authoring task.",
+        "Do not execute the financial review, access financial/email records, or modify a "
+        "live automation.",
+        # Read-only authority; no external changes or background work.
+        "They do not authorize provider-category writes, payments, cancellations, loan-plan "
+        "changes, trades, mailbox changes, or financial-memory writes.",
+        "Do not schedule reviews, monitor in the background, install apps, create tasks, or "
+        "publish private material externally.",
+        "Discovery alone is not access.",
+        # Unknown loan payments stay unknown; credentials never enter chat.
+        "Missing required payments remain unknown, not $0.",
+        "Never ask for credentials or one-time codes in chat.",
+        "unknown debt payments cannot become zero.",
+        # Current values come from the finance context; the household's intent stays here.
+        "Current values come from my finance context, never from this prompt.",
+        "the finance context of the place I run this review",
+        "never invent a value.",
+        "my Nelnet account and my wife's separate Nelnet account",
+        "Fidelity's employer 401(k) belongs in household retirement",
+        "Coalfire and All Care Health are ongoing ordinary payroll",
+        "Budget categories, unless my finance context defines a newer set:",
+        # Exclusions are record-specific, nothing is fabricated, the reserve counts once.
+        "These are record-specific exclusions, not merchant-wide rules",
+        "report unlocated exclusions without fabricating records.",
+        "do not subtract a total that already includes a reserve and then subtract that "
+        "reserve again.",
+        # One decision packet, then automatic delivery and a reusable carry-forward note.
+        "“Review to finalize — [period]”",
+        "Do not create a questionnaire tool, review file, or approval form.",
+        "After my answers, resume calculation and delivery automatically without a new "
+        "command or final approval request.",
+        "Produce 3–5 actual searchable-text pages, normally four",
+        "Return an attachment/link only after confirming the file exists.",
+        "a compact dated carry-forward note that the next review can use as its complete "
+        "baseline",
+    ):
+        assert phrase in content, phrase
+
+    # No actual values: amounts, last-four labels, years, and dated records stay out.
+    # "$0" is the unknown-loan rule and "$25" the range rounding step.
+    assert set(re.findall(r"\$\d[\d,]*(?:\.\d+)?", content)) <= {"$0", "$25"}
+    assert not re.search(r"(?<!\d)\d{4}(?!\d)", content)
+    month = (
+        r"(?:January|February|March|April|May|June|July|August|September|October|November|December)"
+    )
+    assert not re.search(month + r" \d", content)
+
+    assert content.endswith(INLINE_CONTEXT_FOOTER)
+
+
 def test_bundled_project_personal_growth_template_contract():
     """:project-personal-growth guides sessions and keeps records without doing my thinking."""
     data = _bundled("project_personal_growth.json")
