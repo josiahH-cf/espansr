@@ -165,3 +165,50 @@ def test_install_json_is_written_atomically(tmp_path):
     assert loaded is not None
     assert loaded.repo_dir == str(tmp_path / "repo")
     assert _no_temp_files(tmp_path)
+
+
+def test_replace_retries_while_another_process_holds_the_destination(tmp_path):
+    """Espanso reloading espansr.yml held it open and failed a reinstall on Windows."""
+    destination = tmp_path / "espansr.yml"
+    destination.write_text("old")
+    real_replace = atomic.os.replace
+    attempts = []
+
+    def flaky_replace(source, target):
+        attempts.append(target)
+        if len(attempts) < 3:
+            raise PermissionError(5, "Access is denied")
+        real_replace(source, target)
+
+    with (
+        patch.object(atomic.os, "replace", side_effect=flaky_replace),
+        patch.object(atomic.time, "sleep") as sleep,
+    ):
+        atomic.atomic_write_bytes(destination, b"new")
+
+    assert destination.read_bytes() == b"new"
+    assert len(attempts) == 3
+    assert sleep.call_count == 2
+    assert _no_temp_files(tmp_path)
+
+
+def test_replace_gives_up_after_bounded_attempts_and_cleans_up(tmp_path):
+    destination = tmp_path / "espansr.yml"
+    destination.write_text("old")
+
+    with (
+        patch.object(
+            atomic.os, "replace", side_effect=PermissionError(5, "Access is denied")
+        ) as replace,
+        patch.object(atomic.time, "sleep"),
+    ):
+        try:
+            atomic.atomic_write_bytes(destination, b"new")
+        except PermissionError:
+            pass
+        else:
+            raise AssertionError("expected PermissionError")
+
+    assert replace.call_count == atomic._REPLACE_ATTEMPTS
+    assert destination.read_text() == "old"
+    assert _no_temp_files(tmp_path)

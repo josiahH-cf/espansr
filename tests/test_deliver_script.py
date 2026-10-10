@@ -25,10 +25,12 @@ PASSING = json.dumps([{"name": "ci (3.12)", "bucket": "pass"}])
 class FakeRunner:
     """Scripted stand-in for subprocess: records argv, answers by substring."""
 
-    def __init__(self, live_dir: Path, overrides=None, status=None):
+    def __init__(self, live_dir: Path, overrides=None, status=None, matches=None):
         self.calls: list[list[str]] = []
         self.overrides = overrides or {}
         self.live_dir = live_dir
+        template = json.loads((ROOT / TEMPLATE).read_text(encoding="utf-8"))
+        self.matches = {template["trigger"]: template["content"]} if matches is None else matches
         self.pr_created = False
         self.status = status if status is not None else f" M {TEMPLATE}\n M unrelated.txt\n"
 
@@ -59,7 +61,8 @@ class FakeRunner:
         if key.endswith("-m espansr doctor"):
             return 0, "[ok]   Validation: all templates valid\n" + deliver.INDEPENDENT_LINE, ""
         if "get_templates_dir" in key:
-            return 0, f"{self.live_dir}\n", ""
+            state = {"templates_dir": str(self.live_dir), "matches": self.matches}
+            return 0, json.dumps(state), ""
         if key.startswith("git rev-parse --short"):
             return 0, "abc1234\n", ""
         return 0, "", ""
@@ -122,7 +125,7 @@ def test_delivers_through_every_stage_in_order(live_dir, capsys):
     assert positions == sorted(positions)
     summary = capsys.readouterr().out
     assert "DELIVERY SUMMARY" in summary
-    assert f"installed copies match main: {TEMPLATE}" in summary
+    assert f"installed copies and Espanso expansions match main: {TEMPLATE}" in summary
     assert deliver.INDEPENDENT_LINE in summary
 
 
@@ -186,3 +189,9 @@ def test_failed_reinstall_stops_with_its_own_exit_code(live_dir):
     runner = FakeRunner(live_dir, overrides={"-m espansr refresh": (1, "")})
     assert _delivery(runner).deliver() == deliver.EXIT_INSTALL
     assert not runner.ran("espansr doctor")
+
+
+def test_verify_detects_a_stale_espanso_expansion(live_dir):
+    """The store can update while the match file write fails; the trigger then expands old text."""
+    runner = FakeRunner(live_dir, matches={":one-shot": "old text"})
+    assert _delivery(runner).deliver() == deliver.EXIT_VERIFY
