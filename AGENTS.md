@@ -75,7 +75,7 @@ Running the loop unattended:
 
 - `gh` must be authenticated with push access to the repository.
 - Claude Code: `.claude/settings.json` allows the commands the loop needs; see `CLAUDE.md` for its delivery rules.
-- Codex: delivery writes outside the repository (the installed templates and the Espanso configuration) and needs the network, so run it with full access and no approval prompts, for example `codex -s danger-full-access -a never`.
+- Codex: delivery writes outside the repository (the installed templates and the Espanso configuration) and needs the network, so run it with full access and no approval prompts, for example `codex -s danger-full-access -a never`, or use `codex exec -s danger-full-access "<request>"` for non-interactive one-shot runs.
 
 ## Branches
 
