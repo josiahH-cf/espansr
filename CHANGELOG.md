@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Windows Espanso restarts (`publish`, `setup`, `refresh`, `sync`) now start
+  the daemon through WMI, outside the job object of whatever program ran
+  espansr. A daemon started from an agent host, IDE, or similar app no longer
+  stops, taking every trigger with it, when that app closes; `espanso restart`
+  remains the fallback. `espansr doctor` warns on Windows when Espanso is not
+  running or is running inside another program's process group.
+- `:template-builder` and `:one-shot` run a named install operation such as
+  a reinstall exactly as the project defines it instead of a lighter
+  substitute, report the exact commands, and confirm that restarted services
+  run independently of the session. `AGENTS.md` defines reinstall as
+  `espansr refresh`.
+
 - Installers now install or upgrade standard Espanso runtimes to 2.4.1+ so
   native usage counters work after installation. Windows and WSL share the
   official, checksum-verified per-user installer; Linux preserves existing

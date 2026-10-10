@@ -999,8 +999,115 @@ def _find_espanso_executable() -> str | None:
     return None
 
 
+def _windows_wmi_start_script(exe: str) -> str:
+    """PowerShell that starts ``exe service start`` through WMI, hidden.
+
+    ``Win32_Process.Create`` launches the process from the WMI provider host in
+    the caller's desktop session, so it does not inherit the caller's Windows
+    job object. The script exits with the method's return value (0 = started).
+    """
+    command_line = f'"{exe}" service start'
+    if exe.lower().endswith((".cmd", ".bat")):
+        command_line = f"cmd.exe /c {command_line}"
+    literal = command_line.replace("'", "''")
+    return (
+        "$si = New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly "
+        "-Property @{ ShowWindow = [uint16]0 }; "
+        "$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create "
+        f"-Arguments @{{ CommandLine = '{literal}'; ProcessStartupInformation = $si }}; "
+        "exit [int]$r.ReturnValue"
+    )
+
+
+def _restart_espanso_outside_job_windows(exe: str) -> bool:
+    """Stop Espanso, then start it so it outlives the program that ran espansr.
+
+    A Windows process inherits its parent's job object. When espansr runs from
+    an app that groups its child processes in a job (an agent host, an IDE,
+    some terminals), a daemon started with ``espanso restart`` joins that job
+    and is terminated when the app closes, leaving every trigger dead until
+    the next sign-in. Starting it through WMI keeps it independent. Returns
+    True when the start was launched; the caller still verifies the status.
+    """
+    import base64
+
+    script = _windows_wmi_start_script(exe)
+    encoded = base64.b64encode(script.encode("utf-16-le")).decode("ascii")
+    try:
+        # A stop failure only means Espanso was not running; start it anyway.
+        _run_detached([exe, "service", "stop"], timeout=20)
+        result = _run_detached(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded],
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return result.returncode == 0
+
+
+def _espansod_pids() -> list[int]:
+    """Return the PIDs of running ``espansod.exe`` processes on Windows."""
+    import csv
+
+    result = _run_quiet(
+        ["tasklist", "/FI", "IMAGENAME eq espansod.exe", "/FO", "CSV", "/NH"], timeout=10
+    )
+    pids = []
+    for row in csv.reader(result.stdout.splitlines()):
+        if len(row) > 1 and row[0].lower() == "espansod.exe" and row[1].isdigit():
+            pids.append(int(row[1]))
+    return pids
+
+
+def _process_in_job(pid: int) -> Optional[bool]:
+    """Whether ``pid`` belongs to a Windows job object (None when unknown)."""
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel32.IsProcessInJob.restype = wintypes.BOOL
+    kernel32.IsProcessInJob.argtypes = (
+        wintypes.HANDLE,
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.BOOL),
+    )
+    kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
+    process_query_limited_information = 0x1000
+    handle = kernel32.OpenProcess(process_query_limited_information, False, pid)
+    if not handle:
+        return None
+    try:
+        in_job = wintypes.BOOL(False)
+        if not kernel32.IsProcessInJob(handle, None, ctypes.byref(in_job)):
+            return None
+        return bool(in_job.value)
+    finally:
+        kernel32.CloseHandle(handle)
+
+
+def espanso_job_membership() -> Optional[dict[int, Optional[bool]]]:
+    """Map each running Espanso process to whether it belongs to a job object.
+
+    Native Windows only; returns None elsewhere or when the check cannot run.
+    An empty mapping means Espanso is not running. A process inside a job
+    object stops when the program that owns the job closes.
+    """
+    if not is_windows() or is_wsl2():
+        return None
+    try:
+        return {pid: _process_in_job(pid) for pid in _espansod_pids()}
+    except (OSError, subprocess.SubprocessError, AttributeError):
+        return None
+
+
 def restart_espanso() -> bool:
     """Restart the Espanso daemon and verify it reports running afterwards.
+
+    On native Windows the daemon is started outside the caller's job object
+    first (see ``_restart_espanso_outside_job_windows``); ``espanso restart``
+    remains the fallback when that start cannot be launched or verified.
 
     Returns:
         True only when the restart command succeeded and ``espanso status``
@@ -1018,6 +1125,12 @@ def restart_espanso() -> bool:
         restart_argv = [exe, "restart"]
         status_argv = [exe, "status"]
         hint = "run 'espanso restart' manually"
+        if (
+            is_windows()
+            and _restart_espanso_outside_job_windows(exe)
+            and _wait_for_espanso_running(status_argv, attempts=10)
+        ):
+            return True
 
     try:
         result = _run_detached(restart_argv, timeout=20)

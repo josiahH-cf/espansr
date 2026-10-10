@@ -931,6 +931,24 @@ def cmd_doctor(args) -> int:
             "open a new login shell or add it to your shell profile"
         )
 
+    # 6d. Espanso independence (native Windows). Warn-only: a daemon inside
+    # another program's job object stops, with every trigger, when that program
+    # closes; one that is not running expands nothing.
+    if platform == "windows":
+        from espansr.integrations.espanso import espanso_job_membership
+
+        membership = espanso_job_membership()
+        if membership == {}:
+            _warn("Espanso process: not running; run 'espansr publish' to start it")
+        elif membership and any(membership.values()):
+            _warn(
+                "Espanso process: running inside another program's process group and "
+                "will stop when that program closes; run 'espansr publish' to restart "
+                "it independently"
+            )
+        elif membership and all(in_job is False for in_job in membership.values()):
+            _ok("Espanso process: running independently")
+
     # 7. Template validation
     warnings = validate_all()
     errors = [w for w in warnings if w.severity == "error"]

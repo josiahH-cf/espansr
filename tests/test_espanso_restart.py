@@ -2,8 +2,13 @@
 report running afterwards (``espansr.integrations.espanso.restart_espanso``
 and ``_restart_espanso_wsl2``)."""
 
+import base64
+import os
 import subprocess
+import sys
 from unittest.mock import patch
+
+import pytest
 
 from espansr.integrations import espanso
 
@@ -225,6 +230,7 @@ def test_restart_command_does_not_inherit_pipes():
         patch.object(espanso, "is_wsl2", return_value=False),
         patch.object(espanso, "is_windows", return_value=True),
         patch.object(espanso, "_find_espanso_executable", return_value="C:/espanso.cmd"),
+        patch.object(espanso, "_restart_espanso_outside_job_windows", return_value=False),
         patch.object(espanso.subprocess, "run", side_effect=_recording_run(seen)),
         patch("time.sleep"),
     ):
@@ -252,3 +258,109 @@ def test_wsl2_service_commands_do_not_inherit_pipes():
         for handle in ("stdin", "stdout", "stderr"):
             assert kwargs[handle] is subprocess.DEVNULL, (argv, handle)
     assert seen[2][1].get("capture_output") is True
+
+
+# ── Native Windows: the daemon is started outside the caller's job object ─────
+
+_real_espanso_job_membership = espanso.espanso_job_membership
+_WINDOWS_EXE = r"C:\Esp\espansod.exe"
+
+
+def _decoded_script(argv):
+    assert argv[:4] == ["powershell.exe", "-NoProfile", "-NonInteractive", "-EncodedCommand"]
+    return base64.b64decode(argv[4]).decode("utf-16-le")
+
+
+def _windows_runner(wmi_rc=0):
+    seen = []
+
+    def fake_run(argv, **kwargs):
+        seen.append((list(argv), kwargs))
+        if argv[0] == "powershell.exe":
+            return _cp(argv, wmi_rc)
+        if argv[-1] == "status":
+            return _cp(argv, 0, stdout="espanso is running\n")
+        return _cp(argv, 0)
+
+    return fake_run, seen
+
+
+def test_restart_windows_starts_daemon_outside_the_callers_job():
+    """An agent host or IDE that groups its children in a job would otherwise
+    take Espanso down with it when it closes, leaving every trigger dead."""
+    fake_run, seen = _windows_runner()
+    with (
+        patch.object(espanso, "is_wsl2", return_value=False),
+        patch.object(espanso, "is_windows", return_value=True),
+        patch.object(espanso, "_find_espanso_executable", return_value=_WINDOWS_EXE),
+        patch.object(espanso.subprocess, "run", side_effect=fake_run),
+        patch("time.sleep"),
+    ):
+        assert _real_restart_espanso() is True
+
+    argvs = [argv for argv, _ in seen]
+    assert argvs[0] == [_WINDOWS_EXE, "service", "stop"]
+    script = _decoded_script(argvs[1])
+    assert "Invoke-CimMethod -ClassName Win32_Process -MethodName Create" in script
+    assert f"'\"{_WINDOWS_EXE}\" service start'" in script
+    assert "ShowWindow = [uint16]0" in script
+    assert argvs[2] == [_WINDOWS_EXE, "status"]
+    assert not any(argv[-1] == "restart" for argv in argvs)
+    for _, kwargs in seen[:2]:
+        for handle in ("stdin", "stdout", "stderr"):
+            assert kwargs[handle] is subprocess.DEVNULL, handle
+
+
+def test_restart_windows_falls_back_to_espanso_restart_when_wmi_start_fails():
+    fake_run, seen = _windows_runner(wmi_rc=1)
+    with (
+        patch.object(espanso, "is_wsl2", return_value=False),
+        patch.object(espanso, "is_windows", return_value=True),
+        patch.object(espanso, "_find_espanso_executable", return_value=_WINDOWS_EXE),
+        patch.object(espanso.subprocess, "run", side_effect=fake_run),
+        patch("time.sleep"),
+    ):
+        assert _real_restart_espanso() is True
+
+    argvs = [argv for argv, _ in seen]
+    assert [_WINDOWS_EXE, "restart"] in argvs
+    assert argvs[-1] == [_WINDOWS_EXE, "status"]
+
+
+def test_windows_wmi_start_script_quotes_paths_and_wraps_batch_files():
+    script = espanso._windows_wmi_start_script(r"C:\Users\o'brien\espansod.exe")
+    assert r"""'"C:\Users\o''brien\espansod.exe" service start'""" in script
+    batch = espanso._windows_wmi_start_script(r"C:\Esp\espanso.cmd")
+    assert r"""'cmd.exe /c "C:\Esp\espanso.cmd" service start'""" in batch
+
+
+def test_espansod_pids_parses_tasklist_csv():
+    output = (
+        '"espansod.exe","6760","Console","1","15,668 K"\n'
+        '"espansod.exe","27592","Console","1","28,940 K"\n'
+    )
+    with patch.object(espanso, "_run_quiet", return_value=_cp([], 0, stdout=output)):
+        assert espanso._espansod_pids() == [6760, 27592]
+    none_running = "INFO: No tasks are running which match the specified criteria.\n"
+    with patch.object(espanso, "_run_quiet", return_value=_cp([], 0, stdout=none_running)):
+        assert espanso._espansod_pids() == []
+
+
+def test_espanso_job_membership_maps_each_process():
+    with (
+        patch.object(espanso, "is_windows", return_value=True),
+        patch.object(espanso, "is_wsl2", return_value=False),
+        patch.object(espanso, "_espansod_pids", return_value=[11, 22]),
+        patch.object(espanso, "_process_in_job", side_effect=lambda pid: pid == 22),
+    ):
+        assert _real_espanso_job_membership() == {11: False, 22: True}
+
+
+def test_espanso_job_membership_is_none_off_windows():
+    with patch.object(espanso, "is_windows", return_value=False):
+        assert _real_espanso_job_membership() is None
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows job objects only")
+def test_process_in_job_reads_a_real_process():
+    assert espanso._process_in_job(os.getpid()) in (True, False)

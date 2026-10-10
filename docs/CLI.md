@@ -210,7 +210,7 @@ espansr import /path/to/templates/
 
 ### `espansr doctor`
 
-Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning. On Windows the check looks for the `espansr.cmd` launcher that `install.ps1` writes and warns when its directory is not on the current process PATH (open a new shell after installing).
+Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning. On Windows the check looks for the `espansr.cmd` launcher that `install.ps1` writes and warns when its directory is not on the current process PATH (open a new shell after installing). On Windows it also warns when Espanso is not running, or is running inside another program's process group (job object), where it stops with every trigger when that program closes; `espansr publish` restarts it independently.
 
 Like `list`, `validate`, and `gui`, `doctor` first pulls the configured template remote when one is set and `remote.auto_pull` is on (the default); a failed auto-pull is logged and never blocks the command.
 
