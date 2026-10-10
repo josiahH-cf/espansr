@@ -2934,8 +2934,14 @@ def test_bundled_template_builder_template_contract():
         # Delivery uses the project's own route and proves installed parity.
         "use the project's established commit, push, and merge route and its existing "
         "install or update operation",
-        "Prefer the narrowest operation that matches the stage over a broad sync",
+        # A named operation such as reinstall runs as defined, never a lighter substitute.
+        "Run the install or update operation the user names exactly as the project defines "
+        "it, such as its documented reinstall, and never substitute a lighter step for it",
+        "otherwise avoid an operation that would commit or push unrelated changes.",
         "Verify that the published revision and installed copy match",
+        "confirm that any service the install restarted is still running independently of "
+        "your session",
+        "the exact publish and install commands run and their evidence",
         "do not substitute another route or claim a run you did not observe",
         # Each iteration closes with a reality summary and asks for the next input.
         "End each iteration with a short reality summary",
@@ -3243,7 +3249,11 @@ def test_bundled_one_shot_template_contract():
         "Review the finished work as an independent skeptic against the original request",
         # Delivery through the project's route, with hard safety limits.
         "wait for required checks to pass, merge with the project's usual method",
+        "exactly as defined and never a lighter substitute",
         "confirm that the delivered revision is what is installed or running.",
+        "When a step starts or restarts a long-running service, confirm it runs independently "
+        "of your own session",
+        "with the exact commands run",
         "Never force-push, rewrite shared history, bypass hooks or branch protection, merge "
         "failing checks, or commit secrets or private data.",
         "Outside a repository, the deliverable is the finished result itself",

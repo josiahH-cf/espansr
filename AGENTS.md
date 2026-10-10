@@ -38,6 +38,12 @@ For focused repository maintenance:
 
 Routine work in this repository only needs clear scope, focused edits, normal tests, and normal CI.
 
+## Install and Reinstall
+
+- "Reinstall" means `espansr refresh`, which reruns `install.ps1` on Windows or `install.sh` on Linux, macOS, and WSL2. `espansr sync` pulls, commits and pushes local changes, and then reinstalls. `espansr publish` only re-syncs templates to Espanso and is not a reinstall.
+- When asked to reinstall, run `espansr refresh`, never a lighter step, and name the exact command you ran in your report.
+- After any step that restarts Espanso, run `espansr doctor` and confirm it reports `Espanso process: running independently`. A Windows daemon left inside the calling program's process group stops, with every trigger, when that program closes.
+
 ## Branches
 
 Use short descriptive branches when needed, such as `agent/type-short-description` or `user/type-short-description`, where `type` is usually `feat`, `bug`, `refactor`, `chore`, or `docs`.

@@ -23,6 +23,11 @@ black --check .
 
 Use normal task-by-task maintenance; no separate project-state machine or automated review path is required.
 
+## Reinstall and Espanso
+
+- Follow the Install and Reinstall rules in `AGENTS.md`: "reinstall" is `espansr refresh`, and a report names the exact command; never describe `espansr publish` as a reinstall.
+- On Windows, processes started from Claude Code's tools run inside the Claude app's process group (job object) and stop when the session closes. espansr starts Espanso outside it, but after any reinstall or publish confirm that `espansr doctor` reports `Espanso process: running independently`; if it does not, say so and ask the user to start Espanso from the Start menu.
+
 ## Local Overrides
 
 - Use `/CLAUDE.local.md` for personal behavior preferences.

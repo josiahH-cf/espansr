@@ -373,3 +373,35 @@ def test_doctor_reports_command_availability(run_doctor, tmp_path):
     # Both lines should appear: the shim status line and the PATH warning.
     assert "[warn] Command availability" in output
     assert "is not on PATH" in output
+
+
+# ─── Espanso independence (native Windows) ───────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("membership", "expected"),
+    [
+        ({}, "[warn] Espanso process: not running"),
+        ({11: False, 22: True}, "[warn] Espanso process: running inside another program"),
+        ({11: False, 22: False}, "[ok]   Espanso process: running independently"),
+        ({11: False, 22: None}, None),  # unreadable process: claim nothing
+    ],
+)
+def test_doctor_reports_espanso_process_independence_on_windows(run_doctor, membership, expected):
+    """A daemon owned by another program's job dies with it; doctor says so, warn-only."""
+    with patch("espansr.integrations.espanso.espanso_job_membership", return_value=membership):
+        exit_code, output = run_doctor(platform="windows")
+
+    assert exit_code == 0
+    if expected is None:
+        assert "Espanso process" not in output
+    else:
+        assert expected in output
+
+
+def test_doctor_skips_espanso_process_check_off_windows(run_doctor):
+    with patch("espansr.integrations.espanso.espanso_job_membership") as membership:
+        _, output = run_doctor(platform="linux")
+
+    membership.assert_not_called()
+    assert "Espanso process" not in output

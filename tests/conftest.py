@@ -117,11 +117,13 @@ def _mock_restart_espanso():
     restart_espanso itself; this autouse fixture is a no-op for those tests
     and stops accidental real Espanso invocations in every other test.
     The WSL2 path (``_restart_espanso_wsl2`` stops and starts the Windows
-    service through powershell.exe) is stubbed for the same reason.
+    service through powershell.exe) is stubbed for the same reason, and so is
+    the Windows process probe ``doctor`` uses (``espanso_job_membership``).
     """
     with (
         patch("espansr.integrations.espanso.restart_espanso", return_value=True),
         patch("espansr.integrations.espanso._restart_espanso_wsl2", return_value=None),
+        patch("espansr.integrations.espanso.espanso_job_membership", return_value=None),
     ):
         yield
 
