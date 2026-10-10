@@ -189,6 +189,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `AGENTS.md` now documents the non-interactive Codex command for one-shot runs.
 - **`:finance-review` — expanded and value-free** — the note keeps the
 	household's account structure, borrowers, payroll sources, budget
 	categories, and standing classification rules, but no longer hard-codes
