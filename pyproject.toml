@@ -21,7 +21,7 @@ dev = [
     "pytest>=8.0,<10",
     "pytest-qt>=4.4,<5",
     "ruff>=0.4,<1",
-    "black>=24.0,<27",
+    "black>=26.0,<27",
 ]
 
 [project.scripts]

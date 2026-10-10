@@ -28,6 +28,12 @@ Use normal task-by-task maintenance; no separate project-state machine or automa
 - Follow the Install and Reinstall rules in `AGENTS.md`: "reinstall" is `espansr refresh`, and a report names the exact command; never describe `espansr publish` as a reinstall.
 - On Windows, processes started from Claude Code's tools run inside the Claude app's process group (job object) and stop when the session closes. espansr starts Espanso outside it, but after any reinstall or publish confirm that `espansr doctor` reports `Espanso process: running independently`; if it does not, say so and ask the user to start Espanso from the Start menu.
 
+## Unattended Delivery
+
+- The user durably authorizes the `AGENTS.md` Template Delivery Loop in this repository. After "go", run `python scripts/deliver.py ...` without asking, including its wait for CI, its merge, and its reinstall.
+- Run it with `run_in_background` so the session resumes when it exits, then report its `DELIVERY SUMMARY` or its stop reason. This replaces waiting for the user to say "merge".
+- `deliver.py` is the only wait for CI: do not also poll checks, schedule wakeups, or turn on auto-merge.
+
 ## Local Overrides
 
 - Use `/CLAUDE.local.md` for personal behavior preferences.
