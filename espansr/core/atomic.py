@@ -6,8 +6,15 @@ import json
 import os
 import stat
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
+
+# Windows refuses to replace a file another process holds open without delete
+# sharing (Espanso reloading its match files, an editor, antivirus), reporting
+# "Access is denied". The hold lasts moments, so the replace is retried briefly.
+_REPLACE_ATTEMPTS = 20
+_REPLACE_MAX_DELAY = 0.5
 
 
 def atomic_write_bytes(path: Path | str, data: bytes, *, mode: int | None = None) -> None:
@@ -39,11 +46,24 @@ def atomic_write_bytes(path: Path | str, data: bytes, *, mode: int | None = None
             handle.flush()
             os.fsync(handle.fileno())
         os.chmod(temporary_path, inherited_mode)
-        os.replace(temporary_path, destination)
+        _replace(temporary_path, destination)
         _fsync_directory(destination.parent)
     except BaseException:
         temporary_path.unlink(missing_ok=True)
         raise
+
+
+def _replace(source: Path, destination: Path) -> None:
+    """``os.replace``, retried briefly while another process holds *destination*."""
+
+    for attempt in range(_REPLACE_ATTEMPTS):
+        try:
+            os.replace(source, destination)
+            return
+        except PermissionError:
+            if attempt == _REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(min(0.05 * (attempt + 1), _REPLACE_MAX_DELAY))
 
 
 def atomic_write_json(path: Path | str, value: Any) -> None:

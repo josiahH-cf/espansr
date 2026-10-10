@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Atomic writes of Espanso files retry briefly when Windows reports "Access
+  is denied" because another process, such as Espanso reloading its match
+  files, holds the destination open. A reinstall no longer fails on that
+  momentary race. `scripts/deliver.py` now verifies that each changed
+  template's Espanso expansion matches main, not only the installed copy,
+  and no longer crashes printing installer output on a Windows code page.
 - Windows Espanso restarts (`publish`, `setup`, `refresh`, `sync`) now start
   the daemon through WMI, outside the job object of whatever program ran
   espansr. A daemon started from an agent host, IDE, or similar app no longer

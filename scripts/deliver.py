@@ -36,6 +36,16 @@ from typing import Callable, Sequence
 ROOT = Path(__file__).resolve().parents[1]
 BRANCH_PATTERN = re.compile(r"^(agent|user)/(feat|bug|refactor|chore|docs)-[a-z0-9][a-z0-9-]*$")
 INDEPENDENT_LINE = "Espanso process: running independently"
+# Run with the project's Python: where templates are installed, and what each
+# espansr trigger expands to in Espanso's generated match file.
+INSTALLED_STATE_SCRIPT = (
+    "import json, yaml\n"
+    "from espansr.core.config import get_templates_dir\n"
+    "from espansr.integrations.espanso import get_match_dir\n"
+    "data = yaml.safe_load((get_match_dir() / 'espansr.yml').read_text(encoding='utf-8'))\n"
+    "matches = {m.get('trigger'): m.get('replace') for m in (data or {}).get('matches', [])}\n"
+    "print(json.dumps({'templates_dir': str(get_templates_dir()), 'matches': matches}))\n"
+)
 
 EXIT_PREFLIGHT, EXIT_CHECKS, EXIT_PUBLISH, EXIT_CI, EXIT_MERGE, EXIT_INSTALL, EXIT_VERIFY = (
     2,
@@ -316,31 +326,37 @@ class Delivery:
 
         templates = [p for p in self.paths if p.startswith("templates/") and p.endswith(".json")]
         if templates:
-            live_dir = self._must(
-                self._run(
-                    [
-                        self.python,
-                        "-c",
-                        "from espansr.core.config import get_templates_dir; "
-                        "print(get_templates_dir())",
-                    ]
-                ),
-                EXIT_VERIFY,
-                "locating the installed templates",
-            ).stdout.strip()
+            installed = json.loads(
+                self._must(
+                    self._run([self.python, "-c", INSTALLED_STATE_SCRIPT]),
+                    EXIT_VERIFY,
+                    "reading the installed templates and Espanso matches",
+                ).stdout
+            )
+            live_dir = Path(installed["templates_dir"])
+            matches = installed["matches"]
             matched = []
             for rel in templates:
                 source = ROOT / rel
                 if not source.is_file():
                     continue  # a removed template has no installed copy to compare
-                installed = Path(live_dir) / source.name
-                if not installed.is_file() or json.loads(
-                    installed.read_text(encoding="utf-8")
-                ) != json.loads(source.read_text(encoding="utf-8")):
+                expected = json.loads(source.read_text(encoding="utf-8"))
+                copy = live_dir / source.name
+                if not copy.is_file() or json.loads(copy.read_text(encoding="utf-8")) != expected:
                     raise DeliveryError(EXIT_VERIFY, f"installed copy differs from main: {rel}")
+                trigger = expected.get("trigger")
+                if trigger and (
+                    trigger not in matches
+                    or (not expected.get("variables") and matches[trigger] != expected["content"])
+                ):
+                    raise DeliveryError(
+                        EXIT_VERIFY, f"Espanso's {trigger} expansion differs from main: {rel}"
+                    )
                 matched.append(rel)
             if matched:
-                evidence.append(f"installed copies match main: {', '.join(matched)}")
+                evidence.append(
+                    f"installed copies and Espanso expansions match main: {', '.join(matched)}"
+                )
         return evidence
 
     def deliver(self) -> int:
@@ -377,6 +393,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--no-install", action="store_true", help="only when the user says so")
     parser.add_argument("--checks-timeout-minutes", type=float, default=45)
     args = parser.parse_args(argv)
+    # Installer output can hold characters a Windows console code page lacks;
+    # replace them rather than crash after the merge.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(errors="replace")
     if not shutil.which("gh"):
         print("DELIVERY STOPPED (exit 2): the GitHub CLI (gh) is not on PATH")
         return EXIT_PREFLIGHT
