@@ -44,6 +44,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Unattended template delivery loop** — `scripts/deliver.py` is the one
+	delivery route for every model: it commits only the listed paths, runs
+	`pytest`, `ruff`, `black`, and the discovery check in a clean worktree,
+	pushes, opens a pull request, waits for CI, squash-merges as `(#N)`,
+	reinstalls with `espansr refresh`, and verifies with `espansr doctor` and
+	installed-copy parity, stopping with a stage-specific exit code.
+	`AGENTS.md` defines the loop (ask, clarify once, "go", implement, deliver,
+	report, ask for the next change) and its house rules; `CLAUDE.md`
+	authorizes running it unattended; `:template-builder` follows a project's
+	own delivery loop and go-ahead word; `.claude/settings.json` allows the
+	commands it needs; `black` is pinned to CI's 26.x; and a governance test
+	keeps the rules in place.
+
 - **`:one-shot` — end-to-end delivery in one pass** — takes a request typed
 	after the trigger and, without questions, contextualizes it from project
 	instructions and current state, plans internally, implements, verifies with

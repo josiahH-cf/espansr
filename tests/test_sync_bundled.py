@@ -2934,6 +2934,13 @@ def test_bundled_template_builder_template_contract():
         # Delivery uses the project's own route and proves installed parity.
         "use the project's established commit, push, and merge route and its existing "
         "install or update operation",
+        # The loop asks for the change, and a go-ahead runs the project's own stage unattended.
+        "If no command idea or change has been given yet, ask for it and wait.",
+        "When the project's instructions define a delivery loop, delivery command, or "
+        "go-ahead word, follow them exactly",
+        'a go-ahead such as "go" authorizes the stage the project defines for it: carry that '
+        "stage through unattended, including waiting for checks, and stop only for a real "
+        "blocker.",
         # A named operation such as reinstall runs as defined, never a lighter substitute.
         "Run the install or update operation the user names exactly as the project defines "
         "it, such as its documented reinstall, and never substitute a lighter step for it",
