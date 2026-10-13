@@ -283,8 +283,11 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     ),
     HelpSection(
         "Source and capture prompts",
-        9,
-        ((":telegram", "run the directive from an accessible source or location"),),
+        16,
+        (
+            (":telegram", "run the directive from an accessible source or location"),
+            (":meeting-actions", "summarize a Pocket meeting and identify your supported actions"),
+        ),
     ),
     HelpSection(
         "Utility prompts",

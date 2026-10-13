@@ -116,6 +116,7 @@ COMMAND_GROUPS = (
             "revise",
             "cliche",
             "cb_agenda",
+            "meeting_actions",
         ),
         ("evidence-research-cycle",),
     ),
@@ -331,6 +332,10 @@ _CUES = {
         "Text needs clearer wording while preserving its meaning and tone.",
     ),
     "cliche": ("Humanize text", "Text contains formulaic AI phrasing and needs a natural voice."),
+    "meeting_actions": (
+        "Meeting actions",
+        "A Pocket transcript needs a concise meeting summary and your actions for review.",
+    ),
     "cb_agenda": (
         "Prepare meeting",
         "Project context needs to become an evidence-grounded, email-ready agenda.",
