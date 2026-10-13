@@ -36,7 +36,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
-- Source and capture prompts: `:telegram`
+- Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
 - File helpers: `:pocket-extract`
@@ -98,6 +98,14 @@ it is an ongoing spec-authoring loop that asks for the next batch. Both
 commands use a verified native authoring process and clarify until materially
 unblocked. Unlike `:cb-transcript-feature`, its
 entry point is any batch of ideas and it explicitly asks for the next batch.
+
+Use `:meeting-actions` to turn a Pocket meeting transcript into exactly two
+sections: **Meeting summary** and **My actions**. Paste the transcript after
+the final marker, optionally including the meeting date, speaker identities,
+and relevant context. The prompt identifies Jo (Josiah) by default, separates
+confirmed commitments from suggestions and uncertain ownership, and keeps the
+result in chat for manual review and copying into Todoist. `:pocket-extract`
+remains the separate PowerShell helper for collecting transcription files.
 
 Use `:revise` to clean up messaging while preserving the original meaning and
 following any style or wording direction included in the prompt input.

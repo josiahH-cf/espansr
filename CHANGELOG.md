@@ -50,6 +50,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Meeting Actions** - `:meeting-actions` turns a Pocket meeting transcript
+  into a concise meeting summary and supported action bullets for manual
+  review and copying into Todoist. It preserves ownership, uncertainty, and
+  the boundary between transcript data and instructions, and appears in the
+  quick help, docs, and live command reference.
+
 - **Unattended template delivery loop** — `scripts/deliver.py` is the one
 	delivery route for every model: it commits only the listed paths, runs
 	`pytest`, `ruff`, `black`, and the discovery check in a clean worktree,
