@@ -50,6 +50,7 @@ INPUT_MARKER_EXEMPT = frozenset(
         "git_rebase_ps.json",
         "git_branch_ps.json",
         "pocket_extract.json",
+        "pmi_auth.json",
         "tenable_scans.json",
     }
 )

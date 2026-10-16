@@ -41,7 +41,10 @@ export async function ensureAuthenticated(options) {
 }
 let ghStatusIndex = 0;
 export function spawnSync(command, args, options) {
-  record({ kind: "spawn", command, args, stdio: options.stdio });
+  record({
+    kind: "spawn", command, args, stdio: options.stdio,
+    promptDisabled: options.env?.GH_PROMPT_DISABLED,
+  });
   if (command === "git") {
     return { status: 0, stdout: scenario.remote ?? "https://github.com/example-owner/pmi.git" };
   }
@@ -214,6 +217,7 @@ def test_github_enrolls_once_using_its_browser_flow(tmp_path, diagnostic):
                 "--web",
             ],
             "stdio": [3, "inherit", "inherit"],
+            "promptDisabled": "1",
         }
     ]
 
