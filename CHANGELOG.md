@@ -50,6 +50,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **PMI Auth** - `:pmi-auth` expands into one WSL Bash command for GitHub,
+  Google CLI/ADC, and the canonical PMI Admin app. It reuses existing stores,
+  invokes browser enrollment only when needed, verifies the exact app identity
+  and Admin role, and preserves provider prerequisites and failure boundaries.
+  Private account and origin values resolve from the PMI checkout at runtime.
+  The command appears in quick help, docs, and the live command reference.
+
 - **Meeting Actions** - `:meeting-actions` turns a Pocket meeting transcript
   into a concise meeting summary and supported action bullets for manual
   review and copying into Todoist. It preserves ownership, uncertainty, and
