@@ -324,7 +324,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     HelpSection(
         "Security helpers",
         14,
-        ((":tenable-scans", "PowerShell: unpack and normalize Tenable .nessus scan archives"),),
+        (
+            (":tenable-scans", "PowerShell: unpack and normalize Tenable .nessus scan archives"),
+            (":pmi-auth", "WSL: authenticate GitHub, Google CLI/ADC, and the PMI Admin app"),
+        ),
     ),
 )
 

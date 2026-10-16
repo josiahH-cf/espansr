@@ -147,6 +147,7 @@ COMMAND_GROUPS = (
             "work_merge",
             "project_init_llm",
             "tenable_scans",
+            "pmi_auth",
             "pocket_extract",
             "espansr_help",
             "espansr-launcher",
@@ -384,6 +385,10 @@ _CUES = {
     "tenable_scans": (
         "Extract scans",
         "Scan ZIP files need extraction and consistent naming with PowerShell.",
+    ),
+    "pmi_auth": (
+        "Authenticate PMI",
+        "You need GitHub, Google CLI/ADC, and the PMI Admin app authenticated in WSL.",
     ),
     "espansr_help": (
         "Quick reference",

@@ -40,10 +40,25 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
 - File helpers: `:pocket-extract`
-- Security helpers: `:tenable-scans`
+- Security helpers: `:tenable-scans`, `:pmi-auth`
 <!-- END generated note list -->
 
 Use `:espansr` for the current quick reference list.
+
+`:pmi-auth` expands directly into one WSL Bash block. Run it from the PMI
+repository or let it locate the single Windows checkout under
+`/mnt/c/Users/*/Documents/github-windows/pmiKCkb_and_ownerRouter`. It checks
+existing provider configuration, reuses GitHub and Google CLI/ADC credentials,
+and restores the canonical PMI app's owner-admin browser session. GitHub
+browser login and PMI's existing Google/browser enrollment tools run only
+when enrollment is needed, once per phase; complete any required browser step
+while the command runs. Account and canonical-origin values come from the
+private PMI repository; the profile stays under the current WSL user's home.
+Permission errors, wrong identities, store overrides, unknown failures, and
+cancelled enrollments stop the command. Final verification checks the app's
+accepted session, exact account, and Admin role without exporting credentials
+or changing roles or provider configuration. There is no PowerShell launcher
+or AI prompt wrapper.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
