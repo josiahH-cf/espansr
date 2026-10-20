@@ -1,0 +1,40 @@
+{
+  "interface": "espansr-atomic-path-repair-qualification-v1",
+  "status": "candidate-qualified",
+  "boundary": "private Windows candidate; no new gateway or installed result claimed",
+  "condition_digest": "344b6958faa08784e267077b9bcec5c0450a089e88ce5d87de010db74adf1086",
+  "previous_candidate_commit": "36522dbfabf8194721b907edf96d722b73bed27f",
+  "previous_candidate_tree": "1374abb4934a2d5250199ec474ad069b0391a832",
+  "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+  "diagnostic_source": {
+    "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+    "bytes": 13222,
+    "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+  },
+  "actual_gateway_evidence": {
+    "action_id": "verify:744705b3bd874c6d7bcfdddea7931808d496273fb56c67f40440099091440306",
+    "status": "failed",
+    "exit_code": 1,
+    "lastfailed_cache_sha256": "92db470d0c8f38af31ccc1dab4008915784d5eae3bd4aed5a5830ab4aa9935f0",
+    "node": "tests/test_sync_bundled.py::test_sync_bundled_force_overwrites_invalid_local_json_with_backup",
+    "limits": "Original gateway assertion/exception remains unknown. Cache identifies the failed node; it does not establish its cause. Retained checkout/cache and shared history were not changed."
+  },
+  "local_reproduction": [
+    "The exact failed node independently failed against the old candidate in a separate native Windows clone: atomic_write_bytes could not create its long temporary backup path; original malformed bytes remained intact.",
+    "Negative control: the new Windows regression fails against the old atomic writer for a supported 247-character final path when its repeated temporary filename exceeds the limit.",
+    "The repaired writer passes all 15 original backup, atomic write and Espanso atomic checks in a fresh clone whose root is two characters longer than the observed gateway root.",
+    "Complete exact native policy commands in that fresh clone passed: 1536 tests, 13 existing platform skips, Ruff and Black. PYTHONPATH and PYTEST_ADDOPTS were unset.",
+    "A subsequent test-comment clarification changed no executable code; all 15 affected checks also pass on final comment bytes in the assigned checkout."
+  ],
+  "reproduction_output": "receipts/ds07/atomic-path-reproduction.txt",
+  "verification": "receipts/ds07/verification.json",
+  "repair": "Short exclusive .espansr- temporary sibling; final backup names, bytes, source preservation, fsync, mode, atomic replacement, retry and failure cleanup retained.",
+  "changed_source_git_blob_sha256": {
+    "CHANGELOG.md": "c937aa4d8e84ddaad8dc061cc324c6e1da29da389e2d5fa89b2291df11c20a82",
+    "espansr/core/atomic.py": "aa1cb97905f053fb859a8937d8df9ad521c7eb2105a961a3c8fe5227261a1243",
+    "tests/test_atomic_writes.py": "01df800c34f22a9264e1e637d43534c599100cf9865b34931ca649d62031e19b"
+  },
+  "preservation": "Original attempt/generation, Stop, full access, catalog behavior, earlier repair history and unrelated files retained. No publication, installation, external task or parent effect performed.",
+  "missing_check_commands": [],
+  "worker_remaining": []
+}

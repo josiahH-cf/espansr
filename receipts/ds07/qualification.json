@@ -3,23 +3,41 @@
   "status": "candidate-qualified",
   "boundary": "private Espansr contribution ready for existing gateway; not installed or delivered",
   "version_binding": "receipts/ds07/owner-handoff.json",
-  "implementation_manifest_sha256": "d3a8db3631c7685a6e26816690daaea4d7a09e0a13621d24c2ecf350364d8c97",
+  "implementation_manifest_sha256": "f249b2b634e62efe6d974ab2ef772baa801fbb347a1e3673b1fbb9b02fd5a99c",
   "coverage": "receipts/ds07/coverage.json",
   "evidence": [
-    "Plain native Windows policy gate with PYTEST_ADDOPTS and PYTHONPATH unset: 1535 passed, 13 existing platform skips; pytest, Ruff and Black exit 0.",
+    "Exact plain native Windows policy gate in a clean clone: 1536 passed, 13 existing platform skips; pytest, Ruff and Black exit 0. No PYTHONPATH or PYTEST_ADDOPTS override.",
     "Exact dependency candidate adapter probe: all 65 templates and 4 workflows match legacy adapter fields/digests; preparation and JSON frozen replay pass.",
     "Exact dependency export profile suite: 70 of 70 selected portable adapter/profile checks pass.",
     "Discovery generation check and Git whitespace checks pass.",
     "Actual command demonstration selects Gap Review from an evidence report and reports unavailable installation honestly.",
     "Disposable catalog publication contains all 69 definitions; no runtime context, defaults or private installed-only data exported.",
-    "Scoped plain-command teardown repair and two subprocess regression checks: receipts/ds07/repair-qualification.json."
+    "Scoped plain-command teardown repair and two subprocess regression checks: receipts/ds07/repair-qualification.json.",
+    "The actual failed gateway node was independently reproduced; short atomic temporary names and the Windows path-limit negative/positive controls are qualified in receipts/ds07/atomic-path-qualification.json."
   ],
   "checks": {
-    "boundary": "native-Windows-private-candidate",
+    "boundary": "native-Windows-clean-clone-candidate-source",
     "environment": {
       "PYTHONPATH": "unset",
       "PYTEST_ADDOPTS": "unset",
-      "note": "Exact plain policy commands; repository pytest configuration allocates a unique default test root. No external test override required."
+      "note": "Exact plain policy commands on a fresh Git clone plus only the three staged repair source files; package import verified inside that clone."
+    },
+    "source_snapshot": {
+      "tested_source_tree": "a910295dbc50b9096033aff15e9580ed6987ca36",
+      "base_commit": "36522dbfabf8194721b907edf96d722b73bed27f",
+      "changed_source_git_blob_sha256": {
+        "CHANGELOG.md": "c937aa4d8e84ddaad8dc061cc324c6e1da29da389e2d5fa89b2291df11c20a82",
+        "espansr/core/atomic.py": "aa1cb97905f053fb859a8937d8df9ad521c7eb2105a961a3c8fe5227261a1243",
+        "tests/test_atomic_writes.py": "f491452df041dc002f557b8a2c227b3febb3bec94bd58dfab94a1a9422ccd895"
+      },
+      "checkout_path_length": 93,
+      "observed_gateway_checkout_path_length": 91,
+      "post_gate_change": "Only a regression-test comment was clarified after the complete gate; executable code is identical. All 15 atomic/backup checks reran and passed on the final comment bytes.",
+      "final_changed_source_git_blob_sha256": {
+        "CHANGELOG.md": "c937aa4d8e84ddaad8dc061cc324c6e1da29da389e2d5fa89b2291df11c20a82",
+        "espansr/core/atomic.py": "aa1cb97905f053fb859a8937d8df9ad521c7eb2105a961a3c8fe5227261a1243",
+        "tests/test_atomic_writes.py": "01df800c34f22a9264e1e637d43534c599100cf9865b34931ca649d62031e19b"
+      }
     },
     "results": [
       {
@@ -31,9 +49,9 @@
         ],
         "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
         "exit_code": 0,
-        "seconds": 161.812,
+        "seconds": 178.281,
         "output": "receipts/ds07/pytest.txt",
-        "summary": "ests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 89%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 93%]\ntests\\test_usage_ui.py ...                                               [ 93%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 95%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py ................                                 [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1535 passed, 13 skipped in 160.85s (0:02:40) =================\n"
+        "summary": "                                [ 82%]\ntests\\test_sync_hardening.py ..............                              [ 83%]\ntests\\test_sync_trigger_feedback.py ..............                       [ 84%]\ntests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 89%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 93%]\ntests\\test_usage_ui.py ...                                               [ 93%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 95%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py ................                                 [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1536 passed, 13 skipped in 176.82s (0:02:56) =================\n"
       },
       {
         "name": "ruff",
@@ -46,7 +64,7 @@
         ],
         "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
         "exit_code": 0,
-        "seconds": 0.14,
+        "seconds": 0.422,
         "output": "receipts/ds07/ruff.txt",
         "summary": "All checks passed!\n"
       },
@@ -61,22 +79,29 @@
         ],
         "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
         "exit_code": 0,
-        "seconds": 0.531,
+        "seconds": 4.906,
         "output": "receipts/ds07/black.txt",
         "summary": "All done! \\u2728 \\U0001f370 \\u2728\n133 files would be left unchanged.\n"
       }
     ],
-    "skips": "9 POSIX installer cases and 4 POSIX shell alias cases are skipped by their existing Windows guards.",
-    "repair_of_candidate": "eec176a513a1f2859477d8a9c8c77495767074d5"
+    "skips": "13 existing POSIX-only cases skipped by their Windows guards.",
+    "repair_of_candidate": "36522dbfabf8194721b907edf96d722b73bed27f",
+    "diagnostic_source": {
+      "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+      "bytes": 13222,
+      "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+    }
   },
   "bounded_review": {
     "scope": "source/projection provenance, invalid and partial publication, route truth, old frozen selections, public boundary and useful discovery",
     "repairs": [
       "Shortened workflow backup names for Windows path limits, checking bytes before existing backup reuse.",
       "Changed accepted-input filtering to match alternative kinds; actual Gap Review command and regression assertions verify it.",
-      "Made unique checkout-owned pytest temp storage the default, removing the external environment workaround required by the original candidate."
+      "Made unique checkout-owned pytest temp storage the default, removing the external environment workaround required by the original candidate.",
+      "Short atomic temporary sibling names avoid repeating long final backup names; a real Windows 247-character destination regression and broader cleanup assertions preserve backup and atomic-write contracts."
     ],
-    "initial_environment_failure": "The original candidate local gate used a basetemp environment override; plain gateway pytest failed. Focused reproduction exposed shared pytest-current cleanup access denial. The repaired repository default and full unmodified policy command now pass with no test environment overrides."
+    "initial_environment_failure": "Historical first repair: focused local reproduction exposed shared pytest-current cleanup access denial; checkout-owned test roots passed the plain private gate. That evidence did not establish the cause of the subsequent gateway failure, which is separately bound in atomic-path-qualification.json.",
+    "latest_gateway_failure": "Actual gateway receipt remains failed and original traceback unknown. Its one cached node was reproduced separately; the repaired private clean-clone gate passes. Gateway requalification is owned by the delivery manager."
   },
   "missing_check_commands": [],
   "worker_remaining": [],
@@ -86,17 +111,19 @@
   "later_owner_descriptors": "receipts/ds07/owner-handoff.json",
   "artifacts_sha256": {
     "receipts/ds07/adapter-qualification.json": "5493ee6d850a9be58bd6de84c9b341a23ce1e93463d10eb0b44c0893fe395a3d",
+    "receipts/ds07/atomic-path-qualification.json": "30a525dfbf2b0bbed7ac4e70d2094bc365c4fafec9ef85c4054176e7f25d25cd",
+    "receipts/ds07/atomic-path-reproduction.txt": "97efb44970607283b30985fb6ebd599fbcce0c5eb001d45035a174af407bf8b8",
     "receipts/ds07/black.txt": "8aa2218180bea3b02b614acb8a0922e456d298ae341c57138cbf83ce94e7c7ef",
     "receipts/ds07/catalog-demo.txt": "f261c2d2501f0ff00f8cb5823b3cc681fda53e304027f625e3926d990cb73c1e",
     "receipts/ds07/catalog-example.json.gz": "cab744e646c14eac39defa09ce2cd274226909ff9aa11077aba1ceffdd4588dc",
     "receipts/ds07/coverage.json": "1b5e7b8a27684c33a95b31a809d935ba8d476abba29f45cb56158745b71526d7",
     "receipts/ds07/oa-profile-qualification.json": "0379ca4ac829262b73afe01677b28c91ee48013b940afc54962473dee380f2a5",
-    "receipts/ds07/owner-handoff.json": "ac1a7159ff7ee61a7ffa30d7cec24780aa59c034478171e7d1c9a301618f39b4",
-    "receipts/ds07/pytest.txt": "ed4af6cb5e9214e2386fafe32093ce9a5579452ace53bc61fd6e68add693c017",
+    "receipts/ds07/owner-handoff.json": "0128738cbda88cd40767e4a5e251f138e832871a52ab3c7b6834a89af537b56b",
+    "receipts/ds07/pytest.txt": "3eaee2a82a061ecc2c46a33dd3ffcae5eb2d80aac769caf0b2200bce1784f54b",
     "receipts/ds07/repair-qualification.json": "f4fc62f8f51bf24be1fe45e52c08ee52ca3f44a97f11ff2b7549b2ad3e8f6932",
     "receipts/ds07/repair-reproduction.txt": "1443045157a28fb446b5d589402d1665a070e4d2f645b6162c8239303d7d2e96",
     "receipts/ds07/ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
-    "receipts/ds07/verification.json": "0d3833a0d5934f4a618ed2ae2e2a40f8c980a455af067bec7b8d7b877b5ed008"
+    "receipts/ds07/verification.json": "2cb4f260ab82fffde4b7810fc174a126d17d905a09f45a396ff0891f3928cd9a"
   },
   "artifact_hash_basis": "Canonical LF text bytes as stored in Git; compressed fixture bytes are unchanged. Native source-definition byte hashes inside the fixture retain their actual observed bytes.",
   "retained_test_scratch": {
@@ -104,5 +131,10 @@
     "disposition": "Ignored test scratch retained locally, including ds07-focused-retained; outside the committed candidate.",
     "reason": "Automatic approval review twice rejected recursive deletion as blocked by policy; a non-destructive move preserved all bytes under the existing ignored test root."
   },
-  "repair": "receipts/ds07/repair-qualification.json"
+  "repair": "receipts/ds07/atomic-path-qualification.json",
+  "diagnostic_source": {
+    "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+    "bytes": 13222,
+    "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+  }
 }

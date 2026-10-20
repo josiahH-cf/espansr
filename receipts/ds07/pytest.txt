@@ -1,14 +1,14 @@
 ============================= test session starts =============================
 platform win32 -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0
 PyQt6 6.11.0 -- Qt runtime 6.11.1 -- Qt compiled 6.11.0
-rootdir: <workspace>
+rootdir: <qualification-checkout>
 configfile: pyproject.toml
 testpaths: tests
 plugins: qt-4.5.0
-collected 1548 items
+collected 1549 items
 
 tests\test_atomic_espanso_writes.py ........                             [  0%]
-tests\test_atomic_writes.py .....                                        [  0%]
+tests\test_atomic_writes.py ......                                       [  0%]
 tests\test_bundled_invariants.py ....................................... [  3%]
 ........................................................................ [  8%]
 ........................................................................ [ 12%]
@@ -33,9 +33,9 @@ tests\test_console_encoding.py .....                                     [ 27%]
 tests\test_decision_helper_prompt.py .........                           [ 28%]
 tests\test_deliver_script.py ...........                                 [ 28%]
 tests\test_delivery_governance.py ....                                   [ 29%]
-tests\test_discovery_sync.py ..............                              [ 29%]
+tests\test_discovery_sync.py ..............                              [ 30%]
 tests\test_doctor.py ......................                              [ 31%]
-tests\test_dry_run.py .........                                          [ 31%]
+tests\test_dry_run.py .........                                          [ 32%]
 tests\test_espanso.py ............................                       [ 33%]
 tests\test_espanso_restart.py .....................                      [ 35%]
 tests\test_espanso_roundtrip.py .                                        [ 35%]
@@ -63,7 +63,7 @@ tests\test_output_contract.py ...................                        [ 55%]
 tests\test_packet_dialog.py ......                                       [ 55%]
 tests\test_packet_hardening.py ............                              [ 56%]
 tests\test_packets.py .................                                  [ 57%]
-tests\test_path_consolidation.py ......................                  [ 58%]
+tests\test_path_consolidation.py ......................                  [ 59%]
 tests\test_personal_growth_prompt.py ...........                         [ 59%]
 tests\test_platform.py ..................................                [ 61%]
 tests\test_pmi_auth_template.py ........................................ [ 64%]
@@ -101,4 +101,4 @@ tests\test_workflow_diagrams.py ..................                       [ 98%]
 tests\test_workflows.py ................                                 [ 99%]
 tests\test_wsl_install_wrapper.py ....                                   [100%]
 
-================ 1535 passed, 13 skipped in 160.85s (0:02:40) =================
+================ 1536 passed, 13 skipped in 176.82s (0:02:56) =================

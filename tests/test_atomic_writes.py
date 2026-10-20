@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,7 @@ def test_atomic_write_replaces_complete_file_and_leaves_no_temporary_file(tmp_pa
     atomic_write_bytes(target, b"complete replacement")
 
     assert target.read_bytes() == b"complete replacement"
-    assert list(tmp_path.glob(".research_report.json.*.tmp")) == []
+    assert list(tmp_path.glob("*.tmp")) == []
 
 
 def test_atomic_write_preserves_previous_file_when_replace_fails(tmp_path, monkeypatch):
@@ -30,7 +31,7 @@ def test_atomic_write_preserves_previous_file_when_replace_fails(tmp_path, monke
         atomic_write_bytes(target, b"new")
 
     assert target.read_bytes() == b"previous"
-    assert list(tmp_path.glob(".meta.json.*.tmp")) == []
+    assert list(tmp_path.glob("*.tmp")) == []
 
 
 def test_atomic_copy_uses_one_complete_source_snapshot(tmp_path):
@@ -41,7 +42,28 @@ def test_atomic_copy_uses_one_complete_source_snapshot(tmp_path):
     atomic_copy(source, destination)
 
     assert destination.read_bytes() == source.read_bytes()
-    assert list(tmp_path.glob(".live.json.*.tmp")) == []
+    assert list(tmp_path.glob("*.tmp")) == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows path-length regression")
+def test_atomic_backup_near_windows_path_limit_preserves_name_and_bytes(tmp_path):
+    """A supported destination must not fail because its temp name is longer."""
+    filename = "invalid-backup-before-bundled-sync-20261020T000000000000.json"
+    # The destination fits MAX_PATH; repeating its name in a temporary file
+    # exceeds it, exercising the overflow found in the isolated reproduction.
+    padding = 247 - len(str(tmp_path.resolve())) - len(filename) - 2
+    assert padding > 0, "test root leaves no room for a Windows path-limit fixture"
+    directory = tmp_path / ("p" * padding)
+    directory.mkdir()
+    target = directory / filename
+    source = tmp_path / "invalid.json"
+    source.write_bytes(b"{not-valid-json")
+
+    atomic_copy(source, target)
+
+    assert target.name == filename
+    assert target.read_bytes() == b"{not-valid-json"
+    assert list(directory.iterdir()) == [target]
 
 
 def test_template_manager_save_and_version_remain_valid_json(tmp_path):

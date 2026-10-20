@@ -19,7 +19,7 @@
     "schema_version": 1,
     "adapter_interface": "espansr-adapter-v1",
     "implementation_git_blob_sha256": {
-      "CHANGELOG.md": "f50bf4af6e64a775eb1046c0bb70c3bc24567d69a70f5501b3e047953e6f3ed7",
+      "CHANGELOG.md": "c937aa4d8e84ddaad8dc061cc324c6e1da29da389e2d5fa89b2291df11c20a82",
       "README.md": "a23260535e732fb2b6bb1fdce1ba6852493749e8ee230bd42aed32fe7194f6f3",
       "docs/CAPABILITY_CATALOG.md": "dad311b212d6cc989069ada3ac53d1c7de680d56edbd44f4c7ea8df76f8feb40",
       "espansr/__main__.py": "07be3447739600fcaf1f7ee174dd5d76e72b78ee03f8844bdd316d695889c1ed",
@@ -33,7 +33,9 @@
       "tests/test_capability_publication.py": "d3683dd834363ea5344dfd8fead85d8a29f32096b5e95c8f40a01feb356d043e",
       "tests/conftest.py": "c18aaca6f7b1b84f411a023d2623fd6ec693a9a730621277b37bb89f585c6746",
       "tests/test_isolation.py": "0455bb0ad39ce4dadc151a5a9f9e3c7d19c313d4ede799428631389e21e4860f",
-      "docs/DEVELOPMENT.md": "4066178b9438754049f88fc45a8d53104d01125e267495f983eb775072ace331"
+      "docs/DEVELOPMENT.md": "4066178b9438754049f88fc45a8d53104d01125e267495f983eb775072ace331",
+      "espansr/core/atomic.py": "aa1cb97905f053fb859a8937d8df9ad521c7eb2105a961a3c8fe5227261a1243",
+      "tests/test_atomic_writes.py": "01df800c34f22a9264e1e637d43534c599100cf9865b34931ca649d62031e19b"
     },
     "candidate_commit_binding": "The enclosing outcome-result.candidate_commit and exported Git object bind this complete handoff; no future revision is guessed."
   },
@@ -162,10 +164,24 @@
   ],
   "preservation": "Codex never/danger-full-access and Claude bypassPermissions remain supported; no permission/config/account/secret/Stop/attempt binding changed.",
   "repair_binding": {
-    "previous_candidate_commit": "eec176a513a1f2859477d8a9c8c77495767074d5",
-    "previous_candidate_tree": "c05e689fa677ecfac1e7f4313b041a60518c7843",
+    "previous_candidate_commit": "36522dbfabf8194721b907edf96d722b73bed27f",
+    "previous_candidate_tree": "1374abb4934a2d5250199ec474ad069b0391a832",
     "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
-    "scope": "Repair plain repository pytest startup/teardown temp storage and its regression coverage; original catalog product bytes and all effect boundaries retained.",
-    "evidence": "receipts/ds07/repair-qualification.json"
-  }
+    "scope": "Use a short exclusive temporary sibling for atomic writes, preserving final backup names/data and existing failure cleanup. Verify the actual failed backup case and a Windows path-limit regression in a clean clone at gateway-like path depth.",
+    "evidence": "receipts/ds07/atomic-path-qualification.json",
+    "diagnostic_source": {
+      "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+      "bytes": 13222,
+      "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+    }
+  },
+  "prior_repairs": [
+    {
+      "previous_candidate_commit": "eec176a513a1f2859477d8a9c8c77495767074d5",
+      "previous_candidate_tree": "c05e689fa677ecfac1e7f4313b041a60518c7843",
+      "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+      "scope": "Repair plain repository pytest startup/teardown temp storage and its regression coverage; original catalog product bytes and all effect boundaries retained.",
+      "evidence": "receipts/ds07/repair-qualification.json"
+    }
+  ]
 }
