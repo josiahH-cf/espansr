@@ -30,7 +30,10 @@
       "espansr/integrations/espanso.py": "8fd69388c545e3925e388a2b491b8f230e6e80480df788ca7b5340fa3acd0e4f",
       "scripts/check_catalog_adapter.py": "be9f8fad0adc5a50f877819c0880304fcb9eac69d838f0d3ff4c27260c26f691",
       "templates/espansr_help.json": "a64dd674800aa64d1305d24a7ad6804d57faa5c26bcf67de6e0281226f9644b3",
-      "tests/test_capability_publication.py": "d3683dd834363ea5344dfd8fead85d8a29f32096b5e95c8f40a01feb356d043e"
+      "tests/test_capability_publication.py": "d3683dd834363ea5344dfd8fead85d8a29f32096b5e95c8f40a01feb356d043e",
+      "tests/conftest.py": "c18aaca6f7b1b84f411a023d2623fd6ec693a9a730621277b37bb89f585c6746",
+      "tests/test_isolation.py": "0455bb0ad39ce4dadc151a5a9f9e3c7d19c313d4ede799428631389e21e4860f",
+      "docs/DEVELOPMENT.md": "4066178b9438754049f88fc45a8d53104d01125e267495f983eb775072ace331"
     },
     "candidate_commit_binding": "The enclosing outcome-result.candidate_commit and exported Git object bind this complete handoff; no future revision is guessed."
   },
@@ -157,5 +160,12 @@
     "parent deployment or stopped-lane adoption",
     "ds23 deletion/confirmation or ds24 human/elapsed claims"
   ],
-  "preservation": "Codex never/danger-full-access and Claude bypassPermissions remain supported; no permission/config/account/secret/Stop/attempt binding changed."
+  "preservation": "Codex never/danger-full-access and Claude bypassPermissions remain supported; no permission/config/account/secret/Stop/attempt binding changed.",
+  "repair_binding": {
+    "previous_candidate_commit": "eec176a513a1f2859477d8a9c8c77495767074d5",
+    "previous_candidate_tree": "c05e689fa677ecfac1e7f4313b041a60518c7843",
+    "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+    "scope": "Repair plain repository pytest startup/teardown temp storage and its regression coverage; original catalog product bytes and all effect boundaries retained.",
+    "evidence": "receipts/ds07/repair-qualification.json"
+  }
 }

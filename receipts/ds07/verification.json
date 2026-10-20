@@ -1,9 +1,9 @@
 {
   "boundary": "native-Windows-private-candidate",
   "environment": {
-    "PYTHONPATH": "assigned workspace",
-    "PYTEST_ADDOPTS": "--basetemp=.tmp_pytest",
-    "note": "Workspace-owned test temp avoids denied shared pytest cleanup; no gate omitted."
+    "PYTHONPATH": "unset",
+    "PYTEST_ADDOPTS": "unset",
+    "note": "Exact plain policy commands; repository pytest configuration allocates a unique default test root. No external test override required."
   },
   "results": [
     {
@@ -15,9 +15,9 @@
       ],
       "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
       "exit_code": 0,
-      "seconds": 155.89,
+      "seconds": 161.812,
       "output": "receipts/ds07/pytest.txt",
-      "summary": "ests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 89%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 93%]\ntests\\test_usage_ui.py ...                                               [ 93%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 95%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py ................                                 [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1533 passed, 13 skipped in 154.58s (0:02:34) =================\n"
+      "summary": "ests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 89%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 93%]\ntests\\test_usage_ui.py ...                                               [ 93%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 95%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py ................                                 [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1535 passed, 13 skipped in 160.85s (0:02:40) =================\n"
     },
     {
       "name": "ruff",
@@ -30,7 +30,7 @@
       ],
       "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
       "exit_code": 0,
-      "seconds": 0.234,
+      "seconds": 0.14,
       "output": "receipts/ds07/ruff.txt",
       "summary": "All checks passed!\n"
     },
@@ -45,10 +45,11 @@
       ],
       "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
       "exit_code": 0,
-      "seconds": 1.703,
+      "seconds": 0.531,
       "output": "receipts/ds07/black.txt",
       "summary": "All done! \\u2728 \\U0001f370 \\u2728\n133 files would be left unchanged.\n"
     }
   ],
-  "skips": "9 POSIX installer cases and 4 POSIX shell alias cases are skipped by their existing Windows guards."
+  "skips": "9 POSIX installer cases and 4 POSIX shell alias cases are skipped by their existing Windows guards.",
+  "repair_of_candidate": "eec176a513a1f2859477d8a9c8c77495767074d5"
 }

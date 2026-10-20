@@ -5,7 +5,7 @@ rootdir: <workspace>
 configfile: pyproject.toml
 testpaths: tests
 plugins: qt-4.5.0
-collected 1546 items
+collected 1548 items
 
 tests\test_atomic_espanso_writes.py ........                             [  0%]
 tests\test_atomic_writes.py .....                                        [  0%]
@@ -33,9 +33,9 @@ tests\test_console_encoding.py .....                                     [ 27%]
 tests\test_decision_helper_prompt.py .........                           [ 28%]
 tests\test_deliver_script.py ...........                                 [ 28%]
 tests\test_delivery_governance.py ....                                   [ 29%]
-tests\test_discovery_sync.py ..............                              [ 30%]
+tests\test_discovery_sync.py ..............                              [ 29%]
 tests\test_doctor.py ......................                              [ 31%]
-tests\test_dry_run.py .........                                          [ 32%]
+tests\test_dry_run.py .........                                          [ 31%]
 tests\test_espanso.py ............................                       [ 33%]
 tests\test_espanso_restart.py .....................                      [ 35%]
 tests\test_espanso_roundtrip.py .                                        [ 35%]
@@ -48,12 +48,12 @@ tests\test_gui_editor.py ...............                                 [ 40%]
 tests\test_gui_editor_metadata.py .........                              [ 40%]
 tests\test_gui_shortcuts.py ........                                     [ 41%]
 tests\test_gui_single_screen.py ...............                          [ 42%]
-tests\test_html_help_doc_prompt.py ...........                           [ 43%]
+tests\test_html_help_doc_prompt.py ...........                           [ 42%]
 tests\test_import.py .................                                   [ 44%]
 tests\test_install_alias.py ssss                                         [ 44%]
 tests\test_install_ps1.py .....................                          [ 45%]
 tests\test_install_sh.py ..................................              [ 47%]
-tests\test_isolation.py .......                                          [ 48%]
+tests\test_isolation.py .........                                        [ 48%]
 tests\test_launcher.py ..................                                [ 49%]
 tests\test_litmus_prompt.py .......................                      [ 51%]
 tests\test_manifest_schema.py ......................                     [ 52%]
@@ -101,4 +101,4 @@ tests\test_workflow_diagrams.py ..................                       [ 98%]
 tests\test_workflows.py ................                                 [ 99%]
 tests\test_wsl_install_wrapper.py ....                                   [100%]
 
-================ 1533 passed, 13 skipped in 154.58s (0:02:34) =================
+================ 1535 passed, 13 skipped in 160.85s (0:02:40) =================
