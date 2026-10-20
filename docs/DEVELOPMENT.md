@@ -23,6 +23,13 @@ pytest tests/test_espanso.py
 pytest tests/test_espanso.py::test_sync_produces_valid_yaml_v2_match_file
 ```
 
+Plain `pytest` and `python -m pytest` allocate a separate short directory under
+the checkout's ignored `.tmp_pytest/` for each invocation. This keeps startup
+and teardown away from shared system pytest folders and preserves concurrent
+runs and earlier scratch files. Test scratch is retained for inspection;
+an explicit `--basetemp` still takes precedence. No environment override is
+needed for the normal repository checks.
+
 GUI tests run against Qt's offscreen platform by default (set in
 `tests/conftest.py`, matching CI), so `pytest` never pops real windows or
 steals focus locally. To deliberately watch the widgets render on a real

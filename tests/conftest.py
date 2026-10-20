@@ -10,6 +10,7 @@ pins each of those guarantees.
 import contextlib
 import os
 import platform as _platform_module
+import tempfile
 from pathlib import Path
 
 # Run GUI tests against Qt's offscreen platform by default, matching CI.
@@ -32,8 +33,20 @@ from espansr.core.platform import ShimResult, get_platform, get_platform_config 
 REAL_COMMAND_SHIM_MARK = "real_command_shim"
 
 
+@pytest.hookimpl(tryfirst=True)
 def pytest_configure(config):
-    """Register the opt-out marker used by the direct command-shim unit tests."""
+    """Isolate default test storage before pytest creates its temp factory."""
+    if config.option.basetemp is None:
+        # Never traverse or clean another run's shared pytest-of-user tree.
+        # Each invocation gets an exclusive short path, including concurrent
+        # checks. Preserve explicit --basetemp and all existing scratch bytes.
+        checkout = Path(__file__).resolve().parents[1]
+        scratch = checkout / ".tmp_pytest"
+        scratch.mkdir(exist_ok=True)
+        if scratch.is_symlink() or not scratch.resolve().is_relative_to(checkout):
+            raise pytest.UsageError("Default test scratch must stay inside this checkout")
+        config.option.basetemp = tempfile.mkdtemp(prefix="", dir=scratch)
+
     config.addinivalue_line(
         "markers",
         f"{REAL_COMMAND_SHIM_MARK}: exercise the real command-shim helpers instead of "

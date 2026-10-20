@@ -7,11 +7,69 @@ caught by the suite itself rather than by a mutated machine.
 """
 
 import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
 from espansr.core.platform import get_platform_config
 from espansr.core.templates import Template, TemplateManager
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _run_temp_probe(tmp_path, *, explicit=False):
+    """Exercise real pytest startup and teardown without its shared temp tree."""
+    suite = tmp_path / "probe"
+    tests = suite / "tests"
+    tests.mkdir(parents=True)
+    shutil.copyfile(ROOT / "tests/conftest.py", tests / "conftest.py")
+    (tests / "test_temp.py").write_text(
+        "from pathlib import Path\n"
+        "def test_temp(tmp_path_factory, tmp_path):\n"
+        "    root = Path(__file__).resolve().parents[1]\n"
+        "    base = tmp_path_factory.getbasetemp()\n"
+        "    assert base.is_relative_to(root)\n"
+        "    (base / 'keep.txt').write_text('retained')\n"
+        "    with (root / 'observed.txt').open('a') as out:\n"
+        "        out.write(str(base) + '\\n')\n",
+        encoding="utf-8",
+    )
+    # A shared temp parent that cannot contain directories makes accidental
+    # fallback fail on every platform, without altering any real permissions.
+    shared = tmp_path / "shared-temp-file"
+    shared.write_text("preserve shared bytes", encoding="utf-8")
+    scratch = suite / ".tmp_pytest"
+    scratch.mkdir()
+    sentinel = scratch / "unrelated.txt"
+    sentinel.write_text("preserve earlier work", encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if k not in {"PYTEST_ADDOPTS", "PYTHONPATH"}}
+    env.update(PYTHONPATH=str(ROOT), PYTEST_DEBUG_TEMPROOT=str(shared))
+    argv = [sys.executable, "-m", "pytest", "-q", "tests"]
+    if explicit:
+        argv += ["--basetemp", str(suite / "chosen-temp")]
+    for _ in range(1 if explicit else 2):
+        result = subprocess.run(
+            argv, cwd=suite, env=env, capture_output=True, text=True, timeout=60
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+    assert shared.read_text(encoding="utf-8") == "preserve shared bytes"
+    assert sentinel.read_text(encoding="utf-8") == "preserve earlier work"
+    bases = [Path(p) for p in (suite / "observed.txt").read_text().splitlines()]
+    assert all((p / "keep.txt").read_text() == "retained" for p in bases)
+    return suite, bases
+
+
+def test_plain_pytest_uses_distinct_owned_temp_roots(tmp_path):
+    suite, bases = _run_temp_probe(tmp_path)
+    assert len(set(bases)) == 2
+    assert all(p.parent == suite / ".tmp_pytest" for p in bases)
+
+
+def test_pytest_preserves_explicit_basetemp(tmp_path):
+    suite, bases = _run_temp_probe(tmp_path, explicit=True)
+    assert bases == [suite / "chosen-temp"]
 
 
 def test_config_dir_resolves_under_tmp_path(tmp_path):

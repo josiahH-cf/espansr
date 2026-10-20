@@ -103,6 +103,7 @@ class Template:
     use_when: str = ""
     avoid_when: str = ""
     output_contract: Dict[str, Any] = field(default_factory=dict)
+    execution: Dict[str, Any] = field(default_factory=dict)  # Declaration, never availability
 
     # Internal: path to the JSON file (set when loaded from disk)
     _path: Optional[Path] = field(default=None, repr=False)
@@ -152,6 +153,8 @@ class Template:
             d["avoid_when"] = self.avoid_when
         if self.output_contract:
             d["output_contract"] = self.output_contract
+        if self.execution:
+            d["execution"] = self.execution
         return d
 
     @classmethod
@@ -177,6 +180,7 @@ class Template:
             use_when=_coerce_optional_string(data.get("use_when", "")),
             avoid_when=_coerce_optional_string(data.get("avoid_when", "")),
             output_contract=_coerce_dict(data.get("output_contract", {})),
+            execution=_coerce_dict(data.get("execution", {})),
             _path=path,
         )
 
@@ -1166,6 +1170,7 @@ _KNOWN_TEMPLATE_FIELDS = {
     "use_when",
     "avoid_when",
     "output_contract",
+    "execution",
 }
 
 # Known fields in the internal Variable schema.

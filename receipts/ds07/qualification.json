@@ -1,0 +1,138 @@
+{
+  "interface": "espansr-candidate-qualification-v1",
+  "status": "candidate-qualified",
+  "boundary": "private Espansr contribution ready for existing gateway; not installed or delivered",
+  "version_binding": "receipts/ds07/owner-handoff.json",
+  "implementation_manifest_sha256": "7d080e8796acf0df75b96066b2cf3d630b7c3a6a9fd5ac8b681d9a49f8d93391",
+  "coverage": "receipts/ds07/coverage.json",
+  "evidence": [
+    "Exact plain native Windows policy gate: 1541 passed, 13 existing platform skips; pytest, Ruff and Black exit 0. No PYTHONPATH or PYTEST_ADDOPTS override.",
+    "Exact dependency candidate adapter probe: all 65 templates and 4 workflows match legacy adapter fields/digests; preparation and JSON frozen replay pass.",
+    "Exact dependency export profile suite: 70 of 70 selected portable adapter/profile checks pass.",
+    "Discovery generation check and Git whitespace checks pass.",
+    "Actual command demonstration selects Gap Review from an evidence report and reports unavailable installation honestly.",
+    "Disposable catalog publication contains all 69 definitions; no runtime context, defaults or private installed-only data exported.",
+    "Scoped plain-command teardown repair and two subprocess regression checks: receipts/ds07/repair-qualification.json.",
+    "The actual failed gateway node was independently reproduced; short atomic temporary names and the Windows path-limit negative/positive controls are qualified in receipts/ds07/atomic-path-qualification.json.",
+    "Read exact candidate GitHub CI job logs: three native installer canaries failed from four duplicate workflow projections; Python 3.13 was cancelled rather than independently failed.",
+    "New workflow projection regression fails against the old loader; all 66 affected checks pass after the repair.",
+    "Real CLI with synthetic local config validates and lists four projected workflows once and shows Session Continuity; receipts/ds07/workflow-demo.txt."
+  ],
+  "checks": {
+    "boundary": "native-Windows-private-candidate",
+    "environment": {
+      "PYTHONPATH": "unset",
+      "PYTEST_ADDOPTS": "unset",
+      "note": "Exact plain admitted policy commands in the assigned checkout; no installer or installed behavior command invoked."
+    },
+    "source_snapshot": {
+      "base_commit": "8ab638cefb991dd4aeef8fa6cc27b821991eb154",
+      "changed_source_git_blob_sha256": {
+        "CHANGELOG.md": "e9c1ed6a510b5bb9e00335b38ecfcddd1aed3fbcacea4aa4f43b6d40310d01b1",
+        "espansr/core/workflows.py": "4068bca26a439ca6309dca1a51eafe2b3381e35e1f93f50046067a5452cc4de4",
+        "tests/test_workflows.py": "d0c121e10f4af738bb8fa866dfa807c8eeb613e6bfbbae1979b99428fbfe4440"
+      },
+      "implementation_manifest_sha256": "7d080e8796acf0df75b96066b2cf3d630b7c3a6a9fd5ac8b681d9a49f8d93391"
+    },
+    "results": [
+      {
+        "name": "pytest",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "pytest"
+        ],
+        "exit_code": 0,
+        "seconds": 159.657,
+        "output": "receipts/ds07/pytest.txt",
+        "summary": "                                [ 75%]\ntests\\test_status_bar.py ............                                    [ 75%]\ntests\\test_status_exit_codes.py .......                                  [ 76%]\ntests\\test_sync.py ............                                          [ 77%]\ntests\\test_sync_bundled.py ............................................. [ 79%]\n.................................                                        [ 82%]\ntests\\test_sync_hardening.py ..............                              [ 83%]\ntests\\test_sync_trigger_feedback.py ..............                       [ 83%]\ntests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 88%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 92%]\ntests\\test_usage_ui.py ...                                               [ 92%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 94%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py .....................                            [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1541 passed, 13 skipped in 158.24s (0:02:38) =================\n",
+        "argv_binding": "exact admitted absolute native Windows interpreter and arguments; public receipt elides machine path"
+      },
+      {
+        "name": "ruff",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "ruff",
+          "check",
+          "."
+        ],
+        "exit_code": 0,
+        "seconds": 0.171,
+        "output": "receipts/ds07/ruff.txt",
+        "summary": "All checks passed!\n",
+        "argv_binding": "exact admitted absolute native Windows interpreter and arguments; public receipt elides machine path"
+      },
+      {
+        "name": "black",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "black",
+          "--check",
+          "."
+        ],
+        "exit_code": 0,
+        "seconds": 0.563,
+        "output": "receipts/ds07/black.txt",
+        "summary": "All done! \\u2728 \\U0001f370 \\u2728\n133 files would be left unchanged.\n",
+        "argv_binding": "exact admitted absolute native Windows interpreter and arguments; public receipt elides machine path"
+      }
+    ],
+    "skips": "13 existing POSIX-only cases skipped by their Windows guards.",
+    "repair_of_candidate": "8ab638cefb991dd4aeef8fa6cc27b821991eb154",
+    "failed_remote_ci_evidence": "receipts/ds07/workflow-ci-failure.json",
+    "remote_ci_boundary": "Prior candidate failed its installer canary; this private gate does not claim repaired remote CI success."
+  },
+  "bounded_review": {
+    "scope": "source/projection provenance, invalid and partial publication, route truth, old frozen selections, public boundary and useful discovery",
+    "repairs": [
+      "Shortened workflow backup names for Windows path limits, checking bytes before existing backup reuse.",
+      "Changed accepted-input filtering to match alternative kinds; actual Gap Review command and regression assertions verify it.",
+      "Made unique checkout-owned pytest temp storage the default, removing the external environment workaround required by the original candidate.",
+      "Short atomic temporary sibling names avoid repeating long final backup names; a real Windows 247-character destination regression and broader cleanup assertions preserve backup and atomic-write contracts.",
+      "Recognize only semantically equal same-named workflow projections across distinct roots. Preserve same-directory/renamed duplicate rejection, conflicting metadata/graph errors, source precedence and user additions."
+    ],
+    "initial_environment_failure": "Historical first repair: focused local reproduction exposed shared pytest-current cleanup access denial; checkout-owned test roots passed the plain private gate. That evidence did not establish the cause of the subsequent gateway failure, which is separately bound in atomic-path-qualification.json.",
+    "latest_gateway_failure": "Owner-provided integrated Windows gate on 8ab638c passed all three commands. Exact-head GitHub CI then failed in the installer canary on duplicate source/projected workflow IDs. This correction passes the private full gate; the gateway owns new-head remote CI qualification."
+  },
+  "missing_check_commands": [],
+  "worker_remaining": [],
+  "publication_effects_observed": [],
+  "installation_effects_observed": [],
+  "live_oa_or_human_effects_observed": [],
+  "later_owner_descriptors": "receipts/ds07/owner-handoff.json",
+  "artifacts_sha256": {
+    "receipts/ds07/adapter-qualification.json": "5493ee6d850a9be58bd6de84c9b341a23ce1e93463d10eb0b44c0893fe395a3d",
+    "receipts/ds07/atomic-path-qualification.json": "30a525dfbf2b0bbed7ac4e70d2094bc365c4fafec9ef85c4054176e7f25d25cd",
+    "receipts/ds07/atomic-path-reproduction.txt": "97efb44970607283b30985fb6ebd599fbcce0c5eb001d45035a174af407bf8b8",
+    "receipts/ds07/black.txt": "8aa2218180bea3b02b614acb8a0922e456d298ae341c57138cbf83ce94e7c7ef",
+    "receipts/ds07/catalog-demo.txt": "f261c2d2501f0ff00f8cb5823b3cc681fda53e304027f625e3926d990cb73c1e",
+    "receipts/ds07/catalog-example.json.gz": "cab744e646c14eac39defa09ce2cd274226909ff9aa11077aba1ceffdd4588dc",
+    "receipts/ds07/coverage.json": "1b5e7b8a27684c33a95b31a809d935ba8d476abba29f45cb56158745b71526d7",
+    "receipts/ds07/oa-profile-qualification.json": "0379ca4ac829262b73afe01677b28c91ee48013b940afc54962473dee380f2a5",
+    "receipts/ds07/owner-handoff.json": "fd792cc053cc672fc500a6b2ed719c0a8f5a16c176bb56344abbfc6b8e448a44",
+    "receipts/ds07/pytest.txt": "2ca3823570fb990482fbef79571d0b1abc7e321be2cc15d2c3b07b7a03ed5532",
+    "receipts/ds07/repair-qualification.json": "f4fc62f8f51bf24be1fe45e52c08ee52ca3f44a97f11ff2b7549b2ad3e8f6932",
+    "receipts/ds07/repair-reproduction.txt": "1443045157a28fb446b5d589402d1665a070e4d2f645b6162c8239303d7d2e96",
+    "receipts/ds07/ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "receipts/ds07/verification.json": "a59dc4a611c49468eea4748fa89497e494ec923471f75c258d792d3718430aa1",
+    "receipts/ds07/workflow-ci-failure.json": "a5f4d4001f9f555e5a79623b0bc17dc685fa574425e2eddbb2b3b9bb1e11e48b",
+    "receipts/ds07/workflow-demo.txt": "ec1a87eb3f53126d8f4f5490bb7bce4d7100dfa886e628ca57d22368d92956c5",
+    "receipts/ds07/workflow-projection-negative.txt": "581b5cf02d85c3b51d2dba9e16fc270e215967bdf267e14bf3101af8b5d6039f",
+    "receipts/ds07/workflow-projection-qualification.json": "d5df87799ce57e4f4a8decb7715fb2f7a48cc3776d7f98de197784953b7929db"
+  },
+  "artifact_hash_basis": "Canonical LF text bytes as stored in Git; compressed fixture bytes are unchanged. Native source-definition byte hashes inside the fixture retain their actual observed bytes.",
+  "retained_test_scratch": {
+    "path": ".tmp_pytest/",
+    "disposition": "Ignored test scratch retained locally, including ds07-focused-retained; outside the committed candidate.",
+    "reason": "Automatic approval review twice rejected recursive deletion as blocked by policy; a non-destructive move preserved all bytes under the existing ignored test root."
+  },
+  "repair": "receipts/ds07/workflow-projection-qualification.json",
+  "diagnostic_source": {
+    "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+    "bytes": 13222,
+    "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+  },
+  "remote_ci_evidence": "receipts/ds07/workflow-ci-failure.json"
+}

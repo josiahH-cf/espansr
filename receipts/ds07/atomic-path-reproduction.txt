@@ -1,0 +1,65 @@
+Original gateway-failed case replayed against the old candidate in a clean clone
+F                                                                        [100%]
+================================== FAILURES ===================================
+______ test_sync_bundled_force_overwrites_invalid_local_json_with_backup ______
+
+tmp_path = WindowsPath('<reproduction-checkout>/.tmp_pytest/qqi3fe17/test_sync_bundled_force_overwr0')
+
+    def test_sync_bundled_force_overwrites_invalid_local_json_with_backup(tmp_path):
+        """Force mode backs up invalid local JSON before replacing it from bundled."""
+        from espansr.__main__ import cmd_sync_bundled
+
+        bundled_dir = tmp_path / "bundled"
+        templates_dir = tmp_path / "config" / "espansr" / "templates"
+        bundled_dir.mkdir(parents=True)
+        templates_dir.mkdir(parents=True)
+
+        bundled_data = {"name": "Broken", "content": "bundled", "trigger": ":broken"}
+        _write_json(bundled_dir / "broken.json", bundled_data)
+        (templates_dir / "broken.json").write_text("{not-valid-json", encoding="utf-8")
+
+        with (
+            patch("espansr.__main__.get_templates_dir", return_value=templates_dir),
+            patch("espansr.__main__._get_bundled_dir", return_value=bundled_dir),
+        ):
+            exit_code = cmd_sync_bundled(_make_args(apply=True, force=True))
+
+>       assert exit_code == 0
+E       assert 1 == 0
+
+tests\test_sync_bundled.py:531: AssertionError
+---------------------------- Captured stdout call -----------------------------
+Bundled templates: 0 up to date, 0 missing locally, 0 changed locally, 0 renamed starter(s), 0 retired starter(s), 1 invalid locally
+  broken.json: local copy is invalid JSON (Invalid JSON in broken.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1))
+Error backing up raw template file: [Errno 2] No such file or directory: '<reproduction-checkout>\\.tmp_pytest\\qqi3fe17\\test_sync_bundled_force_overwr0\\config\\espansr\\templates\\_versions\\broken\\.invalid-backup-before-bundled-sync-20261020T111805228389.json.18iirt12.tmp'
+Bundled sync: no bundled changes to apply
+[warn] Some invalid local template(s) could not be backed up and were skipped:
+  broken.json
+=========================== short test summary info ===========================
+FAILED tests/test_sync_bundled.py::test_sync_bundled_force_overwrites_invalid_local_json_with_backup
+1 failed in 0.55s
+
+New 247-character destination regression against the old writer
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____ test_atomic_backup_near_windows_path_limit_preserves_name_and_bytes _____
+tests\test_atomic_writes.py:62: in test_atomic_backup_near_windows_path_limit_preserves_name_and_bytes
+    atomic_copy(source, target)
+espansr\core\atomic.py:81: in atomic_copy
+    atomic_write_bytes(Path(destination), source_bytes, mode=source_mode)
+espansr\core\atomic.py:37: in atomic_write_bytes
+    descriptor, temporary_name = tempfile.mkstemp(
+<user-profile>\AppData\Local\Programs\Python\Python312\Lib\tempfile.py:357: in mkstemp
+    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<user-profile>\AppData\Local\Programs\Python\Python312\Lib\tempfile.py:256: in _mkstemp_inner
+    fd = _os.open(file, flags, 0o600)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   FileNotFoundError: [Errno 2] No such file or directory: '<reproduction-checkout>\\.tmp_pytest\\ew1uu96y\\test_atomic_backup_near_window0\\ppppppppppppppp\\.invalid-backup-before-bundled-sync-20261020T000000000000.json.1inbju2s.tmp'
+=========================== short test summary info ===========================
+FAILED tests/test_atomic_writes.py::test_atomic_backup_near_windows_path_limit_preserves_name_and_bytes
+1 failed in 0.24s
+
+Repaired writer: original case, atomic writes and Espanso atomic checks
+...............                                                          [100%]
+15 passed in 3.60s

@@ -1,0 +1,54 @@
+{
+  "interface": "espansr-ci-failure-evidence-v1",
+  "candidate_commit": "8ab638cefb991dd4aeef8fa6cc27b821991eb154",
+  "candidate_tree": "7d6ffe666b61f2fcdee4283af316c0ccbe56d1d7",
+  "run_url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617",
+  "jobs": [
+    {
+      "name": "ci-macos",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617/job/118772345050",
+      "failed_steps": [
+        "Native installer and sync canary"
+      ]
+    },
+    {
+      "name": "ci (3.13)",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617/job/118772345438",
+      "failed_steps": []
+    },
+    {
+      "name": "ci (3.11)",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617/job/118772345486",
+      "failed_steps": []
+    },
+    {
+      "name": "ci (3.12)",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617/job/118772345500",
+      "failed_steps": [
+        "Native installer and sync canary"
+      ]
+    },
+    {
+      "name": "ci-windows",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/josiahH-cf/espansr/actions/runs/39464536617/job/118772345708",
+      "failed_steps": [
+        "Native installer and sync canary"
+      ]
+    }
+  ],
+  "failure": "Native installer and sync canary: scripts/verify_install.py probe asserts no workflow errors. Source and installed copies produced four duplicate workflow id errors.",
+  "cancelled_job": "ci (3.13) was cancelled by matrix fail-fast; its own failure was not observed.",
+  "raw_log_sha256": "dd5bf3e71fea560411981f09086a01bc2b234f443ba66a2944f0c0e8b54e94e2",
+  "raw_log_disposition": "Read-only GitHub output retained in ignored local scratch; only narrow public findings recorded here.",
+  "scope": "No CI rerun, branch push, PR mutation, installer invocation or installed effect performed by the worker."
+}

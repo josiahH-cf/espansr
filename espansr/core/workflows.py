@@ -290,11 +290,12 @@ def get_default_workflow_dirs() -> List[Path]:
 def load_workflow_catalog(dirs: Optional[Iterable[Path]] = None) -> WorkflowCatalog:
     """Load and validate every manifest from *dirs* (default search order).
 
-    Invalid manifests and duplicate workflow IDs are excluded from the catalog
-    and reported in ``errors`` so the rest of the graph keeps working.
+    Identical, same-named projections in distinct directories are loaded once.
+    Invalid manifests and conflicting or renamed duplicate workflow IDs are
+    excluded and reported in ``errors`` so the rest of the graph keeps working.
     """
     catalog = WorkflowCatalog()
-    seen_ids: Dict[str, str] = {}
+    seen_ids: Dict[str, Tuple[Path, Dict[str, Any]]] = {}
     for directory in dirs if dirs is not None else get_default_workflow_dirs():
         directory = Path(directory)
         if not directory.is_dir():
@@ -311,12 +312,21 @@ def load_workflow_catalog(dirs: Optional[Iterable[Path]] = None) -> WorkflowCata
                 continue
             workflow_id = data["id"]
             if workflow_id in seen_ids:
+                previous_path, previous_data = seen_ids[workflow_id]
+                if (
+                    path.name == previous_path.name
+                    and path.parent != previous_path.parent
+                    and data == previous_data
+                ):
+                    # Installation projects bundled manifests into the live
+                    # store. Equal JSON is one definition despite formatting.
+                    continue
                 catalog.errors.append(
                     f"{path.name}: duplicate workflow id {workflow_id} "
-                    f"(already loaded from {seen_ids[workflow_id]})"
+                    f"(already loaded from {previous_path.name})"
                 )
                 continue
-            seen_ids[workflow_id] = path.name
+            seen_ids[workflow_id] = (path, data)
             catalog.workflows.append(WorkflowManifest.from_dict(data))
     return catalog
 

@@ -1,0 +1,37 @@
+{
+  "interface": "espansr-candidate-check-repair-v1",
+  "status": "candidate-qualified",
+  "previous_candidate_commit": "eec176a513a1f2859477d8a9c8c77495767074d5",
+  "previous_candidate_tree": "c05e689fa677ecfac1e7f4313b041a60518c7843",
+  "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+  "condition_digest": "344b6958faa08784e267077b9bcec5c0450a089e88ce5d87de010db74adf1086",
+  "gateway_failure": "Supplied policy pytest command exited 1 on the previous candidate; gateway traceback was not supplied.",
+  "local_reproduction": {
+    "argv": [
+      "<policy-python>",
+      "-m",
+      "pytest",
+      "tests/test_capability_publication.py",
+      "-q",
+      "--tb=short"
+    ],
+    "exit_code": 1,
+    "finding": "All 27 catalog cases completed; session cleanup raised PermissionError WinError 5 while traversing the shared pytest-current location.",
+    "evidence": "receipts/ds07/repair-reproduction.txt"
+  },
+  "repair": "Default repository pytest startup allocates a unique short folder under the checkout's ignored .tmp_pytest before the core temp factory is created. Existing scratch remains intact; explicit --basetemp still takes precedence.",
+  "changed_source_paths": [
+    "tests/conftest.py",
+    "tests/test_isolation.py",
+    "docs/DEVELOPMENT.md"
+  ],
+  "regression_proof": "Two real subprocess tests use an unusable shared-temp parent, preserve a sentinel and an earlier run, confirm distinct default roots, and verify explicit basetemp. Focused catalog/isolation checks: 36 passed.",
+  "complete_gate": "receipts/ds07/verification.json",
+  "complete_gate_sha256": "0d3833a0d5934f4a618ed2ae2e2a40f8c980a455af067bec7b8d7b877b5ed008",
+  "gate_result": "Plain native Windows policy commands, with PYTEST_ADDOPTS and PYTHONPATH unset: 1535 passed, 13 platform skips; pytest, Ruff and Black exit 0.",
+  "preservation": "No changes to catalog product code, bundled templates or scripts relative to the previous candidate. Shared ACLs were not altered; unrelated scratch was not removed. Existing source/dependency/attempt and later owner effect bindings retained.",
+  "source_manifest": "receipts/ds07/owner-handoff.json:version_bindings.implementation_git_blob_sha256",
+  "missing_check_commands": [],
+  "worker_remaining": [],
+  "published_or_installed_effects": []
+}
