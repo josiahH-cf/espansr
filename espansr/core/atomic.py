@@ -35,7 +35,9 @@ def atomic_write_bytes(path: Path | str, data: bytes, *, mode: int | None = None
             inherited_mode = 0o600
 
     descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.",
+        # Repeating a long backup filename can exceed Windows MAX_PATH even
+        # when the final destination fits. Keep the exclusive sibling short.
+        prefix=".espansr-",
         suffix=".tmp",
         dir=destination.parent,
     )

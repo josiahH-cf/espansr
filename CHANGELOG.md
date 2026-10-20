@@ -6,7 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `espansr catalog` exposes versioned template/workflow descriptors, source and
+  installed semantic/byte provenance, prompt-only versus declared executor
+  routes, and local publication drift. Existing publish/setup retains the last
+  complete catalog on failed qualification. Frozen private selections preserve
+  exact definition bytes and caller context through restart and replay.
+
 ### Fixed
+
+- Atomic writes use a short temporary sibling name so long backup paths that
+  fit Windows' path limit also fit while being written. Final backup names,
+  original bytes, atomic replacement and failure cleanup are preserved.
 
 - Atomic writes of Espanso files retry briefly when Windows reports "Access
   is denied" because another process, such as Espanso reloading its match

@@ -705,6 +705,19 @@ def _sync_bundled_templates_before_espanso(
             print(f"  {entry.filename}")
         return False
 
+    if not dry_run:
+        from espansr.core.capability_catalog import sync_workflow_projection
+        from espansr.core.config import get_templates_dir
+        from espansr.core.templates import get_bundled_templates_dir
+
+        try:
+            sync_workflow_projection(
+                bundled_dir or get_bundled_templates_dir(), templates_dir or get_templates_dir()
+            )
+        except (OSError, ValueError):
+            print("Workflow projection failed; last complete capability catalog retained.")
+            return False
+
     return True
 
 
@@ -840,6 +853,21 @@ def sync_to_espanso(
 
         _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
+
+        # Publication qualification is separate from trigger generation. Local
+        # edits stay usable as triggers even when canonical parity is unavailable.
+        from espansr.core.capability_catalog import publish_catalog, source_revision
+        from espansr.core.templates import get_bundled_templates_dir
+
+        canonical_root = bundled_dir or get_bundled_templates_dir()
+        try:
+            publish_catalog(
+                canonical_root,
+                template_manager.templates_dir,
+                revision=source_revision(canonical_root),
+            )
+        except (OSError, ValueError):
+            print("Capability catalog drift/unavailable; last complete publication retained.")
 
         # Restart Espanso so new triggers become active immediately.
         # WSL2: file writes via /mnt/c/ bypass the Windows file watcher — use PowerShell restart.

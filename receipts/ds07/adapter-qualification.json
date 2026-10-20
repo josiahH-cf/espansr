@@ -1,0 +1,9 @@
+{
+  "interface": "espansr-oa-adapter-qualification-v1",
+  "adapter_sha256": "d144e5486a24d8257784c19c4b915f1cc047c0b96cbe42f6e290f171574e87a6",
+  "templates_compared": 65,
+  "workflows_compared": 4,
+  "prepare_and_frozen_replay": "passed",
+  "boundary": "private-source-fixtures",
+  "live_oa_consumer": "unobserved"
+}

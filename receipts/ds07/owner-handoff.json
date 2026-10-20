@@ -1,0 +1,187 @@
+{
+  "interface": "espansr-candidate-owner-handoff-v1",
+  "artifact_role": "descriptors and private candidate evidence, not a runtime queue or effect receipt",
+  "version_bindings": {
+    "feature_id": "ds07-espansr-catalog",
+    "program_id": "dot-successor-suite-20261020",
+    "plan_id": "implementation-espansr",
+    "run_id": "oc-d446791ea77f779dfe02f9c4",
+    "attempt_id": "oc-d446791ea77f779dfe02f9c4:attempt:1",
+    "generation": 1,
+    "condition_digest": "344b6958faa08784e267077b9bcec5c0450a089e88ce5d87de010db74adf1086",
+    "request_digest": "d6874c69c9918614e4934854224b5eaef73c13e1c5f607d7cffe317115902327",
+    "spec_revision": 2,
+    "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+    "contract_sha256": "4c4f6e9f2e85aca8992076cc30f8d7764d55a8ac08a04723126fe69b9ffb2bec",
+    "base_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+    "definition_semantic_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+    "catalog_interface": "espansr-capability-catalog-v1",
+    "schema_version": 1,
+    "adapter_interface": "espansr-adapter-v1",
+    "implementation_git_blob_sha256": {
+      "CHANGELOG.md": "c937aa4d8e84ddaad8dc061cc324c6e1da29da389e2d5fa89b2291df11c20a82",
+      "README.md": "a23260535e732fb2b6bb1fdce1ba6852493749e8ee230bd42aed32fe7194f6f3",
+      "docs/CAPABILITY_CATALOG.md": "dad311b212d6cc989069ada3ac53d1c7de680d56edbd44f4c7ea8df76f8feb40",
+      "espansr/__main__.py": "07be3447739600fcaf1f7ee174dd5d76e72b78ee03f8844bdd316d695889c1ed",
+      "espansr/core/capability_catalog.py": "9ca4478068f3dfd7482166185df9faf6f58b56e972967aa03179f2afc4ac061a",
+      "espansr/core/command_catalog.py": "0d576ebedf055932e42f0a637d4bde4b5c4132464b577b6ad8e36006f9832491",
+      "espansr/core/discovery.py": "edcc37d11d5a837e0fb4913d87573ff020d14a541044d5be4565635e3799adb1",
+      "espansr/core/templates.py": "c0e534ebbcc164cc4d7721de7a96d64be14eb334abb2beb89c8cf5ae12f39c77",
+      "espansr/integrations/espanso.py": "8fd69388c545e3925e388a2b491b8f230e6e80480df788ca7b5340fa3acd0e4f",
+      "scripts/check_catalog_adapter.py": "be9f8fad0adc5a50f877819c0880304fcb9eac69d838f0d3ff4c27260c26f691",
+      "templates/espansr_help.json": "a64dd674800aa64d1305d24a7ad6804d57faa5c26bcf67de6e0281226f9644b3",
+      "tests/test_capability_publication.py": "d3683dd834363ea5344dfd8fead85d8a29f32096b5e95c8f40a01feb356d043e",
+      "tests/conftest.py": "c18aaca6f7b1b84f411a023d2623fd6ec693a9a730621277b37bb89f585c6746",
+      "tests/test_isolation.py": "0455bb0ad39ce4dadc151a5a9f9e3c7d19c313d4ede799428631389e21e4860f",
+      "docs/DEVELOPMENT.md": "4066178b9438754049f88fc45a8d53104d01125e267495f983eb775072ace331",
+      "espansr/core/atomic.py": "aa1cb97905f053fb859a8937d8df9ad521c7eb2105a961a3c8fe5227261a1243",
+      "tests/test_atomic_writes.py": "01df800c34f22a9264e1e637d43534c599100cf9865b34931ca649d62031e19b"
+    },
+    "candidate_commit_binding": "The enclosing outcome-result.candidate_commit and exported Git object bind this complete handoff; no future revision is guessed."
+  },
+  "external_dependency": {
+    "feature_id": "ds06-context-contract",
+    "boundary": "qualified-candidate; not parent deployment",
+    "owner_run_id": "oc-0a0ea4b3660017282e55ede2",
+    "child_run_id": "oc-03357203f247d2a46378bd8e",
+    "attempt_id": "oc-03357203f247d2a46378bd8e:attempt:1",
+    "candidate_commit": "6f7f63882bff83d5a961e9bd7fbecdd845906a24",
+    "candidate_tree": "c372904487e7d02021f1cf8ec3305901d3c67f54",
+    "spec_sha256": "c79935b8c063b93cfdc6b99aed4f36aaeb1682ae69eb1e14aa004e0a253dadae",
+    "bundle_sha256": "bb223c8683056647cba6fb0505d4254b975d0de61ca9a84bf3b65b5b210eaca0",
+    "observed": "Bundle bytes, exact Git object, structured current-context contract, qualification receipt and adapter source read; 70 selected adapter/profile tests rerun in disposable exact export. Admission proof supplied by existing ds02 owner. No unfinished OA candidate deployment required."
+  },
+  "later_effects": [
+    {
+      "name": "qualified-repository-release",
+      "owner": "existing Espansr gateway publication owner",
+      "boundary": "after worker candidate import and combined-revision qualification",
+      "state": "pending-owner-receipt",
+      "resource_id": "resource_espansr_repo",
+      "expected": "Integrate this exact candidate with current main, rerun admitted checks, require all five configured exact PR-head CI contexts, squash merge without admin bypass; read back actual released main revision and candidate contribution ancestry/tree.",
+      "readback": "Actual repository-qualified gateway receipt supplies released_commit and PR/head/base/tree/check identities. Worker qualification is not publication.",
+      "version_binding": {
+        "definition_semantic_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+        "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+        "implementation_manifest": "version_bindings.implementation_git_blob_sha256",
+        "released_commit": "bound once from actual owner publication receipt, never assumed equal to private candidate commit"
+      },
+      "replay": "Use the existing owner effect identity with these immutable attempt/source bindings. Reconcile uncertain effects before retry; never create a replacement effect or relaunch a stopped lane."
+    },
+    {
+      "name": "installed-capability-publication",
+      "owner": "existing Personal Windows Espansr installation and domain readback owner",
+      "boundary": "after exact Espansr release and configured installation",
+      "state": "pending-owner-readback",
+      "resource_id": "resource_espansr_windows_install",
+      "argv": [
+        "{installed-python}",
+        "-m",
+        "espansr",
+        "catalog",
+        "--source",
+        "{released-repo}/templates",
+        "--installed",
+        "{installed-template-root}",
+        "--json"
+      ],
+      "expected": {
+        "status": "current",
+        "current.validation": "passed",
+        "current.publication": "qualified",
+        "current.source_revision": "{actual-released-commit}",
+        "current.definitions_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+        "current.compatible_adapters": [
+          "espansr-adapter-v1"
+        ],
+        "published": "equals current; record actual catalog_sha256 and source/installed byte hashes, do not reuse fixture byte hashes"
+      },
+      "additional_readback": [
+        "Configured install record/module/launcher/clean checkout and admitted behavior checks are gateway-owned.",
+        "After any Espanso restart run installed espansr doctor and require Espanso process: running independently.",
+        "The configured dirty-installation-checkout refusal remains; preserve unrelated local configuration and report its actual owner hold if still present."
+      ],
+      "limits": "Catalog qualification proves definition projection parity only, without claiming actual trigger typing or consumer ingestion.",
+      "version_binding": {
+        "definition_semantic_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+        "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+        "implementation_manifest": "version_bindings.implementation_git_blob_sha256",
+        "released_commit": "bound once from actual owner publication receipt, never assumed equal to private candidate commit"
+      },
+      "replay": "Use the existing owner effect identity with these immutable attempt/source bindings. Reconcile uncertain effects before retry; never create a replacement effect or relaunch a stopped lane."
+    },
+    {
+      "name": "oa-shared-descriptor-and-frozen-selection",
+      "owner": "existing OA Espansr source adapter, Dot context, Console/skill and contextual profile/job owners",
+      "boundary": "parent integration after qualified Espansr publication; before claiming live cross-surface consumption",
+      "state": "pending-owner-integration-and-readback",
+      "source_version": "Use actual released Espansr commit and installed catalog_sha256 from preceding owner receipts, plus this pinned ds06 contract and the OA consumer revision.",
+      "integration": [
+        "Read installed _meta/capabilities.json through existing EspansrCatalog; verify interface/schema/catalog hash and expose current drift separately.",
+        "Retain legacy adapter-v1 TemplateRecord/prepare fields, attach exactly the selected catalog entry to Dot, Console and skill descriptors; no competing definitions editor or ranking/planner.",
+        "Persist exact selected descriptor, raw definition byte digest, variables and context_basis/source/request/attempt bindings through existing profile_definition/job serialization. Replays restore old frozen data rather than reselect current definitions.",
+        "Resolve executor availability only against actual caller inventory at exact host/client/digest. A route declaration or prompt is not execution."
+      ],
+      "required_readback": [
+        "One newly accepted contextual job and Result contain the selected descriptor/source/catalog/byte identities.",
+        "A new compatible definition becomes discoverable to new work; the original job still renders its earlier definition after catalog update, restart and replay.",
+        "Dot context, Console choice and skill discovery return the same selected descriptor; unavailable entry/executor and source/install drift remain visible."
+      ],
+      "compatibility_evidence": [
+        "receipts/ds07/adapter-qualification.json",
+        "receipts/ds07/oa-profile-qualification.json"
+      ],
+      "limits": "Private source probes passed; no live OA consumer update or authenticated Dot ingestion is claimed by this worker.",
+      "version_binding": {
+        "definition_semantic_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+        "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+        "implementation_manifest": "version_bindings.implementation_git_blob_sha256",
+        "released_commit": "bound once from actual owner publication receipt, never assumed equal to private candidate commit"
+      },
+      "replay": "Use the existing owner effect identity with these immutable attempt/source bindings. Reconcile uncertain effects before retry; never create a replacement effect or relaunch a stopped lane."
+    },
+    {
+      "name": "actual-client-and-human-acceptance",
+      "owner": "ds23 activation and ds24 actual human/device/elapsed acceptance owners",
+      "boundary": "after required machine owner effects",
+      "state": "pending-real-observation",
+      "expected": "Observe installed trigger/help/client use and any actual declared route on the intended devices. Preserve real confirmation, Stop and genuine elapsed reliability proof; never infer these from fixtures or child completion.",
+      "version_binding": {
+        "definition_semantic_sha256": "9160d5f1a91983bf9e3e7a0c049eed6e21bbd23918904610f3611028f7328509",
+        "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+        "implementation_manifest": "version_bindings.implementation_git_blob_sha256",
+        "released_commit": "bound once from actual owner publication receipt, never assumed equal to private candidate commit"
+      },
+      "replay": "Use the existing owner effect identity with these immutable attempt/source bindings. Reconcile uncertain effects before retry; never create a replacement effect or relaunch a stopped lane."
+    }
+  ],
+  "worker_forbidden_effects": [
+    "push/merge/shared destination mutation",
+    "configured installer and behavior command",
+    "Vault/Todoist updates",
+    "parent deployment or stopped-lane adoption",
+    "ds23 deletion/confirmation or ds24 human/elapsed claims"
+  ],
+  "preservation": "Codex never/danger-full-access and Claude bypassPermissions remain supported; no permission/config/account/secret/Stop/attempt binding changed.",
+  "repair_binding": {
+    "previous_candidate_commit": "36522dbfabf8194721b907edf96d722b73bed27f",
+    "previous_candidate_tree": "1374abb4934a2d5250199ec474ad069b0391a832",
+    "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+    "scope": "Use a short exclusive temporary sibling for atomic writes, preserving final backup names/data and existing failure cleanup. Verify the actual failed backup case and a Windows path-limit regression in a clean clone at gateway-like path depth.",
+    "evidence": "receipts/ds07/atomic-path-qualification.json",
+    "diagnostic_source": {
+      "path": "goals/projects/obsidian-agent/plans/2026-10-20/dot-successor-suite/corrections-cleanup-offline/native-ds07-gateway-failure-diagnostic-20261020.json",
+      "bytes": 13222,
+      "sha256": "42252a3721d2d3c69b04a28c720dd32ea123b8cae4d475826851527d7df24443"
+    }
+  },
+  "prior_repairs": [
+    {
+      "previous_candidate_commit": "eec176a513a1f2859477d8a9c8c77495767074d5",
+      "previous_candidate_tree": "c05e689fa677ecfac1e7f4313b041a60518c7843",
+      "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+      "scope": "Repair plain repository pytest startup/teardown temp storage and its regression coverage; original catalog product bytes and all effect boundaries retained.",
+      "evidence": "receipts/ds07/repair-qualification.json"
+    }
+  ]
+}
