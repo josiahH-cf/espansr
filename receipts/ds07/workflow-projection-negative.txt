@@ -1,0 +1,36 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_________ test_default_catalog_loads_projected_bundled_workflows_once _________
+
+tmp_path = WindowsPath('<candidate-checkout>/.tmp_pytest/t2qa2sng/test_default_catalog_loads_pro0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000144D5318B90>
+
+    def test_default_catalog_loads_projected_bundled_workflows_once(tmp_path, monkeypatch):
+        from espansr.core import workflows
+        from espansr.core.capability_catalog import sync_workflow_projection
+
+        installed = tmp_path / "installed"
+        sync_workflow_projection(TEMPLATES_DIR, installed)
+        projected = installed / "_meta" / "workflows"
+        # Serialization differences do not make a second workflow definition.
+        first = next(projected.glob("*.json"))
+        data = json.loads(first.read_text(encoding="utf-8"))
+        first.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+        (projected / "local.json").write_text(
+            json.dumps(_manifest_data("local-addition")), encoding="utf-8"
+        )
+        monkeypatch.setattr(workflows, "get_bundled_workflows_dir", lambda: BUNDLED_WORKFLOWS_DIR)
+        monkeypatch.setattr(workflows, "get_user_workflows_dir", lambda: projected)
+
+        catalog = workflows.load_workflow_catalog()
+
+>       assert catalog.errors == []
+E       AssertionError: assert ['evidence_re...inuity.json)'] == []
+E
+E         Left contains 4 more items, first extra item: 'evidence_research_cycle.json: duplicate workflow id evidence-research-cycle (already loaded from evidence_research_cycle.json)'
+E         Use -v to get more diff
+
+tests\test_workflows.py:134: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_workflows.py::test_default_catalog_loads_projected_bundled_workflows_once
+1 failed in 0.33s

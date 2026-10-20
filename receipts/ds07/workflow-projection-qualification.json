@@ -1,0 +1,29 @@
+{
+  "interface": "espansr-workflow-projection-repair-v1",
+  "status": "candidate-qualified",
+  "condition_digest": "344b6958faa08784e267077b9bcec5c0450a089e88ce5d87de010db74adf1086",
+  "attempt_id": "oc-d446791ea77f779dfe02f9c4:attempt:1",
+  "generation": 1,
+  "previous_candidate_commit": "8ab638cefb991dd4aeef8fa6cc27b821991eb154",
+  "previous_candidate_tree": "7d6ffe666b61f2fcdee4283af316c0ccbe56d1d7",
+  "destination_commit": "a233c602acee43cc57991cc585755bd92ad559df",
+  "actual_ci_evidence": "receipts/ds07/workflow-ci-failure.json",
+  "negative_control": "New default-loader regression reproduces four duplicate workflow errors against the previous loader after the real projection helper copies bundled definitions into a synthetic live root.",
+  "negative_output": "receipts/ds07/workflow-projection-negative.txt",
+  "repair": "Only same-named, semantically equal manifests across distinct directories are treated as one projection. Changed descriptions, nodes or extra fields, renamed duplicates and same-directory duplicates remain errors. The first source remains authoritative; user additions remain visible.",
+  "focused_checks": "66 workflow, capability publication and workflow diagram checks passed, including five new projection/conflict cases.",
+  "usable_output": "A real CLI child process with a synthetic local APPDATA root validates four projected workflows, lists each once, and shows the Session Continuity graph.",
+  "demo": "receipts/ds07/workflow-demo.txt",
+  "changed_source_git_blob_sha256": {
+    "CHANGELOG.md": "e9c1ed6a510b5bb9e00335b38ecfcddd1aed3fbcacea4aa4f43b6d40310d01b1",
+    "espansr/core/workflows.py": "4068bca26a439ca6309dca1a51eafe2b3381e35e1f93f50046067a5452cc4de4",
+    "tests/test_workflows.py": "d0c121e10f4af738bb8fa866dfa807c8eeb613e6bfbbae1979b99428fbfe4440"
+  },
+  "full_gate": "receipts/ds07/verification.json",
+  "limitations": [
+    "No repaired-head GitHub CI result claimed. Existing CI owner must rerun the exact new head.",
+    "The native installer canary is restricted by its own script to disposable GitHub Actions runners; worker did not override that restriction or invoke an installer."
+  ],
+  "preservation": "Earlier catalog and Windows path repairs, frozen source/attempt/context bindings, Stop, full access and unrelated work retained. No external mutation performed.",
+  "worker_remaining": []
+}

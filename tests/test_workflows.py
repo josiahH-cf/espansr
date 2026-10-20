@@ -8,6 +8,8 @@ user state, never require a current step, and never execute anything.
 import json
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLED_WORKFLOWS_DIR = ROOT / "templates" / "_meta" / "workflows"
 TEMPLATES_DIR = ROOT / "templates"
@@ -108,6 +110,73 @@ def test_catalog_rejects_duplicate_workflow_ids(tmp_path):
     catalog = load_workflow_catalog([wf_dir])
     assert len(catalog.workflows) == 1
     assert any("same-id" in e for e in catalog.errors)
+
+
+def test_default_catalog_loads_projected_bundled_workflows_once(tmp_path, monkeypatch):
+    from espansr.core import workflows
+    from espansr.core.capability_catalog import sync_workflow_projection
+
+    installed = tmp_path / "installed"
+    sync_workflow_projection(TEMPLATES_DIR, installed)
+    projected = installed / "_meta" / "workflows"
+    # Serialization differences do not make a second workflow definition.
+    first = next(projected.glob("*.json"))
+    data = json.loads(first.read_text(encoding="utf-8"))
+    first.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
+    (projected / "local.json").write_text(
+        json.dumps(_manifest_data("local-addition")), encoding="utf-8"
+    )
+    monkeypatch.setattr(workflows, "get_bundled_workflows_dir", lambda: BUNDLED_WORKFLOWS_DIR)
+    monkeypatch.setattr(workflows, "get_user_workflows_dir", lambda: projected)
+
+    catalog = workflows.load_workflow_catalog()
+
+    assert catalog.errors == []
+    bundled_ids = {
+        json.loads(p.read_text(encoding="utf-8"))["id"]
+        for p in BUNDLED_WORKFLOWS_DIR.glob("*.json")
+    }
+    assert {w.id for w in catalog.workflows} == bundled_ids | {"local-addition"}
+    assert len(catalog.workflows) == len(list(BUNDLED_WORKFLOWS_DIR.glob("*.json"))) + 1
+
+
+@pytest.mark.parametrize("changed", ["description", "nodes", "extra_field"])
+def test_catalog_reports_conflicting_workflow_projection(tmp_path, changed):
+    from espansr.core.workflows import load_workflow_catalog
+
+    bundled, installed = tmp_path / "bundled", tmp_path / "installed"
+    bundled.mkdir()
+    installed.mkdir()
+    original = _manifest_data("same-id")
+    (bundled / "wf.json").write_text(json.dumps(original), encoding="utf-8")
+    altered = json.loads(json.dumps(original))
+    altered[changed] = (
+        original["nodes"] + [{"capability": "c"}] if changed == "nodes" else "different"
+    )
+    (installed / "wf.json").write_text(json.dumps(altered), encoding="utf-8")
+
+    catalog = load_workflow_catalog([bundled, installed])
+
+    assert [w.to_dict() for w in catalog.workflows] == [
+        load_workflow_catalog([bundled]).workflows[0].to_dict()
+    ]
+    assert any("duplicate workflow id same-id" in error for error in catalog.errors)
+
+
+def test_catalog_rejects_renamed_duplicate_in_another_directory(tmp_path):
+    from espansr.core.workflows import load_workflow_catalog
+
+    bundled, installed = tmp_path / "bundled", tmp_path / "installed"
+    bundled.mkdir()
+    installed.mkdir()
+    data = json.dumps(_manifest_data("same-id"))
+    (bundled / "one.json").write_text(data, encoding="utf-8")
+    (installed / "two.json").write_text(data, encoding="utf-8")
+
+    catalog = load_workflow_catalog([bundled, installed])
+
+    assert len(catalog.workflows) == 1
+    assert any("duplicate workflow id same-id" in error for error in catalog.errors)
 
 
 def test_catalog_reports_dangling_capability_references(tmp_path):

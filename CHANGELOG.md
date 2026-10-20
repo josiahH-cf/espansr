@@ -16,6 +16,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Workflow discovery loads identical bundled and installed projections once,
+  while still reporting conflicting content and renamed duplicate identities.
+
 - Atomic writes use a short temporary sibling name so long backup paths that
   fit Windows' path limit also fit while being written. Final backup names,
   original bytes, atomic replacement and failure cleanup are preserved.
