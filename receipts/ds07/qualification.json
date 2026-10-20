@@ -1,0 +1,102 @@
+{
+  "interface": "espansr-candidate-qualification-v1",
+  "status": "candidate-qualified",
+  "boundary": "private Espansr contribution ready for existing gateway; not installed or delivered",
+  "version_binding": "receipts/ds07/owner-handoff.json",
+  "implementation_manifest_sha256": "29fa5feb56be432e7362f4b5644af7f03a7f36f73d4c77ecfdfcb9fa8168c4aa",
+  "coverage": "receipts/ds07/coverage.json",
+  "evidence": [
+    "Complete native Windows policy gate: 1533 passed, 13 existing platform skips; Ruff and Black exit 0.",
+    "Exact dependency candidate adapter probe: all 65 templates and 4 workflows match legacy adapter fields/digests; preparation and JSON frozen replay pass.",
+    "Exact dependency export profile suite: 70 of 70 selected portable adapter/profile checks pass.",
+    "Discovery generation check and Git whitespace checks pass.",
+    "Actual command demonstration selects Gap Review from an evidence report and reports unavailable installation honestly.",
+    "Disposable catalog publication contains all 69 definitions; no runtime context, defaults or private installed-only data exported."
+  ],
+  "checks": {
+    "boundary": "native-Windows-private-candidate",
+    "environment": {
+      "PYTHONPATH": "assigned workspace",
+      "PYTEST_ADDOPTS": "--basetemp=.tmp_pytest",
+      "note": "Workspace-owned test temp avoids denied shared pytest cleanup; no gate omitted."
+    },
+    "results": [
+      {
+        "name": "pytest",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "pytest"
+        ],
+        "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
+        "exit_code": 0,
+        "seconds": 155.89,
+        "output": "receipts/ds07/pytest.txt",
+        "summary": "ests\\test_tddh_prompt.py .................                              [ 85%]\ntests\\test_theme.py .................................................... [ 88%]\n......                                                                   [ 89%]\ntests\\test_ui_ux_audit_prompt.py ..............................          [ 90%]\ntests\\test_url_masking.py ............                                   [ 91%]\ntests\\test_usage.py .....................                                [ 93%]\ntests\\test_usage_ui.py ...                                               [ 93%]\ntests\\test_validate.py ......................                            [ 94%]\ntests\\test_validate_external_matches.py .......                          [ 95%]\ntests\\test_variable_editor.py ......................                     [ 96%]\ntests\\test_window_layout.py ...............                              [ 97%]\ntests\\test_workflow_diagrams.py ..................                       [ 98%]\ntests\\test_workflows.py ................                                 [ 99%]\ntests\\test_wsl_install_wrapper.py ....                                   [100%]\n\n================ 1533 passed, 13 skipped in 154.58s (0:02:34) =================\n"
+      },
+      {
+        "name": "ruff",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "ruff",
+          "check",
+          "."
+        ],
+        "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
+        "exit_code": 0,
+        "seconds": 0.234,
+        "output": "receipts/ds07/ruff.txt",
+        "summary": "All checks passed!\n"
+      },
+      {
+        "name": "black",
+        "argv": [
+          "<policy-python>",
+          "-m",
+          "black",
+          "--check",
+          "."
+        ],
+        "argv_binding": "exact admitted native Windows interpreter and arguments; public receipt elides machine path",
+        "exit_code": 0,
+        "seconds": 1.703,
+        "output": "receipts/ds07/black.txt",
+        "summary": "All done! \\u2728 \\U0001f370 \\u2728\n133 files would be left unchanged.\n"
+      }
+    ],
+    "skips": "9 POSIX installer cases and 4 POSIX shell alias cases are skipped by their existing Windows guards."
+  },
+  "bounded_review": {
+    "scope": "source/projection provenance, invalid and partial publication, route truth, old frozen selections, public boundary and useful discovery",
+    "repairs": [
+      "Shortened workflow backup names for Windows path limits, checking bytes before existing backup reuse.",
+      "Changed accepted-input filtering to match alternative kinds; actual Gap Review command and regression assertions verify it."
+    ],
+    "initial_environment_failure": "Initial focused run passed assertions but default shared pytest cleanup denied access. Final complete gate used workspace-owned basetemp and exited 0. No shared ACL or unrelated data changed."
+  },
+  "missing_check_commands": [],
+  "worker_remaining": [],
+  "publication_effects_observed": [],
+  "installation_effects_observed": [],
+  "live_oa_or_human_effects_observed": [],
+  "later_owner_descriptors": "receipts/ds07/owner-handoff.json",
+  "artifacts_sha256": {
+    "receipts/ds07/adapter-qualification.json": "5493ee6d850a9be58bd6de84c9b341a23ce1e93463d10eb0b44c0893fe395a3d",
+    "receipts/ds07/black.txt": "8aa2218180bea3b02b614acb8a0922e456d298ae341c57138cbf83ce94e7c7ef",
+    "receipts/ds07/catalog-demo.txt": "f261c2d2501f0ff00f8cb5823b3cc681fda53e304027f625e3926d990cb73c1e",
+    "receipts/ds07/catalog-example.json.gz": "cab744e646c14eac39defa09ce2cd274226909ff9aa11077aba1ceffdd4588dc",
+    "receipts/ds07/coverage.json": "1b5e7b8a27684c33a95b31a809d935ba8d476abba29f45cb56158745b71526d7",
+    "receipts/ds07/oa-profile-qualification.json": "0379ca4ac829262b73afe01677b28c91ee48013b940afc54962473dee380f2a5",
+    "receipts/ds07/owner-handoff.json": "9cf8e725c566455582e5ac531539ec43ce489e313a0e526a25cf12cf6fbb44b7",
+    "receipts/ds07/pytest.txt": "20e5102adfe43e04ae408182c77e3e7bb2efbfbe284cb5b041d97d94f02caff6",
+    "receipts/ds07/ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "receipts/ds07/verification.json": "21e0cd894c60bb29bec4dafe40de77a0ee1836a2e787b3a76e37e57a9dbed31f"
+  },
+  "artifact_hash_basis": "Canonical LF text bytes as stored in Git; compressed fixture bytes are unchanged. Native source-definition byte hashes inside the fixture retain their actual observed bytes.",
+  "retained_test_scratch": {
+    "path": ".tmp_pytest/",
+    "disposition": "Ignored test scratch retained locally, including ds07-focused-retained; outside the committed candidate.",
+    "reason": "Automatic approval review twice rejected recursive deletion as blocked by policy; a non-destructive move preserved all bytes under the existing ignored test root."
+  }
+}

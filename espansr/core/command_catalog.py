@@ -1,6 +1,6 @@
 """Shared trigger catalog for the commands popup."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from typing import Iterable, Optional
 
 from espansr.core.config import Config, get_config
@@ -57,6 +57,8 @@ class CommandCatalogEntry:
     workflow_next: tuple[tuple[str, str], ...] = ()
     has_output_contract: bool = False
     content: str = ""
+    capability_descriptor: dict = field(default_factory=dict)
+    publication_status: str = "unavailable"
 
     @property
     def workflow_label(self) -> str:
@@ -177,8 +179,6 @@ def _attach_workflow_membership(
     current triggers via each capability's stable ID. Nothing is written back
     to template files — topology stays owned by the manifests.
     """
-    from dataclasses import replace
-
     trigger_by_capability = {
         entry.capability_id: entry.trigger for entry in entries if entry.capability_id
     }
@@ -221,5 +221,26 @@ def build_command_catalog(
 
         workflow_catalog = load_workflow_catalog()
     entries = _attach_workflow_membership(entries, workflow_catalog)
+    from espansr.core.capability_catalog import inspect_catalog, source_revision
+    from espansr.core.templates import get_bundled_templates_dir
+
+    root = get_bundled_templates_dir()
+    publication = inspect_catalog(
+        root, template_manager.templates_dir, revision=source_revision(root)
+    )
+    descriptors = {
+        e.get("template_id"): e
+        for e in (publication["published"] or publication["current"])["entries"]
+        if e["kind"] == "template"
+    }
+    ids_by_trigger = {t.trigger: t._path.stem for t in template_manager.iter_with_triggers()}
+    entries = [
+        replace(
+            e,
+            capability_descriptor=descriptors.get(ids_by_trigger.get(e.trigger), {}),
+            publication_status=publication["status"],
+        )
+        for e in entries
+    ]
     entries.extend(_build_system_entries(config))
     return sorted(entries, key=lambda entry: (entry.trigger.lower(), entry.name.lower()))

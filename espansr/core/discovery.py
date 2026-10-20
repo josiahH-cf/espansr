@@ -61,6 +61,7 @@ _CLI: List[Entry] = [
     ("retire", "back up and delete a template"),
     ("remote", "manage the template Git remote"),
     ("list", "show templates with triggers"),
+    ("catalog", "inspect capability definitions and publication drift"),
     ("status", "show config paths"),
     ("setup", "run post-install setup"),
     ("doctor", "run diagnostic health checks"),

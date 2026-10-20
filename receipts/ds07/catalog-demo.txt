@@ -1,0 +1,3 @@
+Capability publication: unavailable
+Current source validation: passed
+template:gaps  Gap Review  [prompt-only; installed unavailable]

@@ -1,0 +1,16 @@
+{
+  "boundary": "exact-qualified-dependency-candidate-fixtures",
+  "candidate_commit": "6f7f63882bff83d5a961e9bd7fbecdd845906a24",
+  "argv": [
+    "bash",
+    "scripts/test.sh",
+    "--portable",
+    "tests/contextual_requests/test_espansr_process_layer_compatibility.py",
+    "tests/contextual_requests/test_profile_execution_mode.py",
+    "tests/contextual_requests/test_deterministic_profiles.py"
+  ],
+  "exit_code": 0,
+  "stdout": "verification: independent, 70 tests, 4 worker(s)\n============================= test session starts ==============================\nplatform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0\nrootdir: /tmp/ds07-oa-profile-p89idh_z/source\nconfigfile: pyproject.toml\nplugins: xdist-3.8.0, anyio-4.14.2\ncreated: 4/4 workers\n4 workers [70 items]\n\n......................................................................   [100%]\n============================== 70 passed in 6.70s ==============================\nverification: complete; 70/70 selected tests; 9.04s\n",
+  "stderr": "",
+  "source_mutations": "none; CRLF normalization only in disposable export"
+}

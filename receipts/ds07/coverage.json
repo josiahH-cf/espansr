@@ -1,0 +1,130 @@
+{
+  "interface": "espansr-candidate-requirement-evidence-v1",
+  "spec_sha256": "6a3128d4b51c7ba7aea565fd529aaf5f13855fb8ef281c19f48e8ce2926f7cfd",
+  "qualification_boundary": "Espansr owned candidate and compatibility contract; actual cross-owner effects remain pending their real owners, not worker completion proof",
+  "requirements": [
+    {
+      "id": "DS07-ESPANSR-CATALOG-R01",
+      "candidate_contribution": "Canonical Espansr definitions remain source-owned; existing bundled sync/publish path projects workflows and atomically qualifies installed metadata. No OA files are edited.",
+      "evidence": [
+        "espansr/core/capability_catalog.py",
+        "espansr/integrations/espanso.py"
+      ],
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R02",
+      "candidate_contribution": "Every source template/workflow is inventoried with stable identity, schema, lineage, intent/input/output fields, variable contract and explicit metadata gaps.",
+      "evidence": [
+        "espansr/core/capability_catalog.py",
+        "tests/test_capability_publication.py::test_complete_bundled_population_and_truthful_execution"
+      ],
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R03",
+      "candidate_contribution": "Capability identity, prompt/declarative classification and declared transport stay separate; only exact caller host/client/digest evidence enables supported execution.",
+      "evidence": [
+        "tests/test_capability_publication.py::test_route_requires_declared_and_exact_observed_host_client_evidence"
+      ],
+      "later_owner_effect": "oa-shared-descriptor-and-frozen-selection"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R04",
+      "candidate_contribution": "Deterministic atomic catalog envelope compares semantic JSON while retaining source/installed byte digests and compatible adapter schema.",
+      "evidence": [
+        "tests/test_capability_publication.py::test_determinism_semantic_parity_and_exact_bytes",
+        "receipts/ds07/catalog-example.json.gz"
+      ],
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R05",
+      "candidate_contribution": "One shared descriptor/select contract and popup row descriptor are implemented in Espansr. Supplemental probe compares exact pinned OA adapter fields; OA owner attaches this descriptor to its existing Dot/Console/skill reads. No live consumer integration is claimed here.",
+      "evidence": [
+        "espansr/core/command_catalog.py",
+        "scripts/check_catalog_adapter.py",
+        "receipts/ds07/adapter-qualification.json"
+      ],
+      "later_owner_effect": "oa-shared-descriptor-and-frozen-selection"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R06",
+      "candidate_contribution": "Private freeze/restore preserves exact raw definition, values, digest, selected descriptor and opaque original context binding through JSON restart/replay; existing OA profile tests are separately rerun.",
+      "evidence": [
+        "tests/test_capability_publication.py::test_compatible_new_definition_discovered_without_touching_old_selection",
+        "tests/test_capability_publication.py::test_freeze_refuses_changed_definition_missing_values_and_corruption",
+        "receipts/ds07/oa-profile-qualification.json"
+      ],
+      "later_owner_effect": "oa-shared-descriptor-and-frozen-selection"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R07",
+      "candidate_contribution": "Catalog metadata is canonical-source-only; installed-only data and variable defaults/operation values are not exported. Credential-shaped sources block without echoed values.",
+      "evidence": [
+        "tests/test_capability_publication.py::test_private_values_and_installed_only_fields_never_enter_publication",
+        "tests/test_capability_publication.py::test_credential_source_is_rejected_without_echo"
+      ],
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R08",
+      "candidate_contribution": "Invalid source, duplicates, broken references, partial install, schema/corruption and atomic failures expose drift/unusable state and retain the last qualified publication. Existing local triggers remain discoverable.",
+      "evidence": [
+        "tests/test_capability_publication.py::test_failed_update_retains_last_complete_catalog",
+        "tests/test_capability_publication.py::test_atomic_publication_failure_preserves_previous_receipt",
+        "tests/test_capability_publication.py::test_popup_uses_same_published_descriptor_and_keeps_local_triggers"
+      ],
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-R09",
+      "candidate_contribution": "Added 27 Espansr publication cases plus a pinned source-level adapter probe; ran the exact dependency export's 70 adapter/profile tests. Complete native Windows policy gate and discovery check qualify this contribution. Required PR matrix and installed checks remain gateway-owned.",
+      "evidence": [
+        "tests/test_capability_publication.py",
+        "scripts/check_catalog_adapter.py",
+        "receipts/ds07/verification.json",
+        "receipts/ds07/oa-profile-qualification.json"
+      ],
+      "later_owner_effect": "qualified-repository-release"
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "DS07-ESPANSR-CATALOG-A01",
+      "candidate_evidence_and_limit": "Candidate source inventory accounts for 65 templates and four graphs; no inferred execution support.",
+      "evidence": "tests/test_capability_publication.py::test_complete_bundled_population_and_truthful_execution",
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-A02",
+      "candidate_evidence_and_limit": "Fixtures prove reproducible semantic equality despite formatting differences, distinct exact byte digests and a frozen selected definition; runtime projection requires owner readback.",
+      "evidence": "tests/test_capability_publication.py::test_determinism_semantic_parity_and_exact_bytes",
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-A03",
+      "candidate_evidence_and_limit": "Fixtures discover a compatible new definition, retain earlier frozen work and retain last complete catalog after failed updates; generated quick help includes catalog. Actual installed OA/help/client visibility is a later owner effect.",
+      "evidence": "tests/test_capability_publication.py::test_compatible_new_definition_discovered_without_touching_old_selection",
+      "later_owner_effect": "oa-shared-descriptor-and-frozen-selection"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-A04",
+      "candidate_evidence_and_limit": "JSON persisted prompt/workflow payloads restore exact originals after definition change; pinned OA preparation/profile behavior is tested. Actual accepted production job readback remains with OA owner.",
+      "evidence": "receipts/ds07/adapter-qualification.json",
+      "later_owner_effect": "oa-shared-descriptor-and-frozen-selection"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-A05",
+      "candidate_evidence_and_limit": "Public fixture catalog contains metadata/placeholders only; fake private operation values/defaults remain absent. Installed-private data is never metadata input. Source privacy review remains required.",
+      "evidence": "tests/test_capability_publication.py::test_private_values_and_installed_only_fields_never_enter_publication",
+      "later_owner_effect": "installed-capability-publication"
+    },
+    {
+      "id": "DS07-ESPANSR-CATALOG-A06",
+      "candidate_evidence_and_limit": "Machine fixture evidence is explicitly private-candidate-only. Actual installed parity, trigger/client and human/elapsed journeys are not marked passed.",
+      "evidence": "receipts/ds07/owner-handoff.json",
+      "later_owner_effect": "actual-client-and-human-acceptance"
+    }
+  ]
+}

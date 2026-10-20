@@ -167,6 +167,7 @@ template sync. See [verification](docs/VERIFY.md) for platform coverage.
 | [docs/CLI.md](docs/CLI.md) | Commands, flags, GUI launch notes, and WSL helper details |
 | [docs/TEMPLATES.md](docs/TEMPLATES.md) | Template schema, starter templates, publish behavior, and lifecycle details |
 | [docs/PROCESS.md](docs/PROCESS.md) | Capability graph, workflow manifests, handoff packets, and output contracts |
+| [docs/CAPABILITY_CATALOG.md](docs/CAPABILITY_CATALOG.md) | Versioned definitions, publication drift, executor truth, and frozen selections |
 | [docs/VERIFY.md](docs/VERIFY.md) | Practical post-install verification checklist |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Contributor setup, tests, linting, and formatting |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |

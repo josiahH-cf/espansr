@@ -1840,6 +1840,43 @@ def cmd_packet(args) -> int:
     return 2
 
 
+def cmd_catalog(args) -> int:
+    """Inspect public capability descriptors and current publication drift."""
+    import json
+
+    from espansr.core.capability_catalog import inspect_catalog, select_entries, source_revision
+    from espansr.core.templates import get_bundled_templates_dir
+
+    source = Path(args.source) if args.source else get_bundled_templates_dir()
+    installed = Path(args.installed) if args.installed else get_templates_dir()
+    result = inspect_catalog(source, installed, revision=source_revision(source))
+    catalog = result["published"] or result["current"]
+    result["choices"] = select_entries(
+        catalog,
+        capability=args.capability,
+        host=args.host,
+        client=args.client,
+        inputs=set(args.input) if args.input is not None else None,
+        intent=args.intent,
+        selected=args.select,
+    )
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=True))
+    else:
+        print(f"Capability publication: {result['status']}")
+        print(f"Current source validation: {result['current']['validation']}")
+        for entry in result["choices"]:
+            print(
+                f"{entry['id']}  {entry['name']}  "
+                f"[{entry['execution']['classification']}; "
+                f"installed {entry['installed']['status']}]"
+            )
+        for entry in result["current"]["entries"]:
+            if not entry["usable"]:
+                print(f"{entry['id']}  [unusable: {', '.join(entry['errors'])}]")
+    return 0 if result["current"]["validation"] == "passed" else 1
+
+
 def _build_parser() -> argparse.ArgumentParser:
     """Construct and return the full CLI argument parser."""
     from espansr import __version__
@@ -1850,6 +1887,22 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--version", action="version", version=f"espansr {__version__}")
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
+    catalog_parser = subparsers.add_parser(
+        "catalog", help="Inspect versioned capability publication"
+    )
+    catalog_parser.add_argument("--source", help="Canonical templates root")
+    catalog_parser.add_argument("--installed", help="Installed projection root")
+    catalog_parser.add_argument(
+        "--json", action="store_true", help="Return shared descriptors as JSON"
+    )
+    catalog_parser.add_argument("--capability", help="Required declared capability identity")
+    catalog_parser.add_argument("--host", help="Required executor host")
+    catalog_parser.add_argument("--client", help="Required executor client")
+    catalog_parser.add_argument(
+        "--input", action="append", help="Available artifact kind (repeatable)"
+    )
+    catalog_parser.add_argument("--intent", help="Match declared natural intent")
+    catalog_parser.add_argument("--select", help="Keep an explicitly selected usable definition")
 
     def add_publish_flags(command_parser: argparse.ArgumentParser) -> None:
         command_parser.add_argument(
@@ -2108,6 +2161,7 @@ def main(argv: Optional[list[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     handlers = {
+        "catalog": cmd_catalog,
         "publish": cmd_publish,
         "starters": cmd_sync_bundled,
         "status": cmd_status,
