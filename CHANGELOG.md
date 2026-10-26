@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `:sample` shows a concrete final-state projection using a representative
+  input, with observed execution and hypothetical output clearly distinguished.
+- `:user-journey` walks a finished or nearly finished project's requirements,
+  documents its actual backend, and authors final-state refinement specs through
+  its existing specification process. `:journey` retains its observed-use role.
+
 - `espansr catalog` exposes versioned template/workflow descriptors, source and
   installed semantic/byte provenance, prompt-only versus declared executor
   routes, and local publication drift. Existing publish/setup retains the last
@@ -15,6 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   exact definition bytes and caller context through restart and replay.
 
 ### Fixed
+
+- Command search matches prefixes from the first character, including `a` and
+  `i`, and focuses the search field whenever the command reference opens.
 
 - Workflow discovery loads identical bundled and installed projections once,
   while still reporting conflicting content and renamed duplicate identities.

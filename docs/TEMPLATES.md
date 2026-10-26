@@ -32,10 +32,10 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Media prompts: `:image-generator`
@@ -426,6 +426,24 @@ contracts.
 | `label` | string | No | Human-readable label shown in the editor |
 | `default` | string | No | Default value for the variable |
 | `type` | string | No | Variable type: `"date"` enables date format field, `"form"` enables multiline |
+
+## Previewing and Refining a Final State
+
+`:sample` produces a concrete example of the finished output or experience from
+the current idea or specification. It distinguishes projected output from any
+actually observed execution. `:user-journey` examines a finished or nearly
+finished project's requirements and actual backend, then authors the final-state
+refinement specifications through its existing authoring process. Both accept
+optional context after the prompt and work without a preceding command.
+
+These are reusable prompts for the receiving assistant, not autonomous backend
+executors. `:journey` retains its separate role of observing one real journey
+and repairing a demonstrated gap. `:sample` and `:user-journey` declare structural
+output contracts usable through `espansr check-output`; passing that check does
+not prove semantic quality, implementation, installed behavior or human approval.
+The local synthetic examples in `tests/fixtures/sample_final_state.md` and
+`tests/fixtures/user_journey_specs.md` show the distinction without contacting a
+service or changing another project.
 
 ## Creating Templates
 

@@ -190,6 +190,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 ":journey",
                 "walk one real user journey with a real sample and fix the demonstrated gap",
             ),
+            (
+                ":user-journey",
+                "walk requirements, document the backend, and author final-state specs",
+            ),
         ),
     ),
     HelpSection(
@@ -237,6 +241,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":explain", "explain context or sources in a faithful one-page summary"),
             (":show-me", "make material easy to understand with visuals, tables, and analogies"),
             (":visual", "build workflow diagrams or visual explanations"),
+            (":sample", "show a concrete final-state projection of what would be made"),
             (
                 ":reality-max",
                 "full account of what was done or would happen, with tables and diagrams",

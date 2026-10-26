@@ -30,6 +30,7 @@ ARTIFACT_TYPES: tuple[str, ...] = (
     "implementation-handoff",
     "implemented-feature",
     "visual-artifact",
+    "final-state-preview",
     "interactive-html",
     "verification-report",
     "feedback-directives",

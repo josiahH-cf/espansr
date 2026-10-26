@@ -579,7 +579,10 @@ class CommandsPopupDialog(QDialog):
         self._shortcut_close.activated.connect(self.reject)
         self._shortcut_search = QShortcut(QKeySequence("Ctrl+F"), self)
         self._shortcut_search.activated.connect(self._search_edit.setFocus)
-        self._search_edit.setFocus()
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._search_edit.setFocus(Qt.FocusReason.OtherFocusReason)
 
     @staticmethod
     def _load_workflows():

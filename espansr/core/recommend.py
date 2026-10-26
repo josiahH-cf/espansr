@@ -29,7 +29,7 @@ _WEIGHT_BOTH_MATCH = 40
 _WEIGHT_WORKFLOW_PROXIMITY = 5
 _WEIGHT_FAVORITE = 15
 _WEIGHT_RECENT_MAX = 10
-_PREFIX_MIN_LENGTH = 4
+_REVERSE_PREFIX_MIN_LENGTH = 4
 
 _STOPWORDS = {
     "a",
@@ -75,24 +75,25 @@ class Recommendation:
     reasons: Tuple[str, ...] = field(default_factory=tuple)
 
 
-def _tokenize(text: str) -> List[str]:
+def _tokenize(text: str, *, keep_stopwords: bool = False) -> List[str]:
     tokens = re.split(r"[^a-z0-9]+", (text or "").lower())
-    return [t for t in tokens if t and t not in _STOPWORDS]
+    return [t for t in tokens if t and (keep_stopwords or t not in _STOPWORDS)]
 
 
 def _tokens_match(query_token: str, field_token: str) -> bool:
     if query_token == field_token:
         return True
-    if len(query_token) >= _PREFIX_MIN_LENGTH and field_token.startswith(query_token):
+    # A query is often a word still being typed; match from its first character.
+    if field_token.startswith(query_token):
         return True
-    if len(field_token) >= _PREFIX_MIN_LENGTH and query_token.startswith(field_token):
+    if len(field_token) >= _REVERSE_PREFIX_MIN_LENGTH and query_token.startswith(field_token):
         return True
     return False
 
 
 def _field_hits(query_tokens: Sequence[str], field_text: str) -> int:
     """Count distinct query tokens matched by *field_text*'s tokens."""
-    field_tokens = _tokenize(field_text)
+    field_tokens = _tokenize(field_text, keep_stopwords=True)
     if not field_tokens:
         return 0
     hits = 0
@@ -189,6 +190,9 @@ def recommend(
     view to keep."""
     entry_list = list(entries)
     query_tokens = _tokenize(query.text)
+    # Keep natural-language stopword filtering, but let "a" and "i" start a search.
+    if not query_tokens:
+        query_tokens = _tokenize(query.text, keep_stopwords=True)
     results: List[Recommendation] = []
 
     for entry in entry_list:
