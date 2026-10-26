@@ -9,6 +9,8 @@ actions — selection only ever changes what is displayed or copies text.
 
 from unittest.mock import patch
 
+from PyQt6.QtCore import Qt
+
 from espansr.core.command_catalog import CommandCatalogEntry
 from espansr.core.config import Config
 from espansr.core.workflows import WorkflowCatalog, WorkflowEdge, WorkflowManifest, WorkflowNode
@@ -139,6 +141,71 @@ def test_search_filters_to_matching_capabilities(qtbot):
     assert visible[0] == ":gaps"
     dialog._search_edit.setText("")
     assert len(dialog._visible_entries()) == 3
+
+
+def test_search_typing_filters_each_prefix_and_clear_restores_catalog(qtbot):
+    from PyQt6.QtWidgets import QApplication
+
+    dialog = _make_dialog(qtbot)
+    dialog.show()
+    dialog.activateWindow()
+    qtbot.waitUntil(lambda: QApplication.focusWidget() is dialog._search_edit)
+    for letter, expected in (
+        ("g", [":gaps", ":research"]),
+        ("a", [":gaps", ":research"]),
+        ("p", [":gaps"]),
+        ("s", [":gaps"]),
+    ):
+        qtbot.keyClicks(QApplication.focusWidget(), letter)
+        assert [entry.trigger for entry in dialog._shown_entries] == expected
+        assert dialog._summary_table.rowCount() == len(expected)
+    qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_A, Qt.KeyboardModifier.ControlModifier)
+    qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Backspace)
+    assert dialog._summary_table.rowCount() == 3
+    dialog._scratchpad.setFocus()
+    qtbot.keyClick(dialog._scratchpad, Qt.Key.Key_F, Qt.KeyboardModifier.ControlModifier)
+    qtbot.waitUntil(lambda: QApplication.focusWidget() is dialog._search_edit)
+    qtbot.keyClicks(QApplication.focusWidget(), "gaps")
+    assert [entry.trigger for entry in dialog._shown_entries] == [":gaps"]
+
+
+def test_search_is_focused_again_after_dismissal_and_reopening(qtbot):
+    from PyQt6.QtWidgets import QApplication
+
+    dialog = _make_dialog(qtbot)
+    for _ in range(2):
+        dialog.show()
+        dialog.activateWindow()
+        qtbot.waitUntil(lambda: QApplication.focusWidget() is dialog._search_edit)
+        dialog._scratchpad.setFocus()
+        qtbot.waitUntil(lambda: QApplication.focusWidget() is dialog._scratchpad)
+        qtbot.keyClick(QApplication.focusWidget(), Qt.Key.Key_Escape)
+        qtbot.waitUntil(lambda: not dialog.isVisible())
+
+
+def test_repeated_popup_invocation_focuses_search(qtbot, qapp):
+    from PyQt6 import sip
+
+    from espansr.ui.commands_popup import launch_commands_popup
+
+    with (
+        patch("espansr.ui.commands_popup.get_config", side_effect=Config),
+        patch(
+            "espansr.ui.commands_popup.CommandsPopupDialog._load_workflows",
+            return_value=_workflow_catalog(),
+        ),
+    ):
+        for _ in range(2):
+            launch_commands_popup(entries=_entries())
+            dialog = qapp._espansr_references[-1]
+            try:
+                qtbot.waitUntil(lambda: qapp.focusWidget() is dialog._search_edit)
+                qtbot.keyClicks(qapp.focusWidget(), "gaps")
+                assert [entry.trigger for entry in dialog._shown_entries] == [":gaps"]
+                qtbot.keyClick(qapp.focusWidget(), Qt.Key.Key_Escape)
+            finally:
+                if not sip.isdeleted(dialog):
+                    dialog.close()
 
 
 # ── Artifact selectors (BEH-06) ──────────────────────────────────────────────

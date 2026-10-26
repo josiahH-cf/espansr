@@ -57,6 +57,8 @@ COMMAND_GROUPS = (
             "feature-clarification",
             "feature-handoff",
             "spec-discovery",
+            "user-journey-specs",
+            "final-state-sample",
             "gap-review",
             "use_recommendation",
             "accept_all_recommendations",
@@ -92,6 +94,7 @@ COMMAND_GROUPS = (
             "adversarial-review",
             "canary_runner",
             "observed-journey",
+            "user-journey-specs",
             "experience-audit",
             "docs_qa",
             "feedback-apply",
@@ -110,6 +113,7 @@ COMMAND_GROUPS = (
             "reality-max",
             "reality-min",
             "visual-workflow",
+            "final-state-sample",
             "playbook",
             "html-help-doc",
             "speechify",
@@ -167,6 +171,14 @@ CUSTOM_GROUP = CommandGroup(
 # Role and recognition cue. These describe the bundled job; full, live template
 # descriptions and use/avoid guidance remain visible in the selected detail.
 _CUES = {
+    "final-state-sample": (
+        "Preview final state",
+        "You want a concrete sample of what would be made if the idea were built.",
+    ),
+    "user-journey-specs": (
+        "Journey to specs",
+        "Walk a near-finished project, document its backend, and specify the final state.",
+    ),
     "one_shot": (
         "One shot",
         "You want a request planned, built, verified, reviewed, and delivered without questions.",

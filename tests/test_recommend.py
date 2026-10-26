@@ -8,6 +8,8 @@ appearing in the query, using only the real bundled metadata.
 
 from pathlib import Path
 
+import pytest
+
 from espansr.core.command_catalog import build_command_catalog
 from espansr.core.config import Config
 from espansr.core.templates import TemplateManager
@@ -27,6 +29,35 @@ def _top_trigger(entries, query, **kwargs):
     results = recommend(entries, RecommendationQuery(**query), **kwargs)
     assert results, f"no recommendations for {query}"
     return results[0].entry.trigger
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [(text, ":gaps") for text in ("g", "ga", "gap", "gaps", ":GA")]
+    + [(text, ":audit") for text in ("a", "au", "aud", "audit")]
+    + [("i", ":image-generator")],
+)
+def test_search_matches_from_first_character(text, expected):
+    from espansr.core.recommend import RecommendationQuery, recommend
+
+    results = recommend(_bundled_entries(), RecommendationQuery(text=text))
+    assert expected in [result.entry.trigger for result in results]
+
+
+def test_short_catalog_token_does_not_match_unrelated_longer_query():
+    from espansr.core.command_catalog import CommandCatalogEntry
+    from espansr.core.recommend import RecommendationQuery, recommend
+
+    entry = CommandCatalogEntry(":go", "Go", "", "", "template")
+    assert recommend([entry], RecommendationQuery(text="gospel")) == []
+
+
+def test_single_letter_command_can_be_searched():
+    from espansr.core.command_catalog import CommandCatalogEntry
+    from espansr.core.recommend import RecommendationQuery, recommend
+
+    entry = CommandCatalogEntry(":a", "A", "", "", "template")
+    assert recommend([entry], RecommendationQuery(text="a"))[0].entry == entry
 
 
 # ── BEH-05: recognition over recall ──────────────────────────────────────────
