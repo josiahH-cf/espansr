@@ -220,8 +220,12 @@ init = {"type": "system", "subtype": "init", "model": "example-model", "tools": 
         "permissionMode": "manual"}
 if mode == "wrong_model":
     init["model"] = "other-model"
+if mode == "plan_mode":
+    init["permissionMode"] = "plan"
+if mode == "default_mode":
+    init["permissionMode"] = "default"
 emit(init)
-if mode in ("stall", "wrong_model"):
+if mode in ("stall", "wrong_model", "plan_mode"):
     time.sleep(60)
 if mode == "runaway":
     while True:
@@ -259,7 +263,7 @@ def _supervise(fake, tmp_path, mode, **limits):
         vpr.Limits(**{"wall_seconds": 20.0, **limits}),
         cwd=tmp_path,
         model=MODEL,
-        permission_mode="manual",
+        permission_modes=vpr.MANUAL_MODES,
     )
     return receipt, run_dir
 
@@ -299,6 +303,14 @@ def test_unexpected_model_stops_the_run_without_fallback(fake, tmp_path):
     assert receipt["status"] == "ERROR"
     assert "other-model" in receipt["reason"]
     assert receipt["elapsed_seconds"] < 30
+
+
+def test_manual_mode_reported_as_default_is_accepted_but_plan_mode_stops(fake, tmp_path):
+    accepted, _ = _supervise(fake, tmp_path, "default_mode")
+    assert accepted["status"] == "COMPLETED"
+    stopped, _ = _supervise(fake, tmp_path, "plan_mode")
+    assert stopped["status"] == "ERROR"
+    assert "'plan'" in stopped["reason"]
 
 
 # ── preservation ─────────────────────────────────────────────────────────────

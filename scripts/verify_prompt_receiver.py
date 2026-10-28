@@ -63,6 +63,8 @@ ISOLATION_PREFACE = (
     "observed evidence."
 )
 SIDE_EFFECT_KINDS = ("execution", "test", "write", "approval", "delivery")
+# ``--permission-mode manual`` is reported as "default" in the init event (CLI 2.1.287).
+MANUAL_MODES = ("manual", "default")
 EXIT_PASS, EXIT_FAIL, EXIT_REVIEW, EXIT_INCOMPLETE = 0, 1, 2, 3
 
 # Markup that imitates a tool protocol inside ordinary assistant text.
@@ -204,13 +206,13 @@ def terminate_owned(process: subprocess.Popen) -> None:
         process.kill()
 
 
-def _init_problem(init: dict, model: str | None, permission_mode: str | None) -> str | None:
+def _init_problem(init: dict, model: str | None, modes: tuple | None) -> str | None:
     if init.get("tools"):
         return f"tools were available: {init.get('tools')}"
     if model and init.get("model") != model:
         return f"init model {init.get('model')!r} differs from requested {model!r}"
-    if permission_mode and init.get("permissionMode") != permission_mode:
-        return f"permission mode {init.get('permissionMode')!r}, expected {permission_mode!r}"
+    if modes and init.get("permissionMode") not in modes:
+        return f"permission mode {init.get('permissionMode')!r}, expected one of {modes}"
     return None
 
 
@@ -222,7 +224,7 @@ def supervise(
     *,
     cwd: Path,
     model: str | None = None,
-    permission_mode: str | None = None,
+    permission_modes: tuple | None = None,
     terminate: Callable[[subprocess.Popen], None] = terminate_owned,
     clock: Callable[[], float] = time.monotonic,
     poll_seconds: float = 0.2,
@@ -305,7 +307,7 @@ def supervise(
                     break
                 handle(raw, counting=True)
                 if init and not reason:
-                    problem = _init_problem(init, model, permission_mode)
+                    problem = _init_problem(init, model, permission_modes)
                     if problem:
                         status, reason = "ERROR", problem
                         break
@@ -622,7 +624,13 @@ def cmd_run(args) -> int:
     workdir = Path(tempfile.mkdtemp(prefix="espansr-receiver-"))
     try:
         receipt = supervise(
-            argv, text, run_dir, limits, cwd=workdir, model=args.model, permission_mode="manual"
+            argv,
+            text,
+            run_dir,
+            limits,
+            cwd=workdir,
+            model=args.model,
+            permission_modes=MANUAL_MODES,
         )
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
