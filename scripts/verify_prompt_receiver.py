@@ -568,7 +568,11 @@ def evaluate(
     layers = {
         "run": {"verdict": (receipt or {}).get("status", "NOT_RECORDED")},
         "execution": execution_verdict(facts),
-        "structural": structural_verdict(template, facts["final_text"]),
+        "structural": (
+            structural_verdict(template, facts["final_text"])
+            if facts["has_result"]
+            else {"verdict": "NOT_CHECKED", "failures": ["no final output to check"]}
+        ),
         "semantic": semantic_verdict(facts, review),
     }
     run_state = layers["run"]["verdict"]

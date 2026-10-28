@@ -296,6 +296,15 @@ def test_stalled_child_is_stopped_at_the_wall_limit(fake, tmp_path):
     assert receipt["elapsed_seconds"] < 30
     assert receipt["exit_code"] is not None
     assert '"subtype": "init"' in (run_dir / "events.jsonl").read_text(encoding="utf-8")
+    verdict = vpr.evaluate(
+        vpr.load_events(run_dir / "events.jsonl"),
+        {**TEMPLATE, "output_contract": CONTRACT},
+        None,
+        receipt,
+    )
+    assert verdict["layers"]["run"]["verdict"] == "LIMIT_REACHED"
+    assert verdict["layers"]["structural"]["verdict"] == "NOT_CHECKED"
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
 
 
 def test_runaway_public_text_is_stopped_and_reasoning_is_neither_counted_nor_kept(fake, tmp_path):
