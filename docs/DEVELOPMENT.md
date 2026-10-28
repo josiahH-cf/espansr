@@ -91,7 +91,8 @@ espansr/                    Main Python package
     ├── variable_editor.py  Inline variable editor widget
     └── workflow_diagram.py Workflow diagrams for :coms and the editor window
 scripts/
-└── sync_discovery.py       Regenerate the :espansr quick help and docs note list
+├── sync_discovery.py       Regenerate the :espansr quick help and docs note list
+└── verify_prompt_receiver.py  Maintainer-only isolated receiving-model sample and verdicts
 templates/                  Bundled starter templates (prompt notes)
 └── _meta/workflows/        Bundled workflow manifests
 tests/                      pytest suite; conftest.py defaults Qt to offscreen

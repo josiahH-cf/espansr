@@ -282,6 +282,28 @@ handoff format. Check native specifications with the target's actual schema
 and tools. `check-output` returns exit code 2 for a template without a contract;
 that means no structural contract was declared, not that the output passed.
 
+### Receiving-model samples
+
+`scripts/verify_prompt_receiver.py` is a maintainer check, not product behavior,
+and CI never runs its `run` command. `run` sends a bundled template's exact
+content, one fixed isolation preface and one example to the installed Claude
+Code CLI. It disables every tool, uses neither plan mode nor a fallback model,
+and stops only the process it started when the declared wall time (default five
+minutes), public assistant text (64 KiB) or CLI-reported budget ($1) is reached.
+Hidden reasoning is never written to its records, and a new run never replaces
+an earlier one. `evaluate` keeps four verdicts apart:
+
+- **run** — whether the sample completed, hit a limit, was interrupted or errored
+- **execution** — actual tool calls from structured events only; text that
+  imitates tool calls, results or approvals is flagged for review, never counted
+- **structural** — the output contract, or N/A when the template declares none
+- **semantic** — reviewer-recorded claims and expectations; a claimed listing,
+  test, write, approval or delivery that the execution evidence rules out fails
+
+Keyword-matched claim sentences only prompt review. A sample shows one
+model's answer on one surface; it does not prove foreground expansion,
+general reliability or a person's acceptance.
+
 ## The `:litmus` capability
 
 `:litmus` (capability ID `human-litmus`) authors one paste-ready handoff for a
