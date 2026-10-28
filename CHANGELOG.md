@@ -20,6 +20,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   complete catalog on failed qualification. Frozen private selections preserve
   exact definition bytes and caller context through restart and replay.
 
+- `scripts/verify_prompt_receiver.py` runs one maintainer-only receiving-model
+  sample with tools disabled, no plan mode and enforced time, text and budget
+  limits. It reports run, execution, structural and semantic verdicts
+  separately: tool-like text is never execution evidence, and a claimed side
+  effect that the recorded events rule out fails.
+
 ### Fixed
 
 - Command search matches prefixes from the first character, including `a` and
