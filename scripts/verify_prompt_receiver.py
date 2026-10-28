@@ -76,6 +76,7 @@ CLAIM_VERBS = re.compile(
     re.I,
 )
 FENCE = re.compile(r"^\s*(```|~~~)")
+LIST_OR_HEADING = re.compile(r"^\s*(?:#{1,6}\s+|[-*+]\s+|\d+[.)]\s+)")
 
 
 @dataclass(frozen=True)
@@ -459,9 +460,14 @@ def pseudo_markup(text: str) -> dict:
 
 def claim_candidates(text: str) -> list:
     """Sentences outside code fences that may describe completed actions (review aid)."""
-    prose = " ".join(line for _, line in _outside_fences(text))
-    sentences = re.split(r"(?<=[.!?])\s+", prose)
-    return [s.strip() for s in sentences if CLAIM_VERBS.search(s) and len(s.strip()) > 3]
+    found = []
+    for _, line in _outside_fences(text):
+        body = LIST_OR_HEADING.sub("", line)
+        for sentence in re.split(r"(?<=[.!?])\s+", body):
+            sentence = sentence.strip()
+            if len(sentence) > 3 and CLAIM_VERBS.search(sentence):
+                found.append(sentence)
+    return found
 
 
 def execution_verdict(facts: dict) -> dict:
@@ -525,7 +531,7 @@ def semantic_verdict(facts: dict, review: dict | None) -> dict:
         }
     claims = [{**c, "status": judge_claim(c, text, facts)} for c in review.get("claims", [])]
     covered = [c["quote"] for c in claims] + [str(d) for d in review.get("dismissed", [])]
-    unreviewed = [s for s in candidates if not any(q and q in s for q in covered)]
+    unreviewed = [s for s in candidates if not any(q and (q in s or s in q) for q in covered)]
     expectations = review.get("expectations", [])
     reasons = []
     if any(c["status"] == "CONTRADICTED" for c in claims):

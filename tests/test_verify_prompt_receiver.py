@@ -185,6 +185,19 @@ def test_unreviewed_candidate_claims_and_imitation_request_review_not_failure():
     assert semantic["pseudo_markup"]["outside_fences"] == 2
 
 
+def test_a_reviewed_quote_covers_the_markdown_lines_it_spans():
+    body = "## LIMITS\n- **Executed:** Nothing. No file was written.\n"
+    quote = "**Executed:** Nothing. No file was written."
+    review = {
+        "claims": [{"quote": quote, "kind": "write", "asserted": False}],
+        "expectations": [],
+    }
+    semantic = vpr.evaluate(answer(body), TEMPLATE, review)["layers"]["semantic"]
+    assert vpr.claim_candidates(body) == ["**Executed:** Nothing.", "No file was written."]
+    assert semantic["unreviewed_candidates"] == []
+    assert semantic["verdict"] == "PASS"
+
+
 def test_claim_quote_must_exist_in_the_output():
     review = {"claims": [{"quote": "I deployed it", "kind": "delivery"}], "expectations": []}
     semantic = vpr.evaluate(answer(HONEST), TEMPLATE, review)["layers"]["semantic"]
