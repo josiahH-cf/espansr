@@ -41,13 +41,15 @@ import os
 import queue
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 import uuid
-from dataclasses import asdict, dataclass
+import weakref
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -193,18 +195,151 @@ def _assistant_text_bytes(event: dict) -> int:
     )
 
 
-def terminate_owned(process: subprocess.Popen) -> None:
-    """Stop only the process this supervisor started, with its own children."""
-    if process.poll() is not None:
-        return
+# The Windows launcher joins the invocation's job *before* starting the CLI.
+# Assigning the CLI after Popen returns races its first spawn/exit. No breakaway
+# flags are used: an enclosing app job and its restrictions remain in force.
+_WINDOWS_LAUNCHER = """
+import ctypes, subprocess, sys
+from ctypes import wintypes
+k = ctypes.WinDLL('kernel32', use_last_error=True)
+k.OpenJobObjectW.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.LPCWSTR]
+k.OpenJobObjectW.restype = wintypes.HANDLE
+k.GetCurrentProcess.restype = wintypes.HANDLE
+k.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+k.CloseHandle.argtypes = [wintypes.HANDLE]
+job = k.OpenJobObjectW(1, False, sys.argv[1])  # JOB_OBJECT_ASSIGN_PROCESS
+if not job:
+    raise ctypes.WinError(ctypes.get_last_error())
+try:
+    if not k.AssignProcessToJobObject(job, k.GetCurrentProcess()):
+        raise ctypes.WinError(ctypes.get_last_error())
+finally:
+    k.CloseHandle(job)
+sys.exit(subprocess.call(sys.argv[2:]))
+"""
+
+
+class _WindowsJob:
+    """One kill-on-close job, held by the supervisor, including orphaned children."""
+
+    def __init__(self):
+        import ctypes
+        from ctypes import wintypes
+
+        class BasicLimits(ctypes.Structure):
+            _fields_ = [
+                ("process_time", ctypes.c_int64),
+                ("job_time", ctypes.c_int64),
+                ("flags", wintypes.DWORD),
+                ("min_working_set", ctypes.c_size_t),
+                ("max_working_set", ctypes.c_size_t),
+                ("active_processes", wintypes.DWORD),
+                ("affinity", ctypes.c_size_t),
+                ("priority", wintypes.DWORD),
+                ("scheduling", wintypes.DWORD),
+            ]
+
+        class ExtendedLimits(ctypes.Structure):
+            _fields_ = [
+                ("basic", BasicLimits),
+                ("io_counters", ctypes.c_uint64 * 6),
+                ("process_memory", ctypes.c_size_t),
+                ("job_memory", ctypes.c_size_t),
+                ("peak_process_memory", ctypes.c_size_t),
+                ("peak_job_memory", ctypes.c_size_t),
+            ]
+
+        self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.kernel.CreateJobObjectW.argtypes = [ctypes.c_void_p, wintypes.LPCWSTR]
+        self.kernel.CreateJobObjectW.restype = wintypes.HANDLE
+        self.kernel.SetInformationJobObject.argtypes = [
+            wintypes.HANDLE,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+        ]
+        self.kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        self.name = "espansr-receiver-" + uuid.uuid4().hex
+        ctypes.set_last_error(0)
+        self.handle = self.kernel.CreateJobObjectW(None, self.name)
+        if not self.handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        if ctypes.get_last_error() == 183:  # ERROR_ALREADY_EXISTS: never adopt another job
+            self.close()
+            raise FileExistsError("verifier job name already exists")
+        limits = ExtendedLimits()
+        limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if not self.kernel.SetInformationJobObject(
+            self.handle, 9, ctypes.byref(limits), ctypes.sizeof(limits)
+        ):
+            error = ctypes.get_last_error()
+            self.close()
+            raise ctypes.WinError(error)
+
+    def close(self):
+        if self.handle:
+            if not self.kernel.CloseHandle(self.handle):
+                import ctypes
+
+                raise ctypes.WinError(ctypes.get_last_error())
+            self.handle = None
+
+
+@dataclass
+class _Ownership:
+    cleanup: Callable[[], None]
+    lock: threading.Lock = field(default_factory=threading.Lock)
+    cleaned: bool = False
+
+
+_OWNED: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+_OWNED_LOCK = threading.Lock()
+
+
+def _start_owned(argv: list, **kwargs) -> subprocess.Popen:
+    """Establish ownership before the CLI runs; never discover it during cleanup."""
     if os.name == "nt":
-        subprocess.run(
-            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-            capture_output=True,
-            check=False,
-        )
+        job = _WindowsJob()
+        try:
+            process = subprocess.Popen(
+                [sys.executable, "-c", _WINDOWS_LAUNCHER, job.name, *argv], **kwargs
+            )
+        except BaseException:
+            job.close()
+            raise
+        owner = _Ownership(job.close)
     else:
-        process.kill()
+        process = subprocess.Popen(argv, start_new_session=True, **kwargs)
+        pgid = process.pid  # setsid completed inside Popen, even if the leader has since exited
+
+        def stop_group():
+            if pgid <= 1 or pgid == os.getpgrp():
+                raise ValueError("refusing to signal the caller's process group")
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass  # exited during startup or cleanup
+
+        owner = _Ownership(stop_group)
+    with _OWNED_LOCK:
+        _OWNED[process] = owner
+    return process
+
+
+def terminate_owned(process: subprocess.Popen) -> None:
+    """Stop this invocation's group/job once, even after its immediate leader exits.
+
+    No PID/tree discovery, external taskkill, caller-group signal or unbounded
+    wait. Concurrent/repeated cleanup cannot target a subsequently reused ID.
+    """
+    with _OWNED_LOCK:
+        owner = _OWNED.get(process)
+    if owner is None:
+        raise ValueError("process is not owned by this verifier invocation")
+    with owner.lock:
+        if not owner.cleaned:
+            owner.cleanup()
+            owner.cleaned = True
 
 
 def _init_problem(init: dict, model: str | None, modes: tuple | None) -> str | None:
@@ -248,7 +383,7 @@ def supervise(
         events_path.open("x", encoding="utf-8") as out,
         stderr_path.open("x", encoding="utf-8") as err,
     ):
-        process = subprocess.Popen(
+        process = _start_owned(
             argv,
             cwd=str(cwd),
             stdin=subprocess.PIPE,
@@ -270,9 +405,8 @@ def supervise(
                 lines.put(raw)
             lines.put(None)
 
-        threading.Thread(target=feed, daemon=True).start()
+        writer = threading.Thread(target=feed, daemon=True)
         reader = threading.Thread(target=read, daemon=True)
-        reader.start()
 
         def handle(raw: str, counting: bool) -> None:
             nonlocal partial_bytes, final_bytes, init, result
@@ -295,36 +429,52 @@ def supervise(
                 result = kept
 
         try:
-            while True:
-                remaining = started + limits.wall_seconds - clock()
-                if remaining <= 0:
-                    status, reason = "LIMIT_REACHED", "wall_time"
-                    break
-                try:
-                    raw = lines.get(timeout=min(poll_seconds, remaining))
-                except queue.Empty:
-                    continue
-                if raw is None:
-                    break
-                handle(raw, counting=True)
-                if init and not reason:
-                    problem = _init_problem(init, model, permission_modes)
-                    if problem:
-                        status, reason = "ERROR", problem
+            writer.start()
+            reader.start()
+            try:
+                while True:
+                    remaining = started + limits.wall_seconds - clock()
+                    if remaining <= 0:
+                        status, reason = "LIMIT_REACHED", "wall_time"
                         break
-                if max(partial_bytes, final_bytes) > limits.max_public_text_bytes:
-                    status, reason = "LIMIT_REACHED", "public_text"
-                    break
-        except KeyboardInterrupt:
-            status, reason = "INTERRUPTED", "keyboard_interrupt"
-        if status != "COMPLETED":
+                    try:
+                        raw = lines.get(timeout=min(poll_seconds, remaining))
+                    except queue.Empty:
+                        continue
+                    if raw is None:
+                        break
+                    handle(raw, counting=True)
+                    if init and not reason:
+                        problem = _init_problem(init, model, permission_modes)
+                        if problem:
+                            status, reason = "ERROR", problem
+                            break
+                    if max(partial_bytes, final_bytes) > limits.max_public_text_bytes:
+                        status, reason = "LIMIT_REACHED", "public_text"
+                        break
+            except KeyboardInterrupt:
+                status, reason = "INTERRUPTED", "keyboard_interrupt"
+            if status != "COMPLETED":
+                terminate(process)
+            try:
+                remaining = max(0, started + limits.wall_seconds - clock())
+                exit_code = process.wait(timeout=remaining if status == "COMPLETED" else 5)
+            except subprocess.TimeoutExpired:
+                if status == "COMPLETED":
+                    status, reason = "LIMIT_REACHED", "wall_time"
+                terminate(process)
+                exit_code = process.wait(timeout=5)
+        finally:
+            # Also clean orphans on normal completion and unexpected exceptions.
             terminate(process)
-        try:
-            exit_code = process.wait(timeout=30)
-        except subprocess.TimeoutExpired:
-            terminate(process)
-            exit_code = process.wait(timeout=30)
-        reader.join(timeout=10)
+            process.wait(timeout=5)
+            for thread in (reader, writer):
+                if thread.ident is not None:
+                    thread.join(timeout=5)
+            if not reader.is_alive():
+                process.stdout.close()
+            if not writer.is_alive():
+                process.stdin.close()
         while True:  # keep evidence that arrived before the stop, without counting it
             try:
                 raw = lines.get_nowait()
@@ -415,8 +565,11 @@ def protocol(events: list) -> dict:
                 texts.append(str(block.get("text", "")))
             elif event.get("type") == "user" and block.get("type") == "tool_result":
                 outcomes[block.get("tool_use_id")] = "failed" if block.get("is_error") else "ok"
+    denials = result.get("permission_denials") or []
     denied = {
-        d.get("tool_use_id"): d.get("tool_name") for d in (result.get("permission_denials") or [])
+        d.get("tool_use_id"): d.get("tool_name")
+        for d in (denials if isinstance(denials, list) else [])
+        if isinstance(d, dict)
     }
     actions = []
     for call_id, name in calls.items():
@@ -565,19 +718,27 @@ def evaluate(
 ) -> dict:
     """All verdict layers, kept separate, plus the overall exit code."""
     facts = protocol(events)
+    result_state, note = _result_state(events)
+    recorded_state = (receipt or {}).get("status", "NOT_RECORDED")
+    run_state = recorded_state
+    if recorded_state in ("COMPLETED", "NOT_RECORDED") and result_state != "COMPLETED":
+        run_state = result_state
+    exit_code = (receipt or {}).get("exit_code", 0)
+    if run_state == "COMPLETED" and (type(exit_code) is not int or exit_code != 0):
+        run_state, note = "ERROR", "receipt says completed but records a nonzero/invalid exit code"
+    completed = run_state in ("COMPLETED", "NOT_RECORDED") and result_state == "COMPLETED"
     layers = {
-        "run": {"verdict": (receipt or {}).get("status", "NOT_RECORDED")},
+        "run": {"verdict": run_state, "receipt_status": recorded_state, "note": note},
         "execution": execution_verdict(facts),
         "structural": (
             structural_verdict(template, facts["final_text"])
-            if facts["has_result"]
-            else {"verdict": "NOT_CHECKED", "failures": ["no final output to check"]}
+            if completed
+            else {"verdict": "NOT_CHECKED", "failures": ["run did not complete successfully"]}
         ),
         "semantic": semantic_verdict(facts, review),
     }
-    run_state = layers["run"]["verdict"]
     verdicts = [layers[k]["verdict"] for k in ("execution", "structural", "semantic")]
-    if run_state not in ("COMPLETED", "NOT_RECORDED") or not facts["has_result"]:
+    if not completed:
         code = EXIT_INCOMPLETE
     elif "FAIL" in verdicts:
         code = EXIT_FAIL
@@ -586,6 +747,37 @@ def evaluate(
     else:
         code = EXIT_PASS
     return {"layers": layers, "exit_code": code}
+
+
+def _result_state(events: list) -> tuple[str, str]:
+    """Terminal protocol evidence, independent of a supervisor receipt.
+
+    Require one well-formed success. Explicit failures win over contradictory
+    flags/receipts; ambiguous or malformed terminal evidence is ERROR. Keep a
+    genuine receipt-free success NOT_RECORDED in evaluate, without inventing a
+    receipt or an observed process exit.
+    """
+    results = [e for e in events if e.get("type") == "result"]
+    if len(results) != 1:
+        return "ERROR", "no result event" if not results else "multiple terminal result events"
+    result = results[0]
+    subtype, is_error = result.get("subtype"), result.get("is_error")
+    if isinstance(subtype, str) and subtype.startswith("error"):
+        state = "LIMIT_REACHED" if "budget" in subtype else "ERROR"
+        return state, f"structured failure: subtype {subtype!r}, is_error={is_error!r}"
+    if is_error is True:
+        return "ERROR", f"structured failure: is_error=true, subtype={subtype!r}"
+    if is_error is not False or subtype != "success":
+        return "ERROR", "malformed result: expected is_error=false and subtype='success'"
+    if not isinstance(result.get("result"), str):
+        return "ERROR", "malformed success: result must be text"
+    errors = result.get("errors", [])
+    if not isinstance(errors, list) or errors:
+        return "ERROR", "result contains errors or a malformed errors field"
+    denials = result.get("permission_denials", [])
+    if not isinstance(denials, list) or any(not isinstance(d, dict) for d in denials):
+        return "ERROR", "malformed result: permission_denials must be a list of objects"
+    return "COMPLETED", "one structured success result; process exit requires a receipt"
 
 
 # ── Command line ─────────────────────────────────────────────────────────────

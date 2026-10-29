@@ -7,7 +7,12 @@ budget limits are exercised without contacting any model.
 
 import importlib.util
 import json
+import os
+import signal
+import subprocess
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -205,6 +210,103 @@ def test_claim_quote_must_exist_in_the_output():
     assert semantic["verdict"] == "NEEDS_REVIEW"
 
 
+@pytest.mark.parametrize("receipt", [None, {"status": "COMPLETED"}])
+@pytest.mark.parametrize(
+    "fields, state",
+    [
+        ({"is_error": True, "subtype": "error_max_budget_usd"}, "LIMIT_REACHED"),
+        ({"is_error": True, "subtype": "error_during_execution"}, "ERROR"),
+        ({"is_error": True, "subtype": "success"}, "ERROR"),
+        ({"is_error": False, "subtype": "error_max_budget_usd"}, "LIMIT_REACHED"),
+        ({"is_error": False, "subtype": "error_during_execution"}, "ERROR"),
+        ({"is_error": "false"}, "ERROR"),
+        ({"is_error": 0}, "ERROR"),
+        ({"is_error": None}, "ERROR"),
+        ({"subtype": None}, "ERROR"),
+        ({"subtype": ["success"]}, "ERROR"),
+        ({"subtype": "unknown"}, "ERROR"),
+        ({"result": {"text": "ok"}}, "ERROR"),
+        ({"errors": ["execution failed"]}, "ERROR"),
+        ({"errors": "invalid errors field"}, "ERROR"),
+        ({"permission_denials": "invalid denials field"}, "ERROR"),
+        ({"permission_denials": [None]}, "ERROR"),
+    ],
+)
+def test_failed_or_malformed_result_cannot_pass_without_a_receipt(fields, state, receipt):
+    events = answer("ok")
+    events[-1].update(fields)
+    verdict = vpr.evaluate(events, TEMPLATE, {"claims": [], "expectations": []}, receipt)
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
+    assert verdict["layers"]["run"]["verdict"] == state
+    assert verdict["layers"]["run"]["note"]
+    assert verdict["layers"]["structural"]["verdict"] == "NOT_CHECKED"
+
+
+@pytest.mark.parametrize("receipt", [None, {"status": "COMPLETED"}])
+def test_valid_result_can_pass_with_or_without_receipt(receipt):
+    verdict = vpr.evaluate(answer("ok"), TEMPLATE, {"claims": [], "expectations": []}, receipt)
+    assert verdict["exit_code"] == vpr.EXIT_PASS
+    assert verdict["layers"]["run"]["verdict"] == (
+        "NOT_RECORDED" if receipt is None else "COMPLETED"
+    )
+
+
+@pytest.mark.parametrize("receipt", [None, {"status": "COMPLETED"}])
+@pytest.mark.parametrize("missing", ["event", "result", "is_error", "subtype"])
+def test_missing_result_or_required_result_field_is_incomplete(receipt, missing):
+    events = answer("ok")
+    if missing == "event":
+        events.pop()
+    else:
+        events[-1].pop(missing)
+    verdict = vpr.evaluate(events, TEMPLATE, {"claims": [], "expectations": []}, receipt)
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
+
+
+@pytest.mark.parametrize("state", ["ERROR", "LIMIT_REACHED", "INTERRUPTED"])
+def test_successful_result_does_not_override_a_stopped_receipt(state):
+    verdict = vpr.evaluate(
+        answer("ok"), TEMPLATE, {"claims": [], "expectations": []}, {"status": state}
+    )
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
+    assert verdict["layers"]["run"]["verdict"] == state
+
+
+@pytest.mark.parametrize("exit_code", [1, -9, "0", None, False, 0.0])
+def test_completed_receipt_cannot_hide_nonzero_or_malformed_exit_code(exit_code):
+    verdict = vpr.evaluate(
+        answer("ok"),
+        TEMPLATE,
+        {"claims": [], "expectations": []},
+        {"status": "COMPLETED", "exit_code": exit_code},
+    )
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
+    assert verdict["layers"]["run"]["verdict"] == "ERROR"
+
+
+@pytest.mark.parametrize("receipt", [None, {"status": "COMPLETED"}])
+def test_later_success_cannot_hide_an_earlier_terminal_error(receipt):
+    events = answer("ok")
+    events.insert(-1, result_event("", is_error=True, subtype="error_during_execution"))
+    verdict = vpr.evaluate(events, TEMPLATE, {"claims": [], "expectations": []}, receipt)
+    assert verdict["exit_code"] == vpr.EXIT_INCOMPLETE
+    assert verdict["layers"]["run"]["verdict"] == "ERROR"
+
+
+@pytest.mark.parametrize("receipt", [None, {"status": "COMPLETED"}])
+def test_evaluate_command_reports_receipt_free_budget_failure(tmp_path, receipt):
+    events = answer("ok")
+    events[-1].update(is_error=True, subtype="error_max_budget_usd")
+    source, output = tmp_path / "events.jsonl", tmp_path / "verdict.json"
+    source.write_text("\n".join(json.dumps(e) for e in events), encoding="utf-8")
+    if receipt is not None:
+        (tmp_path / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
+    assert vpr.main(["evaluate", "--events", str(source), "--out", str(output)]) == (
+        vpr.EXIT_INCOMPLETE
+    )
+    assert json.loads(output.read_text())["layers"]["run"]["verdict"] == "LIMIT_REACHED"
+
+
 def test_tool_success_is_not_proof_of_a_claimed_side_effect():
     events = [
         init_event(tools=["Write"]),
@@ -224,7 +326,8 @@ def test_tool_success_is_not_proof_of_a_claimed_side_effect():
 # ── supervision with a real child process ────────────────────────────────────
 
 FAKE_CLI = r"""
-import json, sys, time
+import json, os, subprocess, sys, time
+from pathlib import Path
 mode = sys.argv[1]
 sys.stdin.read()
 def emit(event):
@@ -238,6 +341,21 @@ if mode == "plan_mode":
 if mode == "default_mode":
     init["permissionMode"] = "default"
 emit(init)
+if mode in ("tree", "orphan", "closed_pipes", "early_eof"):
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL if mode in ("closed_pipes", "early_eof") else None,
+        stderr=subprocess.DEVNULL,
+    )
+    Path("tree-pids-" + mode + ".json").write_text(json.dumps([os.getpid(), child.pid]))
+    if mode == "orphan":
+        sys.exit(0)
+    if mode == "tree":
+        time.sleep(60)
+    if mode == "early_eof":
+        os.close(sys.stdout.fileno())
+        time.sleep(60)
 if mode in ("stall", "wrong_model", "plan_mode"):
     time.sleep(60)
 if mode == "runaway":
@@ -266,7 +384,7 @@ def fake(tmp_path):
     return lambda mode: [sys.executable, str(script), mode]
 
 
-def _supervise(fake, tmp_path, mode, **limits):
+def _supervise(fake, tmp_path, mode, *, terminate=vpr.terminate_owned, **limits):
     run_dir = tmp_path / f"run-{mode}"
     run_dir.mkdir()
     receipt = vpr.supervise(
@@ -277,8 +395,211 @@ def _supervise(fake, tmp_path, mode, **limits):
         cwd=tmp_path,
         model=MODEL,
         permission_modes=vpr.MANUAL_MODES,
+        terminate=terminate,
     )
     return receipt, run_dir
+
+
+def _pid_running(pid):
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel.OpenProcess.restype = wintypes.HANDLE
+        kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+        handle = kernel.OpenProcess(0x100000, False, pid)  # SYNCHRONIZE
+        if not handle:
+            return False
+        try:
+            return kernel.WaitForSingleObject(handle, 0) == 258  # WAIT_TIMEOUT
+        finally:
+            kernel.CloseHandle(handle)
+    # An orphaned zombie has stopped executing even if the host's init has not reaped it.
+    state = subprocess.run(
+        ["ps", "-p", str(pid), "-o", "stat="], capture_output=True, text=True, timeout=5
+    ).stdout.strip()
+    return bool(state) and not state.startswith("Z")
+
+
+def _wait_stopped(pid):
+    deadline = time.monotonic() + 5
+    while _pid_running(pid) and time.monotonic() < deadline:
+        time.sleep(0.02)
+    return not _pid_running(pid)
+
+
+@pytest.fixture
+def tree_cleanup(tmp_path):
+    # Independent of the implementation under test, including failed assertions.
+    yield
+    for path in tmp_path.glob("tree-pids-*.json"):
+        for pid in reversed(json.loads(path.read_text())):
+            if _pid_running(pid):
+                try:
+                    os.kill(pid, signal.SIGTERM if os.name == "nt" else signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                assert _wait_stopped(pid), f"test descendant {pid} did not stop"
+
+
+@pytest.mark.parametrize("mode", ["tree", "orphan", "closed_pipes", "early_eof"])
+def test_cleanup_stops_descendants_even_after_leader_exit(fake, tmp_path, tree_cleanup, mode):
+    receipt, _ = _supervise(fake, tmp_path, mode, wall_seconds=2)
+    leader, descendant = json.loads((tmp_path / f"tree-pids-{mode}.json").read_text())
+    assert not _pid_running(leader)
+    assert _wait_stopped(descendant), f"descendant {descendant} survived {mode} cleanup"
+    assert receipt["elapsed_seconds"] < 15
+    if mode == "closed_pipes":
+        assert receipt["status"] == "COMPLETED"
+    elif mode == "orphan":
+        # EOF may arrive with the leader's exit, or an inherited pipe can stay
+        # open until the wall limit. Neither path has a successful result.
+        assert receipt["status"] in ("ERROR", "LIMIT_REACHED")
+    else:
+        assert receipt["status"] == "LIMIT_REACHED"
+
+
+def test_repeated_concurrent_cleanup_leaves_unrelated_process_alive(fake, tmp_path, tree_cleanup):
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+
+    def repeated(process):
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(lambda _: vpr.terminate_owned(process), range(12)))
+        vpr.terminate_owned(process)
+
+    try:
+        _supervise(fake, tmp_path, "tree", terminate=repeated, wall_seconds=2)
+        _, descendant = json.loads((tmp_path / "tree-pids-tree.json").read_text())
+        assert _wait_stopped(descendant)
+        assert unrelated.poll() is None
+    finally:
+        unrelated.kill()
+        unrelated.wait(timeout=5)
+
+
+def test_cleanup_rejects_a_process_not_started_by_the_verifier():
+    unrelated = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        with pytest.raises(ValueError, match="owned"):
+            vpr.terminate_owned(unrelated)
+        assert unrelated.poll() is None
+    finally:
+        unrelated.kill()
+        unrelated.wait(timeout=5)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="POSIX session ownership")
+def test_owned_process_has_its_own_posix_session():
+    process = vpr._start_owned([sys.executable, "-c", "import time; time.sleep(60)"])
+    try:
+        assert os.getsid(process.pid) == process.pid
+        assert os.getpgid(process.pid) == process.pid
+        assert os.getpgid(process.pid) != os.getpgrp()
+    finally:
+        vpr.terminate_owned(process)
+        process.wait(timeout=5)
+
+
+def test_cleanup_racing_startup_or_fast_exit_is_bounded_and_repeatable():
+    for _ in range(6):
+        process = vpr._start_owned(
+            [sys.executable, "-c", "pass"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        try:
+            with ThreadPoolExecutor(max_workers=3) as pool:
+                list(pool.map(lambda _: vpr.terminate_owned(process), range(6)))
+            process.wait(timeout=5)
+            vpr.terminate_owned(process)
+        finally:
+            if process.poll() is None:
+                process.kill()
+            process.wait(timeout=5)
+
+
+def test_unexpected_supervision_exception_also_cleans_the_tree(fake, tmp_path, tree_cleanup):
+    def clock():
+        if (tmp_path / "tree-pids-tree.json").is_file():
+            raise RuntimeError("synthetic supervisor failure")
+        return time.monotonic()
+
+    run_dir = tmp_path / "exception"
+    run_dir.mkdir()
+    try:
+        with pytest.raises(RuntimeError, match="synthetic supervisor failure"):
+            vpr.supervise(
+                fake("tree"),
+                "input",
+                run_dir,
+                vpr.Limits(wall_seconds=10),
+                cwd=tmp_path,
+                clock=clock,
+                poll_seconds=0.02,
+            )
+    finally:
+        path = tmp_path / "tree-pids-tree.json"
+        if path.is_file():
+            assert all(_wait_stopped(pid) for pid in json.loads(path.read_text()))
+
+
+def test_thread_start_failure_still_cleans_owned_process(fake, tmp_path, monkeypatch):
+    started, cleaned = [], []
+    original_start = vpr.threading.Thread.start
+
+    def start(thread):
+        if started:
+            raise RuntimeError("synthetic thread startup failure")
+        started.append(thread)
+        original_start(thread)
+
+    def terminate(process):
+        cleaned.append(process)
+        vpr.terminate_owned(process)
+
+    monkeypatch.setattr(vpr.threading.Thread, "start", start)
+    with pytest.raises(RuntimeError, match="synthetic thread startup failure"):
+        _supervise(fake, tmp_path, "stall", terminate=terminate)
+    assert cleaned and all(p.poll() is not None for p in cleaned)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows job handles")
+def test_failed_process_start_closes_its_windows_job(monkeypatch):
+    job = vpr._WindowsJob()
+
+    def fail(*args, **kwargs):
+        raise OSError("synthetic process startup failure")
+
+    try:
+        monkeypatch.setattr(vpr, "_WindowsJob", lambda: job)
+        monkeypatch.setattr(vpr.subprocess, "Popen", fail)
+        with pytest.raises(OSError, match="synthetic process startup failure"):
+            vpr._start_owned(["not-started"])
+        assert job.handle is None
+    finally:
+        job.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows job admission")
+def test_windows_launcher_does_not_execute_cli_when_ownership_is_unavailable(tmp_path):
+    marker = tmp_path / "must-not-exist"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            vpr._WINDOWS_LAUNCHER,
+            "missing-" + marker.name,
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('must-not-exist').touch()",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+        timeout=10,
+    )
+    assert result.returncode != 0
+    assert not marker.exists()
 
 
 def test_completed_run_keeps_public_events_without_hidden_reasoning(fake, tmp_path):

@@ -28,6 +28,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- Receiving-model verification cleans its owned process group/job, including
+  descendants left after leader exit, on completion, limits and exceptions.
+  Saved-event evaluation rejects structured execution failures and malformed or
+  conflicting terminal results even without a receipt, while retaining valid
+  receipt-free success.
+
 - Command search matches prefixes from the first character, including `a` and
   `i`, and focuses the search field whenever the command reference opens.
 
