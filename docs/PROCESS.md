@@ -288,7 +288,7 @@ that means no structural contract was declared, not that the output passed.
 and CI never runs its `run` command. `run` sends a bundled template's exact
 content, one fixed isolation preface and one example to the installed Claude
 Code CLI. It disables every tool, uses neither plan mode nor a fallback model,
-and stops only the process it started when the declared wall time (default five
+and stops its owned process tree when the declared wall time (default five
 minutes), public assistant text (64 KiB) or CLI-reported budget ($1) is reached.
 Hidden reasoning is never written to its records, and a new run never replaces
 an earlier one. `evaluate` keeps four verdicts apart:
@@ -303,6 +303,29 @@ an earlier one. `evaluate` keeps four verdicts apart:
 Keyword-matched claim sentences only prompt review. A sample shows one
 model's answer on one surface; it does not prove foreground expansion,
 general reliability or a person's acceptance.
+
+Each invocation establishes ownership before the CLI starts: a new session and
+process group on POSIX, or a dedicated kill-on-close job on Windows. A Windows
+launcher joins that job before starting the CLI, without breakaway flags or
+changes to an enclosing app's restrictions. Cleanup includes ordinary descendants
+after their leader exits, runs on success and exceptions as well as limits, and
+is serialized and idempotent. It rejects processes not launched by this verifier,
+never signals the caller's POSIX group, and bounds process/reader waits. POSIX
+children must remain in their invocation's process group; this is lifecycle
+cleanup, not a sandbox for deliberately escaping processes.
+
+`evaluate` does not require a supervisor receipt. One structured result with
+`subtype: success`, boolean `is_error: false` and a text `result` can retain
+`NOT_RECORDED` and pass the other layers; that does not attest a process exit.
+An error subtype, `is_error: true`, or a nonempty `errors` list prevents success,
+even if another flag or a receipt says success. Budget error subtypes report
+`LIMIT_REACHED`; other execution errors report `ERROR`. Missing, duplicate or
+malformed terminal results (including nonboolean flags, unknown subtypes,
+nontext success output or malformed errors/denials) report `ERROR` with a reason.
+A stopped/error receipt cannot be upgraded by a successful result. The run layer
+retains the receipt's status separately; a completed receipt with a recorded
+nonzero or malformed exit code is also an error. Incomplete runs exit 3 and their
+output is not structurally judged as a completed answer. No receipt is manufactured.
 
 ## The `:litmus` capability
 
