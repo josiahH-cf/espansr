@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from espansr.core.atomic import atomic_copy, atomic_write_bytes
+from espansr.core.capabilities import effective_capability_id
 from espansr.core.templates import Template
 from espansr.core.workflows import WORKFLOWS_SUBDIR, validate_manifest_data
 
@@ -152,6 +153,8 @@ def _template_errors(data: dict) -> list[str]:
             errors.append("duplicate variable")
     if "output_contract" in data and not isinstance(data["output_contract"], dict):
         errors.append("invalid output_contract")
+    if "publish_definition" in data and type(data["publish_definition"]) is not bool:
+        errors.append("invalid publish_definition")
     if "execution" in data:
         route = data["execution"]
         if not isinstance(route, dict) or set(route) - {"kind", "id", "hosts", "clients"}:
@@ -227,6 +230,7 @@ def build_catalog(
                     {
                         "template_id": path.stem,
                         "capability_id": template.capability_id or None,
+                        "effective_capability_id": effective_capability_id(template),
                         "capability_metadata": "explicit" if template.capability_id else "missing",
                         "metadata_gaps": [
                             key
@@ -248,6 +252,8 @@ def build_catalog(
                         "use_when": template.use_when,
                         "avoid_when": template.avoid_when,
                         "intent_tags": template.intent_tags,
+                        "replaces": template.replaces,
+                        "deprecated": template.deprecated,
                         "accepts": template.accepts,
                         "produces": template.produces,
                         "output_contract": template.output_contract,
@@ -265,6 +271,10 @@ def build_catalog(
                         },
                     }
                 )
+                # Explicit public-source opt-in only. Installed-only content,
+                # private variable values and operation context never supply it.
+                if template.publish_definition:
+                    entry["definition_bytes"] = base64.b64encode(raw).decode("ascii")
             else:
                 entry.update(
                     {

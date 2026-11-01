@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Connected callers can discover the Meta-Prompt Generator's natural intent
+  and consume its exact reusable definition from the qualified catalog. Source
+  content requires explicit publication opt-in; inline drafting and explicit
+  OA capture retain their separate contracts.
+
 - `:sample` shows a concrete final-state projection using a representative
   input, with observed execution and hypothetical output clearly distinguished.
 - `:user-journey` walks a finished or nearly finished project's requirements,

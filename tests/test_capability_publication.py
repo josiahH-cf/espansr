@@ -1,5 +1,6 @@
 """Catalog publication is a versioned read contract, never an execution engine."""
 
+import base64
 import json
 import shutil
 from pathlib import Path
@@ -66,6 +67,41 @@ def test_complete_bundled_population_and_truthful_execution():
         e["capability_metadata"] == "missing" and e["capability_id"] is None for e in templates
     )
     assert all(e["source_byte_sha256"] and e["source_semantic_sha256"] for e in catalog["entries"])
+
+
+def test_opted_in_reusable_definition_is_exact_and_keeps_derived_identity(projection):
+    source, installed = projection
+    path = write(
+        source,
+        publish_definition=True,
+        variables=[],
+        content="Draft only.",
+        replaces=[":old"],
+        deprecated=False,
+    )
+    shutil.copy2(path, installed / path.name)
+    first = publish_catalog(source, installed, revision=REVISION)
+    entry = first["entries"][0]
+    assert entry["effective_capability_id"] == "sample"
+    assert entry["capability_id"] is None
+    assert base64.b64decode(entry["definition_bytes"]) == path.read_bytes()
+    assert entry["replaces"] == [":old"] and entry["deprecated"] is False
+    assert entry["execution"]["classification"] == "prompt-only"
+    path = write(
+        source, publish_definition=True, variables=[], content="Draft only.", trigger=":renamed"
+    )
+    shutil.copy2(path, installed / path.name)
+    assert publish_catalog(source, installed)["entries"][0]["effective_capability_id"] == "sample"
+    write(source, variables=[], content="Draft only.")
+    assert "definition_bytes" not in build_catalog(source)["entries"][0]
+
+
+def test_meta_natural_discovery_publishes_actual_definition():
+    catalog = build_catalog(ROOT / "templates")
+    meta = next(e for e in catalog["entries"] if e["id"] == "template:meta")
+    assert "meta-prompt" in meta["intent_tags"]
+    assert "inline" in meta["use_when"]
+    assert base64.b64decode(meta["definition_bytes"]) == (ROOT / "templates/meta.json").read_bytes()
 
 
 def test_determinism_semantic_parity_and_exact_bytes(projection):
