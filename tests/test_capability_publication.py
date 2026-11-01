@@ -1,7 +1,7 @@
 """Catalog publication is a versioned read contract, never an execution engine."""
 
-import json
 import base64
+import json
 import shutil
 from pathlib import Path
 from unittest.mock import patch
