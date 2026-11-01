@@ -104,6 +104,7 @@ class Template:
     avoid_when: str = ""
     output_contract: Dict[str, Any] = field(default_factory=dict)
     execution: Dict[str, Any] = field(default_factory=dict)  # Declaration, never availability
+    publish_definition: bool = False  # Explicit reusable source-content publication
 
     # Internal: path to the JSON file (set when loaded from disk)
     _path: Optional[Path] = field(default=None, repr=False)
@@ -155,6 +156,8 @@ class Template:
             d["output_contract"] = self.output_contract
         if self.execution:
             d["execution"] = self.execution
+        if self.publish_definition:
+            d["publish_definition"] = True
         return d
 
     @classmethod
@@ -181,6 +184,7 @@ class Template:
             avoid_when=_coerce_optional_string(data.get("avoid_when", "")),
             output_contract=_coerce_dict(data.get("output_contract", {})),
             execution=_coerce_dict(data.get("execution", {})),
+            publish_definition=data.get("publish_definition") is True,
             _path=path,
         )
 

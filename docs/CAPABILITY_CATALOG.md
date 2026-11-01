@@ -35,8 +35,15 @@ Every entry includes canonical byte and semantic hashes, source Git revision
 (null if unqualified/unknown), installed byte and semantic hashes, validation,
 and execution classification. JSON whitespace/key order differences compare
 equal; different prose, metadata and values do not. Exact byte hashes remain
-available for accepted work. Variable defaults, definition content, private
-operation values, local paths and account/session details are not exported.
+available for accepted work. Variable defaults, private operation values, local
+paths and account/session details are not exported by default. A canonical
+public template can explicitly opt in with `publish_definition: true`; its
+exact source JSON bytes are then included as base64 `definition_bytes` in the
+same atomic generation. The Meta-Prompt Generator uses this for connected
+inline drafting. Consumers verify both byte and semantic digests before use.
+Installed-only definitions never opt themselves into publication. Derived
+`effective_capability_id`, replacement labels and deprecation are metadata,
+never new executor or dispatch aliases.
 
 A deliberately authored optional template field can identify a route:
 
