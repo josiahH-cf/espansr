@@ -33,6 +33,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `:pmi-auth` delegates to the current registered PMI release's verified WSL
+  entrypoint, preserving its credential reuse, profile serialization, attended
+  challenges and exit status instead of embedding a second auth implementation.
+
 - Receiving-model verification cleans its owned process group/job, including
   descendants left after leader exit, on completion, limits and exceptions.
   Saved-event evaluation rejects structured execution failures and malformed or
