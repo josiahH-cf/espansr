@@ -45,20 +45,29 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 Use `:espansr` for the current quick reference list.
 
-`:pmi-auth` expands directly into one WSL Bash block. Run it from the PMI
-repository or let it locate the single Windows checkout under
-`/mnt/c/Users/*/Documents/github-windows/pmiKCkb_and_ownerRouter`. It checks
-existing provider configuration, reuses GitHub and Google CLI/ADC credentials,
-and restores the canonical PMI app's owner-admin browser session. GitHub
-browser login and PMI's existing Google/browser enrollment tools run only
-when enrollment is needed, once per phase; complete any required browser step
-while the command runs. Account and canonical-origin values come from the
-private PMI repository; the profile stays under the current WSL user's home.
-Permission errors, wrong identities, store overrides, unknown failures, and
-cancelled enrollments stop the command. Final verification checks the app's
-accepted session, exact account, and Admin role without exporting credentials
-or changing roles or provider configuration. There is no PowerShell launcher
-or AI prompt wrapper.
+`:pmi-auth` expands into a thin WSL Bash invocation of the registered PMI
+release's `scripts/pmi-auth`. Run it from any WSL directory with `python3`
+and native Bash available. It reads
+`~/.local/state/pmi-kc-release/checkout-pair.json` to select the current native
+release, so it does not pin a temporary authoring checkout or copy PMI's auth
+implementation into the template. A missing registration or entrypoint stops
+with a `NOT READY` error; the command never guesses another checkout.
+
+The PMI entrypoint checks existing GitHub, Google CLI/ADC and provider
+configuration, reuses the serialized managed Admin browser profile, and
+verifies configured provider reads. Account boundaries, credential stores,
+profile ownership and attended Google challenges remain PMI's responsibility.
+Complete any required human browser challenge while the command runs. No
+credentials are stored in the expansion, and no new grant or business action
+is part of these checks. Paid RentCast calls, AI generation and perpetual
+authentication are not promised.
+
+The expansion preserves PMI's process exit status: `0` means the stated checks
+passed with explicit exceptions, `1` means blocked/error, `2` means human
+attention in check-only mode or invalid usage, and `3` means local auth is
+ready but a provider needs attention. Append `--check` to the inner entrypoint
+invocation when checking without attended enrollment. The template invokes
+the normal reuse-first command; it does not add a PowerShell launcher.
 
 Bundled prompts are self-contained and can be selected by the job they perform.
 `:project-init-llm` establishes `AGENTS.md` as a canonical repository instruction
