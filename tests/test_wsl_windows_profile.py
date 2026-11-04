@@ -82,7 +82,7 @@ def windows(tmp_path, monkeypatch):
     home = tmp_path / "home"
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    home.mkdir()
+    home.mkdir(exist_ok=True)  # on macOS the conftest already made it, as HOME
     monkeypatch.setattr("espansr.core.platform.get_platform", lambda: "wsl2")
     monkeypatch.setattr("pathlib.Path.home", lambda: home)
     # The standard cmd.exe location must never reach a real Windows host.
