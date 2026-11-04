@@ -8,6 +8,47 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `:bring-back-feature` restores a feature that worked before recent changes
+  broke it. It proves the known-good state, reproduces the loss, names the
+  breaking change and what it intended, and restores the behavior as a forward
+  fix with a regression guard, keeping newer work, other sessions' changes and
+  history intact.
+- `:core-behaviors` lists a project's core behaviors plus any others found or
+  named, confirms them in exactly one numbered question round with
+  recommendations, then fixes, protects and documents every confirmed behavior
+  in one pass and re-verifies each at the end. A reply confirms only what it
+  names ("approve: 1, 4"); recommendations apply only through "approve all" or
+  "all except", and anything left out stays deferred and unchanged, so no core
+  behavior is dropped without an explicit answer. `:stabilize` keeps its
+  read-only architecture handoff.
+- `:dedupe` audits an evolved project's code, tests, governance and docs for
+  duplication and disagreement, recommends the current direction for each
+  finding and changes nothing until you approve by number, then applies only
+  the approved reconciliation and verifies it. The project's own instruction
+  hierarchy decides which source controls; current behavior and recent changes
+  are evidence, never authority, and unresolved intent conflicts are asked. `:prune` and `:friction` keep
+  their jobs.
+- Bundled-note tests reject a trigger that is a prefix of another, which
+  Espanso would expand before the longer trigger could be typed.
+- **Local only** prompts: a checkbox in the editor (`"local_only": true` in the
+  JSON) keeps a prompt out of everything espansr shares. It still expands and
+  appears in `:coms` and `espansr list`, but `espansr push` never sends it to a
+  template remote (and removes one shared before it was marked), `espansr sync`
+  never commits or pushes it from the checkout, `scripts/deliver.py` refuses
+  it, and the capability catalog that connected tools read as context never
+  describes it, even with `publish_definition`. Before every push, the commits
+  it would send are read version by version, merges included. A version that
+  is local only, was marked local only, or is an earlier version of one under
+  another name stops the push, and so does any staged version that is local
+  only, however it was staged. espansr fails closed: a template that cannot be
+  read, does not parse without the mark, or has a `local_only` other than true
+  or false stops push, sync and delivery before anything is staged and is kept
+  like a private file. Only espansr's own block of `info/exclude` changes,
+  byte for byte, including in a linked worktree. `espansr pull` never replaces
+  a local-only copy, import keeps the flag, and starter updates never
+  overwrite, rename or retire one. Text you paste elsewhere, copies made with
+  other Git tools, and history already shared are outside what it controls.
+
 - Connected callers can discover the Meta-Prompt Generator's natural intent
   and consume its exact reusable definition from the qualified catalog. Source
   content requires explicit publication opt-in; inline drafting and explicit
@@ -32,6 +73,164 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   effect that the recorded events rule out fails.
 
 ### Fixed
+
+- A capability publication that still describes a template now marked local
+  only is withdrawn the first time espansr reads the catalog (`espansr catalog`,
+  the `:coms` popup, a sync), not only at the next complete publish. No read
+  returns it, filtered or otherwise; `espansr catalog` says `withdrawn`, and
+  warns when the file could not be removed. A new selection from an older
+  catalog is refused when the definition it would read is local only; jobs
+  frozen earlier still replay unchanged.
+- `espansr sync` pushes what your Git configuration pushes, and checks all of
+  it first. It used to check one branch and push it alone. With
+  `push.default=matching`, other matching branches were silently left
+  unpushed, and with `remote.<name>.push` it pushed a branch the mapping did not
+  name. Now Git's own dry run decides the refs, and every one is checked against
+  what each push URL lacks; if any would send a local-only or unclear version,
+  nothing is pushed and the ref, file and setting are named. The checked commits
+  are pushed exactly, so a commit made during the check is not sent. A mirror
+  remote, a configured deletion, or a ref that names no commit is refused with
+  the reason.
+- `espansr sync`, `espansr push` and `push --template` no longer send a private
+  version to a push URL that lacks it. A `pushurl` naming another repository
+  was checked against what the fetched remote had. Such a destination is now
+  read with `git ls-remote`, and nothing is pushed when it cannot be read.
+- Saving a template as local only (the editor, an import, a restore) withdraws
+  a capability publication that still describes it at once, even when the sync
+  that follows stops before it publishes.
+- A template with a repeated `local_only` key stays local only. espansr read
+  only the last value, so saving or importing such a template could make it
+  shareable. Now it opens as local only and saves one exact `true`, and the
+  catalog withdraws a publication that describes it.
+- A template whose bytes are not valid UTF-8 is no longer read as shareable.
+  espansr retried such bytes as Latin-1, so a local-only template left with one
+  stray byte and no `local_only` key lost its exclusion, and `push` or
+  `espansr sync` sent it. Now it stops push, sync and delivery like any file
+  espansr cannot read, and its exclusion stays; one that still spells
+  `"local_only": true` stays local only.
+- `espansr validate` warns about a `local_only` that is not a single `true` or
+  `false`. The Local only note no longer implies other programs cannot read the
+  prompt: a program that reads the template folder itself still can.
+  `docs/CAPABILITY_CATALOG.md` states the rule such a program must apply,
+  since espansr cannot apply it for that program.
+- Restoring an older version never makes a local-only template shareable, even
+  from a template object loaded before it was marked.
+- A private starter keeps its trigger in any folder: setup, refresh and publish
+  no longer seed the public starter beside one moved into `personal/`, which
+  also stopped Espanso publication with a duplicate trigger.
+- `espansr pull --template` takes each name as one exact file in the store: a
+  folder or a path outside it is refused before anything changes, `..` and
+  absolute paths resolve to the file they name, and a Git pattern or pathspec
+  (`personal/*.json`, `:(glob)...`, `:!...`) that names no file is refused
+  before anything changes, so no spelling replaces a local-only template. The
+  command names what it pulled, what it skipped as local only, and what the
+  remote did not have, instead of counting every name as pulled.
+- A full pull that Git stops while it still tracks a template you marked local
+  only explains that and says your copy is unchanged.
+- `scripts/deliver.py` commits only the listed paths, as documented (anything
+  else already staged, such as a private template staged by hand, stays out),
+  and reads the outgoing commits again right before pushing.
+- `scripts/deliver.py` refuses an unpushed earlier version of a template kept
+  private in `templates/` under another name (same trigger, capability ID or
+  prompt text), as `push` does, whether the private copy is tracked or not and
+  listed or not. It checked only versions that were marked themselves, so a
+  draft committed before it was marked and then renamed could be delivered.
+  `push` and `espansr sync` now also recognize earlier versions of a private
+  template saved as UTF-16.
+- `scripts/deliver.py` no longer stashes uncommitted changes outside its path
+  list to catch up with `origin/main`. Its `rebase --autostash` replayed
+  another session's edit and left a staged one unstaged. When the branch is
+  behind and such changes exist, preflight now stops before committing and
+  names them; with nothing else uncommitted, or when already up to date, it
+  works as before.
+- `scripts/deliver.py` writes its temporary commit message and pull request
+  body as UTF-8, the encoding git and gh read them in. On Windows it used the
+  system code page, so an emoji in the body (such as Claude Code's attribution
+  line) stopped the delivery after the push and before the pull request was
+  opened, and other non-ASCII text arrived garbled.
+- Sync no longer says the last capability publication was retained when none is
+  on disk.
+- The live template listing skips `.git`, so copies a pull keeps there are never
+  counted as templates.
+- With **Remote paste** on, espansr now sets Espanso to bring your copied text
+  back 2 seconds after an expansion instead of leaving the prompt on the
+  clipboard; workstation mode keeps its 1.5-second restore. The delay is meant
+  to outlast slow pastes but has not been measured over a real remote session;
+  an app that pastes later than it pastes your copied text instead. On Windows,
+  a remote-desktop host still on an earlier release's untouched settings gets
+  the restore on its next Sync or reinstall, once, and the command prints how
+  to opt out; clipboard timing tuned on a machine stays byte for byte, and
+  `espansr doctor` names the command for any machine whose saved setting never
+  restores. `espansr configure-remote-desktop --restore-delay MS` tunes or
+  disables the restore per machine; Sync keeps the chosen delay, `0` included.
+- A clipboard choice survives Sync and reinstall even when it matches an
+  earlier release's defaults: blocks this release writes carry a
+  `# espansr-defaults:` line, so `--auto` never resets them, including a hand
+  edit such as `preserve_clipboard: false`.
+- `configure-remote-desktop --auto --restore-delay MS` changes only the restore
+  lines: the mode, other tuning such as `key_delay`, comments, and everything
+  outside the block stay byte for byte, and an older single-marker file keeps
+  its own values instead of today's defaults. An indented comment right after
+  a restore value is kept too; it used to make espansr rewrite the whole block
+  and drop the block's comments.
+- `espansr sync` with changes Git does not stage (only local-only templates, or
+  a dirty submodule) commits nothing and still pushes and reinstalls, instead of
+  stopping at "Could not commit".
+- On Windows Sync or reinstall, the older single-marker Espanso settings an
+  earlier release wrote untouched are upgraded too: a host that restored after
+  Espanso's 0.3 s or never, and a workstation whose 0.7-second restore large
+  prompts outlasted, leaving the prompt on the clipboard. Tuned settings stay.
+- `espansr configure-remote-desktop` and the **Remote paste** switch report the
+  saved file and the Espanso restart separately and never claim what an
+  expansion does. When `default.yml` cannot be read or written they say why and
+  that the file was left as it was, and the command exits 1, `--auto` included
+  (it used to report the old settings as kept). A saved file whose restart
+  failed is a warning (exit 0), not a success.
+- `espansr doctor` reports the clipboard restore saved in `default.yml` as a
+  saved setting and names what it cannot observe: whether the running Espanso
+  loaded it, app-specific overrides, and what an expansion does.
+- The capability catalog no longer keeps a stale publication that still
+  describes a template now marked local only when a later build is
+  unqualified; it is withdrawn until the next complete publication.
+- `espansr starters` lists your own templates that no starter manages as
+  "Your own templates (not bundled)" instead of "Local-only templates", which
+  now means the privacy setting.
+- On WSL, the Windows-side Espanso folders are in the current user's exact
+  profile folder: `%USERPROFILE%`, read through `cmd.exe /u /c set` so
+  non-ASCII characters and an `&` arrive intact, and converted by `wslpath`. A
+  non-ASCII user name no longer crashes every command, a profile not named
+  after the user (`José.CORP`, a renamed account, another drive) is found, and
+  a folder that only looks like the user's is never used or cleaned. When the
+  profile cannot be established, no Windows-side folder is used; earlier
+  versions took the only folder under `C:\Users` as the user's. Espanso is
+  still found when Windows' PATH is not shared with WSL, and the orchestratr
+  manifest uses the same folder. With drives mounted at a custom root
+  (`/windows/c` instead of `/mnt/c`), the `:aopen`, `:coms` and `:sync`
+  triggers written into that profile launch through `wsl.exe` as on `/mnt`,
+  instead of Linux commands Windows Espanso cannot run, and a saved Linux
+  Espanso path moves to that profile the same way.
+- `install.sh` checks the libraries Qt itself links (`libegl1`, `libgl1`,
+  `libfontconfig1`, `libxkbcommon0`) on Debian/Ubuntu and WSL, and warns when
+  PyQt6 still cannot load, instead of reporting success for windows that
+  cannot open.
+- `espansr sync` checks every ref its push sends. With
+  `push.default=matching`, a plain `git push` also sent other branches whose
+  commits were never checked.
+- `espansr sync` stops before pull, commit, push and reinstall when `git stash`
+  saved the local changes but could not finish (a skip-worktree or
+  assume-unchanged entry does this), and says where the changes are, instead
+  of carrying on as if nothing had been stashed.
+- `espansr push --template` commits only the files it names; other staged work
+  stays staged instead of riding along under that commit message.
+- Usage-count readers wait up to five seconds for the checkpoint lock instead
+  of about half a second, which once failed CI on Windows. The wait is not
+  free: every publication to Espanso (`espansr publish`, `setup`, `pull`,
+  `retire`, and the window's Publish and Auto-publish) reads usage before it
+  finishes. While another espansr process holds the lock, or when the lock
+  cannot be taken at all, it pauses up to five seconds, and the window stops
+  responding meanwhile, before it reports usage unavailable and finishes.
+- The Linux CI matrix reports every Python version instead of cancelling the
+  rest after the first failure.
 
 - `:pmi-auth` delegates to the current registered PMI release's verified WSL
   entrypoint, preserving its credential reuse, profile serialization, attended

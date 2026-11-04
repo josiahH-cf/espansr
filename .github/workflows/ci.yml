@@ -10,6 +10,8 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     strategy:
+      # Report every Python version's result; one failure must not cancel the rest.
+      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
 

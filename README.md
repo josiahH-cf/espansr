@@ -92,10 +92,38 @@ them. The reference can stay open throughout the day; its scratchpad remains
 ephemeral and starts empty when reopened.
 
 Both windows include **Remote paste**. Turn it on for remote-desktop paste
-compatibility (the expansion stays on the clipboard), or off to preserve your
-copied text after expansions. The setting belongs to this workstation and
-survives Sync and reinstall; opening a window leaves existing settings alone.
-RustDesk's own clipboard sharing must also be enabled for copying between hosts.
+compatibility, or leave it off on a machine you sit at. Either way espansr sets
+Espanso to bring your copied text back after an expansion: 2 seconds later with
+Remote paste on, 1.5 seconds with it off, meant to let large prompts finish
+pasting first (an app that pastes later than that pastes your copied text
+instead). Espanso restores text only; an image or file on the clipboard is
+replaced. `espansr doctor` shows the setting saved on this machine, and
+`espansr configure-remote-desktop --auto --restore-delay MS` tunes it (`0`
+keeps the prompt on the clipboard). The
+setting belongs to this workstation and survives Sync and reinstall; opening a
+window leaves existing settings alone. On Windows, a machine still on an
+earlier release's untouched settings (including the older 0.7-second
+workstation restore) gets today's restore at its next Sync or reinstall; on any
+other machine that never restores, `espansr doctor` names the command that
+turns it on. If Espanso cannot restart after a change, espansr says so instead
+of reporting the new timing as active. RustDesk's own clipboard sharing must
+also be enabled for copying between hosts.
+
+Check **Local only** in the editor so espansr does not share a prompt. It
+still expands here and appears in `:coms`, but espansr never pushes it to a
+template remote, commits or pushes it during Sync, delivers it, or describes it
+in the capability catalog that connected tools read as context. When espansr
+cannot tell whether a template is local only (it cannot be read or parsed, or
+its `local_only` is not exactly true or false), push, Sync, and delivery stop
+and name the file instead of guessing. Import and version restore keep the
+setting, and neither a pull nor a starter update ever replaces a local-only
+copy. Local only controls what espansr shares: the prompt still sits in this
+machine's Espanso match file and passes through the clipboard when it expands,
+text you paste elsewhere and copies made with other Git tools are yours to
+share, and copies a remote or connected tool already received are not
+recalled. A program that reads the template folder itself is outside espansr:
+it sees every template there, Local only included, unless it applies the rule
+in docs/CAPABILITY_CATALOG.md itself. espansr cannot apply that rule for it.
 Copy trigger, Copy prompt, and packet copying retry briefly when another
 application holds the Windows clipboard, without freezing the window. A newer
 copy replaces an older pending request; a persistent lock produces a retry hint.
@@ -145,7 +173,7 @@ If you meant to install on the Windows host instead, open Windows PowerShell in 
 - Live template JSON files in your platform-specific `espansr` config directory.
 - Bundled starter templates copied from this repository on setup.
 - Managed Espanso files named `espansr.yml`, `espansr-launcher.yml`, `espansr-commands.yml`, and `espansr-sync.yml`.
-- One espansr-managed block in Espanso's `config/default.yml`, written by `espansr configure-remote-desktop` (the Windows installer runs it) and removable with `--revert`; the first edit keeps a backup as `default.yml.espansr-orig`. Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`, `preserve_clipboard: false`, `show_icon: false`, `show_notifications: false`, `key_delay: 30`, and `backspace_delay: 30`; workstation mode sets `win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and `restore_clipboard_delay: 1500`. Everything outside the block is left byte for byte as you wrote it.
+- One espansr-managed block in Espanso's `config/default.yml`, written by `espansr configure-remote-desktop` (the Windows installer runs it) and removable with `--revert`; the first edit keeps a backup as `default.yml.espansr-orig`. Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`, `preserve_clipboard: true`, `restore_clipboard_delay: 2000`, `show_icon: false`, `show_notifications: false`, `key_delay: 30`, and `backspace_delay: 30`; workstation mode sets `win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and `restore_clipboard_delay: 1500`. Everything outside the block is left byte for byte as you wrote it.
 - Optional Git-backed template sync through `espansr remote`, `pull`, and `push`.
 - Optional workflow manifests describing how bundled prompts relate (`espansr workflows`), user-saved handoff packets in the config directory (`espansr packet`), and structural output-contract checks (`espansr check-output`).
 

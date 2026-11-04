@@ -1,7 +1,12 @@
 """Regression tests for the Linux/macOS/WSL shell installer."""
 
 import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -62,6 +67,65 @@ def test_shell_installer_checks_debian_dependencies_only_when_tools_exist():
     assert "command -v apt-get" in text
     assert "Skipping automatic PyQt6 system package check" in text
     assert "Checking Debian/Ubuntu system packages for PyQt6" in text
+
+
+def test_shell_installer_checks_the_libraries_qt6gui_links():
+    # ``ldd libQt6Gui.so.6`` lists libEGL, libGL, libfontconfig and
+    # libxkbcommon; CI installs libegl1 itself, so only this list protects
+    # a teammate's minimal Debian/Ubuntu or WSL image.
+    text = _installer_text()
+    loop = text[text.index("for pkg in libxcb-cursor0") :]
+    loop = loop[: loop.index("; do")]
+    for pkg in ("libegl1", "libgl1", "libfontconfig1", "libxkbcommon0"):
+        assert pkg in loop
+
+
+def test_shell_installer_proves_the_gui_libraries_load_without_failing_the_cli_install():
+    text = _installer_text()
+    check = text[text.index("# The CLI works without Qt") :]
+    check = check[: check.index("\nfi\n")]
+
+    assert "QT_QPA_PLATFORM=offscreen \"$VENV_PYTHON\" -c 'from PyQt6 import QtWidgets'" in check
+    assert 'ok "GUI libraries: PyQt6 loads"' in check
+    assert "die " not in check
+    assert text.index("# The CLI works without Qt") > text.index('ok "CLI: espansr list')
+
+
+@pytest.mark.skipif(
+    shutil.which("bash") is None or sys.platform == "win32",
+    reason="POSIX bash runs install.sh",
+)
+@pytest.mark.parametrize("loads", [True, False], ids=["qt-loads", "libegl-missing"])
+def test_shell_installer_gui_library_check_runs_under_bash(tmp_path, loads):
+    text = _installer_text()
+    check = text[text.index("# The CLI works without Qt") :]
+    check = check[: check.index("\nfi\n") + len("\nfi\n")]
+    python = tmp_path / "python"
+    failure = "ImportError: libEGL.so.1: cannot open shared object file: No such file or directory"
+    python.write_text(
+        "#!/bin/sh\nexit 0\n"
+        if loads
+        else f"#!/bin/sh\necho 'Traceback'\necho '{failure}'\nexit 1\n"
+    )
+    python.chmod(0o755)
+    script = tmp_path / "check.sh"
+    script.write_text(
+        "set -euo pipefail\n"
+        'info() { echo "[INFO] $*"; }\nok() { echo "[ OK ] $*"; }\nwarn() { echo "[WARN] $*"; }\n'
+        f'VENV_PYTHON="{python}"\n{check}echo reached-end\n'
+    )
+    result = subprocess.run(
+        [shutil.which("bash"), str(script)], capture_output=True, text=True, timeout=30
+    )
+
+    assert result.returncode == 0
+    assert "reached-end" in result.stdout
+    if loads:
+        assert "[ OK ] GUI libraries: PyQt6 loads" in result.stdout
+    else:
+        assert "[WARN] PyQt6 could not load" in result.stdout
+        assert failure in result.stdout
+        assert "libegl1 libgl1 libfontconfig1 libxkbcommon0" in result.stdout
 
 
 def test_shell_installer_prints_missing_espanso_next_steps():

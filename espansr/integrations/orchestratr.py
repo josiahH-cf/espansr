@@ -16,7 +16,7 @@ import yaml
 
 from espansr import __version__
 from espansr.core.config import get_config, get_config_dir, get_templates_dir
-from espansr.core.platform import get_platform, get_windows_username
+from espansr.core.platform import get_platform, get_windows_profile_dir
 from espansr.integrations.espanso import get_espanso_config_dir
 
 MANIFEST_FILENAME = "espansr.yml"
@@ -66,13 +66,14 @@ def _wsl2_orchestratr_base() -> Optional[Path]:
     """Resolve the Windows-side orchestratr config directory from WSL2.
 
     Returns:
-        Path under /mnt/c/Users/<username>/AppData/Roaming/orchestratr,
-        or None if the Windows username cannot be determined.
+        Path under the current Windows user's profile folder,
+        AppData/Roaming/orchestratr, or None if that folder cannot be
+        established.
     """
-    win_user = get_windows_username()
-    if not win_user:
+    profile = get_windows_profile_dir()
+    if not profile:
         return None
-    return Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/orchestratr")
+    return profile / "AppData" / "Roaming" / "orchestratr"
 
 
 def generate_manifest(apps_dir: Path) -> Path:

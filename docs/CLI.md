@@ -51,7 +51,7 @@ espansr starters --apply --force     # back up and replace invalid bundled-match
 Behavior:
 
 - Bundled filenames in the repo/package are treated as canonical.
-- Local-only templates are reported but preserved.
+- Your own templates (not bundled) are reported but preserved.
 - Changed bundled-matching local templates are backed up into `_versions/` before replacement.
 - Old renamed starter files are migrated to the new bundled filename when safe.
 - Trigger collisions are reported before files are changed or Espanso YAML is written.
@@ -85,6 +85,45 @@ espansr push --message "Update signature template"
 ```
 
 Use `push` when the local template store is the source of truth and you want to share those template JSON files with other machines through Git.
+
+`push` never sends a template marked **Local only**. Its path is listed in
+espansr's block of the store's `info/exclude`, which Git keeps on this machine
+(only that block changes, byte for byte; a linked worktree works), and before
+committing `push` checks every staged version, however it was staged. A
+template that was pushed before you marked it local only is removed from the
+remote by the next `push`; your copy here is kept, and earlier commits in the
+remote's history still contain the version that was shared. Other machines drop
+their copy at their next pull (Git history keeps it); to keep it on one of
+them, mark it Local only there and push before pulling. `push --template`
+skips local-only files, commits only the files it names (other staged work
+stays staged), and counts only what it sent. If commits that were never pushed
+(for example after an offline `push`) hold a version that is local only now,
+was marked local only, or is an earlier version of a local-only template under
+another name, merges included, `push` sends nothing and names the command that
+takes it out of them (`git reset --soft origin/<branch>`, which keeps every
+file). Commits never pushed means commits the push URL lacks. When `origin` has
+a `pushurl` that is not the URL it fetches from, `push` asks that URL what it
+has (`git ls-remote`). If that URL cannot be read, nothing is sent.
+
+When espansr cannot tell whether a template is local only (it cannot be read,
+does not parse, or its `local_only` is not `true` or `false`), `push` and
+`push --template` stop before staging anything and name the file; a template
+kept out of Git stays out until a valid change makes it shareable.
+
+`pull` never replaces a local-only template. It stops before changing anything
+when the remote has its own file at that path, so you can rename yours or turn
+off Local only. A local-only file that Git rewrites while rebasing your unpushed
+commits is put back byte for byte. While Git still tracks a template you marked
+local only (it was shared and you have not pushed since), Git stops the pull;
+the message says so and that your copy is unchanged.
+
+`pull --template` takes each name as one file in the store, relative to it or
+as an absolute path inside it, after resolving `.` and `..`. A folder or a path
+outside the store is refused before anything changes. So is a Git pattern or
+pathspec, such as `personal/*.json` or `:(glob)personal/*.json`, unless it is
+the exact name of a file. Names are never expanded. A local-only template, or
+one whose privacy espansr cannot tell, is skipped and named. The command lists
+what it pulled and what it did not, with the reason.
 
 ### `espansr retire`
 
@@ -131,7 +170,8 @@ Exit code 0 when the Espanso config directory is found; a missing Espanso binary
 
 ### `espansr list`
 
-List all templates with their trigger strings.
+List all templates with their trigger strings. Local-only templates end with
+`(local only)`.
 
 ```bash
 espansr list
@@ -210,7 +250,7 @@ espansr import /path/to/templates/
 
 ### `espansr doctor`
 
-Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning. On Windows the check looks for the `espansr.cmd` launcher that `install.ps1` writes and warns when its directory is not on the current process PATH (open a new shell after installing). On Windows it also warns when Espanso is not running, or is running inside another program's process group (job object), where it stops with every trigger when that program closes; `espansr publish` restarts it independently.
+Run diagnostic health checks: Python version, config directory, templates, Espanso config and binary, the generated `espansr-launcher.yml` and `espansr-commands.yml` files, the PATH-visible `espansr` command shim, WSL candidate-path conflicts, and template validation. The shim check creates the shim when it is missing; a blocked shim path (fix with `espansr setup --force-shim`) or a bin directory that is not on PATH is reported as a warning. On Windows the check looks for the `espansr.cmd` launcher that `install.ps1` writes and warns when its directory is not on the current process PATH (open a new shell after installing). On Windows it also warns when Espanso is not running, or is running inside another program's process group (job object), where it stops with every trigger when that program closes; `espansr publish` restarts it independently. When Espanso's configuration is present it reports the clipboard restore saved in `default.yml`: whether Espanso is set to bring your copied text back after an expansion and after how long, which mode set it (**Remote paste** on or off, or Espanso's own default), and that only text is restored. It then names what it cannot observe: whether the running Espanso loaded that file, an app-specific config that overrides it, and what an actual expansion does; the Windows `Espanso process` line is a separate check. It warns when the saved setting leaves the expanded prompt on the clipboard and prints the command that brings the restore back.
 
 Like `list`, `validate`, and `gui`, `doctor` first pulls the configured template remote when one is set and `remote.auto_pull` is on (the default); a failed auto-pull is logged and never blocks the command.
 
@@ -279,6 +319,30 @@ and pushes when the branch is ahead of its upstream; a failed push is reported
 and the reinstall still runs. Finally it reruns the recorded installer exactly
 as `refresh` does.
 
+The push is the one your Git configuration makes (`push.default`,
+`remote.<name>.push`, `pushRemote`, `push.followTags`). `sync` asks Git which
+refs that is with a dry run, checks every one of them for local-only templates
+against what each push URL lacks, and then pushes exactly those checked commits.
+A commit made while it checks is not pushed with them. If any ref would send a
+local-only or unclear version, nothing is pushed: `sync` names the file and the
+ref, and when the ref is another branch, it names the setting that pushes it.
+A branch your configuration does not push is reported, not pushed. `sync` does
+not push when the configured push cannot be checked ref by ref: a mirror
+remote, a push that deletes a remote ref, or a ref that names no commit. A push
+URL that is not the one `sync` fetched is checked against what that URL itself
+reports (`git ls-remote`). If that URL cannot be read, nothing is pushed.
+
+The checkout's `templates/` folder is the shared bundle, so keep local-only
+prompts in your template store instead (the editor saves them there). One found
+in the checkout is never staged or committed by `sync`, even if you staged it
+by hand: `sync` warns `Not committed: ... Move it to <template store>`, because
+other Git tools in the checkout can still commit it, and when only local-only
+files changed it commits nothing and still reinstalls. If an unpushed commit
+already holds a version of a local-only template (also one later removed or
+renamed), `sync` does not push, names the file, and prints the command that
+takes it out of those commits (`git reset --soft origin/<branch>`, which keeps
+every change); the reinstall still runs.
+
 After the commit, `sync` prints `Committed local changes.` followed by a
 `Committed:` list naming every file in that commit, so nothing lands silently.
 Failures stop the run with exit code 1 instead of pushing a broken tree: when
@@ -317,6 +381,7 @@ espansr configure-remote-desktop           # remote-desktop host mode
 espansr configure-remote-desktop --local   # local workstation mode (clipboard preserved)
 espansr configure-remote-desktop --auto    # keep existing settings; seed a new workstation
 espansr configure-remote-desktop --revert  # remove the espansr-managed remote-desktop settings
+espansr configure-remote-desktop --auto --restore-delay 2500  # tune this machine's restore
 ```
 
 - With no flag: remote-desktop host mode, for a machine you reach over
@@ -325,8 +390,28 @@ espansr configure-remote-desktop --revert  # remove the espansr-managed remote-d
   expansions paste correctly while your clipboard is preserved.
 - `--auto`: keeps existing managed settings byte for byte, including clipboard
   timing tuned for this workstation. It seeds workstation mode only when no
-  managed mode exists. Sync and reinstall use this behavior on Windows.
+  managed mode exists. Sync and reinstall use this behavior on Windows. Settings
+  that still hold exactly what an earlier release wrote are brought up to
+  today's defaults: a host block that never restored the clipboard, and the
+  older single-marker files (a host that restored after Espanso's 0.3 s or never,
+  a workstation that restored after 0.7 s). Settings tuned on this machine, a
+  restore delay chosen with `--restore-delay`, a top-level line the new
+  defaults would take over, and any block this release wrote are left alone.
+  Blocks this release writes carry a `# espansr-defaults:` line, so a hand edit
+  such as `preserve_clipboard: false` survives Sync and reinstall. An untouched
+  earlier block is brought up to date once, and the command then prints how to
+  keep the prompt on the clipboard instead (`--auto --restore-delay 0`).
 - `--revert`: removes the espansr-managed remote-desktop settings.
+- `--restore-delay MS`: sets how long after an expansion Espanso waits before
+  bringing your copied text back, from 0 to 10000 ms; `0` keeps the expanded
+  prompt on the clipboard instead. It combines with the mode flags (plain for
+  host mode, `--local`, or `--auto` for the current mode) and cannot be combined
+  with `--revert`. For settings already in that mode it changes only the
+  restore lines: the mode, the other values, comments, and everything outside
+  the block stay byte for byte, and an older single-marker file keeps its own
+  values. The block records the choice (`# espansr-restore-delay:`), so Sync and
+  reinstall keep it, `0` included. Raise it if a slow app or remote session ever
+  pastes your previous clipboard instead of the prompt.
 
 espansr edits `config/default.yml` as text and owns exactly one block between
 `# espansr-managed BEGIN (host|workstation) - reapply: ...; revert: ...` and
@@ -345,10 +430,16 @@ defaults below; `--revert` removes the managed settings. Keep unrelated settings
 outside the block.
 
 Host mode sets `win32_exclude_orphan_events: false`, `backend: Clipboard`,
-`preserve_clipboard: false`, `show_icon: false`, `show_notifications: false`,
-`key_delay: 30`, and `backspace_delay: 30`. Workstation mode sets
-`win32_exclude_orphan_events: false`, `preserve_clipboard: true`, and
-`restore_clipboard_delay: 1500`.
+`preserve_clipboard: true`, `restore_clipboard_delay: 2000`, `show_icon: false`,
+`show_notifications: false`, `key_delay: 30`, and `backspace_delay: 30`.
+Workstation mode sets `win32_exclude_orphan_events: false`,
+`preserve_clipboard: true`, and `restore_clipboard_delay: 1500`. In both modes
+Espanso is set to bring your copied text back after the delay, which is meant to
+come after large prompts finish pasting; it has not been measured over a real
+remote session, and an app that pastes later than the delay pastes your copied
+text instead. Espanso restores text only: an image or file on the clipboard is
+replaced by the expansion. `espansr doctor` reports the setting saved on this
+machine, not what the running Espanso does.
 
 The **Remote paste** switch in `:coms` and `:aopen` selects these same modes:
 on selects host mode; off selects workstation mode. It leaves copy-trigger and
@@ -359,8 +450,12 @@ in RustDesk itself.
 
 `install.ps1` runs this on every Windows install: `--auto` by default, host
 mode with `.\install.ps1 -RemoteDesktop`, and workstation mode with
-`.\install.ps1 -LocalOnly`. The command restarts Espanso after a change and
-exits 1 when no Espanso config directory is detected. The three mode flags are
+`.\install.ps1 -LocalOnly`. The command reports what it saved in `default.yml`
+and, separately, whether Espanso restarted and reports running afterwards; it
+never reports what an expansion does. It exits 0 when the file holds the
+requested settings or was kept on purpose (a failed restart is a warning, since
+the file is saved), and 1 when no Espanso config directory is detected or
+`default.yml` cannot be read or written; espansr then leaves the file as it was. The three mode flags are
 mutually exclusive (exit code 2 when combined), and `install.ps1` refuses
 `-RemoteDesktop` together with `-LocalOnly`.
 
@@ -471,7 +566,7 @@ espansr --version
 - **`--force-shim`** — Available on `setup`. Overwrites a non-symlink file that blocks the command shim path.
 - **`--no-push`** — Available on `sync`. Pulls and reinstalls without committing or pushing local changes.
 - **Auto-pull** — `doctor`, `list`, `validate`, and `gui` first pull the configured template remote when `remote.auto_pull` is on (the default). A failed pull is logged and never blocks the command.
-- **Exit codes** — `starters` exits 1 when it finds drift (without `--apply`) or when `--apply` skipped invalid local JSON, and 2 when the report has errors or `--force` is given without `--apply`. `import DIR` exits 0 whenever at least one file imported, 1 only when every file failed or the path does not exist. `validate` exits 1 on errors, `doctor` exits 1 on any failed check, `status` exits 1 when no Espanso config directory is found, `setup` exits 1 when Espanso is present and the publish or a generated file failed, `sync` exits 1 when a conflict, a failed stash restore, a failed commit, or a git timeout stops the run, `configure-remote-desktop` exits 2 when two mode flags are combined, and `check-output` uses 0/1/2/3 as described above.
+- **Exit codes** — `starters` exits 1 when it finds drift (without `--apply`) or when `--apply` skipped invalid local JSON, and 2 when the report has errors or `--force` is given without `--apply`. `import DIR` exits 0 whenever at least one file imported, 1 only when every file failed or the path does not exist. `validate` exits 1 on errors, `doctor` exits 1 on any failed check, `status` exits 1 when no Espanso config directory is found, `setup` exits 1 when Espanso is present and the publish or a generated file failed, `sync` exits 1 when a conflict, a failed stash restore, a failed commit, or a git timeout stops the run, `configure-remote-desktop` exits 1 when `default.yml` cannot be read or written and 2 when two mode flags are combined or `--restore-delay` is invalid, and `check-output` uses 0/1/2/3 as described above.
 - **Console encoding** — output never crashes on characters the console cannot encode; they print as replacement characters instead.
 - **Credential masking** — remote URLs that embed credentials are printed as `scheme://user:***@host`; the stored URL is unchanged.
 - **Colored output** — CLI output uses colors when connected to a TTY. Respects the `NO_COLOR` environment variable.

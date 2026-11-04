@@ -7,12 +7,28 @@ CI runs the full suite on native Linux, macOS, and Windows. On Linux/Python
 install into a path with spaces, actual Git pull/push with local edits, repeat
 installation, starter upgrades, preserved custom templates and preferences,
 exact prompt copying through Qt, and maximization, reopening, and pane resizing
-in both desktop windows. It also retains custom clipboard timing in host mode
-through Git sync/reinstall and in workstation mode through another refresh.
-The canary uses a temporary home and a
+of both windows on Qt's offscreen platform. It also retains custom clipboard
+timing in host mode through Git sync/reinstall and in workstation mode through
+another refresh. The canary uses a temporary home and a
 local Git remote, cleans them up, and restores the Windows runner's user PATH.
 It skips Espanso runtime installation and desktop typing; those require a real
-desktop, permissions, and the checks below. Clipboard checks use Qt offscreen.
+desktop, permissions, and the checks below. Clipboard and window checks use Qt
+offscreen, so they are not evidence of a real desktop.
+
+### What CI checks on each system
+
+A change has these results only once its own CI run passes; until then they
+are what CI will check, not evidence.
+
+| Environment | Checked by CI | Needs a real machine |
+|-------------|--------------|----------------------|
+| Windows 11 (x64) | Full suite, installer canary (`install.ps1 -LocalOnly`), Espanso 2.3.0 to 2.4.1 upgrade | Typing triggers, window focus, WMI restart of a live Espanso, RDP/RustDesk sessions, PowerShell 7 |
+| macOS (Apple Silicon) | Full suite, installer canary, Homebrew route | Accessibility and Input Monitoring permissions, launchd service, Terminal automation for `:sync`, Intel Macs |
+| Linux (Ubuntu, X11 libraries) | Full suite on 3.11-3.13, installer canary, X11 `.deb` upgrade | X11 or Wayland desktop typing, the Wayland `.deb` and AppImage routes, non-apt distributions |
+| WSL2 | Path and launcher logic through mocks, and the Windows profile lookup against stand-in `cmd.exe` and `wslpath` scripts on the Linux and macOS jobs (not WSL) | Everything that crosses to Windows: the real `cmd.exe` and `wslpath`, Espanso detection, restart, `wsl.exe` triggers |
+
+Teammates on a different system should run the checks in sections 1-5 on it;
+a passing CI run does not cover the right-hand column.
 
 A separate `scripts/verify_espanso_runtime.py` canary installs the real official
 2.3.0 runtime and runs the real upgrade route on Windows and Linux. On macOS it
@@ -46,8 +62,10 @@ its actual trigger, then inspect its small `Runs` label in `:coms` details or
 the `:aopen` editor. While a window is open, counts refresh every ten seconds.
 Copy trigger, Copy prompt and scratchpad actions never increment the count.
 Older or undetectable runtimes show unavailable; a failed read does not prevent
-copying or publishing. Existing expansions before native tracking was enabled
-cannot be recovered.
+copying or publishing. Publishing reads usage before it finishes: while another
+espansr process holds the usage lock, or when the lock cannot be taken at all,
+it waits up to five seconds first, and the window does not respond meanwhile.
+Existing expansions before native tracking was enabled cannot be recovered.
 
 The local `usage.json` beside `config.json` contains a schema version, native
 database checkpoint, trigger ownership, and command records with lifetime
@@ -91,7 +109,8 @@ Espanso before running setup. It refuses `-RemoteDesktop` together with
 success banner. The remote-desktop step edits only one marked block in
 Espanso's `config/default.yml` and keeps a one-time `default.yml.espansr-orig`
 backup; `espansr configure-remote-desktop --revert` restores the file.
-The default `--auto` path leaves existing managed clipboard settings unchanged;
+The default `--auto` path leaves existing managed clipboard settings unchanged
+(only untouched settings an earlier release wrote are brought up to date, once);
 only explicit host/workstation selection resets their defaults. **Remote paste**
 in either desktop window makes that selection and persists locally. Check actual
 copy/paste in both directions in an active RustDesk session as well; CI's
@@ -218,6 +237,51 @@ where Espanso expands text:
 - `:coms` opens the commands popup and closes with `Esc`.
 - `:sync` runs `espansr sync` (pull, commit and push local changes, reinstall)
   through the console entry point so its progress is visible.
+
+### Clipboard after an expansion
+
+Run this on each machine, including one you reach over RDP or RustDesk. Copy a
+unique sentinel line, such as `sentinel-4271`, as the text to get back.
+
+1. `espansr doctor` prints `Clipboard restore saved in default.yml: ...`, names
+   the mode, and lists what it cannot observe. It reads the saved settings
+   only; the steps below confirm what the running Espanso does. On Windows it
+   also prints `Espanso process: running independently`, a separate check. A
+   `[warn]` line means the saved setting leaves the prompt on the clipboard;
+   run the command it prints. A configuration command that could not restart
+   Espanso says so: restart Espanso before testing, since espansr cannot
+   confirm it uses the saved settings.
+2. Copy the sentinel, then type a short trigger into a plain text field and a
+   long one such as `:one-shot` into another. Each field holds the exact,
+   complete prompt, never the sentinel and never a cut-off prompt. Wait three
+   seconds and paste: you get the sentinel.
+3. Expand twice within two seconds, wait three seconds, and paste: you still
+   get the sentinel.
+4. Copy something new within two seconds after an expansion, wait three
+   seconds, and paste. If the sentinel comes back instead of your newer copy,
+   Espanso's restore ran after your copy: wait for the restore before copying,
+   or shorten it with `--restore-delay`.
+5. Inside the remote session, repeat steps 2 to 4. If a field ever receives the
+   sentinel instead of the prompt, raise the delay with
+   `espansr configure-remote-desktop --auto --restore-delay 3000` and repeat.
+   With RustDesk clipboard sharing on, also copy on each side and paste on the
+   other, in both directions.
+6. Copy an image instead and repeat step 2: the image is replaced, because
+   Espanso restores text only.
+7. The `:coms` Copy prompt and Copy trigger buttons replace the clipboard on
+   purpose; they are copies, not expansions, so nothing is restored after them.
+
+### Local-only prompts
+
+Create a prompt in the editor, check **Local only**, and save. `espansr list`
+shows `(local only)`, the trigger expands, and `:coms` shows the Local only
+note. With a template remote, `espansr push` leaves the prompt out of the
+remote and `espansr pull` leaves it unchanged. Delete the last line of a
+local-only file and run `espansr push`: it refuses, names the file, and sends
+nothing; restore the line and it pushes the rest. A local-only template placed
+in the install checkout makes `espansr sync` warn `Not committed: ... Move it
+to` your template store, and `espansr sync` neither commits nor pushes it
+(other Git tools in that checkout still can).
 
 ## 6. Developer Checks
 

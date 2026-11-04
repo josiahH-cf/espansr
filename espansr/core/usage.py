@@ -22,6 +22,9 @@ import yaml
 
 from espansr.core.atomic import atomic_copy, atomic_write_json
 
+# How long a reader waits for another process's checkpoint lock.
+LOCK_WAIT_SECONDS = 5.0
+
 
 @dataclass(frozen=True)
 class UsageSnapshot:
@@ -173,12 +176,15 @@ def _locked(path: Path):
             def release():
                 fcntl.flock(handle, fcntl.LOCK_UN)
 
-        for attempt in range(11):
+        # Wait on a deadline, not a fixed try count: on a busy Windows host a
+        # holder can outlast half a second, and that once failed CI.
+        deadline = time.monotonic() + LOCK_WAIT_SECONDS
+        while True:
             try:
                 acquire()
                 break
             except OSError:
-                if attempt == 10:
+                if time.monotonic() >= deadline:
                     raise
                 time.sleep(0.05)
         try:

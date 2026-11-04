@@ -134,7 +134,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
     ),
     HelpSection(
         "Project and maintenance prompts",
-        17,
+        19,
         (
             (":goal", "interpret, gap-check, and refine context into a measurable goal"),
             (
@@ -150,12 +150,20 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "fix the in-context issue at its root and update the affected downstream material",
             ),
             (
+                ":bring-back-feature",
+                "restore a feature recent changes broke as a stable forward fix with a guard",
+            ),
+            (
                 ":one-shot",
                 "plan, build, verify, review, document, and deliver a request in one pass",
             ),
             (":continue", "resume work in flight and keep going to done or a real gate"),
             (":unblock", "clarify blockers in the console and finish authorized remaining work"),
             (":verify", "verify, repair, and align affected docs"),
+            (
+                ":core-behaviors",
+                "confirm core behaviors in one question round, then stabilize and verify them",
+            ),
             (
                 ":adversary-review",
                 "adversarial review of finished work against its spec, with a verdict",
@@ -177,6 +185,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (
                 ":prune",
                 "audit what to update, simplify, or delete across code, process, and governance",
+            ),
+            (
+                ":dedupe",
+                "find duplicated or conflicting code, tests, and rules; clarify, then reconcile",
             ),
             (
                 ":test-speed",

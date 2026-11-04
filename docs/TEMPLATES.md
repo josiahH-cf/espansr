@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -182,6 +182,27 @@ sessions' work, keeps a passing installer separate from an observed working
 result, never weakens tests to improve a number, and never adds a governance
 layer.
 
+Use `:dedupe` when a project has evolved and its code, tests, governance, and
+documentation now duplicate or contradict each other. It follows the
+project's own instruction hierarchy to decide which source controls; recent
+history, recorded decisions, and current behavior are evidence for its
+recommendations, never authority over a governing instruction, because current
+behavior may be the regression in question. It then audits code, tests, agent
+and contributor instructions, CI and delivery workflows, prompt sources, and
+docs, citing both sides of every finding and classifying it as a duplicate, a
+conflict, stale, or friction. Before changing anything it presents one numbered
+batch with a recommended resolution for each finding, naming the single owner
+that should remain and the protection that must be kept, and asks wherever the
+direction is your call, including any intent conflict the hierarchy does not
+settle; reply "approve all", "all except 2, 5", approve by number, or say
+"audit only", and anything your reply does not approve stays unchanged. It
+then applies only the approved items through the chosen owners, keeps
+generated surfaces in sync through their generators, preserves other sessions'
+work, adds no new governance layer, and verifies with the project's checks plus
+a search confirming the duplicates and contradictions are gone. Unlike
+`:prune`, which only reports what to simplify or delete, and `:friction`,
+which measures upkeep cost, it reconciles disagreement with you before editing.
+
 Use `:journey` to find out whether a person can actually accomplish one task
 with your project, using one real sample. It records the starting source and
 installed state, splits the journey into the steps a person takes (for example
@@ -212,6 +233,21 @@ in `:coms` and `:espansr` and require no form or additional review file.
 
 Use `:troubleshoot` for ordered debugging that checks context quality, researches
 the controlling code path, plans, fixes, verifies, and reviews affected areas.
+
+Use `:bring-back-feature` when something that used to work stopped working
+after recent changes, such as fast AI-assisted edits made without a test that
+would have caught the loss. It restates the lost behavior as an observable
+before and after, finds evidence of the last known-good state in history,
+releases, tests, and documentation, reproduces the current failure, and narrows
+the change that broke it, separating what that change intended from its side
+effect. It restores the old behavior as a forward fix through the current
+owner, never by reverting commits, resetting history, or touching other
+sessions' work, keeps the newer behavior the change introduced, and adds a
+check that fails before the restoration and passes after. It asks one
+consolidated question batch only when the old and new behaviors genuinely
+conflict, verifies both the restored feature and the newer behavior the way you
+use them, and reports anything only another machine or a person can confirm as
+unverified. Unlike `:troubleshoot`, it starts from a known-good past.
 
 Use `:verify` for fresh-context verification, repair, and affected documentation
 alignment; it takes appended notes after its final marker and no longer carries
@@ -303,6 +339,27 @@ last-known evidence on connector failure, refers to credentials only through
 their owners, and never adds a registry, framework, or checklist the project
 does not need.
 
+Use `:core-behaviors` when you want the behaviors your project must always
+deliver confirmed with you and then made reliable. It reads the project's own
+instructions, documentation, entry points, tests, CI, installation paths, and
+history, then lists the core behaviors, each as one observable sentence with
+its owner, its current proof, and its observed status, plus any other behaviors
+you named or it found, such as undocumented, platform-specific, or currently
+broken ones. It asks exactly one comprehensive, numbered question round:
+whether each core behavior is what you intended, which other behaviors to
+protect, and which additional ones it recommends, each with a recommended
+answer. "approve all" or "all except 3, 5" accepts the recommendations, while
+"approve: 1, 4" confirms only those items; anything your reply does not cover
+stays deferred and unchanged, and a core behavior is dropped only when you say
+so. It then runs as a one shot without further questions: it fixes broken
+confirmed behaviors at
+their root, adds the smallest check that fails if each one breaks, records the
+guarantees in the project's own documentation, and ends by re-verifying every
+confirmed behavior in a before and after table, keeping anything only another
+platform or a person can confirm as unverified. Unlike `:stabilize`, which
+hands off one architecture correction without changing files, it changes the
+project.
+
 Use `:reverse-engineer` after several rounds of prompting, edits, or skill
 changes finally produce the result you wanted. It treats that accepted result
 as the target, reconstructs the path from the starting request through each
@@ -337,6 +394,9 @@ UNVERIFIED. The authoring invocation does not execute these actions itself.
 | `:journey` | One real user journey, the exact sample input, and the intended outcome (or a handoff describing them) | Yes — fixes only demonstrated in-scope gaps behind a failing check, then repeats the exact sample; honors observe-only requests | Starting state, an expected/observed/evidence table per step with the failing seam, changes, repeat observations, and UNVERIFIED steps with the human observation that would settle them | Synthetic canary runs without repairs, whole-application audits, or verification checks authored for another model |
 | `:feedback` | Accepted current-cycle feedback, directives appended after the marker, and project evidence (verification report, feedback directives, gap review, context packet) | Yes — applies the narrowest coherent change and updates affected tests, docs, and generated surfaces; returns patch-ready content when it cannot write | Evidence-based summary ending in a status of applied, partial, patch-ready, or blocked | An open-ended feedback loop, new scope, or persistent feedback memory |
 | `:troubleshoot` | Symptoms, reproduction steps, failing output, files, constraints, and prior attempts | Yes — test-first minimal fix plus the in-scope follow-ups the affected-area review requires | Summary of what failed, the cause, what changed, what verification passed, and which affected areas were checked | Nothing is failing (verify or review the work instead) |
+| `:bring-back-feature` | What used to work, what happens now, and roughly when it changed, plus any history, logs, or prior attempts | Yes — a forward fix through the current owner with a regression guard; never reverts commits, resets history, or touches other sessions' work | Evidence that it used to work, the breaking change and its intent, the restoration, guard and verification results, and remaining limits | A feature that never worked, or a new failure with no known-good past |
+| `:core-behaviors` | The project, optionally the behaviors you consider important, recent problems, or constraints | Yes, after exactly one question round — fixes only the confirmed behaviors, adds guarding checks, and records the guarantees; unconfirmed items stay unchanged | Behavior inventory and one numbered question batch, then the stabilization contract, deferred items, changes, and a before/after verification table | Debugging one failure, or a read-only review |
+| `:dedupe` | An evolved project, optionally its new direction, known conflicts, or focus areas | Yes, after your approval — applies only approved reconciliation items; honors "audit only" | The project's instruction hierarchy, current-direction summary, and numbered findings with recommendations, then applied and unchanged items with verification | A read-only deletion list, or a measured upkeep pass |
 | `:continue` | Work already in flight; optional notes, otherwise the objective is inferred from the evidence | Yes — performs the next correct work and delivery steps within existing authorization; asks only for genuinely missing decisions or permissions | Console completion or partial report, with a compact checkpoint when genuinely blocked | A comprehensive blocker sweep |
 | `:unblock` | Unfinished work, omitted updates, approval claims, or stalled steps; optional notes | Yes — clears agent-owned blockers and finishes the remaining authorized work, carrying prior authorization forward | Console clarification batches as needed, then verified completion or the exact remaining boundary | An independent read-only assessment or unrelated new work |
 
@@ -417,6 +477,7 @@ Each template is a JSON file with the following fields:
 | `use_when` | string | No | One-line user-facing guidance shown on the command card. |
 | `avoid_when` | string | No | One-line counter-guidance shown on the command card. |
 | `output_contract` | object | No | Optional structural obligations for model-generated output, checked with `espansr check-output`. See [PROCESS.md](PROCESS.md). |
+| `local_only` | boolean | No | `true` keeps the prompt out of everything espansr shares: it expands and appears in `:coms` here, but espansr never pushes it to a template remote, commits or pushes it during `espansr sync`, delivers it, or describes it in the capability catalog. The editor's **Local only** checkbox sets it; import keeps it. Bundled prompts never set it. Only an absent value or exactly `false` is shareable. A file that cannot be read, does not parse, or sets anything else stops push, sync, and delivery until it is fixed, except that a file that does not parse but still spells `"local_only": true` counts as local only. It controls what espansr shares, not the local Espanso match file, the clipboard, or where you paste the prompt. |
 
 Workflow metadata fields are optional for user templates. Bundled prompts are
 self-contained: discovery metadata describes each prompt without prescribing
@@ -521,6 +582,42 @@ existing Espanso path detection for Windows, Linux, and WSL2.
 
 Use `espansr push` when your local live template store is the source of truth and you want to send template JSON changes to the configured Git remote.
 
+espansr does not share templates marked **Local only**. `push` lists them in
+espansr's own block of the store's `info/exclude` (found through Git, so a
+linked worktree works; every other byte of that file is kept), which Git never
+commits. Before it commits, `push` checks every staged version, however it was
+staged, and it removes from the remote a template that was pushed before it was
+marked local only, keeping your copy; other machines drop theirs at their next
+pull. Earlier commits in the remote's history still hold any version that was
+already shared. `push` and `push --template` read every version in the commits
+they would send, merges included, and refuse when one is local only, was marked
+local only, or is an earlier version of a local-only template under another
+name (same trigger, capability ID, or prompt text). `pull` never replaces a
+local-only file: it stops when the remote has its own file at that path and
+puts back one that Git rewrote while rebasing. `pull --template` takes each
+name as one exact file in the store and skips a local-only one, whatever the
+spelling (`./`, `..`, an absolute path). It refuses folders, Git patterns and
+pathspec magic (`personal/*.json`, `:(glob)...`). Restoring an older
+version changes the prompt's content, never whether it is shared: a local-only
+template stays local only.
+
+espansr fails closed when it cannot tell. A template that cannot be read, does
+not parse, or has a `local_only` other than a single `true` or `false` (a
+repeated key included) stops `push`, `push --template`, and `espansr sync`
+before anything is staged, keeps any exclusion it already had, and is kept like
+a private file during a pull. A marked file that does not parse (a byte-order
+mark, a stray comma, or a byte that is not UTF-8) still counts as local only. espansr opens a template
+with an unclear `local_only` as local only and saves it with one exact `true`.
+Saving a template as local only also withdraws a capability publication that
+still describes it. What espansr cannot see stays outside it: text you paste
+elsewhere, copies made by other Git tools or by hand, a version committed
+before it was marked and then deleted, history already shared, and programs
+that read the template folder themselves. Such a program sees every template
+file there, Local only included, unless it applies the rule in
+[CAPABILITY_CATALOG.md](CAPABILITY_CATALOG.md#local-only-templates-for-consumers).
+`espansr validate` warns about a `local_only` that is not a single `true` or
+`false`, so you can give every private file a flag such a program can read.
+
 ## Bundled Drift Reconciliation
 
 Normal `espansr publish`, GUI Publish, and GUI auto-publish apply missing or
@@ -539,7 +636,8 @@ espansr starters --apply --force
 - Missing bundled files are reported and can be copied back into the live store with `--apply`.
 - Changed bundled-matching live templates are reported and, when applied, backed up into `_versions/` before replacement.
 - Renamed bundled starter files are migrated to their new filename when no custom trigger collision exists.
-- Local-only templates that do not belong to the bundled starter set are preserved.
+- Your own templates that do not belong to the bundled starter set are preserved.
+- A live copy you marked **Local only** is yours: it is never updated, renamed, or retired, and a missing starter whose trigger it owns is not copied back. It is listed with the preserved local-only templates. Its trigger stays its own in any folder: move a private starter into `personal/` and setup, refresh and publish never seed the public starter beside it.
 - Invalid local JSON is reported and skipped by default.
 - `--apply --force` backs up invalid bundled-matching local files under `_versions/` and then replaces them with the bundled copy.
 

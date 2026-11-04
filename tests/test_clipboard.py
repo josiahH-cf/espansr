@@ -88,3 +88,34 @@ def test_clipboard_rejecting_a_write_is_retried(qtbot, monkeypatch):
     qtbot.waitUntil(lambda: copied.called)
     assert writes == ["Full prompt. ", "Full prompt. "]
     assert stored == "Full prompt. "
+
+
+def test_a_failed_write_after_an_earlier_copy_is_never_reported_as_copied(qtbot, monkeypatch):
+    """Qt on Windows releases ownership when a write fails, so the earlier copy
+    still on the clipboard never counts as the new one."""
+
+    class Clipboard:
+        owned = True  # this app's earlier copy
+        system = "Earlier prompt. "
+
+        def setText(self, text):
+            self.owned = False  # OleSetClipboard failed and Qt released its data
+
+        def ownsClipboard(self):
+            return self.owned
+
+        def text(self):
+            return self.system
+
+    fake = Clipboard()
+    monkeypatch.setattr(clipboard, "_clipboard_available", lambda: True)
+    monkeypatch.setattr(QApplication, "clipboard", staticmethod(lambda: fake))
+    monkeypatch.setattr(clipboard.time, "monotonic", lambda: 10)
+    copied, failed = Mock(), Mock()
+    clipboard.copy_text("New prompt. ", on_success=copied, on_failure=failed)
+    writer = QApplication.instance()._espansr_clipboard_writer
+    monkeypatch.setattr(clipboard.time, "monotonic", lambda: 14)
+    writer._attempt()
+    failed.assert_called_once_with()
+    copied.assert_not_called()
+    assert fake.text() == "Earlier prompt. "

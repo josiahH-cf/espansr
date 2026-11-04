@@ -10,7 +10,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Literal, NamedTuple, Optional
 
 from espansr.core.atomic import atomic_copy, atomic_write_json
 from espansr.core.config import get_config, get_templates_dir
@@ -105,6 +105,7 @@ class Template:
     output_contract: Dict[str, Any] = field(default_factory=dict)
     execution: Dict[str, Any] = field(default_factory=dict)  # Declaration, never availability
     publish_definition: bool = False  # Explicit reusable source-content publication
+    local_only: bool = False  # Expands here; espansr never pushes, syncs, delivers, or catalogs it
 
     # Internal: path to the JSON file (set when loaded from disk)
     _path: Optional[Path] = field(default=None, repr=False)
@@ -158,6 +159,8 @@ class Template:
             d["execution"] = self.execution
         if self.publish_definition:
             d["publish_definition"] = True
+        if self.local_only:
+            d["local_only"] = True
         return d
 
     @classmethod
@@ -185,6 +188,8 @@ class Template:
             output_contract=_coerce_dict(data.get("output_contract", {})),
             execution=_coerce_dict(data.get("execution", {})),
             publish_definition=data.get("publish_definition") is True,
+            # Anything but an explicit false keeps it private; sharing refuses it until fixed.
+            local_only=data.get("local_only", False) is not False,
             _path=path,
         )
 
@@ -393,7 +398,12 @@ class TemplateManager:
     def restore_version(
         self, template: Template, version_num: int, create_backup: bool = True
     ) -> Optional[Template]:
-        """Restore a template to a previous version."""
+        """Restore a template's content to a previous version.
+
+        Sharing is not part of the content: the restored template is local only
+        when the passed template or the file on disk is, whatever the snapshot
+        says, so restoring never makes a private prompt shareable.
+        """
         version = self.get_version(template, version_num)
         if not version:
             return None
@@ -402,6 +412,8 @@ class TemplateManager:
             self.create_version(template, note=f"Backup before revert to v{version_num}")
 
         restored = Template.from_dict(version.template_data, path=template._path)
+        on_disk = template._path is not None and is_kept_private(Path(template._path))
+        restored.local_only = template.local_only or on_disk
 
         if self.save(restored):
             return restored
@@ -450,9 +462,8 @@ class TemplateManager:
         """List all templates, sorted by name."""
         templates = []
         for path in self.templates_dir.glob("**/*.json"):
-            if self.VERSIONS_DIR in path.parts:
-                continue
-            if "_meta" in path.parts:
+            parts = path.relative_to(self.templates_dir).parts
+            if self.VERSIONS_DIR in parts or "_meta" in parts or ".git" in parts:
                 continue
             try:
                 template = self.load(path)
@@ -474,14 +485,19 @@ class TemplateManager:
                 yield template
 
     def load(self, path: Path) -> Optional[Template]:
-        """Load a template from a JSON file."""
+        """Load a template from a JSON file.
+
+        A file that sharing refuses loads as local only, so saving it writes one
+        exact ``true``. json keeps only the last of a repeated ``local_only``.
+        """
         try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return Template.from_dict(data, path=path)
+            raw = Path(path).read_bytes()
+            template = Template.from_dict(json.loads(raw.decode("utf-8")), path=path)
         except (json.JSONDecodeError, OSError) as e:
             print(f"Error loading template {path}: {e}")
             return None
+        template.local_only = template.local_only or local_only_state_bytes(raw) != "shareable"
+        return template
 
     def get(self, name: str) -> Optional[Template]:
         """Get a template by name."""
@@ -499,7 +515,12 @@ class TemplateManager:
         return None
 
     def save(self, template: Template) -> bool:
-        """Save a template to disk."""
+        """Save a template to disk.
+
+        Saving one as local only also withdraws a retained capability
+        publication that still describes it, instead of leaving that to the
+        next sync, which can stop before it publishes.
+        """
         if template._path:
             path = template._path
         else:
@@ -508,10 +529,23 @@ class TemplateManager:
         try:
             atomic_write_json(path, template.to_dict())
             template._path = path
-            return True
         except OSError as e:
             print(f"Error saving template: {e}")
             return False
+        if template.local_only:
+            self._withdraw_private_publication()
+        return True
+
+    def _withdraw_private_publication(self) -> None:
+        """Withdraw a retained capability publication that describes a private template."""
+        from espansr.core.capability_catalog import PUBLICATION_PATH, withdraw_private_publication
+
+        if withdraw_private_publication(get_bundled_templates_dir(), self.templates_dir) is False:
+            print(
+                f"Warning: {self.templates_dir / PUBLICATION_PATH} still describes a template "
+                "marked local only and could not be removed. Connected tools can still read "
+                "it; delete that file to stop sharing the template."
+            )
 
     def delete(
         self,
@@ -629,10 +663,12 @@ class TemplateManager:
                 old_path.unlink()
 
             template._path = new_path
-            return True
         except OSError as e:
             print(f"Error saving template: {e}")
             return False
+        if template.local_only:
+            self._withdraw_private_publication()
+        return True
 
 
 # Global template manager instance
@@ -645,6 +681,173 @@ def get_template_manager() -> TemplateManager:
     if _template_manager is None:
         _template_manager = TemplateManager()
     return _template_manager
+
+
+_LOCAL_ONLY_MARK = re.compile(r'"local_only"\s*:\s*true\b')
+
+# "private": marked local only. "shareable": valid JSON whose local_only is
+# absent or false. "unknown": unreadable, not a JSON object without the mark,
+# or a local_only that is not exactly true or false; sharing refuses it.
+LocalOnlyState = Literal["private", "shareable", "unknown"]
+
+
+def local_only_state(path: Path) -> LocalOnlyState:
+    """Return whether the template JSON at *path* may be shared.
+
+    Fails closed: a file that does not parse (a stray comma, UTF-16 from
+    PowerShell 5's ``Out-File``) but still spells ``"local_only": true`` stays
+    private, and one whose privacy cannot be read is ``"unknown"``.
+    """
+    try:
+        raw = Path(path).read_bytes()
+    except OSError:
+        return "unknown"
+    return local_only_state_bytes(raw)
+
+
+def _template_codec(raw: bytes) -> str:
+    """UTF-16 after a UTF-16 byte-order mark, otherwise UTF-8 (a BOM allowed)."""
+    return "utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+
+
+def template_object(raw: bytes) -> Optional[dict]:
+    """The JSON object in a template's bytes, decoded as the privacy rule decodes them."""
+    try:
+        data = json.loads(raw.decode(_template_codec(raw)))
+    except (ValueError, RecursionError):  # UnicodeDecodeError is a ValueError
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def local_only_state_bytes(raw: bytes) -> LocalOnlyState:
+    """The rule of :func:`local_only_state` for a template's raw bytes."""
+    codec = _template_codec(raw)
+    try:
+        text = raw.decode(codec)
+    except UnicodeDecodeError:
+        # Bytes the loader cannot read are never shareable; only a mark still
+        # legible in them keeps the file private rather than unknown.
+        legible = raw.decode(codec, errors="replace")
+        return "private" if _LOCAL_ONLY_MARK.search(legible) else "unknown"
+    objects: List[list] = []  # key/value pairs of each object, the outermost last
+
+    def remember(pairs: list) -> dict:
+        objects.append(pairs)
+        return dict(pairs)
+
+    try:
+        data = json.loads(text, object_pairs_hook=remember)
+    except (ValueError, RecursionError):
+        return "private" if _LOCAL_ONLY_MARK.search(text) else "unknown"
+    if not isinstance(data, dict):
+        return "unknown"
+    values = [value for key, value in objects[-1] if key == "local_only"]
+    if not values:
+        return "shareable"
+    if len(values) == 1 and values[0] is True:  # identity: 1 == True in Python
+        return "private"
+    return "shareable" if len(values) == 1 and values[0] is False else "unknown"
+
+
+def is_local_only_file(path: Path) -> bool:
+    """Return True when the template JSON at *path* is marked ``local_only``."""
+    return local_only_state(path) == "private"
+
+
+def is_local_only_bytes(raw: bytes) -> bool:
+    """The rule of :func:`is_local_only_file` for a template's raw bytes."""
+    return local_only_state_bytes(raw) == "private"
+
+
+class TemplatePrivacy(NamedTuple):
+    """Templates under a root that espansr must not share, sorted."""
+
+    private: List[Path]  # marked local only
+    unknown: List[Path]  # privacy unreadable or invalid: sharing refuses until fixed
+
+
+def scan_template_privacy(root: Path) -> TemplatePrivacy:
+    """Classify every template under *root*, walked like ``list_all``.
+
+    Sync, remote push, delivery, catalog publication, and bundled
+    reconciliation never share a private template, and the sharing paths stop
+    while any template's privacy is unknown.
+    """
+    root = Path(root)
+    private: List[Path] = []
+    unknown: List[Path] = []
+    if not root.is_dir():
+        return TemplatePrivacy(private, unknown)
+    skipped = {TemplateManager.VERSIONS_DIR, "_meta", ".git"}
+    for path in sorted(root.glob("**/*.json")):
+        if skipped.intersection(path.relative_to(root).parts) or not path.is_file():
+            continue
+        state = local_only_state(path)
+        if state != "shareable":
+            (private if state == "private" else unknown).append(path)
+    return TemplatePrivacy(private, unknown)
+
+
+def local_only_template_paths(root: Path) -> List[Path]:
+    """Return every template under *root* marked local only."""
+    return scan_template_privacy(root).private
+
+
+def is_kept_private(path: Path) -> bool:
+    """Marked local only, or a ``local_only`` that is set but not exactly false.
+
+    Starter updates and the catalog treat these as private, a repeated
+    ``local_only`` included. A file that does not parse at all keeps their
+    invalid-definition handling (the starters repair flow; an unqualified
+    catalog keeps its last publication), and the sharing paths refuse it
+    meanwhile.
+    """
+    state = local_only_state(path)
+    if state != "unknown":
+        return state == "private"
+    try:
+        data = json.loads(Path(path).read_bytes().decode("utf-8-sig"))
+    except (OSError, ValueError, RecursionError):
+        return False
+    # An object the rule calls unknown has local_only set, but not to one exact false.
+    return isinstance(data, dict) and "local_only" in data
+
+
+def private_template_triggers(root: Path) -> Dict[str, List[Path]]:
+    """Triggers owned by a template kept private anywhere in the live store.
+
+    Uses the live listing's population (every folder; not ``_versions``,
+    ``_meta`` or ``.git``), so a private template moved into a folder still
+    owns its trigger: starter seeding and updates never add a public copy
+    beside it.
+    """
+    owners: Dict[str, List[Path]] = {}
+    root = Path(root)
+    if not root.is_dir():
+        return owners
+    skipped = {TemplateManager.VERSIONS_DIR, "_meta", ".git"}
+    for path in sorted(root.glob("**/*.json")):
+        if skipped.intersection(path.relative_to(root).parts) or not path.is_file():
+            continue
+        if not is_kept_private(path):
+            continue
+        try:
+            data = json.loads(path.read_bytes().decode("utf-8-sig"))
+        except (OSError, ValueError, RecursionError):
+            continue
+        trigger = data.get("trigger") if isinstance(data, dict) else None
+        if isinstance(trigger, str) and trigger.strip():
+            owners.setdefault(trigger.strip(), []).append(path)
+    return owners
+
+
+def starter_kept_private(bundled_path: Path, private_triggers: Dict[str, List[Path]]) -> bool:
+    """Whether a bundled starter's trigger belongs to a private template in the live store."""
+    try:
+        trigger = _coerce_optional_string(_load_template_object(bundled_path).get("trigger", ""))
+    except ValueError:
+        return False
+    return bool(trigger) and trigger.strip() in private_triggers
 
 
 def get_bundled_templates_dir(anchor_path: Optional[Path | str] = None) -> Path:
@@ -683,7 +886,8 @@ class BundledTemplateReport:
     """Drift report between bundled templates and the local live store."""
 
     entries: List[BundledTemplateStatus] = field(default_factory=list)
-    local_only: List[Path] = field(default_factory=list)
+    # The user's own files that no bundled starter manages (not the Local only flag).
+    unbundled: List[Path] = field(default_factory=list)
     errors: List[str] = field(default_factory=list)
 
     def has_drift(self) -> bool:
@@ -900,6 +1104,17 @@ def build_bundled_template_report(
     if local_root.exists():
         local_paths = {path.name: path for path in sorted(local_root.glob("*.json"))}
     local_trigger_owners = _collect_local_trigger_owners(local_paths)
+    # A live copy marked local only belongs to the user: reconciliation never
+    # updates, renames, retires, or shadows it, and reports it as preserved.
+    # Its trigger stays its own in any folder, so no public starter is seeded
+    # beside a private one that was moved.
+    kept_local = {name for name, path in local_paths.items() if is_kept_private(path)}
+    kept_triggers = {
+        trigger
+        for trigger, owners in local_trigger_owners.items()
+        if any(path.name in kept_local for path in owners)
+    }
+    kept_triggers |= set(private_template_triggers(local_root))
     renamed_filenames = {
         old_filename
         for filename in bundled_paths
@@ -908,6 +1123,8 @@ def build_bundled_template_report(
 
     report = BundledTemplateReport()
     for filename, bundled_path in bundled_paths.items():
+        if filename in kept_local:
+            continue
         local_path = local_root / filename
         try:
             bundled_obj = _load_template_object(bundled_path)
@@ -916,9 +1133,15 @@ def build_bundled_template_report(
             continue
 
         old_filenames = _RENAMED_BUNDLED_TEMPLATE_FILES.get(filename, ())
-        old_local_paths = [local_root / old for old in old_filenames if old in local_paths]
+        old_local_paths = [
+            local_root / old
+            for old in old_filenames
+            if old in local_paths and old not in kept_local
+        ]
         old_local_path = old_local_paths[0] if old_local_paths else None
         if not local_path.exists():
+            if _coerce_optional_string(bundled_obj.get("trigger", "")) in kept_triggers:
+                continue
             if old_local_path is not None:
                 trigger = _coerce_optional_string(bundled_obj.get("trigger", ""))
                 collisions = _renamed_trigger_collisions(
@@ -1026,13 +1249,13 @@ def build_bundled_template_report(
                 )
             )
 
-    managed_filenames = set(bundled_paths) | renamed_filenames
-    managed_filenames |= _collect_retired_bundled_template_entries(local_paths, report)
-    report.local_only = [
-        path for name, path in local_paths.items() if name not in managed_filenames
-    ]
+    managed_filenames = (set(bundled_paths) | renamed_filenames) - kept_local
+    managed_filenames |= _collect_retired_bundled_template_entries(
+        {name: path for name, path in local_paths.items() if name not in kept_local}, report
+    )
+    report.unbundled = [path for name, path in local_paths.items() if name not in managed_filenames]
     report.entries.sort(key=lambda entry: entry.filename.lower())
-    report.local_only.sort(key=lambda path: path.name.lower())
+    report.unbundled.sort(key=lambda path: path.name.lower())
     return report
 
 
@@ -1175,6 +1398,8 @@ _KNOWN_TEMPLATE_FIELDS = {
     "avoid_when",
     "output_contract",
     "execution",
+    # Privacy survives import; publication opt-in deliberately does not.
+    "local_only",
 }
 
 # Known fields in the internal Variable schema.
@@ -1265,8 +1490,8 @@ def import_template(path: Path, manager: Optional[TemplateManager] = None) -> Im
         return ImportResult(error=f"File not found: {path}")
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
-            raw_data = json.load(f)
+        raw = path.read_bytes()
+        raw_data = json.loads(raw.decode("utf-8"))
     except json.JSONDecodeError as exc:
         return ImportResult(error=f"Invalid JSON in {path.name}: {exc}")
     except OSError as exc:
@@ -1283,6 +1508,8 @@ def import_template(path: Path, manager: Optional[TemplateManager] = None) -> Im
 
     cleaned = _strip_to_known_fields(raw_data)
     template = Template.from_dict(cleaned)
+    # The copy stays private unless sharing would take the file (a repeated key too).
+    template.local_only = template.local_only or local_only_state_bytes(raw) != "shareable"
 
     # De-duplicate name
     final_name, was_renamed = _deduplicate_name(template.name, manager)

@@ -178,6 +178,62 @@ def test_separate_processes_share_one_atomic_checkpoint(native):
     assert read(native, [entry()]).counts["template:one"] == 18
 
 
+def test_checkpoint_lock_waits_for_a_holder_that_outlasts_half_a_second(tmp_path):
+    """A busy Windows host once kept the lock past the old 11 x 50 ms budget."""
+    import time
+
+    from espansr.core.usage import LOCK_WAIT_SECONDS, _locked
+
+    lock = tmp_path / "usage.lock"
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import sys,time; from pathlib import Path; from espansr.core.usage import _locked\n"
+            "with _locked(Path(sys.argv[1])):\n"
+            "    print('held', flush=True); time.sleep(1.2)\n",
+            str(lock),
+        ],
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert holder.stdout.readline().strip() == "held"
+        started = time.monotonic()
+        with _locked(lock):
+            waited = time.monotonic() - started
+    finally:
+        holder.communicate(timeout=20)
+    assert holder.returncode == 0
+    assert 0.6 < waited < LOCK_WAIT_SECONDS
+
+
+def test_a_lock_that_can_never_be_taken_delays_a_reader_for_the_whole_wait(native, monkeypatch):
+    """Publication reads usage before it finishes, so this is how long it can pause."""
+    import errno
+    import time
+
+    import espansr.core.usage as usage
+
+    def refuse(*args):
+        raise OSError(errno.ENOLCK, "No locks available")
+
+    if os.name == "nt":
+        import msvcrt
+
+        monkeypatch.setattr(msvcrt, "locking", refuse)
+    else:
+        import fcntl
+
+        monkeypatch.setattr(fcntl, "flock", refuse)
+    monkeypatch.setattr(usage, "LOCK_WAIT_SECONDS", 0.3)
+    started = time.monotonic()
+    snapshot = read(native, [entry()])
+    waited = time.monotonic() - started
+    assert snapshot.reason == "Local usage is temporarily unavailable; prompts still work."
+    assert 0.3 <= waited < 2.3
+
+
 def test_replaced_native_database_keeps_lifetime_count(native):
     root, _ = native
     expand(root, ":one", 4)

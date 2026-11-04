@@ -120,9 +120,11 @@ install_system_deps() {
     info "Checking Debian/Ubuntu system packages for PyQt6..."
     local missing=()
 
-    # PyQt6 on Linux needs xcb platform libs
+    # PyQt6 on Linux needs xcb platform libs, and Qt6Gui itself links EGL, GL,
+    # fontconfig, and xkbcommon, which minimal images (WSL, servers) can lack.
     for pkg in libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
-                libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxkbcommon-x11-0; do
+                libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxkbcommon-x11-0 \
+                libegl1 libgl1 libfontconfig1 libxkbcommon0; do
         if ! dpkg -s "$pkg" &>/dev/null 2>&1; then
             missing+=("$pkg")
         fi
@@ -820,6 +822,15 @@ if STATUS_OUTPUT="$("$VENV_CMD" status 2>&1)"; then
 else
     echo "$STATUS_OUTPUT"
     warn "espansr status returned non-zero (Espanso may not be installed)"
+fi
+
+# The CLI works without Qt, so prove separately that the windows can load.
+if QT_ERROR="$(QT_QPA_PLATFORM=offscreen "$VENV_PYTHON" -c 'from PyQt6 import QtWidgets' 2>&1)"; then
+    ok "GUI libraries: PyQt6 loads"
+else
+    warn "PyQt6 could not load, so :aopen, :coms, and espansr gui will not open:"
+    echo "  $(echo "$QT_ERROR" | tail -n 1)"
+    info "Install your distribution's Qt runtime libraries (Debian/Ubuntu: libegl1 libgl1 libfontconfig1 libxkbcommon0), then rerun ./install.sh"
 fi
 
 if echo "$STATUS_OUTPUT" | grep -q "Espanso config: not found"; then

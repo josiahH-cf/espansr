@@ -157,8 +157,8 @@ def test_get_candidate_paths_wsl2_includes_windows(tmp_path):
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
         patch(
-            "espansr.core.platform.get_windows_username",
-            return_value="TestUser",
+            "espansr.core.platform.get_windows_profile_dir",
+            return_value=Path("/mnt/c/Users/TestUser"),
         ),
         patch("pathlib.Path.home", return_value=tmp_path),
     ):
@@ -174,31 +174,13 @@ def test_get_candidate_paths_wsl2_includes_windows(tmp_path):
     assert tmp_path / ".config" / "espanso" in paths
 
 
-def test_get_candidate_paths_wsl2_falls_back_to_single_discovered_windows_user(tmp_path):
-    """When cmd.exe username lookup fails, a single discovered Windows profile is used."""
-    with (
-        patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value=None),
-        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=["Alice"]),
-        patch("pathlib.Path.home", return_value=tmp_path),
-    ):
-        from espansr.integrations.espanso import _get_candidate_paths
-
-        paths = _get_candidate_paths()
-
-    assert Path("/mnt/c/Users/Alice/AppData/Roaming/espanso") in paths
-    assert Path("/mnt/c/Users/Alice/.config/espanso") in paths
-    assert Path("/mnt/c/Users/Alice/.espanso") in paths
-
-
 def test_clean_stale_never_touches_other_windows_users(tmp_path):
     """Candidate dirs (and therefore cleanup targets) exclude other Windows profiles."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
         patch(
-            "espansr.core.platform._discover_wsl_windows_usernames",
-            return_value=["Alice", "Bob", "Carol"],
+            "espansr.core.platform.get_windows_profile_dir",
+            return_value=Path("/mnt/c/Users/Alice"),
         ),
         patch("pathlib.Path.home", return_value=tmp_path),
     ):
@@ -215,8 +197,10 @@ def test_wsl_candidate_order_prefers_windows_roaming_first(tmp_path):
     """WSL candidate order should prioritize Windows Roaming path for canonical sync."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
-        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=[]),
+        patch(
+            "espansr.core.platform.get_windows_profile_dir",
+            return_value=Path("/mnt/c/Users/Alice"),
+        ),
         patch("pathlib.Path.home", return_value=tmp_path),
     ):
         from espansr.integrations.espanso import _get_candidate_paths

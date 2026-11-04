@@ -6,6 +6,17 @@ from unittest.mock import MagicMock, patch
 
 import espansr.__main__ as cli
 
+# The configured push the sync checks and makes, frozen to one object.
+OID = "0123456789abcdef0123456789abcdef01234567"
+PLAN = cli._PushPlan(
+    "origin",
+    "main",
+    "Git's default push",
+    ["https://example.invalid/r.git"],
+    [cli._PushUpdate("refs/heads/main", "refs/heads/main", OID, False)],
+    [],
+)
+
 
 def _cp(returncode=0, stdout="", stderr=""):
     return subprocess.CompletedProcess(
@@ -48,6 +59,9 @@ def _sync_env(repo, git, *, dirty=False, conflicts=(), ahead=True, worktree=True
         patch.object(cli, "_worktree_dirty", return_value=dirty),
         patch.object(cli, "_conflicted_files", return_value=list(conflicts)),
         patch.object(cli, "_ahead_of_upstream", return_value=ahead),
+        patch.object(cli, "_plan_push", return_value=PLAN),
+        patch.object(cli, "_outgoing_local_only", return_value={}),
+        patch("espansr.core.remote.staged_privacy", return_value=[]),
         patch.object(cli, "run_installer", return_value=installer_rc),
     ]
     with ExitStack() as stack:
@@ -101,7 +115,8 @@ def test_sync_clean_pulls_pushes_and_reinstalls(tmp_path):
     cmds = _git_subcommands(git)
     assert ("fetch", "--prune") in cmds
     assert ("pull", "--rebase") in cmds
-    assert ("push",) in cmds
+    # Exactly the checked object, to the ref Git's own push would update.
+    assert ("push", "--no-follow-tags", "origin", f"{OID}:refs/heads/main") in cmds
 
 
 def test_sync_no_push_skips_push(tmp_path):

@@ -88,10 +88,10 @@ def test_apply_writes_remote_desktop_keys(tmp_path):
     data = yaml.safe_load(text)
     assert data["win32_exclude_orphan_events"] is False
     assert data["backend"] == "Clipboard"
-    # With the clipboard backend, disabling the clipboard restore prevents the
-    # paste-race that otherwise emits previously-copied text instead of the
-    # expansion in apps that paste asynchronously.
-    assert data["preserve_clipboard"] is False
+    # With the clipboard backend, a 2 s restore lets asynchronous pastes win the
+    # race that Espanso's ~300 ms default lost, and still returns the copied text.
+    assert data["preserve_clipboard"] is True
+    assert data["restore_clipboard_delay"] == 2000
     assert data["show_icon"] is False
     assert data["show_notifications"] is False
     assert data["key_delay"] == 30
@@ -379,9 +379,9 @@ def test_legacy_layout_migrates_to_block_on_apply(tmp_path):
     assert len(keys) == len(set(keys)), keys
     data = yaml.safe_load(text)
     assert data["toggle_key"] == "ALT"
-    assert data["preserve_clipboard"] is False
+    assert data["preserve_clipboard"] is True
     assert data["backend"] == "Clipboard"
-    assert "restore_clipboard_delay" not in data
+    assert data["restore_clipboard_delay"] == 2000
     # A legacy file already carried an espansr marker, so it is not an original.
     assert not _backup(cfg).exists()
 

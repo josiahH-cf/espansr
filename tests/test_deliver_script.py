@@ -195,3 +195,170 @@ def test_verify_detects_a_stale_espanso_expansion(live_dir):
     """The store can update while the match file write fails; the trigger then expands old text."""
     runner = FakeRunner(live_dir, matches={":one-shot": "old text"})
     assert _delivery(runner).deliver() == deliver.EXIT_VERIFY
+
+
+def test_commit_message_and_pr_body_reach_git_and_gh_as_utf8(live_dir, monkeypatch):
+    """Windows Python writes text in the locale code page (often cp1252) unless told otherwise."""
+    real = deliver.tempfile.NamedTemporaryFile
+
+    def locale_default(mode="w+b", *args, encoding=None, **kwargs):
+        if "b" not in mode and encoding is None:
+            encoding = "cp1252"
+        return real(mode, *args, encoding=encoding, **kwargs)
+
+    monkeypatch.setattr(deliver.tempfile, "NamedTemporaryFile", locale_default)
+    runner, read = FakeRunner(live_dir), {}
+
+    def reading(argv, cwd=None, **kwargs):
+        for flag in ("-F", "--body-file"):
+            if flag in argv:  # git commit -F and gh pr create --body-file read the bytes
+                read[argv[1]] = Path(argv[argv.index(flag) + 1]).read_bytes()
+        return runner(argv, cwd=cwd, **kwargs)
+
+    message = "feat: add a thing — café\n\nWhy it matters.\n"
+    body = "Why it matters.\n\n\U0001f916 Generated with [Claude Code](https://claude.com/claude-code)\n"
+    assert _delivery(reading, message=message, body=body).deliver() == 0
+    assert read["commit"].decode("utf-8").replace("\r\n", "\n") == message
+    assert read["pr"].decode("utf-8").replace("\r\n", "\n") == body
+
+
+# ── Catching up with origin/main never stashes other work (real Git) ────────
+
+FOREIGN = ".codex/config.toml"  # another tool's edit in the same checkout
+
+
+def _git(cwd: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args], check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+@pytest.fixture()
+def checkout(tmp_path, monkeypatch):
+    """A checkout of origin/main with a foreign tracked file, and a second clone to move origin."""
+    for key in ("GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"):
+        monkeypatch.setenv(key, "espansr test")
+    for key in ("GIT_AUTHOR_EMAIL", "GIT_COMMITTER_EMAIL"):
+        monkeypatch.setenv(key, "test@example.invalid")
+    bare, repo, other = tmp_path / "origin.git", tmp_path / "repo", tmp_path / "other"
+    _git(tmp_path, "init", "-q", "--bare", "-b", "main", str(bare))
+    _git(tmp_path, "init", "-q", "-b", "main", str(repo))
+    (repo / "templates").mkdir()
+    (repo / "templates" / "shared.json").write_text(
+        json.dumps({"name": "Shared", "content": "v1", "trigger": ":shared"}), encoding="utf-8"
+    )
+    (repo / ".codex").mkdir()
+    (repo / FOREIGN).write_text('model = "a"\n', encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "remote", "add", "origin", str(bare))
+    _git(repo, "push", "-q", "-u", "origin", "main")
+    _git(tmp_path, "clone", "-q", str(bare), str(other))
+    (repo / "templates" / "shared.json").write_text(
+        json.dumps({"name": "Shared", "content": "v2", "trigger": ":shared"}), encoding="utf-8"
+    )
+    monkeypatch.setattr(deliver, "ROOT", repo)
+    return repo, other
+
+
+def _move_origin(other: Path) -> None:
+    (other / "README.md").write_text("upstream moved on\n", encoding="utf-8")
+    _git(other, "add", "-A")
+    _git(other, "commit", "-q", "-m", "upstream")
+    _git(other, "push", "-q", "origin", "main")
+
+
+def _real_delivery(repo: Path):
+    def in_repo(argv, cwd=None, **kwargs):
+        return deliver.run(argv, cwd=repo, **kwargs)
+
+    return deliver.Delivery(
+        branch="agent/feat-shared",
+        message="feat: shared v2\n",
+        body=None,
+        paths=["templates/shared.json"],
+        runner=in_repo,
+    )
+
+
+def _dirty_foreign(repo: Path, shape: str) -> None:
+    """unstaged: the working tree differs; staged: index and working tree do;
+    staged-back: other content is staged, then the working tree is put back to HEAD."""
+    path = repo / FOREIGN
+    original = path.read_bytes()
+    path.write_text('model = "b"  # theirs\n', encoding="utf-8")
+    if shape != "unstaged":
+        _git(repo, "add", FOREIGN)
+    if shape == "staged-back":
+        path.write_bytes(original)
+
+
+def _foreign_state(repo: Path) -> tuple[str, bytes]:
+    """The foreign file's index entry (mode, blob, stage) and working-tree bytes."""
+    return _git(repo, "ls-files", "-s", "--", FOREIGN), (repo / FOREIGN).read_bytes()
+
+
+def _stashing(commands: list[str]) -> list[str]:
+    return [c for c in commands if " rebase " in f" {c} " or " stash" in c]
+
+
+@pytest.mark.parametrize("shape", ["unstaged", "staged", "staged-back"])
+def test_catching_up_refuses_instead_of_stashing_other_uncommitted_work(checkout, shape):
+    repo, other = checkout
+    _move_origin(other)
+    _dirty_foreign(repo, shape)
+    before = _git(repo, "rev-parse", "HEAD"), _foreign_state(repo)
+    delivery = _real_delivery(repo)
+
+    with pytest.raises(deliver.DeliveryError, match=r"behind origin/main.*\.codex/config\.toml"):
+        delivery.preflight()
+
+    assert _stashing(delivery.commands) == []
+    assert (_git(repo, "rev-parse", "HEAD"), _foreign_state(repo)) == before
+    assert _git(repo, "branch", "--show-current") == "main"
+    assert _git(repo, "stash", "list") == ""
+
+
+@pytest.mark.parametrize("shape", ["unstaged", "staged-back"])
+def test_other_uncommitted_work_stays_as_it_is_when_already_up_to_date(checkout, shape):
+    repo, _ = checkout
+    _dirty_foreign(repo, shape)
+    before = _foreign_state(repo)
+
+    _real_delivery(repo).preflight()
+
+    assert _git(repo, "show", "--name-only", "--format=", "HEAD") == "templates/shared.json"
+    assert _foreign_state(repo) == before
+
+
+def test_a_change_made_while_catching_up_is_never_stashed_even_with_autostash_set(checkout):
+    """Another session stages a change between the check and the rebase."""
+    repo, other = checkout
+    _move_origin(other)
+    _git(repo, "config", "rebase.autoStash", "true")  # what the rebase would inherit
+    delivery = _real_delivery(repo)
+    run, seen = delivery.runner, []
+
+    def meanwhile(argv, cwd=None, **kwargs):
+        if "rebase" in argv and "--abort" not in argv:
+            _dirty_foreign(repo, "staged-back")
+            seen.append(_foreign_state(repo))
+        return run(argv, cwd=cwd, **kwargs)
+
+    delivery.runner = meanwhile
+    with pytest.raises(deliver.DeliveryError, match="nothing was stashed"):
+        delivery.preflight()
+
+    assert len(seen) == 1 and _foreign_state(repo) == seen[0]
+    assert _git(repo, "stash", "list") == ""
+
+
+def test_a_delivery_with_nothing_else_uncommitted_still_catches_up(checkout):
+    repo, other = checkout
+    _move_origin(other)
+
+    _real_delivery(repo).preflight()
+
+    assert _git(repo, "merge-base", "--is-ancestor", "origin/main", "HEAD") == ""
+    assert _git(repo, "log", "-1", "--format=%s") == "feat: shared v2"
+    assert (repo / "README.md").is_file()

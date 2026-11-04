@@ -405,3 +405,78 @@ def test_doctor_skips_espanso_process_check_off_windows(run_doctor):
 
     membership.assert_not_called()
     assert "Espanso process" not in output
+
+
+_NOT_OBSERVED = (
+    "       Not observed: whether the running Espanso loaded it, app-specific configs that "
+    "override it, or what an expansion does."
+)
+
+
+@pytest.mark.parametrize(
+    ("default_yml", "expected"),
+    [
+        (
+            "# espansr-managed BEGIN (workstation)\npreserve_clipboard: true\n"
+            "restore_clipboard_delay: 1500\n# espansr-managed END\n",
+            "[ok]   Clipboard restore saved in default.yml: copied text is set to come back "
+            "after 1.5 s (Remote paste off; text only, images and files are replaced)",
+        ),
+        (
+            "# espansr-managed BEGIN (host)\nbackend: Clipboard\npreserve_clipboard: false\n"
+            "# espansr-managed END\n",
+            "[warn] Clipboard restore saved in default.yml: copied text is set to stay replaced "
+            "by the prompt (Remote paste on); to have it come back, run 'espansr "
+            "configure-remote-desktop --auto --restore-delay 2000'",
+        ),
+        (
+            "# espansr-managed BEGIN (host)\n"
+            "# espansr-restore-delay: 0 ms (chosen on this machine; Sync keeps it)\n"
+            "backend: Clipboard\npreserve_clipboard: false\n# espansr-managed END\n",
+            "[ok]   Clipboard restore saved in default.yml: copied text is set to stay replaced "
+            "by the prompt (Remote paste on; chosen on this machine with --restore-delay 0)",
+        ),
+        (
+            "toggle_key: ALT\n",
+            "[ok]   Clipboard restore saved in default.yml: copied text is set to come back "
+            "after 0.3 s (Espanso default; text only, images and files are replaced); if "
+            "prompts paste old clipboard text, run 'espansr configure-remote-desktop --local'",
+        ),
+    ],
+    ids=["workstation", "earlier-host", "chosen-never", "no-espansr-block"],
+)
+def test_doctor_reports_the_saved_clipboard_restore_and_what_it_cannot_see(
+    run_doctor, tmp_path, default_yml, expected
+):
+    (tmp_path / "espanso" / "config").mkdir(parents=True)
+    (tmp_path / "espanso" / "config" / "default.yml").write_text(default_yml, encoding="utf-8")
+    exit_code, output = run_doctor()
+    assert exit_code == 0  # warn-only
+    assert expected in output
+    assert _NOT_OBSERVED in output
+    # A file setting is not an observed expansion.
+    assert "copied text returns" not in output
+    assert "replaces your copied text" not in output
+
+
+def test_doctor_keeps_the_saved_restore_apart_from_the_espanso_process_check(run_doctor, tmp_path):
+    (tmp_path / "espanso" / "config").mkdir(parents=True)
+    (tmp_path / "espanso" / "config" / "default.yml").write_text(
+        "# espansr-managed BEGIN (host)\npreserve_clipboard: true\n"
+        "restore_clipboard_delay: 2000\n# espansr-managed END\n",
+        encoding="utf-8",
+    )
+    with patch("espansr.integrations.espanso.espanso_job_membership", return_value={}):
+        _, output = run_doctor(platform="windows")
+    lines = output.splitlines()
+    process = [line for line in lines if "Espanso process" in line]
+    restore = [line for line in lines if "Clipboard restore saved" in line]
+    assert len(process) == 1 and process[0].startswith("[warn] Espanso process: not running")
+    assert len(restore) == 1 and "Espanso process" not in restore[0]
+    assert _NOT_OBSERVED in lines
+
+
+def test_doctor_claims_nothing_about_the_clipboard_without_espanso_config(run_doctor):
+    _, output = run_doctor()
+    assert "Clipboard" not in output
+    assert "Not observed" not in output
