@@ -99,11 +99,13 @@ skips local-only files, commits only the files it names (other staged work
 stays staged), and counts only what it sent. If commits that were never pushed
 (for example after an offline `push`) hold a version that is local only now,
 was marked local only, or is an earlier version of a local-only template under
-another name, merges included, `push` sends nothing and names the command that
-takes it out of them (`git reset --soft origin/<branch>`, which keeps every
-file). Commits never pushed means commits the push URL lacks. When `origin` has
-a `pushurl` that is not the URL it fetches from, `push` asks that URL what it
-has (`git ls-remote`). If that URL cannot be read, nothing is sent.
+another name, merges included, `push` sends nothing and says how to take it out
+of them: `git reset --soft origin/<branch>` (which keeps every file) when the
+push URL still has that branch, otherwise by taking those versions out of the
+commits. Commits never pushed means commits the push URL lacks. After fetching
+`origin`, `push` asks each push URL what it has (`git ls-remote`), because
+origin's remote-tracking refs can describe another repository, such as the one
+before `espansr remote set`. If that URL cannot be read, nothing is sent.
 
 When espansr cannot tell whether a template is local only (it cannot be read,
 does not parse, or its `local_only` is not `true` or `false`), `push` and
@@ -328,9 +330,11 @@ local-only or unclear version, nothing is pushed: `sync` names the file and the
 ref, and when the ref is another branch, it names the setting that pushes it.
 A branch your configuration does not push is reported, not pushed. `sync` does
 not push when the configured push cannot be checked ref by ref: a mirror
-remote, a push that deletes a remote ref, or a ref that names no commit. A push
-URL that is not the one `sync` fetched is checked against what that URL itself
-reports (`git ls-remote`). If that URL cannot be read, nothing is pushed.
+remote, a push that deletes a remote ref, or a ref that names no commit. Every
+push URL is checked against what that URL itself reports (`git ls-remote`),
+the one `sync` just fetched included, since a narrow fetch refspec keeps refs
+deleted or left from a previous URL out of pruning. If a URL cannot be read,
+nothing is pushed.
 
 The checkout's `templates/` folder is the shared bundle, so keep local-only
 prompts in your template store instead (the editor saves them there). One found

@@ -1706,15 +1706,11 @@ def _outgoing_local_only(
     """
     from espansr.core.remote import OutgoingPrivacy, destination_commits, outgoing_privacy
 
-    current = f"refs/heads/{plan.branch}"
-    fetched = _git_in(repo_dir, "for-each-ref", "--format=%(upstream:remotename)", current)
-    fetch_url = _git_in(repo_dir, "remote", "get-url", plan.remote, timeout=30).stdout.strip()
     found: dict[str, tuple[set, set]] = {}
     for url in plan.urls:
-        # Sync has just fetched the upstream's remote, so its tracking refs describe that
-        # URL; any other destination is read from itself.
-        tracked = plan.remote if fetched.stdout.strip() == plan.remote and url == fetch_url else ""
-        present = destination_commits(repo_dir, url, tracked)
+        # Read from the URL itself even though sync just fetched: a fetch refspec
+        # narrower than the remote's refs leaves deleted or retargeted refs unpruned.
+        present = destination_commits(repo_dir, url)
         if present is None:
             shown = _mask_url_credentials(url)
             return f"could not read what {shown} already has, so espansr cannot check this push."
@@ -1738,6 +1734,8 @@ def _report_private_push(
     repo_dir: Path, plan: _PushPlan, found: "dict[str, OutgoingPrivacy]"
 ) -> None:
     """Say which planned updates would share local-only templates, and how to fix it."""
+    from espansr.core.remote import destination_commits
+
     current = f"refs/heads/{plan.branch}"
     sources = {update.target: update.source for update in plan.updates}
     print(fail("Not pushing: unpushed commits include local-only templates:"))
@@ -1759,8 +1757,14 @@ def _report_private_push(
             repo_dir, "for-each-ref", "--format=%(upstream:remotename)", current, timeout=30
         ).stdout.strip()
         fetch_url = _git_in(repo_dir, "remote", "get-url", plan.remote, timeout=30).stdout.strip()
-        # Resetting to the upstream helps only when the push goes where it was fetched from.
-        if upstream and fetched_from == plan.remote and plan.urls == [fetch_url]:
+        tip = _git_in(repo_dir, "rev-parse", "@{u}", timeout=30).stdout.strip()
+        # Resetting to the upstream helps only when the one destination still has it.
+        if (
+            upstream
+            and fetched_from == plan.remote
+            and plan.urls == [fetch_url]
+            and tip in (destination_commits(repo_dir, fetch_url) or [])
+        ):
             print(
                 warn(
                     f'Your files are unchanged. To take them out, run: git -C "{repo_dir}" reset '

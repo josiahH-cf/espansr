@@ -414,6 +414,105 @@ def test_the_template_push_to_its_fetch_url_is_unchanged(store_on_origin):
     assert _git(store, "rev-parse", "origin/main") == _git(store, "rev-parse", "HEAD")
 
 
+def _template_push(manager: RemoteManager, entry: str) -> bool:
+    return manager.push() if entry == "push" else manager.push_templates(["greeting.json"])
+
+
+@pytest.mark.parametrize("entry", ["push", "push_templates"])
+def test_a_template_push_after_set_remote_reads_the_new_repository(
+    store_on_origin, tmp_path, entry
+):
+    """set_remote() leaves origin's tracking refs describing the old repository, not the new one."""
+    store, _, manager = store_on_origin
+    empty = _bare(tmp_path, "s-empty")
+    manager.set_remote(str(empty))
+    _write(store, "greeting.json", {"name": "Greeting", "trigger": ":greet", "content": "hey"})
+
+    with pytest.raises(
+        RemoteError, match=r"contain local-only templates: private\.json"
+    ) as refused:
+        _template_push(manager, entry)
+
+    assert _refs(empty) == {} and not _holds_secret(empty)
+    assert "take them out of those commits" in str(refused.value)
+    assert "reset --soft" not in str(refused.value)  # origin/main is the old repository's
+
+
+@pytest.mark.parametrize("entry", ["push", "push_templates"])
+def test_public_history_still_goes_to_the_repository_set_remote_names(tmp_path, entry):
+    old, new, store = _bare(tmp_path, "p-old"), _bare(tmp_path, "p-new"), tmp_path / "store"
+    store.mkdir()
+    _git(store, "init", "-q", "-b", "main")
+    _write(store, "greeting.json", {"name": "Greeting", "trigger": ":greet", "content": "hi"})
+    config = ConfigManager(config_path=tmp_path / "config.json")
+    config.save(Config())
+    manager = RemoteManager(templates_dir=store, config_manager=config)
+    manager.set_remote(str(old))
+    manager.push()
+    manager.set_remote(str(new))
+    _write(store, "greeting.json", {"name": "Greeting", "trigger": ":greet", "content": "hey"})
+
+    assert _template_push(manager, entry) is True
+
+    assert _refs(new)["refs/heads/main"] == _git(store, "rev-parse", "HEAD")
+
+
+NARROW = "+refs/heads/main:refs/remotes/origin/main"
+WILDCARD = "+refs/heads/*:refs/remotes/origin/*"
+
+
+def _private_history_on_an_aux_ref(repo: Path) -> None:
+    """A private version sent to origin's previously-fetched branch, then deleted on main."""
+    _write(repo, "templates/private.json", PRIVATE)
+    private = _commit(repo, "private version")
+    _git(repo, "push", "-q", "origin", f"{private}:refs/heads/previously-fetched")
+    _git(repo, "fetch", "-q", "origin")
+    (repo / "templates" / "private.json").unlink()
+    _main_ahead(repo)
+
+
+@pytest.mark.parametrize("fetch", [NARROW, WILDCARD])
+@pytest.mark.parametrize("change", ["retarget", "deleted-ref"])
+def test_sync_reads_each_destination_not_unpruned_tracking_refs(
+    world, tmp_path, capsys, change, fetch
+):
+    """A narrow fetch refspec keeps refs/remotes/origin/previously-fetched out of pruning."""
+    repo, origin = world
+    other = _bare(tmp_path, "other")
+    _git(repo, "push", "-q", str(other), "main")
+    _private_history_on_an_aux_ref(repo)
+    _git(repo, "config", "remote.origin.fetch", fetch)
+    if change == "retarget":
+        _git(repo, "remote", "set-url", "origin", str(other))
+        destination = other
+    else:
+        destination = origin
+        _git(origin, "update-ref", "-d", "refs/heads/previously-fetched")
+        _git(origin, "reflog", "expire", "--expire=now", "--all")
+        _git(origin, "gc", "-q", "--prune=now")
+    assert not _holds_secret(destination)
+    before = _refs(destination)
+
+    assert _sync(repo) is True  # the reinstall still runs
+
+    assert _refs(destination) == before and not _holds_secret(destination)
+    assert "Not pushing: unpushed commits include local-only templates:" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("fetch", [NARROW, WILDCARD])
+def test_sync_still_pushes_public_history_to_a_retargeted_origin(world, tmp_path, fetch):
+    repo, _ = world
+    other = _bare(tmp_path, "other")
+    _git(repo, "push", "-q", str(other), "main")
+    head = _main_ahead(repo)
+    _git(repo, "config", "remote.origin.fetch", fetch)
+    _git(repo, "remote", "set-url", "origin", str(other))
+
+    assert _sync(repo) is True
+
+    assert _refs(other)["refs/heads/main"] == head
+
+
 def _advance_remote(bare: Path, tmp_path: Path, branch: str, name: str) -> None:
     """Another machine pushes one commit to *branch* of *bare*."""
     clone = tmp_path / f"elsewhere-{name}"
