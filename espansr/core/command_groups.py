@@ -34,6 +34,7 @@ COMMAND_GROUPS = (
             "feedback-apply",
             "fix_this",
             "troubleshooting",
+            "feature-restoration",
             "use_recommendation",
             "accept_all_recommendations",
             "telegram",
@@ -77,6 +78,7 @@ COMMAND_GROUPS = (
             "gap-review",
             "audit-packet",
             "deletion-simplification-audit",
+            "dedupe-reconciliation",
             "tddh_defaults",
         ),
         ("evidence-research-cycle",),
@@ -90,6 +92,8 @@ COMMAND_GROUPS = (
             "human-litmus",
             "test-speed-optimization",
             "maintenance-friction",
+            "dedupe-reconciliation",
+            "core-behavior-stabilization",
             "verification",
             "adversarial-review",
             "canary_runner",
@@ -247,6 +251,18 @@ _CUES = {
     "troubleshooting": (
         "Diagnose & repair",
         "A failure needs investigation, fixing, and verification.",
+    ),
+    "feature-restoration": (
+        "Restore feature",
+        "Something that used to work broke in recent changes and you want it back safely.",
+    ),
+    "core-behavior-stabilization": (
+        "Protect core",
+        "You want the core behaviors confirmed once, then made reliable and verified.",
+    ),
+    "dedupe-reconciliation": (
+        "Reconcile drift",
+        "The project evolved and its code, tests, or rules now duplicate or contradict each other.",
     ),
     "goal-refinement": (
         "Clarify goal",

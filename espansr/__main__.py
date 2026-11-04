@@ -18,7 +18,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, NamedTuple, Optional
 
 from espansr.core.atomic import atomic_copy
 from espansr.core.cli_color import fail, ok, warn
@@ -33,6 +33,9 @@ from espansr.integrations.espanso import (
     generate_sync_file,
     get_espanso_config_dir,
 )
+
+if TYPE_CHECKING:
+    from espansr.core.remote import OutgoingPrivacy
 
 _URL_CREDENTIALS_RE = re.compile(r"([A-Za-z][A-Za-z0-9+.\-]*://[^\s/@:]+):([^\s/@]+)@")
 
@@ -223,7 +226,11 @@ def cmd_setup(args) -> int:
     When Espanso is detected, also performs an initial sync so bundled
     triggers become available without a separate manual sync step.
     """
-    from espansr.core.templates import TemplateManager
+    from espansr.core.templates import (
+        TemplateManager,
+        private_template_triggers,
+        starter_kept_private,
+    )
     from espansr.integrations.validate import validate_template
 
     strict = getattr(args, "strict", False) if args else False
@@ -250,12 +257,18 @@ def cmd_setup(args) -> int:
     existing = 0
     if not dry_run:
         templates_dir.mkdir(parents=True, exist_ok=True)
+    # A private template owns its trigger in any folder; never seed a public twin.
+    private_triggers = private_template_triggers(templates_dir)
     for src in bundled_templates:
         dest = templates_dir / src.name
         if dest.exists():
             existing += 1
             if verbose or dry_run:
                 print(f"  {src.name}: skipped (already exists)")
+        elif starter_kept_private(src, private_triggers):
+            existing += 1
+            if verbose or dry_run:
+                print(f"  {src.name}: skipped (its trigger belongs to your local-only template)")
         else:
             if dry_run:
                 if verbose:
@@ -445,9 +458,9 @@ def _print_bundled_report(report, verbose: bool = False) -> None:
         else:
             print(f"  {entry.filename}: {line}")
 
-    if report.local_only:
-        print("Local-only templates preserved:")
-        for path in report.local_only:
+    if report.unbundled:
+        print("Your own templates (not bundled), preserved:")
+        for path in report.unbundled:
             print(f"  {path.name}")
 
 
@@ -602,7 +615,7 @@ def cmd_list(args) -> int:
     print(f"{'TRIGGER':<22} TEMPLATE NAME")
     print("-" * 60)
     for t in triggered:
-        print(f"  {t.trigger:<20} {t.name}")
+        print(f"  {t.trigger:<20} {t.name}{'  (local only)' if t.local_only else ''}")
 
     return 0
 
@@ -949,6 +962,43 @@ def cmd_doctor(args) -> int:
         elif membership and all(in_job is False for in_job in membership.values()):
             _ok("Espanso process: running independently")
 
+    # 6e. The clipboard restore saved in default.yml. Warn-only: prompts paste
+    # through the clipboard. This is the configured default, not observed
+    # behavior: doctor cannot see whether the running Espanso loaded it (6d only
+    # says whether a process runs), an app-specific config that overrides it,
+    # or what an actual expansion does.
+    if espanso_dir:
+        from espansr.integrations.espanso import (
+            describe_saved_restore,
+            get_clipboard_restore_behavior,
+        )
+
+        clipboard = get_clipboard_restore_behavior(espanso_dir)
+        if clipboard is not None:
+            source = {"host": "Remote paste on", "workstation": "Remote paste off"}.get(
+                clipboard["mode"], "Espanso default"
+            )
+            saved = f"Clipboard restore saved in default.yml: {describe_saved_restore(clipboard)}"
+            if not clipboard["restored"] and clipboard["chosen"]:
+                _ok(f"{saved} ({source}; chosen on this machine with --restore-delay 0)")
+            elif not clipboard["restored"]:
+                _warn(
+                    f"{saved} ({source}); to have it come back, run "
+                    "'espansr configure-remote-desktop --auto --restore-delay 2000'"
+                )
+            else:
+                hint = (
+                    "; if prompts paste old clipboard text, run "
+                    "'espansr configure-remote-desktop --local'"
+                    if clipboard["mode"] is None
+                    else ""
+                )
+                _ok(f"{saved} ({source}; text only, images and files are replaced){hint}")
+            print(
+                "       Not observed: whether the running Espanso loaded it, app-specific "
+                "configs that override it, or what an expansion does."
+            )
+
     # 7. Template validation
     warnings = validate_all()
     errors = [w for w in warnings if w.severity == "error"]
@@ -1055,7 +1105,20 @@ def cmd_pull(args) -> int:
         templates = getattr(args, "template", None)
         if templates:
             rm.pull_templates(templates)
-            print(ok(f"Pulled {len(templates)} template(s) from remote."))
+            if rm.pulled:
+                names = ", ".join(rm.pulled)
+                print(ok(f"Pulled {len(rm.pulled)} template(s) from remote: {names}"))
+            for path in rm.skipped_local_only:
+                print(
+                    warn(
+                        f"Not pulled: {path} is local only here (or espansr cannot tell); your "
+                        "copy is unchanged."
+                    )
+                )
+            for path, reason in rm.not_pulled:
+                print(warn(f"Not pulled: {path} ({reason})."))
+            if not rm.pulled:
+                print(warn("No templates were pulled."))
         else:
             outcome = rm.pull_with_result()
             _print_pull_outcome(outcome)
@@ -1112,7 +1175,10 @@ def cmd_push(args) -> int:
         templates = getattr(args, "template", None)
         if templates:
             rm.push_templates(templates, message=message)
-            print(ok(f"Pushed {len(templates)} template(s) to remote."))
+            for name in rm.skipped_local_only:
+                print(warn(f"Not pushed: {name} is local only."))
+            pushed = len(templates) - len(rm.skipped_local_only)
+            print(ok(f"Pushed {pushed} template(s) to remote."))
         else:
             rm.push(message=message)
             print(ok("Pushed templates to remote."))
@@ -1157,44 +1223,98 @@ def cmd_configure_remote_desktop(args) -> int:
     """Configure Espanso's backend for a machine's role.
 
     ``--auto`` (used by the default install) keeps existing managed settings,
-    including local clipboard tuning, or seeds workstation mode on first use.
+    including local clipboard tuning, or seeds workstation mode on first use;
+    an untouched block from an earlier release gets today's defaults.
     ``--local`` forces workstation mode; plain applies
     remote-desktop host mode; ``--revert`` removes the espansr-managed keys.
+    ``--restore-delay MS`` sets when the copied text comes back (0 = never);
+    for a file already in that mode it changes only the restore.
     Invoked by ``install.ps1``.
+
+    Exit 0 when default.yml holds the requested settings or was kept on
+    purpose, 1 when it could not be read or written (espansr left it as it
+    was), 2 for invalid flags. What was saved and whether Espanso restarted are
+    reported separately; neither shows what an expansion does.
     """
-    from espansr.integrations.espanso import (
-        apply_remote_desktop_config,
-        apply_workstation_config,
-        get_managed_default_config_mode,
-    )
+    from espansr.integrations import espanso
+
+    delay = getattr(args, "restore_delay", None)
+    revert = getattr(args, "revert", False)
+    if delay is not None and (revert or not 0 <= delay <= espanso.MAX_RESTORE_DELAY_MS):
+        reason = "with --revert" if revert else f"outside 0-{espanso.MAX_RESTORE_DELAY_MS} ms"
+        print(fail(f"--restore-delay cannot be used {reason}."))
+        return 2
+    labels = {"host": "remote-desktop host", "workstation": "workstation"}
+    tuning = {} if delay is None else {"restore_delay": delay}
+
+    def applied(apply, mode: str, **kwargs):
+        espanso.take_config_change()  # report only what this call does
+        saved = apply(**kwargs)
+        change = espanso.take_config_change()
+        if change is None:  # a replacement helper that reports only a bool
+            outcome = "saved" if saved else "failed"
+            change = espanso.DefaultConfigChange(outcome, mode=mode, changed=bool(saved))
+        return change
+
+    def report(change, done: str) -> int:
+        if not change.ok:
+            if change.path is None:
+                reason = change.error or "is Espanso installed and detected?"
+                print(fail(f"Could not update Espanso config ({reason})."))
+                return 1
+            reason = f": {change.error}" if change.error else ""
+            print(fail(f"Could not update {change.path}{reason}."))
+            print(warn("espansr left the file as it was; no setting changed."))
+            return 1
+        if revert:
+            message = (
+                "Reverted espansr's Espanso settings in default.yml"
+                if change.changed
+                else "No espansr settings to revert in default.yml"
+            )
+        else:
+            settings = f"Espanso {labels.get(change.mode, '')} settings in default.yml"
+            restore = espanso.describe_saved_restore(espanso.get_clipboard_restore_behavior())
+            message = (
+                f"{done} {settings} ({restore})"
+                if change.changed
+                else f"{settings} already as requested ({restore})"
+            )
+        print(ok(message))
+        if change.reloaded is True:
+            print(ok("Espanso restarted after the change and reports running."))
+        elif change.reloaded is False:
+            print(
+                warn(
+                    "Espanso did not restart, so espansr cannot confirm it uses the saved "
+                    "settings; run 'espanso restart' (from Windows PowerShell on WSL)."
+                )
+            )
+        return 0
 
     if getattr(args, "auto", False):
-        mode = get_managed_default_config_mode()
-        if mode is not None:
-            label = "remote-desktop host" if mode == "host" else "workstation"
-            print(ok(f"Kept existing Espanso {label} config (clipboard settings unchanged)"))
-            return 0
-        applied = apply_workstation_config()
-        if applied:
-            print(ok("Applied Espanso workstation config"))
-            return 0
-        print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
-        return 1
+        mode = espanso.get_managed_default_config_mode()
+        if mode is not None and delay is None:
+            change = espanso.upgrade_previous_default_config()
+            if change.outcome == "skipped":
+                print(ok(f"Kept existing Espanso {labels[mode]} settings (nothing changed)"))
+                return 0
+            code = report(change, "Updated untouched earlier")
+            if code == 0 and change.changed:
+                print(
+                    "       To keep the prompt on the clipboard instead, run "
+                    "'espansr configure-remote-desktop --auto --restore-delay 0'."
+                )
+            return code
+        if mode == "host":
+            return report(applied(espanso.apply_remote_desktop_config, mode, **tuning), "Saved")
+        return report(applied(espanso.apply_workstation_config, "workstation", **tuning), "Saved")
 
     if getattr(args, "local", False):
-        if apply_workstation_config():
-            print(ok("Applied Espanso workstation config (clipboard preserved)"))
-            return 0
-        print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
-        return 1
+        return report(applied(espanso.apply_workstation_config, "workstation", **tuning), "Saved")
 
-    revert = getattr(args, "revert", False)
-    if apply_remote_desktop_config(revert=revert):
-        action = "Reverted" if revert else "Applied"
-        print(ok(f"{action} Espanso remote-desktop config"))
-        return 0
-    print(fail("Could not update Espanso config (is Espanso installed and detected?)"))
-    return 1
+    change = applied(espanso.apply_remote_desktop_config, "host", revert=revert, **tuning)
+    return report(change, "Saved")
 
 
 def _refresh_command(platform: str, script_path: Path) -> list[str]:
@@ -1451,6 +1571,222 @@ def _print_committed_files(repo_dir: Path) -> None:
         print(f"  {path}")
 
 
+def _checkout_privacy(repo_dir: Path) -> tuple[list[str], list[str]]:
+    """Private templates in the install checkout, and ones whose privacy is unknown."""
+    from espansr.core.templates import scan_template_privacy
+
+    scan = scan_template_privacy(repo_dir / "templates")
+
+    def relative(paths: list[Path]) -> list[str]:
+        return [path.relative_to(repo_dir).as_posix() for path in paths]
+
+    return relative(scan.private), relative(scan.unknown)
+
+
+def _local_only_checkout_paths(repo_dir: Path) -> list[str]:
+    """Local-only templates in the install checkout, as repository paths."""
+    return _checkout_privacy(repo_dir)[0]
+
+
+class _PushUpdate(NamedTuple):
+    """One ref the configured push updates, frozen to the object checked and sent."""
+
+    source: str  # local ref, such as refs/heads/main
+    target: str  # the ref it updates at the destination
+    oid: str  # what the source named when the push was planned
+    force: bool  # the configured refspec forces this update
+
+
+class _PushPlan(NamedTuple):
+    """What ``git push`` would do here, as Git itself reports it."""
+
+    remote: str
+    branch: str  # the checked-out branch
+    setting: str  # the configuration that chose the refs, for messages
+    urls: list[str]  # Git pushes every update to each
+    updates: list[_PushUpdate]
+    refused_by_git: list[tuple[str, str, str]]  # (source, target, reason): Git rejects them
+
+
+class _NoPush(NamedTuple):
+    reason: str
+    detail: str = ""
+
+
+def _push_setting(repo_dir: Path, remote: str) -> str:
+    """Name the configuration that chose which refs a plain ``git push`` updates."""
+    if _git_in(repo_dir, "config", "--get-all", f"remote.{remote}.push", timeout=30).stdout.strip():
+        return f"remote.{remote}.push"
+    mode = _git_in(repo_dir, "config", "push.default", timeout=30).stdout.strip()
+    return f"push.default={mode}" if mode else "Git's default push"
+
+
+def _plan_push(repo_dir: Path) -> "_PushPlan | _NoPush":
+    """Every ref update the configured ``git push`` would make, asked of Git itself.
+
+    A dry run of that push reports the destination and each ref it updates,
+    whatever chose them (``remote.<name>.push``, ``push.default``, ``pushRemote``,
+    ``push.followTags``). Each source is frozen to the object it names now, so
+    what is checked is exactly what is pushed. A push espansr cannot check ref
+    by ref (a mirror, a deletion, a ref that names no commit) is refused.
+    """
+    from espansr.core.remote import push_urls
+
+    branch = _git_in(repo_dir, "symbolic-ref", "-q", "--short", "HEAD", timeout=30).stdout.strip()
+    remote = ""
+    if branch:
+        where = _git_in(
+            repo_dir, "for-each-ref", "--format=%(push:remotename)", f"refs/heads/{branch}"
+        )
+        remote = where.stdout.strip()
+    urls = push_urls(repo_dir, remote) if remote else []
+    if not urls:
+        return _NoPush("Git has no push destination for this branch.")
+    mirror = _git_in(repo_dir, "config", "--bool", f"remote.{remote}.mirror", timeout=30)
+    if mirror.stdout.strip() == "true":
+        return _NoPush(
+            f"{remote} is a mirror (remote.{remote}.mirror), which pushes every ref; espansr "
+            "pushes only refs it has checked."
+        )
+    dry = _git_in(repo_dir, "push", "--dry-run", "--porcelain", "--no-verify", remote)
+    planned: dict[str, tuple[str, bool]] = {}
+    rejected: dict[str, tuple[str, str]] = {}
+    deleted: list[str] = []
+    for line in dry.stdout.splitlines():  # "<flag>\t<source>:<target>\t<summary>", per URL
+        fields = line.split("\t")
+        if len(fields) != 3 or len(fields[0]) != 1 or ":" not in fields[1]:
+            continue  # "To <url>", "Done"
+        flag, (source, _, target), summary = fields[0], fields[1].partition(":"), fields[2]
+        source = f"refs/heads/{branch}" if source == "HEAD" else source  # a HEAD refspec
+        if flag == "-":
+            deleted.append(target)
+        elif flag == "!":
+            rejected.setdefault(target, (source, summary.removeprefix("[rejected] ")))
+        elif flag in " +*":
+            forced = flag == "+" or planned.get(target, ("", False))[1]
+            planned[target] = (source, forced)
+    if not planned and not rejected and not deleted and dry.returncode != 0:
+        return _NoPush("Git would not push this branch:", _git_failure_text(dry))
+    setting = _push_setting(repo_dir, remote)
+    if deleted:
+        return _NoPush(
+            f"the push {setting} makes would delete {', '.join(deleted)} on {remote}; "
+            "espansr leaves deleting remote refs to you."
+        )
+    updates = []
+    for target, (source, forced) in planned.items():
+        oid = _git_in(repo_dir, "rev-parse", "--verify", "-q", source, timeout=30).stdout.strip()
+        kind = oid and _git_in(repo_dir, "cat-file", "-t", oid, timeout=30).stdout.strip()
+        if kind == "tag":
+            peeled = _git_in(
+                repo_dir, "rev-parse", "--verify", "-q", f"{oid}^{{commit}}", timeout=30
+            )
+            kind = "commit" if peeled.returncode == 0 else "tag of something other than a commit"
+        if kind != "commit":
+            return _NoPush(
+                f"the push {setting} makes would send {source}, which espansr cannot check "
+                f"({kind or 'unreadable'}); push it yourself."
+            )
+        updates.append(_PushUpdate(source, target, oid, forced))
+    refused = [
+        (src, target, why) for target, (src, why) in rejected.items() if target not in planned
+    ]
+    return _PushPlan(remote, branch, setting, urls, updates, refused)
+
+
+def _outgoing_local_only(
+    repo_dir: Path, local_only: list[str], plan: _PushPlan
+) -> "dict[str, OutgoingPrivacy] | str":
+    """What each planned update would send that it must not (see outgoing_privacy).
+
+    Every version in every commit a destination lacks is read, merges included,
+    for each URL the push goes to. Returns the
+    updates that would share a private or unclear version, keyed by target, or
+    the reason Git cannot say, so nothing is pushed.
+    """
+    from espansr.core.remote import OutgoingPrivacy, destination_commits, outgoing_privacy
+
+    current = f"refs/heads/{plan.branch}"
+    fetched = _git_in(repo_dir, "for-each-ref", "--format=%(upstream:remotename)", current)
+    fetch_url = _git_in(repo_dir, "remote", "get-url", plan.remote, timeout=30).stdout.strip()
+    found: dict[str, tuple[set, set]] = {}
+    for url in plan.urls:
+        # Sync has just fetched the upstream's remote, so its tracking refs describe that
+        # URL; any other destination is read from itself.
+        tracked = plan.remote if fetched.stdout.strip() == plan.remote and url == fetch_url else ""
+        present = destination_commits(repo_dir, url, tracked)
+        if present is None:
+            shown = _mask_url_credentials(url)
+            return f"could not read what {shown} already has, so espansr cannot check this push."
+        for update in plan.updates:
+            part = outgoing_privacy(
+                repo_dir, [update.oid], local_only, root="templates", excluded=present
+            )
+            if part is None:
+                return "could not check unpushed commits for local-only templates."
+            if part.private or part.unknown:
+                private, unknown = found.setdefault(update.target, (set(), set()))
+                private.update(part.private)
+                unknown.update(part.unknown)
+    return {
+        target: OutgoingPrivacy(sorted(private), sorted(unknown - private))
+        for target, (private, unknown) in found.items()
+    }
+
+
+def _report_private_push(
+    repo_dir: Path, plan: _PushPlan, found: "dict[str, OutgoingPrivacy]"
+) -> None:
+    """Say which planned updates would share local-only templates, and how to fix it."""
+    current = f"refs/heads/{plan.branch}"
+    sources = {update.target: update.source for update in plan.updates}
+    print(fail("Not pushing: unpushed commits include local-only templates:"))
+    others = []
+    for target, privacy in found.items():
+        source = sources[target]
+        if source != current:
+            others.append(source.removeprefix("refs/heads/"))
+        for path in [*privacy.private, *privacy.unknown]:
+            notes = []
+            if path in privacy.unknown:
+                notes.append("a version espansr cannot classify")
+            if source != current:
+                notes.append(f"in {source}, which {plan.setting} pushes")
+            print(f"  {path}" + (f" ({'; '.join(notes)})" if notes else ""))
+    if any(sources[target] == current for target in found):
+        upstream = _git_in(repo_dir, "rev-parse", "--abbrev-ref", "@{u}", timeout=30).stdout.strip()
+        fetched_from = _git_in(
+            repo_dir, "for-each-ref", "--format=%(upstream:remotename)", current, timeout=30
+        ).stdout.strip()
+        fetch_url = _git_in(repo_dir, "remote", "get-url", plan.remote, timeout=30).stdout.strip()
+        # Resetting to the upstream helps only when the push goes where it was fetched from.
+        if upstream and fetched_from == plan.remote and plan.urls == [fetch_url]:
+            print(
+                warn(
+                    f'Your files are unchanged. To take them out, run: git -C "{repo_dir}" reset '
+                    f"--soft {upstream} (it keeps every change and turns those commits back into "
+                    "uncommitted changes), then sync again."
+                )
+            )
+        else:
+            shown = _mask_url_credentials(", ".join(plan.urls))
+            print(
+                warn(
+                    f"Nothing was pushed and your files are unchanged. {plan.remote} pushes to "
+                    f"{shown}, which lacks those commits; take them out of {plan.branch}, then "
+                    "sync again."
+                )
+            )
+    if others:
+        print(
+            warn(
+                f"Nothing was pushed and your files are unchanged. Take those commits out of "
+                f"{', '.join(sorted(set(others)))}, or change {plan.setting}, then sync again."
+            )
+        )
+    print(warn("Continuing with reinstall."))
+
+
 def _sync_repository(repo_dir: Path, *, no_push: bool) -> bool:
     """Fetch, rebase, and (unless ``no_push``) yolo-commit and push ``repo_dir``.
 
@@ -1469,8 +1805,23 @@ def _sync_repository(repo_dir: Path, *, no_push: bool) -> bool:
 
     stashed = False
     if _worktree_dirty(repo_dir):
+        before = _git_in(repo_dir, "rev-parse", "-q", "--verify", "refs/stash").stdout.strip()
         stash = _git_in(repo_dir, "stash", "push", "-u", "-m", "espansr-sync")
         stashed = stash.returncode == 0
+        after = _git_in(repo_dir, "rev-parse", "-q", "--verify", "refs/stash").stdout.strip()
+        if not stashed and after and after != before:
+            # Git saved the changes but could not reset the tree (a skip-worktree or
+            # assume-unchanged entry does this), so the tree's state is unclear.
+            print(fail("git stash saved your local changes but could not finish:"))
+            _print_indented(_git_failure_text(stash))
+            print(
+                warn(
+                    f"They are in 'git stash list' (espansr-sync) in {repo_dir} and may also "
+                    "still be in the working tree; check both before syncing again."
+                )
+            )
+            print(warn("Skipping pull, commit, push, and reinstall."))
+            return False
 
     pull = _git_in(repo_dir, "pull", "--rebase")
     if pull.returncode != 0:
@@ -1510,32 +1861,100 @@ def _sync_repository(repo_dir: Path, *, no_push: bool) -> bool:
         print(ok("Auto-push disabled (--no-push)."))
         return True
 
+    from espansr.core.remote import staged_privacy
+
+    local_only, unknown = _checkout_privacy(repo_dir)
+    for path in local_only:
+        # This checkout is the shared bundle; other Git tools here can still commit it.
+        print(warn(f"Not committed: {path} is local only. Move it to {get_templates_dir()}."))
+    if unknown:
+        print(fail("Not committing or pushing: espansr cannot tell whether these are local only:"))
+        for path in unknown:
+            print(f"  {path}")
+        print(
+            warn(
+                'Each cannot be read, is not valid template JSON, or has a "local_only" that is '
+                "not true or false. Fix them, then sync again. Continuing with reinstall."
+            )
+        )
+        return True
+
     if _worktree_dirty(repo_dir):
-        added = _git_in(repo_dir, "add", "-A")
+        excluded = [f":(exclude,literal){path}" for path in local_only]
+        added = _git_in(repo_dir, "add", "-A", "--", ":/", *excluded)
         if added.returncode != 0:
             print(fail("Could not stage local changes:"))
             _print_indented(_git_failure_text(added))
             return False
-        commit = _git_in(repo_dir, "commit", "-m", "espansr sync: local changes")
-        if commit.returncode != 0:
-            print(fail("Could not commit local changes (nothing was pushed):"))
-            _print_indented(_git_failure_text(commit))
-            return False
-        print(ok("Committed local changes."))
-        _print_committed_files(repo_dir)
+        # The commit takes the whole index, so check every staged version, however
+        # it was staged, and unstage only the ones that would share a private prompt.
+        held = staged_privacy(repo_dir, local_only, root="templates")
+        if held is None:
+            print(fail("Not committing: could not check staged changes for local-only templates."))
+            print(warn("Continuing with reinstall."))
+            return True
+        if held:
+            _git_in(repo_dir, "reset", "-q", "--", *[f":(literal){p}" for p in held])
+            for path in held:
+                if path not in local_only:
+                    print(warn(f"Not committed: the staged {path} is private or unclear."))
+        staged = _git_in(repo_dir, "diff", "--cached", "--quiet")
+        if staged.returncode != 0:
+            commit = _git_in(repo_dir, "commit", "-m", "espansr sync: local changes")
+            if commit.returncode != 0:
+                print(fail("Could not commit local changes (nothing was pushed):"))
+                _print_indented(_git_failure_text(commit))
+                return False
+            print(ok("Committed local changes."))
+            _print_committed_files(repo_dir)
 
     ahead = _ahead_of_upstream(repo_dir)
     if ahead is None:
         print(warn("No upstream configured; push skipped."))
-    elif ahead:
-        push = _git_in(repo_dir, "push")
-        if push.returncode == 0:
-            print(ok("Pushed local changes."))
-        else:
-            print(warn("Could not push local changes (continuing with reinstall)."))
-            _print_indented(_git_failure_text(push))
-    else:
+        return True
+    if not ahead:
         print(ok("Nothing to push."))
+        return True
+    # Push what Git is configured to push, and only after checking every ref of it
+    # against what each destination URL lacks; the checked objects are the ones sent.
+    plan = _plan_push(repo_dir)
+    if isinstance(plan, _NoPush):
+        print(warn(f"Not pushing: {plan.reason}"))
+        _print_indented(plan.detail)
+        print(warn("Continuing with reinstall."))
+        return True
+    found = _outgoing_local_only(repo_dir, local_only, plan)
+    if isinstance(found, str):
+        print(fail(f"Not pushing: {found}"))
+        print(warn("Continuing with reinstall."))
+        return True
+    if found:
+        _report_private_push(repo_dir, plan, found)
+        return True
+    for _, target, reason in plan.refused_by_git:
+        print(warn(f"Not pushed: Git rejects {target} {reason}."))
+    current = f"refs/heads/{plan.branch}"
+    considered = [u.source for u in plan.updates] + [src for src, _, _ in plan.refused_by_git]
+    if current not in considered:
+        print(warn(f"Not pushed: {plan.setting} does not push {current} to {plan.remote}."))
+    if not plan.updates:
+        return True
+    refspecs = [f"{'+' if u.force else ''}{u.oid}:{u.target}" for u in plan.updates]
+    push = _git_in(repo_dir, "push", "--no-follow-tags", plan.remote, *refspecs)
+    if push.returncode != 0:
+        print(warn("Could not push local changes (continuing with reinstall)."))
+        _print_indented(_git_failure_text(push))
+    else:
+        tags = [u.target for u in plan.updates if u.target.startswith("refs/tags/")]
+        branches = [u for u in plan.updates if u.target not in tags]
+        if [u.source for u in branches] == [current]:
+            also = (
+                f" and tags {', '.join(t.removeprefix('refs/tags/') for t in tags)}" if tags else ""
+            )
+            print(ok(f"Pushed local changes{also}."))
+        else:
+            names = ", ".join(u.target.removeprefix("refs/heads/") for u in plan.updates)
+            print(ok(f"Pushed to {plan.remote} as {plan.setting} does: {names}."))
     return True
 
 
@@ -1864,6 +2283,19 @@ def cmd_catalog(args) -> int:
         print(json.dumps(result, indent=2, ensure_ascii=True))
     else:
         print(f"Capability publication: {result['status']}")
+        if result["status"] == "withdrawn":
+            print(
+                "  The last publication described a template now marked local only, so it is not "
+                "shown; it returns with the next complete publication."
+            )
+            if not result["withdrawn_file_removed"]:
+                path = installed / "_meta" / "capabilities.json"
+                print(
+                    warn(
+                        f"Could not remove {path}; connected tools can still read it. Delete it to "
+                        "stop sharing the template."
+                    )
+                )
         print(f"Current source validation: {result['current']['validation']}")
         for entry in result["choices"]:
             print(
@@ -2068,6 +2500,14 @@ def _build_parser() -> argparse.ArgumentParser:
         default=False,
         help="Keep existing managed clipboard settings, or seed workstation mode",
     )
+    rd_parser.add_argument(
+        "--restore-delay",
+        dest="restore_delay",
+        type=int,
+        default=None,
+        metavar="MS",
+        help="Restore your copied text this many ms after an expansion (0 = never)",
+    )
     import_parser = subparsers.add_parser(
         "import", help="Import template(s) from a file or directory"
     )
@@ -2135,7 +2575,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--template",
         action="append",
         metavar="NAME",
-        help="Pull only specific template file(s) (repeatable)",
+        help="Pull only these template files, each by its exact name (repeatable)",
     )
 
     push_parser = subparsers.add_parser("push", help="Push local templates to remote")

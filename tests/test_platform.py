@@ -1,7 +1,7 @@
 """Tests for espansr.core.platform module.
 
 Covers: get_platform(), is_wsl2(), is_windows(), get_windows_username(),
-        PlatformConfig, get_platform_config()
+        get_windows_profile_dir(), PlatformConfig, get_platform_config()
 """
 
 import os
@@ -13,6 +13,7 @@ from espansr.core.platform import (
     PlatformConfig,
     get_platform,
     get_platform_config,
+    get_windows_profile_dir,
     get_windows_username,
     get_wsl_distro_name,
     is_windows,
@@ -151,7 +152,7 @@ def test_is_windows_returns_false_on_linux():
 def test_get_windows_username_returns_name_on_success():
     """get_windows_username() returns the Windows username when cmd.exe succeeds."""
     mock_result = MagicMock()
-    mock_result.stdout = "JohnDoe\r\n"
+    mock_result.stdout = "USERNAME=JohnDoe\r\n".encode("utf-16-le")
 
     with patch("subprocess.run", return_value=mock_result):
         assert get_windows_username() == "JohnDoe"
@@ -175,7 +176,7 @@ def test_get_windows_username_returns_none_on_timeout():
 def test_get_windows_username_returns_none_on_empty_output():
     """get_windows_username() returns None when cmd.exe returns empty output."""
     mock_result = MagicMock()
-    mock_result.stdout = "  \r\n"
+    mock_result.stdout = "  \r\n".encode("utf-16-le")
 
     with patch("subprocess.run", return_value=mock_result):
         assert get_windows_username() is None
@@ -185,6 +186,59 @@ def test_get_windows_username_returns_none_on_os_error():
     """get_windows_username() returns None on generic OSError."""
     with patch("subprocess.run", side_effect=OSError("Unexpected error")):
         assert get_windows_username() is None
+
+
+def test_get_windows_username_reads_unicode_output_exactly():
+    """cmd.exe /u writes UTF-16LE, so a non-ASCII name needs no code page guess."""
+    mock_result = MagicMock()
+    mock_result.stdout = "USERNAME=José\r\n".encode("utf-16-le")
+    with patch("subprocess.run", return_value=mock_result) as run:
+        assert get_windows_username() == "José"
+    assert run.call_args.args[0][1:] == ["/u", "/c", "set USERNAME"]
+
+
+def test_get_windows_username_output_that_is_not_utf16_is_unavailable():
+    mock_result = MagicMock()
+    mock_result.stdout = b"USERNAME=Jos\x82\r\n"  # console code page bytes
+    with patch("subprocess.run", return_value=mock_result):
+        assert get_windows_username() is None
+
+
+def test_get_windows_username_uses_the_standard_cmd_location_when_not_on_path():
+    mock_result = MagicMock()
+    mock_result.stdout = "USERNAME=Alice\r\n".encode("utf-16-le")
+    with (
+        patch("espansr.core.platform.shutil.which", return_value=None),
+        patch("subprocess.run", return_value=mock_result) as run,
+    ):
+        assert get_windows_username() == "Alice"
+    assert run.call_args.args[0][0] == "/mnt/c/Windows/System32/cmd.exe"
+
+
+def test_get_windows_username_ignores_an_unset_variable():
+    """``set USERNAME`` also lists longer names; only USERNAME itself counts."""
+    mock_result = MagicMock()
+    mock_result.stdout = "USERNAMEX=Alice\r\n".encode("utf-16-le")
+    with patch("subprocess.run", return_value=mock_result):
+        assert get_windows_username() is None
+
+
+def test_get_windows_profile_dir_converts_userprofile_with_the_standard_wslpath():
+    cmd = MagicMock(stdout="USERPROFILE=C:\\Users\\José.CORP\r\n".encode("utf-16-le"))
+    wslpath = MagicMock(stdout="/mnt/c/Users/José.CORP\n".encode(), returncode=0)
+    with (
+        patch("espansr.core.platform.shutil.which", return_value=None),
+        patch("subprocess.run", side_effect=[cmd, wslpath]) as run,
+    ):
+        assert get_windows_profile_dir() == Path("/mnt/c/Users/José.CORP")
+    assert run.call_args.args[0] == ["/usr/bin/wslpath", "-u", "C:\\Users\\José.CORP"]
+
+
+def test_get_windows_profile_dir_is_unavailable_when_wslpath_fails():
+    cmd = MagicMock(stdout="USERPROFILE=D:\\Users\\jdoe\r\n".encode("utf-16-le"))
+    wslpath = MagicMock(stdout=b"", returncode=1)
+    with patch("subprocess.run", side_effect=[cmd, wslpath]):
+        assert get_windows_profile_dir() is None
 
 
 # ─── get_wsl_distro_name() tests ─────────────────────────────────────────────
@@ -318,11 +372,14 @@ def test_get_platform_config_windows_no_appdata():
     assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
 
 
-def test_get_platform_config_wsl2_with_username():
-    """get_platform_config() includes /mnt/c/ paths on WSL2 when username is available."""
+def test_get_platform_config_wsl2_with_windows_profile():
+    """get_platform_config() includes /mnt/c/ paths on WSL2 when the profile is known."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value="testuser"),
+        patch(
+            "espansr.core.platform.get_windows_profile_dir",
+            return_value=Path("/mnt/c/Users/testuser"),
+        ),
         patch.dict(os.environ, {}, clear=False),
         patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
     ):
@@ -337,12 +394,11 @@ def test_get_platform_config_wsl2_with_username():
     assert Path.home() / ".espanso" in pc.espanso_candidate_dirs
 
 
-def test_get_platform_config_wsl2_without_username():
-    """get_platform_config() omits /mnt/c/ paths on WSL2 when username is unavailable."""
+def test_get_platform_config_wsl2_without_windows_profile():
+    """get_platform_config() omits /mnt/c/ paths on WSL2 when the profile is unavailable."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value=None),
-        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=[]),
+        patch("espansr.core.platform.get_windows_profile_dir", return_value=None),
         patch.dict(os.environ, {}, clear=False),
         patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
     ):
@@ -359,10 +415,9 @@ def test_get_platform_config_wsl2_only_uses_current_windows_user():
     """Other Windows profiles are never candidates: candidates are also cleanup targets."""
     with (
         patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value="Alice"),
         patch(
-            "espansr.core.platform._discover_wsl_windows_usernames",
-            return_value=["Alice", "Bob"],
+            "espansr.core.platform.get_windows_profile_dir",
+            return_value=Path("/mnt/c/Users/Alice"),
         ),
         patch.dict(os.environ, {}, clear=False),
         patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
@@ -375,35 +430,6 @@ def test_get_platform_config_wsl2_only_uses_current_windows_user():
         Path("/mnt/c/Users/Alice/.espanso"),
     ]
     assert not any("Bob" in p.as_posix() for p in mnt)
-
-
-def test_get_platform_config_wsl2_single_discovered_profile_is_unambiguous():
-    """Without cmd.exe, exactly one discovered profile stands in for the current user."""
-    with (
-        patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value=None),
-        patch("espansr.core.platform._discover_wsl_windows_usernames", return_value=["Alice"]),
-        patch.dict(os.environ, {}, clear=False),
-        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
-    ):
-        pc = get_platform_config()
-    assert Path("/mnt/c/Users/Alice/AppData/Roaming/espanso") in pc.espanso_candidate_dirs
-
-
-def test_get_platform_config_wsl2_multiple_discovered_profiles_are_not_guessed():
-    """Without cmd.exe and several profiles, no Windows-side path is guessed."""
-    with (
-        patch("espansr.core.platform.get_platform", return_value="wsl2"),
-        patch("espansr.core.platform.get_windows_username", return_value=None),
-        patch(
-            "espansr.core.platform._discover_wsl_windows_usernames",
-            return_value=["Alice", "Bob"],
-        ),
-        patch.dict(os.environ, {}, clear=False),
-        patch.object(os.environ, "get", side_effect=lambda k, d=None: d),
-    ):
-        pc = get_platform_config()
-    assert not any(p.as_posix().startswith("/mnt/c") for p in pc.espanso_candidate_dirs)
 
 
 def test_get_platform_config_unknown():

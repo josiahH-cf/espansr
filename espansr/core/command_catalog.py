@@ -24,6 +24,11 @@ SYNC_PREVIEW = (
     "changes when there is no conflict, then reruns the installer recorded at first install."
 )
 
+LOCAL_ONLY_TEXT = (
+    "Local only: expands on this machine; espansr never syncs, pushes, delivers, "
+    "or publishes it. A program that reads this template folder itself can still read it."
+)
+
 _PREVIEW_MAX_LINES = 4
 _PREVIEW_MAX_CHARS = 280
 
@@ -59,6 +64,7 @@ class CommandCatalogEntry:
     content: str = ""
     capability_descriptor: dict = field(default_factory=dict)
     publication_status: str = "unavailable"
+    local_only: bool = False
 
     @property
     def workflow_label(self) -> str:
@@ -129,6 +135,7 @@ def _iter_template_entries(template_manager: TemplateManager) -> Iterable[Comman
             avoid_when=template.avoid_when or "",
             has_output_contract=bool(template.output_contract),
             content=template.content or "",
+            local_only=template.local_only,
         )
 
 

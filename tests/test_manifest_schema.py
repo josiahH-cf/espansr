@@ -161,10 +161,6 @@ class TestResolveOrchestratrAppsDir:
                 return_value="wsl2",
             ),
             patch(
-                "espansr.integrations.orchestratr.get_windows_username",
-                return_value=win_user,
-            ),
-            patch(
                 "espansr.integrations.orchestratr._wsl2_orchestratr_base",
                 return_value=orchestratr_dir,
             ),

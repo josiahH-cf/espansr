@@ -66,7 +66,7 @@ House rules for this loop:
 
 - Present plans and review findings as numbered items; the user approves by number, for example "approve: 1, 4".
 - This repository is public. Personal notes keep their structure and standing rules but never actual values such as amounts, account digits, dates, or private names.
-- Other sessions may edit this checkout. Never revert, stash, or commit changes you did not make; the path list keeps them out of your delivery.
+- Other sessions may edit this checkout. Never revert, stash, or commit changes you did not make; the path list keeps them out of your delivery, and when the branch must catch up with `origin/main` while such changes are uncommitted, preflight stops before committing instead of stashing them.
 - Use prompts the user supplies verbatim, and flag stale passages instead of editing them.
 - Before building a new note, check whether an existing command or note already covers the idea.
 - `main` requires the five CI checks (`ci (3.11)`, `ci (3.12)`, `ci (3.13)`, `ci-windows`, `ci-macos`) before a pull request merges; never merge with `--admin` or otherwise bypass them.

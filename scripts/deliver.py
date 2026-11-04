@@ -35,6 +35,7 @@ from typing import Callable, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 BRANCH_PATTERN = re.compile(r"^(agent|user)/(feat|bug|refactor|chore|docs)-[a-z0-9][a-z0-9-]*$")
+LOCAL_ONLY_MARK = re.compile(r'"local_only"\s*:\s*true\b')
 INDEPENDENT_LINE = "Espanso process: running independently"
 # Run with the project's Python: where templates are installed, and what each
 # espansr trigger expands to in Espanso's generated match file.
@@ -58,6 +59,107 @@ EXIT_PREFLIGHT, EXIT_CHECKS, EXIT_PUBLISH, EXIT_CI, EXIT_MERGE, EXIT_INSTALL, EX
 )
 
 Runner = Callable[..., subprocess.CompletedProcess]
+
+
+def local_only_state(path: Path) -> str:
+    """The rule of ``espansr.core.templates.local_only_state``, without importing espansr."""
+    try:
+        return local_only_state_bytes(path.read_bytes())
+    except OSError:
+        return "unknown"
+
+
+def template_codec(raw: bytes) -> str:
+    """UTF-16 after a UTF-16 byte-order mark, otherwise UTF-8 (a BOM allowed)."""
+    return "utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+
+
+def template_object(raw: bytes) -> dict | None:
+    """The JSON object in a template's bytes, decoded as the privacy rule decodes them."""
+    try:
+        data = json.loads(raw.decode(template_codec(raw)))
+    except (ValueError, RecursionError):  # UnicodeDecodeError is a ValueError
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def local_only_state_bytes(raw: bytes) -> str:
+    """Classify a template's bytes as private, shareable, or unknown (fails closed)."""
+    codec = template_codec(raw)
+    try:
+        text = raw.decode(codec)
+    except UnicodeDecodeError:
+        # Bytes the loader cannot read are never shareable; only a mark still
+        # legible in them keeps the file private rather than unknown.
+        legible = raw.decode(codec, errors="replace")
+        return "private" if LOCAL_ONLY_MARK.search(legible) else "unknown"
+    objects: list = []
+
+    def remember(pairs: list) -> dict:
+        objects.append(pairs)
+        return dict(pairs)
+
+    try:
+        data = json.loads(text, object_pairs_hook=remember)
+    except (ValueError, RecursionError):
+        return "private" if LOCAL_ONLY_MARK.search(text) else "unknown"
+    if not isinstance(data, dict):
+        return "unknown"
+    values = [value for key, value in objects[-1] if key == "local_only"]
+    if not values:
+        return "shareable"
+    if len(values) == 1 and values[0] is True:
+        return "private"
+    return "shareable" if len(values) == 1 and values[0] is False else "unknown"
+
+
+def is_template_path(path: str) -> bool:
+    parts = path.split("/")
+    return (
+        parts[0] == "templates"
+        and path.endswith(".json")
+        and not {"_versions", "_meta"}.intersection(parts)
+    )
+
+
+def is_local_only_template(path: Path) -> bool:
+    """True when the JSON file at *path* is marked local only."""
+    return path.suffix == ".json" and path.is_file() and local_only_state(path) == "private"
+
+
+def is_local_only_bytes(raw: bytes) -> bool:
+    return local_only_state_bytes(raw) == "private"
+
+
+def private_identities(templates: Path) -> dict[str, set[str]]:
+    """Triggers, capability IDs and prompt texts of every template here that is not shareable.
+
+    Tracked or not, listed for delivery or not, as ``espansr push`` reads them.
+    """
+    found: dict[str, set[str]] = {"trigger": set(), "capability_id": set(), "content": set()}
+    for path in sorted(templates.glob("**/*.json")) if templates.is_dir() else []:
+        if {"_versions", "_meta", ".git"}.intersection(path.relative_to(templates).parts):
+            continue
+        if not path.is_file() or local_only_state(path) == "shareable":
+            continue
+        try:
+            data = template_object(path.read_bytes()) or {}
+        except OSError:
+            continue
+        for key, values in found.items():
+            value = data.get(key)
+            if isinstance(value, str) and value.strip():
+                values.add(value)
+    return found
+
+
+def same_template(raw: bytes, identities: dict[str, set[str]]) -> bool:
+    """True when *raw* is a version of one of those templates, whatever its name."""
+    data = template_object(raw)
+    return data is not None and any(
+        isinstance(data.get(key), str) and data.get(key) in values
+        for key, values in identities.items()
+    )
 
 
 class DeliveryError(Exception):
@@ -129,6 +231,67 @@ class Delivery:
             raise DeliveryError(code, f"{what} failed (exit {result.returncode}): {detail}")
         return result
 
+    def _local_only_history(self) -> list[str]:
+        """Templates whose versions in origin/main..HEAD are local only (then or now) or unclear.
+
+        Every version is read, merge commits included; one that cannot be
+        classified counts, so delivery fails closed. So does an earlier version
+        of a template that is not shareable here now (tracked or untracked,
+        listed or not) under a name no shareable file has now: same trigger,
+        capability ID or prompt text, as ``espansr push`` checks.
+        """
+        log = self._git(
+            *("log", "-z", "--raw", "-m", "--no-renames", "--no-abbrev", "--diff-filter=AMT"),
+            *("--format=", "origin/main..HEAD", "--", "templates"),
+            text=False,
+        )
+        if log.returncode != 0:
+            raise DeliveryError(EXIT_PREFLIGHT, "could not read unpushed commits for privacy")
+        identities = private_identities(ROOT / "templates")
+        shared_now: dict[str, bool] = {}
+        tokens, carried, index = (log.stdout or b"").split(b"\0"), set(), 0
+        while index < len(tokens) - 1:
+            fields = tokens[index].split()
+            if not (tokens[index].startswith(b":") and len(fields) >= 5):
+                index += 1
+                continue
+            mode, blob = fields[1].decode(), fields[3].decode()
+            path = tokens[index + 1].decode("utf-8", "surrogateescape")
+            index += 2
+            if not path.endswith(".json") or mode in ("120000", "160000"):
+                continue
+            if is_local_only_template(ROOT / path):
+                carried.add(path)
+                continue
+            content = self._git("cat-file", "blob", blob, text=False)
+            raw = content.stdout or b""
+            state = local_only_state_bytes(raw)
+            if content.returncode != 0 or state == "private":
+                carried.add(path)
+            elif is_template_path(path) and state == "unknown":
+                carried.add(path)
+            elif is_template_path(path) and same_template(raw, identities):
+                if path not in shared_now:
+                    file = ROOT / path
+                    shared_now[path] = file.is_file() and local_only_state(file) == "shareable"
+                if not shared_now[path]:
+                    carried.add(path)
+        return sorted(carried)
+
+    def _unlisted_changes(self) -> list[str]:
+        """Tracked files outside the listed paths with staged or unstaged changes.
+
+        The index and the working tree are read separately: a file staged with
+        other content and then put back in the working tree matches HEAD there.
+        """
+        names: set[str] = set()
+        for diff_args in (("--cached",), ()):
+            diff = self._git("diff", *diff_args, "--name-only", "-z", text=False)
+            if diff.returncode != 0:
+                raise DeliveryError(EXIT_PREFLIGHT, "could not read uncommitted changes")
+            names.update((diff.stdout or b"").decode("utf-8", "surrogateescape").split("\0"))
+        return sorted(name for name in names if name and name not in self.paths)
+
     # ── stages ───────────────────────────────────────────────────────────────
 
     def preflight(self) -> None:
@@ -157,26 +320,76 @@ class Delivery:
         missing = [p for p in self.paths if p not in changed and p not in committed]
         if missing:
             raise DeliveryError(EXIT_PREFLIGHT, f"listed paths have no changes: {missing}")
+        private = sorted(p for p in set(self.paths) | committed if is_local_only_template(ROOT / p))
+        if private:
+            raise DeliveryError(
+                EXIT_PREFLIGHT, f"local-only templates are never delivered: {private}"
+            )
+        unclear = sorted(
+            p
+            for p in set(self.paths) | committed
+            if is_template_path(p)
+            and (ROOT / p).is_file()
+            and local_only_state(ROOT / p) == "unknown"
+        )
+        if unclear:
+            raise DeliveryError(
+                EXIT_PREFLIGHT,
+                "cannot tell whether these templates are local only (unreadable, invalid JSON, "
+                f'or "local_only" not true/false); fix them first: {unclear}',
+            )
+        carried = self._local_only_history()
+        if carried:
+            raise DeliveryError(
+                EXIT_PREFLIGHT,
+                f"unpushed commits carry local-only templates, never delivered: {carried}",
+            )
+        # Catching up must never stash and replay uncommitted work that is not
+        # part of this delivery (a staged change comes back unstaged); refuse.
+        based = self._git("merge-base", "--is-ancestor", "origin/main", "HEAD").returncode == 0
+        if not based:
+            others = self._unlisted_changes()
+            if others:
+                raise DeliveryError(
+                    EXIT_PREFLIGHT,
+                    f"{current} is behind origin/main, and catching up would stash other "
+                    f"uncommitted changes in this checkout: {others}. Nothing was committed, "
+                    "stashed or rebased. Bring it up to date without stashing them (on main, "
+                    "git merge --ff-only origin/main), then rerun.",
+                )
 
         if current == "main":
             self._must(self._git("switch", "-c", self.branch), EXIT_PREFLIGHT, "git switch")
         self._must(self._git("add", "--", *self.paths), EXIT_PREFLIGHT, "git add")
-        staged = self._git("diff", "--cached", "--name-only").stdout.split()
+        # Only the listed paths: anything else already staged (another session's
+        # work, or a private template staged by hand) stays out of the commit.
+        listed = [f":(literal){path}" for path in self.paths]
+        staged = self._git("diff", "--cached", "--name-only", "--", *listed).stdout.split()
         if staged:
-            with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as handle:
+            # git reads the message, like gh the body below, as UTF-8 whatever the locale.
+            with tempfile.NamedTemporaryFile(
+                "w", suffix=".txt", delete=False, encoding="utf-8"
+            ) as handle:
                 handle.write(self.message)
             try:
-                self._must(self._git("commit", "-F", handle.name), EXIT_PREFLIGHT, "git commit")
+                self._must(
+                    self._git("commit", "-F", handle.name, "--only", "--", *listed),
+                    EXIT_PREFLIGHT,
+                    "git commit",
+                )
             finally:
                 os.unlink(handle.name)
 
-        based = self._git("merge-base", "--is-ancestor", "origin/main", "HEAD")
-        if based.returncode != 0:
-            rebased = self._git("rebase", "--autostash", "origin/main")
+        if not based:  # nothing else was uncommitted; never stash, whatever the config says
+            rebased = self._git(
+                "-c", "rebase.autoStash=false", "rebase", "--no-autostash", "origin/main"
+            )
             if rebased.returncode != 0:
                 self._git("rebase", "--abort")
                 raise DeliveryError(
-                    EXIT_PREFLIGHT, "rebase onto origin/main conflicted; resolve it and rerun"
+                    EXIT_PREFLIGHT,
+                    "rebase onto origin/main did not complete (a conflict, or changes made "
+                    "meanwhile); nothing was stashed. Resolve it and rerun",
                 )
 
     def local_checks(self) -> None:
@@ -203,6 +416,14 @@ class Delivery:
             self._git("worktree", "remove", "--force", str(worktree))
 
     def publish(self) -> None:
+        # Read the outgoing commits again as they are now (committed, rebased),
+        # so nothing private is pushed whatever changed since preflight.
+        carried = self._local_only_history()
+        if carried:
+            raise DeliveryError(
+                EXIT_PUBLISH,
+                f"unpushed commits carry local-only templates, never delivered: {carried}",
+            )
         self._must(
             self._git("push", "--force-with-lease", "-u", "origin", self.branch),
             EXIT_PUBLISH,
@@ -211,7 +432,9 @@ class Delivery:
         existing = self._run(["gh", "pr", "view", self.branch, "--json", "number,state,url"])
         info = json.loads(existing.stdout) if existing.returncode == 0 else {}
         if info.get("state") != "OPEN":
-            with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as handle:
+            with tempfile.NamedTemporaryFile(
+                "w", suffix=".md", delete=False, encoding="utf-8"
+            ) as handle:
                 handle.write(self.body)
             try:
                 self._must(

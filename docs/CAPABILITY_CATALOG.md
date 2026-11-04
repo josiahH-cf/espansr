@@ -41,9 +41,61 @@ public template can explicitly opt in with `publish_definition: true`; its
 exact source JSON bytes are then included as base64 `definition_bytes` in the
 same atomic generation. The Meta-Prompt Generator uses this for connected
 inline drafting. Consumers verify both byte and semantic digests before use.
-Installed-only definitions never opt themselves into publication. Derived
+Installed-only definitions never opt themselves into publication. A template
+marked `local_only: true`, in the source or in its installed copy, is treated
+like an installed-only private definition even when it also sets
+`publish_definition`: it has no entry, metadata or bytes and is only counted in
+`unmanaged_installed_templates`. A workflow built on a local-only capability
+is omitted with it instead of failing qualification. A retained publication
+that still describes a template now marked local only is withdrawn (removed)
+as soon as espansr saves a template as local only (the editor, an import, a
+restore). After a hand edit, the withdrawal happens the first time espansr
+reads or publishes the catalog: `espansr catalog`, the `:coms` popup, or a
+sync. No read
+returns it, filtered or otherwise; `espansr catalog` reports `withdrawn`, and
+warns when the file could not be removed so connected tools could still read
+it. Publication resumes with the next complete build. A new selection from a
+catalog held from before the change is refused when the definition it would
+read is local only. A copy a connected tool already read, and a job frozen
+before the change, are not recalled or rewritten. Derived
 `effective_capability_id`, replacement labels and deprecation are metadata,
 never new executor or dispatch aliases.
+
+### Local-only templates for consumers
+
+The qualified publication lists only templates that may be shared, so a
+consumer that exposes exactly its entries never shows a private one. A consumer
+that reads the live template folder itself has to apply espansr's rule to every
+file before reading or exposing anything from it. A file may be shared only
+when its bytes decode as UTF-8 (a byte-order mark allowed), or as UTF-16 when
+they start with a UTF-16 byte-order mark, and parse as a JSON object whose
+top-level `local_only` is absent or appears once with the value `false`.
+Anything else is not shareable: `true`, any other value, a repeated
+`local_only` key, something other than an object, bytes that do not decode
+(never retry them as Latin-1), an unreadable file, or a file that does not
+parse (whether or not it spells `"local_only": true`). A parser that keeps only
+the last value of a repeated key, as plain `json.loads` does, cannot see the
+repetition; read the object's key/value pairs (`object_pairs_hook` in Python).
+The rule is `local_only_state_bytes` in `espansr/core/templates.py`, mirrored
+without imports in `scripts/deliver.py`; a test keeps the two identical.
+
+- Apply it on every refresh, so marking a template takes effect at the next
+  read. Already-frozen jobs are history and keep their bytes.
+- Keep a file that is not shareable out of new listing, selection and
+  admission. That includes a file that was public until it became unreadable,
+  unparsable or not an object while the last publication still lists it. Such
+  a file is not a withdrawal: leave the publication and frozen history as they
+  are, and list the template again once its file reads as shareable.
+- After a hand edit, the publication can still describe the template until
+  espansr next reads or publishes the catalog, so a consumer that reads the
+  publication applies the rule to each entry's live file as well.
+- A consumer that keeps its last good generation after a failed refresh drops
+  the templates excluded now.
+
+espansr cannot apply the rule for a consumer. A consumer that listed every live
+file, and checked only that the publication's members were present, would show
+local-only templates in its discovery and let a new preparation read their
+text.
 
 A deliberately authored optional template field can identify a route:
 
@@ -80,7 +132,10 @@ authentication; trust remains with the existing source/install owner.
 `publish_catalog` replaces that file only if every canonical definition is
 valid and every installed projection is semantically equal. An invalid new
 definition, partial install, duplicate identity, broken workflow reference or
-drift leaves the last complete file untouched. A write failure also retains it.
+drift leaves the last complete file untouched, unless that file still describes
+a template now marked local only, which withdraws it. A write failure also
+retains it. Sync says which happened: retained, withdrawn, or none published
+until the build is complete.
 Trigger publication remains usable for intentional local edits and prints a
 catalog drift warning. Catalog qualification proves definition parity, without
 claiming an Espanso process reload or actual client typing. Those have their

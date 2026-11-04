@@ -41,7 +41,11 @@ from PyQt6.QtWidgets import (
 )
 
 from espansr.core.capabilities import ARTIFACT_TYPES
-from espansr.core.command_catalog import CommandCatalogEntry, build_command_catalog
+from espansr.core.command_catalog import (
+    LOCAL_ONLY_TEXT,
+    CommandCatalogEntry,
+    build_command_catalog,
+)
 from espansr.core.command_groups import COMMAND_GROUPS, CUSTOM_GROUP, command_cue, groups_for
 from espansr.core.config import get_config, load_config_fresh, save_config
 from espansr.core.recommend import RecommendationQuery, recommend
@@ -124,6 +128,11 @@ class CommandRowWidget(QFrame):
         self._cue_label.setWordWrap(True)
         layout.addWidget(self._cue_label)
 
+        self._local_only_label = QLabel(LOCAL_ONLY_TEXT if entry.local_only else "")
+        self._local_only_label.setWordWrap(True)
+        self._local_only_label.setVisible(entry.local_only)
+        layout.addWidget(self._local_only_label)
+
         self._related_label = QLabel(related_html)
         self._related_label.setTextFormat(Qt.TextFormat.RichText)
         self._related_label.setWordWrap(True)
@@ -180,6 +189,7 @@ class CommandRowWidget(QFrame):
             self._workflow_label,
             self._description_label,
             self._cue_label,
+            self._local_only_label,
             self._next_label,
             self._use_when_label,
             self._avoid_when_label,

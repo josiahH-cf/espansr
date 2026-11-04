@@ -10,6 +10,7 @@ from typing import Optional
 import yaml
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -83,6 +84,12 @@ class TemplateEditorWidget(QWidget):
         self._trigger_edit = QLineEdit()
         self._trigger_edit.setPlaceholderText(":mytrigger")
         form_layout.addWidget(self._trigger_edit)
+
+        from espansr.core.command_catalog import LOCAL_ONLY_TEXT
+
+        self._local_only_check = QCheckBox("Local only (espansr does not share this prompt)")
+        self._local_only_check.setToolTip(LOCAL_ONLY_TEXT)
+        form_layout.addWidget(self._local_only_check)
 
         # Content field
         form_layout.addWidget(QLabel("Content:"))
@@ -219,6 +226,7 @@ class TemplateEditorWidget(QWidget):
         self._usage_label.set_key(f"template:{effective_capability_id(template)}")
         self._name_edit.setText(template.name)
         self._trigger_edit.setText(template.trigger)
+        self._local_only_check.setChecked(template.local_only)
         self._content_edit.setPlainText(template.content)
         self._variable_editor.load_variables(template.variables or [])
         self._capability_id_edit.setText(template.capability_id or "")
@@ -236,6 +244,7 @@ class TemplateEditorWidget(QWidget):
         self._usage_label.set_key("")
         self._name_edit.clear()
         self._trigger_edit.clear()
+        self._local_only_check.setChecked(False)
         self._content_edit.clear()
         self._variable_editor.clear()
         self._capability_id_edit.clear()
@@ -269,14 +278,18 @@ class TemplateEditorWidget(QWidget):
         content = self._content_edit.toPlainText()
         variables = [var.to_dict() for var in self._variable_editor.get_variables()]
         metadata = self._metadata_from_fields()
+        local_only = self._local_only_check.isChecked()
 
         if self._current_template is None:
-            return bool(name or trigger or content or variables or any(metadata.values()))
+            return bool(
+                name or trigger or content or variables or any(metadata.values()) or local_only
+            )
 
         current = self._current_template
         return (
             name != current.name
             or trigger != current.trigger
+            or local_only != current.local_only
             or content != current.content
             or variables != [var.to_dict() for var in (current.variables or [])]
             or metadata["capability_id"] != (current.capability_id or "")
@@ -318,6 +331,7 @@ class TemplateEditorWidget(QWidget):
                     produces=metadata["produces"],
                     use_when=metadata["use_when"],
                     avoid_when=metadata["avoid_when"],
+                    local_only=self._local_only_check.isChecked(),
                 )
                 if not manager.save(template):
                     self.status_message.emit(f"Save failed for '{name}'", 5000)
@@ -335,6 +349,7 @@ class TemplateEditorWidget(QWidget):
                 self._current_template.produces = metadata["produces"]
                 self._current_template.use_when = metadata["use_when"]
                 self._current_template.avoid_when = metadata["avoid_when"]
+                self._current_template.local_only = self._local_only_check.isChecked()
                 # template.output_contract has no editor UI and is preserved
                 # untouched on the loaded template.
                 if not manager.save(self._current_template):

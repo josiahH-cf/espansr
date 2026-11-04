@@ -6,6 +6,10 @@ from PyQt6.QtWidgets import QCheckBox
 from espansr.integrations import espanso
 
 
+def _seconds(mode: str) -> str:
+    return f"{espanso.mode_restore_delay_ms(mode) / 1000:g}"
+
+
 class RemotePasteToggle(QCheckBox):
     """Use the same persistent Espanso modes as configure-remote-desktop."""
 
@@ -14,8 +18,10 @@ class RemotePasteToggle(QCheckBox):
     def __init__(self, parent=None):
         super().__init__("Remote paste", parent)
         self.setToolTip(
-            "On: use remote-desktop paste settings and leave the expansion on the clipboard. "
-            "Off: restore your copied text after expansion. "
+            "On: remote-desktop paste settings, set to bring your copied text back "
+            f"{_seconds('host')} s after an expansion. "
+            f"Off: workstation settings, set to bring it back after {_seconds('workstation')} s. "
+            "An app that pastes later than that pastes your copied text instead of the prompt. "
             "This workstation's setting survives Sync and reinstall. "
             "RustDesk clipboard sharing must also be enabled in RustDesk."
         )
@@ -46,17 +52,30 @@ class RemotePasteToggle(QCheckBox):
 
     def _apply_mode(self, remote: bool) -> None:
         apply = espanso.apply_remote_desktop_config if remote else espanso.apply_workstation_config
+        espanso.take_config_change()  # report only what this switch does
         try:
             saved = apply()
         except Exception:
             saved = False
+        change = espanso.take_config_change()
         self.refresh()
-        if saved:
+        label = "Remote paste" if remote else "Workstation paste"
+        if not saved and change is not None and change.error:
+            kept = "; default.yml was left as it was" if change.path else ""
+            message = f"Could not change clipboard mode ({change.error}){kept}."
+        elif not saved:
+            message = "Could not change clipboard mode; check Espanso configuration and try again."
+        elif change is not None and change.reloaded is False:
             message = (
-                "Remote paste settings saved; expanded text stays on the clipboard."
-                if remote
-                else "Clipboard preservation saved; your copied text is restored after expansion."
+                f"{label} settings saved, but Espanso did not restart, so espansr cannot "
+                "confirm it uses them; restart Espanso."
             )
         else:
-            message = "Could not change clipboard mode; check Espanso configuration and try again."
+            restore = espanso.describe_saved_restore(espanso.get_clipboard_restore_behavior())
+            restarted = (
+                "; Espanso restarted and reports running"
+                if change is not None and change.reloaded is True
+                else ""
+            )
+            message = f"{label} settings saved ({restore}){restarted}."
         self.status_message.emit(message)

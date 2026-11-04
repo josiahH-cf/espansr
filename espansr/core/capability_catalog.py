@@ -18,7 +18,7 @@ from typing import Any
 
 from espansr.core.atomic import atomic_copy, atomic_write_bytes
 from espansr.core.capabilities import effective_capability_id
-from espansr.core.templates import Template
+from espansr.core.templates import Template, is_kept_private
 from espansr.core.workflows import WORKFLOWS_SUBDIR, validate_manifest_data
 
 INTERFACE = "espansr-capability-catalog-v1"
@@ -204,8 +204,13 @@ def build_catalog(
     installed_root = Path(installed_root) if installed_root is not None else None
     if revision is not None and not _REVISION.fullmatch(revision):
         raise ValueError("source revision must be a full Git object identity")
+    # Local-only definitions (marked in the source or in the installed copy) are
+    # private like installed-only ones: no entry, metadata or bytes; only counted.
+    local_only, private_capabilities = _local_only_definitions(source_root, installed_root)
     entries = []
-    paths = [(p, "template") for p in sorted(source_root.glob("*.json"))]
+    paths = [
+        (p, "template") for p in sorted(source_root.glob("*.json")) if p.name not in local_only
+    ]
     paths += [(p, "workflow") for p in sorted((source_root / WORKFLOWS_SUBDIR).glob("*.json"))]
     for path, kind in paths:
         relative = path.relative_to(source_root).as_posix()
@@ -319,6 +324,16 @@ def build_catalog(
                 }
             )
         entries.append(entry)
+    # A workflow built on a local-only capability is omitted with it, not failed.
+    entries = [
+        e
+        for e in entries
+        if not (
+            e["kind"] == "workflow"
+            and e["usable"]
+            and private_capabilities.intersection(n["capability"] for n in e["nodes"])
+        )
+    ]
     # Stable IDs, declared capabilities and triggers must have one owner.
     for key in ("id", "capability_id", "trigger", "workflow_id"):
         owners: dict[str, list] = {}
@@ -367,7 +382,7 @@ def build_catalog(
             "unmanaged_installed_templates": (
                 len(
                     {p.name for p in installed_root.glob("*.json")}
-                    - {p.name for p in source_root.glob("*.json")}
+                    - ({p.name for p in source_root.glob("*.json")} - local_only)
                 )
                 if installed_root is not None
                 else None
@@ -378,17 +393,107 @@ def build_catalog(
     return {**catalog, "catalog_sha256": digest(catalog)}
 
 
+class PublicationWithdrawn(ValueError):
+    """The retained publication described a template now marked local only and was removed."""
+
+
+class PublicationWithdrawalFailed(OSError):
+    """The retained publication describes a template now marked local only and stays on disk."""
+
+
+def _not_shareable(root: Path) -> set:
+    """Top-level definition names marked local only, or with ``local_only`` set but not false."""
+    return {p.name for p in Path(root).glob("*.json") if is_kept_private(p)}
+
+
+def _local_only_definitions(source_root: Path, installed_root: Path | None) -> tuple[set, set]:
+    """Top-level definition names kept private, and the capabilities they own."""
+    source_root = Path(source_root)
+    names = _not_shareable(source_root)
+    if installed_root is not None:
+        names |= _not_shareable(installed_root)
+    capabilities = set()
+    for name in names:
+        capability = Path(name).stem
+        for root in (source_root, installed_root):
+            try:
+                data = json.loads((Path(root) / name).read_bytes().decode("utf-8-sig"))
+            except (OSError, TypeError, ValueError):
+                continue
+            if isinstance(data, dict):
+                capability = data.get("capability_id") or capability
+                break
+        capabilities.add(capability)
+    return names, capabilities
+
+
+def _describes_private(published: Any, names: set, capabilities: set) -> bool:
+    """Whether a publication has an entry for a private template, capability, or its workflow."""
+    template_ids = {f"template:{Path(name).stem}" for name in names}
+    for entry in published.get("entries", []) if isinstance(published, dict) else []:
+        if not isinstance(entry, dict):
+            continue
+        nodes = entry.get("nodes") if isinstance(entry.get("nodes"), list) else []
+        if (
+            entry.get("id") in template_ids
+            or entry.get("capability_id") in capabilities
+            or capabilities.intersection(n.get("capability") for n in nodes if isinstance(n, dict))
+        ):
+            return True
+    return False
+
+
+def withdraw_private_publication(source_root: Path, installed_root: Path) -> bool | None:
+    """Remove a retained publication that still describes a template now marked local only.
+
+    Connected tools read the retained file directly, so keeping it would go on
+    sharing a prompt the user made private. Copies they already read are theirs.
+    Publishing, reading the catalog, and saving a template as local only call
+    this. Returns None when there is nothing to withdraw, True when the file
+    was removed, and False when it describes a private template but stays on disk.
+    """
+    try:
+        path = _definition_path(installed_root, PUBLICATION_PATH)  # never through a link
+        raw = path.read_bytes()
+        published = json.loads(raw)
+    except (OSError, ValueError):
+        return None
+    if not _describes_private(published, *_local_only_definitions(source_root, installed_root)):
+        return None
+    try:
+        if path.read_bytes() != raw:
+            return None  # replaced meanwhile; the next read judges the new publication
+        path.unlink()
+    except FileNotFoundError:
+        return True  # already gone
+    except OSError:
+        return False
+    return True
+
+
 def publish_catalog(
     source_root: Path, installed_root: Path, *, revision: str | None = None
 ) -> dict:
     """Existing install/publish owner calls this after projection writes.
 
     One atomic envelope contains descriptor and receipt. Invalid or partial
-    installs do not replace it. Idempotent replay produces identical bytes.
+    installs do not replace it, unless it still describes a template now marked
+    local only: then it is withdrawn. Idempotent replay produces identical bytes.
     This does not install definitions, restart Espanso or claim trigger use.
     """
     catalog = build_catalog(source_root, installed_root, revision=revision)
     if catalog["publication"] != "qualified":
+        withdrawn = withdraw_private_publication(source_root, installed_root)
+        if withdrawn:
+            raise PublicationWithdrawn(
+                "catalog unqualified; the last publication described a template now marked "
+                "local only, so it was withdrawn"
+            )
+        if withdrawn is False:
+            raise PublicationWithdrawalFailed(
+                "catalog unqualified; the last publication describes a template now marked "
+                f"local only and could not be removed: {installed_root / PUBLICATION_PATH}"
+            )
         raise ValueError("catalog unqualified; last complete publication retained")
     atomic_write_bytes(
         _definition_path(installed_root, PUBLICATION_PATH), canonical_bytes(catalog) + b"\n"
@@ -442,8 +547,23 @@ def read_publication(installed_root: Path) -> dict:
 def inspect_catalog(
     source_root: Path, installed_root: Path, *, revision: str | None = None
 ) -> dict:
-    """Last qualified publication and current drift are separate observations."""
+    """Last qualified publication and current drift are separate observations.
+
+    Current privacy applies first: a retained publication that describes a
+    template now kept private is never returned. It is withdrawn as the next
+    publish would withdraw it (``status`` "withdrawn"; ``withdrawn_file_removed``
+    says whether the file is gone). It is never filtered, so a returned
+    publication is always the exact qualified artifact its hash names.
+    """
     current = build_catalog(source_root, installed_root, revision=revision)
+    withdrawn = withdraw_private_publication(source_root, installed_root)
+    if withdrawn is not None:
+        return {
+            "current": current,
+            "published": None,
+            "status": "withdrawn",
+            "withdrawn_file_removed": withdrawn,
+        }
     try:
         published = read_publication(installed_root)
     except (OSError, ValueError, UnicodeError):
@@ -546,7 +666,10 @@ def freeze_definition(
     entry = next(e for e in catalog["entries"] if e["id"] == entry_id)
     if not entry["usable"]:
         raise ValueError("selection is not a usable definition")
-    raw, data = _read(_definition_path(definition_root, entry["path"]))
+    path = _definition_path(definition_root, entry["path"])
+    if is_kept_private(path):  # current privacy wins over an older catalog
+        raise ValueError("selection is kept private on this machine")
+    raw, data = _read(path)
     expected = entry["installed"].get("byte_sha256")
     if (
         _sha(raw) not in {entry["source_byte_sha256"], expected}

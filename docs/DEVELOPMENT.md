@@ -5,10 +5,12 @@
 ```bash
 git clone https://github.com/josiahH-cf/espansr.git
 cd espansr
-pip install -e .[dev]
+python3 -m venv .venv             # Windows: py -m venv .venv
+. .venv/bin/activate              # Windows: .\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
 ```
 
-This installs espansr in editable mode along with dev dependencies (pytest, pytest-qt, ruff, black).
+This installs espansr in editable mode along with dev dependencies (pytest, pytest-qt, ruff, black). Quote `".[dev]"`: zsh, the macOS default shell, otherwise treats the brackets as a pattern. The virtual environment keeps the install away from system Python, which newer Debian, Ubuntu, and Homebrew Pythons refuse to modify. The installers create the same `.venv` for you.
 
 ## Running Tests
 
@@ -135,6 +137,11 @@ targeting `main`:
 
 - **Ruff** lint check
 - **Black** format check
-- **pytest** across Python 3.11, 3.12, 3.13
-- **Windows job** — the same checks on `windows-latest` with Python 3.12
-- **Discovery and workflow checks** — `python scripts/sync_discovery.py --check` and `espansr workflows validate` in both jobs
+- **pytest** across Python 3.11, 3.12, 3.13 on Linux
+- **Windows job** (`ci-windows`) and **macOS job** (`ci-macos`, Apple Silicon) — the same checks with Python 3.12
+- **Discovery and workflow checks** — `python scripts/sync_discovery.py --check` and `espansr workflows validate` in every job
+- **Installer and runtime canaries** — `scripts/verify_install.py` and `scripts/verify_espanso_runtime.py` on Linux (Python 3.12), Windows, and macOS; see [VERIFY.md](VERIFY.md) for what they do and do not prove
+
+The Linux matrix runs with `fail-fast: false`, so one Python version's failure
+still reports the others. Qt runs offscreen in CI, so no job types into a real
+desktop, opens a real window, or connects over RDP or RustDesk.

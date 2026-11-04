@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from espansr.core.discovery import SYSTEM_TRIGGERS
 from espansr.core.output_contract import normalize_contract
 from espansr.core.templates import Template
 from espansr.integrations.validate import validate_template
@@ -96,6 +97,15 @@ def test_triggers_start_with_colon_and_are_unique(bundled):
         owners.setdefault(trigger, []).append(filename)
     duplicates = {trigger: files for trigger, files in owners.items() if len(files) > 1}
     assert duplicates == {}
+
+
+def test_no_trigger_is_a_prefix_of_another(bundled):
+    """Espanso expands a trigger as soon as it is typed, so a trigger that starts
+    another one (``:stabilize`` and ``:stabilize-core``) makes the longer one
+    impossible to type."""
+    triggers = {data["trigger"] for data in bundled.values()} | set(SYSTEM_TRIGGERS)
+    shadowed = sorted((a, b) for a in triggers for b in triggers if a != b and b.startswith(a))
+    assert shadowed == []
 
 
 def test_names_are_unique(bundled):

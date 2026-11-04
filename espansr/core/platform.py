@@ -6,45 +6,13 @@ Single source of truth for OS and WSL2 detection across the codebase.
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal, Mapping, Optional
-
-_RESERVED_WINDOWS_USER_DIRS = {
-    "all users",
-    "default",
-    "default user",
-    "public",
-}
-
-
-def _discover_wsl_windows_usernames() -> list[str]:
-    """Discover Windows profile names from /mnt/c/Users when running in WSL.
-
-    Returns:
-        Sorted list of likely Windows usernames. Returns empty list when
-        the directory is unavailable or unreadable.
-    """
-    users_root = Path("/mnt/c/Users")
-    if not users_root.is_dir():
-        return []
-
-    names: list[str] = []
-    try:
-        for entry in users_root.iterdir():
-            if not entry.is_dir():
-                continue
-            lowered = entry.name.lower()
-            if lowered in _RESERVED_WINDOWS_USER_DIRS:
-                continue
-            names.append(entry.name)
-    except OSError:
-        return []
-
-    return sorted(names, key=str.lower)
 
 
 def _dedupe_paths(paths: list[Path]) -> list[Path]:
@@ -73,6 +41,9 @@ class PlatformConfig:
     espanso_candidate_dirs: list[Path] = field(
         default_factory=list
     )  # ordered dirs to probe for Espanso config
+    # WSL only: the current Windows user's profile folder as wslpath converted
+    # it, wherever the drives are mounted (/mnt/c/Users/... or a custom root).
+    windows_profile_dir: Optional[Path] = None
 
 
 @lru_cache(maxsize=1)
@@ -121,22 +92,16 @@ def get_platform_config() -> PlatformConfig:
 
         # Only the current Windows user's profile is a candidate: every
         # candidate is also a cleanup target for espansr-managed files, so
-        # other users' Espanso configs must never be touched. When cmd.exe
-        # cannot report the user name, a single discovered profile is
-        # unambiguous; several profiles are not guessed at.
-        win_user = get_windows_username()
-        if not win_user:
-            discovered = _discover_wsl_windows_usernames()
-            if len(discovered) == 1:
-                win_user = discovered[0]
+        # other users' Espanso configs must never be touched.
+        profile = get_windows_profile_dir()
 
-        if win_user:
+        if profile:
             candidates.extend(
                 [
                     # Espanso on Windows typically uses AppData/Roaming.
-                    Path(f"/mnt/c/Users/{win_user}/AppData/Roaming/espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/.config/espanso"),
-                    Path(f"/mnt/c/Users/{win_user}/.espanso"),
+                    profile / "AppData" / "Roaming" / "espanso",
+                    profile / ".config" / "espanso",
+                    profile / ".espanso",
                 ]
             )
 
@@ -151,6 +116,7 @@ def get_platform_config() -> PlatformConfig:
             platform=plat,
             espansr_config_dir=base / "espansr",
             espanso_candidate_dirs=_dedupe_paths(candidates),
+            windows_profile_dir=profile,
         )
 
     if plat == "linux":
@@ -247,23 +213,72 @@ def get_wsl_distro_name() -> Optional[str]:
         return None
 
 
+# Standard locations, for WSL sessions whose PATH omits them.
+_WSL_CMD_EXE = "/mnt/c/Windows/System32/cmd.exe"
+_WSLPATH = "/usr/bin/wslpath"
+
+
 def get_windows_username() -> Optional[str]:
     """Get the Windows username via cmd.exe (for WSL2 environments).
 
     Returns:
         The Windows username string, or None if unavailable.
     """
+    return _windows_variable("USERNAME")
+
+
+def get_windows_profile_dir() -> Optional[Path]:
+    """Return the current Windows user's profile folder as a WSL path.
+
+    The folder is exactly the one ``%USERPROFILE%`` names, converted by
+    ``wslpath``. A folder's name never says whose it is: Windows names a
+    profile ``<user>.<DOMAIN>`` or ``<user>.000`` when a folder is taken, keeps
+    the old folder when an account is renamed, and may keep a profile on
+    another drive. When the profile cannot be established, the result is
+    None, so another account's folder is never used.
+
+    Returns:
+        The profile folder (for example ``/mnt/c/Users/jdoe.CORP``), or None.
+    """
+    profile = _windows_variable("USERPROFILE")
+    if profile is None:
+        return None
     try:
         result = subprocess.run(
-            ["cmd.exe", "/c", "echo %USERNAME%"],
+            [shutil.which("wslpath") or _WSLPATH, "-u", profile],
             capture_output=True,
-            text=True,
             timeout=5,
         )
-        username = result.stdout.strip()
-        return username if username else None
-    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        converted = result.stdout.decode("utf-8").rstrip("\n")
+    except (subprocess.TimeoutExpired, OSError, ValueError):
         return None
+    if result.returncode != 0 or not converted.startswith("/"):
+        return None
+    return Path(converted)
+
+
+def _windows_variable(name: str) -> Optional[str]:
+    """Return the Windows environment variable ``name`` exactly, or None.
+
+    ``set`` prints the stored value, where ``echo %name%`` would run the rest
+    of a value such as ``C:\\Users\\R&D`` as a command. ``/u`` makes cmd.exe
+    write UTF-16LE, so a non-ASCII value arrives exactly instead of in the
+    console's code page.
+    """
+    try:
+        result = subprocess.run(
+            [shutil.which("cmd.exe") or _WSL_CMD_EXE, "/u", "/c", f"set {name}"],
+            capture_output=True,
+            timeout=5,
+        )
+        output = result.stdout.decode("utf-16-le").lstrip("\ufeff")
+    except (subprocess.TimeoutExpired, OSError, ValueError):
+        return None
+    for line in output.split("\r\n"):
+        key, sep, value = line.partition("=")
+        if sep and key.upper() == name.upper():
+            return value or None
+    return None
 
 
 # ─── Command shim (cross-platform `espansr` on PATH) ─────────────────────────

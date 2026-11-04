@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from espansr.core.command_catalog import COMMANDS_POPUP_TRIGGER
 from espansr.core.config import get_config
-from espansr.core.templates import Template, get_template_manager
+from espansr.core.templates import Template, get_template_manager, local_only_state
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +111,23 @@ def validate_template(template: Template) -> List[ValidationWarning]:
             ValidationWarning(
                 severity="warning",
                 message=f"Variable '{var_name}' is defined but never referenced in content",
+                template_name=name,
+            )
+        )
+
+    # A local_only other than a single true or false (a repeated key too):
+    # espansr keeps the prompt private and refuses to share it, but a program
+    # reading the file itself may not apply that rule.
+    path = getattr(template, "_path", None)
+    if path is not None and Path(path).is_file() and local_only_state(Path(path)) == "unknown":
+        warnings.append(
+            ValidationWarning(
+                severity="warning",
+                message=(
+                    "'local_only' is not a single true or false: espansr keeps this prompt "
+                    "private and will not share it, but other programs that read the file may "
+                    "not; set it to true or false (saving it in espansr writes true)"
+                ),
                 template_name=name,
             )
         )

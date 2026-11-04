@@ -134,10 +134,18 @@ def _get_candidate_paths() -> list[Path]:
 
 
 def _is_windows_side_wsl_path(path: Path) -> bool:
-    """Return True when path points to Windows filesystem from WSL."""
+    """Return True when path points to Windows filesystem from WSL.
+
+    That is a drive under the default ``/mnt/<letter>`` mount, or anything in
+    the current Windows user's profile as wslpath converted it, so a custom
+    automount root (``/windows/c/Users/...``) counts too.
+    """
     normalized = str(path).replace("\\", "/")
     parts = [part for part in normalized.split("/") if part]
-    return len(parts) >= 2 and parts[0] == "mnt" and len(parts[1]) == 1 and parts[1].isalpha()
+    if len(parts) >= 2 and parts[0] == "mnt" and len(parts[1]) == 1 and parts[1].isalpha():
+        return True
+    profile = get_platform_config().windows_profile_dir
+    return profile is not None and Path(normalized).is_relative_to(profile)
 
 
 def _path_exists_safe(path: Path) -> bool:
@@ -726,6 +734,41 @@ def _sync_bundled_templates_before_espanso(
 # Espanso daemon restart. Public API: sync_to_espanso().
 
 
+def _publish_capability_catalog(bundled_dir: Optional[Path], templates_dir: Path) -> str:
+    """Publish the capability catalog; return what to tell the user ("" when it qualified).
+
+    Publication qualification is separate from trigger generation. Local edits
+    stay usable as triggers even when canonical parity is unavailable.
+    """
+    from espansr.core.capability_catalog import (
+        PUBLICATION_PATH,
+        PublicationWithdrawalFailed,
+        PublicationWithdrawn,
+        publish_catalog,
+        source_revision,
+    )
+    from espansr.core.templates import get_bundled_templates_dir
+
+    canonical_root = bundled_dir or get_bundled_templates_dir()
+    try:
+        publish_catalog(canonical_root, templates_dir, revision=source_revision(canonical_root))
+    except PublicationWithdrawn:
+        return (
+            "Capability catalog withdrawn: it still described a template now marked local "
+            "only; it returns with the next complete publication."
+        )
+    except PublicationWithdrawalFailed as exc:
+        return (
+            f"Warning: {exc}. Connected tools can still read it; delete that file to stop "
+            "sharing the template."
+        )
+    except (OSError, ValueError):
+        if (Path(templates_dir) / PUBLICATION_PATH).exists():
+            return "Capability catalog drift/unavailable; last complete publication retained."
+        return "Capability catalog drift/unavailable; none is published until it is complete."
+    return ""
+
+
 def sync_to_espanso(
     dry_run: bool = False,
     update_bundled: bool = False,
@@ -841,6 +884,8 @@ def sync_to_espanso(
 
     try:
         _write_match_file(output_path, {"matches": matches})
+        # Publish before anything reads the catalog, so a withdrawal is reported here.
+        publication_note = _publish_capability_catalog(bundled_dir, template_manager.templates_dir)
         # Credit pending native events to their old owners, then reconcile
         # ownership only after renamed/reused triggers publish successfully.
         from espansr.core.command_catalog import build_command_catalog
@@ -853,21 +898,8 @@ def sync_to_espanso(
 
         _last_sync_count = len(matches)
         print(f"Synced {len(matches)} trigger(s) to {output_path}")
-
-        # Publication qualification is separate from trigger generation. Local
-        # edits stay usable as triggers even when canonical parity is unavailable.
-        from espansr.core.capability_catalog import publish_catalog, source_revision
-        from espansr.core.templates import get_bundled_templates_dir
-
-        canonical_root = bundled_dir or get_bundled_templates_dir()
-        try:
-            publish_catalog(
-                canonical_root,
-                template_manager.templates_dir,
-                revision=source_revision(canonical_root),
-            )
-        except (OSError, ValueError):
-            print("Capability catalog drift/unavailable; last complete publication retained.")
+        if publication_note:
+            print(publication_note)
 
         # Restart Espanso so new triggers become active immediately.
         # WSL2: file writes via /mnt/c/ bypass the Windows file watcher — use PowerShell restart.
@@ -1182,10 +1214,10 @@ def restart_espanso() -> bool:
 # discards exactly those events, so triggers like :coms are never even detected.
 # Setting it false lets Espanso see RustDesk/RDP input — this is THE fix for
 # "commands don't fire over RustDesk." We also switch to the clipboard backend so
-# text expansions paste cleanly instead of garbling, and quiet the tray. Because
-# the clipboard backend restores the user's prior clipboard shortly after
-# pasting, we also disable that restore so it never races the paste. Mirrors
-# install.sh's Linux/Wayland fix; here the lever is Espanso's config/default.yml.
+# text expansions paste cleanly instead of garbling, and quiet the tray. The
+# clipboard backend restores the user's prior clipboard after pasting; we delay
+# that restore so it is less likely to race the paste. Mirrors install.sh's
+# Linux/Wayland fix; here the lever is Espanso's config/default.yml.
 # All keys are espansr-managed and reversible via the --revert path.
 _REMOTE_DESKTOP_KEYS: dict = {
     # Detection: stop espanso from filtering out RustDesk/RDP-injected keystrokes.
@@ -1193,17 +1225,80 @@ _REMOTE_DESKTOP_KEYS: dict = {
     # Injection: paste expansions instead of per-key typing (clean over remote).
     "backend": "Clipboard",
     # Clipboard safety: the clipboard backend copies the expansion, sends paste,
-    # then restores the prior clipboard ~300ms later. In apps that paste
-    # asynchronously (browser/Electron chats) that restore wins the race and the
-    # app pastes the *previously copied* text instead of the expansion. Disabling
-    # the restore removes the race so the expansion always wins (the clipboard
-    # then simply holds the expanded text).
-    "preserve_clipboard": False,
+    # then restores the prior clipboard. At Espanso's default ~300ms, apps that
+    # paste asynchronously (browser/Electron chats) read the clipboard after the
+    # restore and paste the *previously copied* text. Restoring after 2 s gives
+    # such a paste time to read the expansion first and still gives the user's
+    # copied text back; a paste slower than that (not measured over RDP) still
+    # gets the old text. Earlier releases never restored it.
+    # `configure-remote-desktop --restore-delay 0` keeps the expansion on the
+    # clipboard instead.
+    "preserve_clipboard": True,
+    "restore_clipboard_delay": 2000,
     "show_icon": False,
     "show_notifications": False,
     "key_delay": 30,
     "backspace_delay": 30,
 }
+
+# The untouched defaults every earlier release wrote in the block layout. On
+# `--auto` (sync/reinstall) an exact match is brought up to today's defaults;
+# a block that differs was tuned on this machine and is kept byte for byte.
+_PREVIOUS_MODE_DEFAULTS: dict[str, tuple[dict, ...]] = {
+    "host": (
+        {
+            "win32_exclude_orphan_events": False,
+            "backend": "Clipboard",
+            "preserve_clipboard": False,
+            "show_icon": False,
+            "show_notifications": False,
+            "key_delay": 30,
+            "backspace_delay": 30,
+        },
+    ),
+}
+
+# The bare keys earlier releases wrote under a first-line marker, before the
+# block layout existed, whenever their behavior differs from today's. An exact,
+# untouched match is brought up to date on `--auto` as well; anything else in a
+# legacy file is kept byte for byte.
+_LEGACY_MODE_DEFAULTS: dict[str, tuple[dict, ...]] = {
+    "host": (
+        # 2026-06-23: clipboard backend; Espanso restored after its own 300 ms.
+        {
+            "backend": "Clipboard",
+            "show_icon": False,
+            "show_notifications": False,
+            "key_delay": 30,
+            "backspace_delay": 30,
+        },
+        # 2026-06-24: plus keystrokes from RDP/RustDesk.
+        {
+            "win32_exclude_orphan_events": False,
+            "backend": "Clipboard",
+            "show_icon": False,
+            "show_notifications": False,
+            "key_delay": 30,
+            "backspace_delay": 30,
+        },
+        # 2026-07-30 to the block layout: never restored.
+        _PREVIOUS_MODE_DEFAULTS["host"][0],
+    ),
+    "workstation": (
+        # 2026-08-01: a 700 ms restore, which large prompts in slow apps outlasted.
+        {"preserve_clipboard": True, "restore_clipboard_delay": 700},
+        {
+            "win32_exclude_orphan_events": False,
+            "preserve_clipboard": True,
+            "restore_clipboard_delay": 700,
+        },
+    ),
+}
+
+# Espanso's own values when default.yml does not set them.
+_ESPANSO_DEFAULT_PRESERVE_CLIPBOARD = True
+_ESPANSO_DEFAULT_RESTORE_DELAY_MS = 300
+MAX_RESTORE_DELAY_MS = 10000
 
 # espansr templates all exceed Espanso's clipboard_threshold, so every expansion
 # pastes via the clipboard. Keep the clipboard (preserve_clipboard) but restore
@@ -1238,6 +1333,16 @@ _WORKSTATION_KEYS: dict = {
 MANAGED_BLOCK_BEGIN_PREFIX = "# espansr-managed BEGIN"
 MANAGED_BLOCK_END = "# espansr-managed END"
 _MANAGED_PREV_PREFIX = "# espansr-prev: "
+# Records a restore delay chosen with --restore-delay, so Sync never mistakes a
+# chosen "never restore" for an earlier release's untouched defaults.
+_RESTORE_CHOICE_PREFIX = "# espansr-restore-delay: "
+# Marks a block this release wrote. --auto brings only an earlier release's
+# untouched block up to date, so a block carrying this line (today's defaults,
+# a chosen delay, or a hand edit since) is never reset, even when its settings
+# happen to equal an earlier release's defaults.
+_DEFAULTS_PREFIX = "# espansr-defaults: "
+_DEFAULTS_LINE = f"{_DEFAULTS_PREFIX}2026-11 (Sync and reinstall keep this block as it is)"
+_RESTORE_KEYS = ("preserve_clipboard", "restore_clipboard_delay")
 # Mode-specific BEGIN line prefixes (the written line appends a reapply/revert hint).
 REMOTE_DESKTOP_MARKER = f"{MANAGED_BLOCK_BEGIN_PREFIX} (host)"
 WORKSTATION_MARKER = f"{MANAGED_BLOCK_BEGIN_PREFIX} (workstation)"
@@ -1323,8 +1428,51 @@ def _is_continuation(line: str) -> bool:
     return bool(body.strip()) and body[0] in " \t"
 
 
+def _has_value_lines(lines: list[str], index: int) -> bool:
+    """True when the key on ``lines[index]`` continues its value on the lines after it.
+
+    An indented line holding only a comment ends a plain value written on the
+    key's own line, as YAML reads it; after an empty or ``|``/``>`` value it
+    may be value text, so it counts.
+    """
+    match = re.match(r"^[^:]*:[ \t]*(?P<value>[^#]*?)(?:[ \t]+#.*)?$", _line_body(lines[index]))
+    value = match.group("value") if match else ""
+    plain = bool(value) and value[0] not in "|>"
+    for line in lines[index + 1 :]:
+        if not _is_continuation(line):
+            return False
+        if not (plain and _line_body(line).lstrip().startswith("#")):
+            return True
+    return False
+
+
 def _managed_begin_line(mode: str) -> str:
     return f"{MANAGED_BLOCK_BEGIN_PREFIX} ({mode}) - {_MODE_HINTS[mode]}"
+
+
+def _mode_keys(mode: str, restore_delay: Optional[int] = None) -> dict:
+    """Managed keys for ``mode``; ``restore_delay`` ms overrides the restore (0 = never)."""
+    if restore_delay is None:
+        return dict(_MANAGED_MODES[mode])
+    return _with_restore_delay(_MANAGED_MODES[mode], restore_delay)
+
+
+def _with_restore_delay(keys: dict, restore_delay: int) -> dict:
+    """``keys`` in order, with the clipboard restore set to ``restore_delay`` ms (0 = never)."""
+    result: dict = {}
+    for key, value in keys.items():
+        if key == "restore_clipboard_delay":
+            continue
+        result[key] = value
+        if key == "preserve_clipboard":
+            result[key] = restore_delay > 0
+            if restore_delay > 0:
+                result["restore_clipboard_delay"] = restore_delay
+    if "preserve_clipboard" not in result:
+        result["preserve_clipboard"] = restore_delay > 0
+        if restore_delay > 0:
+            result["restore_clipboard_delay"] = restore_delay
+    return result
 
 
 def _render_managed_key(key: str, value) -> str:
@@ -1364,6 +1512,30 @@ def _parse_managed_layout(lines: list[str]) -> _ManagedLayout:
             layout.mode, layout.legacy = "workstation", True
             return layout
     return layout
+
+
+def _legacy_settings(lines: list[str], mode: str) -> Optional[dict]:
+    """The settings ``mode`` manages in a legacy (first-line marker) file, or None."""
+    try:
+        data = yaml.safe_load("".join(lines))
+    except yaml.YAMLError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    keys = set(_MANAGED_MODES[mode]).union(*_LEGACY_MODE_DEFAULTS.get(mode, ()))
+    return {key: value for key, value in data.items() if key in keys}
+
+
+def _block_settings(lines: list[str], mode: str) -> Optional[dict]:
+    """The settings inside an existing ``mode`` block, or None for any other layout."""
+    layout = _parse_managed_layout(lines)
+    if layout.legacy or layout.block_start < 0 or layout.mode != mode:
+        return None
+    try:
+        settings = yaml.safe_load("".join(lines[layout.block_start : layout.block_end]))
+    except yaml.YAMLError:
+        return None
+    return settings if isinstance(settings, dict) else None
 
 
 def _line_holds_espansr_value(body: str, managed: dict) -> bool:
@@ -1406,15 +1578,20 @@ def _extract_top_level_lines(lines: list[str], should_extract) -> tuple[list[str
 def _revert_lines(lines: list[str], layout: _ManagedLayout) -> list[str]:
     """Remove espansr's managed region and put the recorded originals back."""
     if layout.legacy:
-        managed = _MANAGED_MODES[layout.mode]
+        written = (
+            _MANAGED_MODES[layout.mode],
+            *_PREVIOUS_MODE_DEFAULTS.get(layout.mode, ()),
+            *_LEGACY_MODE_DEFAULTS.get(layout.mode, ()),
+        )
         markers = (LEGACY_REMOTE_DESKTOP_MARKER, LEGACY_WORKSTATION_MARKER)
         without_marker = [
             line for line in lines if not _line_body(line).lstrip("\ufeff").startswith(markers)
         ]
-        # The old layout recorded nothing, so only lines still holding the
+        # The old layout recorded nothing, so only lines still holding a
         # value espansr wrote are espansr's; a re-customized value stays.
         kept, _ = _extract_top_level_lines(
-            without_marker, lambda body: _line_holds_espansr_value(body, managed)
+            without_marker,
+            lambda body: any(_line_holds_espansr_value(body, keys) for keys in written),
         )
         return kept
 
@@ -1425,27 +1602,119 @@ def _revert_lines(lines: list[str], layout: _ManagedLayout) -> list[str]:
     return before + restored + after
 
 
-def _apply_lines(lines: list[str], mode: str) -> list[str]:
+def _apply_lines(
+    lines: list[str],
+    mode: str,
+    managed: Optional[dict] = None,
+    chosen_delay: Optional[int] = None,
+) -> list[str]:
     """Return ``lines`` with the managed block for ``mode`` as the only espansr region."""
     layout = _parse_managed_layout(lines)
     body = _revert_lines(lines, layout) if layout.is_managed else list(lines)
-    managed = _MANAGED_MODES[mode]
+    managed = _MANAGED_MODES[mode] if managed is None else managed
     body, prev_lines = _extract_top_level_lines(
         body, lambda text: _parse_top_level_key(text) in managed
     )
     newline = _newline_for(lines)
     if body and not body[-1].endswith(("\n", "\r")):
         body[-1] = body[-1] + newline
-    block = [_managed_begin_line(mode) + newline]
+    block = [_managed_begin_line(mode) + newline, _DEFAULTS_LINE + newline]
     block.extend(f"{_MANAGED_PREV_PREFIX}{prev}{newline}" for prev in prev_lines)
+    if chosen_delay is not None:
+        block.append(_choice_line(chosen_delay, newline))
     block.extend(_render_managed_key(key, value) + newline for key, value in managed.items())
     block.append(MANAGED_BLOCK_END + newline)
     return body + block
 
 
-def _apply_managed_text(text: str, mode: str) -> str:
+def _choice_line(delay: int, newline: str) -> str:
+    return f"{_RESTORE_CHOICE_PREFIX}{delay} ms (chosen on this machine; Sync keeps it){newline}"
+
+
+def _with_value(body: str, value) -> Optional[str]:
+    """A ``key: value`` line with only its value replaced; None for a multi-line value."""
+    match = re.match(r"^(?P<head>[^:]*:[ \t]*)(?P<value>[^#]*?)(?P<tail>[ \t]+#.*)?$", body)
+    if match is None or not match.group("value"):
+        return None
+    rendered = _render_managed_key("value", value).split(":", 1)[1].strip()
+    return match.group("head") + rendered + (match.group("tail") or "")
+
+
+def _restore_only_lines(
+    lines: list[str], layout: _ManagedLayout, delay: int
+) -> Optional[list[str]]:
+    """Change only the restore lines (and the choice record) of an existing block.
+
+    Every other byte stays: tuned values, keys and comments inside the block,
+    and everything outside it, in place. None when that is not possible (a
+    restore key also set outside the block, set twice, or written over several
+    lines); the caller then rewrites the block from its current settings.
+    """
+    start, end = layout.block_start, layout.block_end
+    outside = lines[:start] + lines[end:]
+    if any(
+        _parse_top_level_key(_line_body(ln).lstrip("\ufeff")) in _RESTORE_KEYS for ln in outside
+    ):
+        return None
+    newline = _newline_for(lines)
+    block = [ln for ln in lines[start:end] if not _line_body(ln).startswith(_RESTORE_CHOICE_PREFIX)]
+    at = {}
+    for index, line in enumerate(block):
+        key = _parse_top_level_key(_line_body(line))
+        if key in _RESTORE_KEYS:
+            if key in at or _has_value_lines(block, index):
+                return None
+            at[key] = index
+
+    def ending(index: int) -> str:
+        return block[index][len(_line_body(block[index])) :] or newline
+
+    replaced = {}
+    for key, value in (("preserve_clipboard", delay > 0), ("restore_clipboard_delay", delay)):
+        if key in at:
+            new = _with_value(_line_body(block[at[key]]), value)
+            if new is None:
+                return None
+            replaced[at[key]] = new + ending(at[key])
+    header = 1
+    while header < len(block) and _line_body(block[header]).startswith(
+        (_DEFAULTS_PREFIX, _MANAGED_PREV_PREFIX)
+    ):
+        header += 1
+    closing = len(block) - 1 if _line_body(block[-1]).strip() == MANAGED_BLOCK_END else len(block)
+    result: list[str] = []
+    for index, line in enumerate(block):
+        if index == header:
+            result.append(_choice_line(delay, newline))
+        if index == closing and "preserve_clipboard" not in at:
+            result.append(_render_managed_key("preserve_clipboard", delay > 0) + newline)
+            if delay > 0 and "restore_clipboard_delay" not in at:
+                result.append(_render_managed_key("restore_clipboard_delay", delay) + newline)
+        if index == at.get("restore_clipboard_delay") and delay == 0:
+            continue  # never restored: the delay line goes
+        result.append(replaced.get(index, line))
+        if (
+            index == at.get("preserve_clipboard")
+            and delay > 0
+            and "restore_clipboard_delay" not in at
+        ):
+            result.append(_render_managed_key("restore_clipboard_delay", delay) + newline)
+    if header >= len(block):
+        result.append(_choice_line(delay, newline))
+    if closing >= len(block) and "preserve_clipboard" not in at:
+        if result and not result[-1].endswith(("\n", "\r")):
+            result[-1] += newline
+        result.append(_render_managed_key("preserve_clipboard", delay > 0) + newline)
+        if delay > 0 and "restore_clipboard_delay" not in at:
+            result.append(_render_managed_key("restore_clipboard_delay", delay) + newline)
+    return lines[:start] + result + lines[end:]
+
+
+def _apply_managed_text(
+    text: str, mode: str, managed: Optional[dict] = None, chosen_delay: Optional[int] = None
+) -> str:
     """Text-level apply: keep every byte outside the managed block as it was."""
-    result = "".join(_apply_lines(_split_keepends(text), mode))
+    result = "".join(_apply_lines(_split_keepends(text), mode, managed, chosen_delay))
     if text.startswith("\ufeff") and not result.startswith("\ufeff"):
         result = "\ufeff" + result
     return result
@@ -1520,54 +1789,161 @@ def _resolve_default_config_path(config_dir: Optional[Path], purpose: str) -> Op
     return get_espanso_default_config_path(config_dir)
 
 
-def _apply_managed_default_config(path: Path, mode: str, *, restart: bool) -> bool:
-    """Write the managed block for ``mode`` into ``path``, creating the file if needed."""
+@dataclass(frozen=True)
+class DefaultConfigChange:
+    """What happened to Espanso's default.yml, kept apart from what Espanso runs.
+
+    ``outcome`` is "saved" (the file now holds the requested settings;
+    ``changed`` says whether its bytes changed), "skipped" (nothing qualified,
+    so nothing was attempted), or "failed" (the file could not be read or
+    written; espansr left its bytes as they were). After a save, ``reloaded``
+    is True when Espanso restarted and reports running, False when it did not,
+    and None when no restart was attempted. None of this shows what an actual
+    expansion does: app-specific configs can override default.yml.
+    """
+
+    outcome: str
+    path: Optional[Path] = None
+    mode: Optional[str] = None
+    changed: bool = False
+    reloaded: Optional[bool] = None
+    error: str = ""
+
+    @property
+    def ok(self) -> bool:
+        return self.outcome != "failed"
+
+
+# What the latest apply_remote_desktop_config/apply_workstation_config call did,
+# for callers of those bool helpers that report it; each is taken separately.
+_latest = {"change": None, "reloaded": None}
+
+
+def take_config_change() -> Optional[DefaultConfigChange]:
+    """Return, then clear, what the latest apply_* call did (None when none ran since)."""
+    change, _latest["change"] = _latest["change"], None
+    return change
+
+
+def take_reload_result() -> Optional[bool]:
+    """Return, then clear, whether Espanso restarted after the latest default.yml write.
+
+    True when it restarted and reports running, False when it did not, None when
+    no restart was requested.
+    """
+    result, _latest["reloaded"] = _latest["reloaded"], None
+    return result
+
+
+def _reason(exc: OSError) -> str:
+    """The OS's reason without the temporary file name an atomic write used."""
+    return exc.strerror or str(exc)
+
+
+def _saved(path: Path, mode: Optional[str], before: str, after: str, restart: bool):
+    """Write *after* when it differs, then restart; failures come back as "failed"."""
+    if after != before:
+        try:
+            _write_default_config_text(path, after)
+        except OSError as exc:
+            logger.warning("Could not write %s: %s", path, exc)
+            return DefaultConfigChange(
+                "failed", path, mode, error=f"could not write it ({_reason(exc)})"
+            )
+        _warn_if_not_mapping(path, after)
+    reloaded = restart_espanso() if restart else None
+    return DefaultConfigChange("saved", path, mode, after != before, reloaded)
+
+
+def _apply_managed_default_config(
+    path: Path, mode: str, *, restart: bool, restore_delay: Optional[int] = None
+) -> DefaultConfigChange:
+    """Write the managed block for ``mode`` into ``path``, creating the file if needed.
+
+    A ``restore_delay`` for a file already managed in ``mode`` changes only the
+    restore: in a block, just its restore lines (every other byte stays); in a
+    legacy file, its own values are kept and only the restore changes.
+    """
     text = ""
     if path.exists():
         try:
             text = _read_default_config_text(path)
         except OSError as exc:
             logger.warning("Could not read %s: %s", path, exc)
-            return False
+            return DefaultConfigChange(
+                "failed", path, mode, error=f"could not read it ({_reason(exc)})"
+            )
         if not _parse_managed_layout(_split_keepends(text)).is_managed:
             if not _ensure_original_backup(path):
-                return False
-    new_text = _apply_managed_text(text, mode)
-    try:
-        _write_default_config_text(path, new_text)
-    except OSError as exc:
-        logger.warning("Could not write %s config to %s: %s", mode, path, exc)
-        return False
-    _warn_if_not_mapping(path, new_text)
-    if restart:
-        restart_espanso()
-    return True
+                return DefaultConfigChange(
+                    "failed", path, mode, error="could not back up the original first"
+                )
+    lines = _split_keepends(text)
+    layout = _parse_managed_layout(lines)
+    new_text = None
+    if restore_delay is not None and layout.mode == mode and layout.block_start >= 0:
+        spliced = _restore_only_lines(lines, layout, restore_delay)
+        if spliced is not None:
+            new_text = "".join(spliced)
+    if new_text is None:
+        managed = _mode_keys(mode, restore_delay)
+        if restore_delay is not None and layout.mode == mode:
+            current = (
+                _legacy_settings(lines, mode) if layout.legacy else _block_settings(lines, mode)
+            )
+            if current is not None:
+                managed = _with_restore_delay(current, restore_delay)
+        new_text = _apply_managed_text(text, mode, managed, chosen_delay=restore_delay)
+    return _saved(path, mode, text, new_text, restart)
 
 
-def _revert_managed_default_config(path: Path, *, restart: bool) -> bool:
+def _revert_managed_default_config(path: Path, *, restart: bool) -> DefaultConfigChange:
     """Remove the managed block (either mode, or the legacy layout) from ``path``."""
     if not path.exists():
-        return True
+        return DefaultConfigChange("saved", path)
     try:
         text = _read_default_config_text(path)
     except OSError as exc:
         logger.warning("Could not read %s: %s", path, exc)
-        return False
+        return DefaultConfigChange("failed", path, error=f"could not read it ({_reason(exc)})")
     new_text, changed = _revert_managed_text(text)
     if not changed:
         logger.info("No espansr-managed block in %s; nothing to revert", path)
-        return True
+        return DefaultConfigChange("saved", path)
+    if new_text.strip("\ufeff \t\r\n"):
+        return _saved(path, None, text, new_text, restart)
     try:
-        if new_text.strip("\ufeff \t\r\n"):
-            _write_default_config_text(path, new_text)
-        else:
-            path.unlink()  # espansr created the file; leave nothing behind
+        path.unlink()  # espansr created the file; leave nothing behind
     except OSError as exc:
         logger.warning("Could not revert espansr-managed config in %s: %s", path, exc)
-        return False
-    if restart:
-        restart_espanso()
-    return True
+        return DefaultConfigChange("failed", path, error=f"could not remove it ({_reason(exc)})")
+    return DefaultConfigChange("saved", path, None, True, restart_espanso() if restart else None)
+
+
+def configure_default_config(
+    mode: str,
+    config_dir: Optional[Path] = None,
+    *,
+    revert: bool = False,
+    restart: bool = True,
+    restore_delay: Optional[int] = None,
+) -> DefaultConfigChange:
+    """Apply ``mode`` ("host" or "workstation"), or with ``revert`` remove espansr's block.
+
+    Text-preserving: only espansr's region of default.yml changes. Reports the
+    saved file and the restart separately (see DefaultConfigChange).
+    """
+    path = _resolve_default_config_path(config_dir, f"{mode} config")
+    if path is None:
+        return DefaultConfigChange("failed", None, mode, error="no Espanso configuration was found")
+    if revert:
+        return _revert_managed_default_config(path, restart=restart)
+    return _apply_managed_default_config(path, mode, restart=restart, restore_delay=restore_delay)
+
+
+def _as_bool(change: DefaultConfigChange) -> bool:
+    _latest["change"], _latest["reloaded"] = change, change.reloaded
+    return change.ok
 
 
 def apply_remote_desktop_config(
@@ -1575,39 +1951,144 @@ def apply_remote_desktop_config(
     *,
     revert: bool = False,
     restart: bool = True,
+    restore_delay: Optional[int] = None,
 ) -> bool:
     """Apply (or with ``revert`` remove) espansr's remote-desktop host block in default.yml.
 
     Idempotent and text-preserving: only the managed block changes, every
     other byte of the file stays as it was. ``revert`` removes the block in
     either mode (host or workstation) and restores the recorded original lines.
+    ``restore_delay`` (ms, 0 = never) replaces the default clipboard restore.
 
-    Returns True on success or no-op; False only when Espanso config is missing
-    or the file could not be read or written.
+    Returns True when the file holds the requested settings (or nothing needed
+    reverting); False when Espanso config is missing or the file could not be
+    read or written (its bytes stay as they were). The full outcome is
+    take_config_change(), whether Espanso restarted is take_reload_result().
     """
-    path = _resolve_default_config_path(config_dir, "remote-desktop config")
-    if path is None:
-        return False
-    if revert:
-        return _revert_managed_default_config(path, restart=restart)
-    return _apply_managed_default_config(path, "host", restart=restart)
+    return _as_bool(
+        configure_default_config(
+            "host", config_dir, revert=revert, restart=restart, restore_delay=restore_delay
+        )
+    )
 
 
 def apply_workstation_config(
     config_dir: Optional[Path] = None,
     *,
     restart: bool = True,
+    restore_delay: Optional[int] = None,
 ) -> bool:
     """Tune Espanso so espansr expansions paste correctly while preserving the
     user's clipboard, for a machine you sit at physically (not remote into).
 
     Replaces any host block first (its recorded originals go back into the
     file) so a former remote-desktop host becomes a clean workstation.
+    ``restore_delay`` (ms, 0 = never) replaces the default clipboard restore.
+    Returns and reports like apply_remote_desktop_config.
     """
-    path = _resolve_default_config_path(config_dir, "workstation config")
-    if path is None:
-        return False
-    return _apply_managed_default_config(path, "workstation", restart=restart)
+    return _as_bool(
+        configure_default_config(
+            "workstation", config_dir, restart=restart, restore_delay=restore_delay
+        )
+    )
+
+
+def mode_restore_delay_ms(mode: str) -> int:
+    """Milliseconds until ``mode``'s defaults restore the copied text (0 = never)."""
+    keys = _MANAGED_MODES[mode]
+    return keys.get("restore_clipboard_delay", 0) if keys.get("preserve_clipboard") else 0
+
+
+def upgrade_previous_default_config(
+    config_dir: Optional[Path] = None, *, restart: bool = True
+) -> DefaultConfigChange:
+    """Bring untouched settings written with an earlier release's defaults up to date.
+
+    That is a block, or a legacy first-line-marker file, holding exactly what an
+    earlier release wrote. "skipped" means nothing qualified: no espansr
+    settings, a block this release wrote (it carries the defaults line, so a
+    chosen or hand-made setting is never reset), settings tuned on this machine
+    (a chosen restore delay included), or a user line outside the block that the
+    new defaults would take over. Those stay byte for byte. "failed" means the
+    file could not be read or the upgrade could not be written.
+    """
+    path = get_espanso_default_config_path(config_dir)
+    if path is None or not path.exists():
+        return DefaultConfigChange("skipped", path)
+    try:
+        text = _read_default_config_text(path)
+    except OSError as exc:
+        return DefaultConfigChange("failed", path, error=f"could not read it ({_reason(exc)})")
+    lines = _split_keepends(text)
+    layout = _parse_managed_layout(lines)
+    skipped = DefaultConfigChange("skipped", path, layout.mode)
+    if layout.legacy:
+        if _legacy_settings(lines, layout.mode) not in _LEGACY_MODE_DEFAULTS.get(layout.mode, ()):
+            return skipped
+        return _apply_managed_default_config(path, layout.mode, restart=restart)
+    if layout.mode not in _PREVIOUS_MODE_DEFAULTS:
+        return skipped
+    written = _block_settings(lines, layout.mode)
+    if written is None or written not in _PREVIOUS_MODE_DEFAULTS[layout.mode]:
+        return skipped
+    block = lines[layout.block_start : layout.block_end]
+    if any(
+        _line_body(line).startswith((_RESTORE_CHOICE_PREFIX, _DEFAULTS_PREFIX)) for line in block
+    ):
+        return skipped
+    outside = lines[: layout.block_start] + lines[layout.block_end :]
+    managed = _MANAGED_MODES[layout.mode]
+    if any(_parse_top_level_key(_line_body(line).lstrip("\ufeff")) in managed for line in outside):
+        return skipped
+    return _apply_managed_default_config(path, layout.mode, restart=restart)
+
+
+def get_clipboard_restore_behavior(config_dir: Optional[Path] = None) -> Optional[dict]:
+    """Report what default.yml sets Espanso to do with the clipboard after an expansion.
+
+    Read-only, and a saved setting, not observed behavior: the running Espanso
+    may not have loaded the file, and app-specific configs can override it.
+    Returns ``{"mode", "restored", "delay_ms", "chosen"}`` (Espanso's own
+    defaults fill unset keys; ``chosen`` is True when the delay was set with
+    --restore-delay), or None when there is no readable Espanso configuration.
+    """
+    path = get_espanso_default_config_path(config_dir)
+    if path is None or not path.parent.is_dir():
+        return None
+    text = ""
+    if path.exists():
+        try:
+            text = _read_default_config_text(path)
+            data = yaml.safe_load(text) or {}
+        except (OSError, yaml.YAMLError):
+            return None
+        if not isinstance(data, dict):
+            return None
+    else:
+        data = {}
+    lines = _split_keepends(text)
+    layout = _parse_managed_layout(lines)
+    block = lines[layout.block_start : layout.block_end] if layout.block_start >= 0 else []
+    delay = data.get("restore_clipboard_delay", _ESPANSO_DEFAULT_RESTORE_DELAY_MS)
+    return {
+        "mode": layout.mode if layout.is_managed else None,
+        "restored": data.get("preserve_clipboard", _ESPANSO_DEFAULT_PRESERVE_CLIPBOARD) is True,
+        "delay_ms": delay if isinstance(delay, int) else _ESPANSO_DEFAULT_RESTORE_DELAY_MS,
+        "chosen": any(_line_body(line).startswith(_RESTORE_CHOICE_PREFIX) for line in block),
+    }
+
+
+def describe_saved_restore(behavior: Optional[dict]) -> str:
+    """Words for get_clipboard_restore_behavior(): what default.yml is set to do.
+
+    A saved setting, not observed behavior; the running Espanso and
+    app-specific configs decide what an expansion actually does.
+    """
+    if behavior is None:
+        return "restore setting unreadable"
+    if not behavior["restored"]:
+        return "copied text is set to stay replaced by the prompt"
+    return f"copied text is set to come back after {behavior['delay_ms'] / 1000:g} s"
 
 
 def get_managed_default_config_mode(config_dir: Optional[Path] = None) -> Optional[str]:
