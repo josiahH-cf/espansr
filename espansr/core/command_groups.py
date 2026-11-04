@@ -123,6 +123,7 @@ COMMAND_GROUPS = (
             "speechify",
             "revise",
             "cliche",
+            "article-flow-revision",
             "cb_agenda",
             "meeting_actions",
         ),
@@ -361,6 +362,10 @@ _CUES = {
         "Text needs clearer wording while preserving its meaning and tone.",
     ),
     "cliche": ("Humanize text", "Text contains formulaic AI phrasing and needs a natural voice."),
+    "article-flow-revision": (
+        "Revise article",
+        "A published Productive Prompter article needs revising from your own feedback.",
+    ),
     "meeting_actions": (
         "Meeting actions",
         "A Pocket transcript needs a concise meeting summary and your actions for review.",
