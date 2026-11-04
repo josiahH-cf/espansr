@@ -1,0 +1,23 @@
+{
+  "name": "Article Flow Revision",
+  "description": "Revise a Productive Prompter article from your own feedback: confirm the article first, keep your exact words separate, and return the unchanged source.json with candidate.md and feedback.md for Article Flow to validate.",
+  "trigger": ":article-flow-revision",
+  "category": "communication",
+  "stage": "article-revision",
+  "next_triggers": [],
+  "replaces": [],
+  "capability_id": "article-flow-revision",
+  "intent_tags": [
+    "revise my latest blog article from my feedback",
+    "edit a Productive Prompter article",
+    "prepare an article revision for Article Flow"
+  ],
+  "accepts": [
+    "rough-intent",
+    "feedback-directives"
+  ],
+  "produces": [],
+  "use_when": "You want a chat model to revise a published Productive Prompter article from your own feedback and hand Article Flow the three files it imports.",
+  "avoid_when": "The text is not a published Productive Prompter article, or you only want a message or paragraph cleaned up (use :revise).",
+  "content": "Help me revise an article on The Productive Prompter:\nhttps://theproductiveprompter.com/docs/blog.html\n\nUnless I name another article, find the most recently published article. Open\nand read the full article, including its links and visuals. Before editing,\nconfirm that you found and read it by giving its title, canonical link and\noriginal publication date, followed by a brief account of what it says. If you\ncannot read the full article or the target is ambiguous, say exactly what is\nmissing instead of guessing.\n\nAfter that confirmation, open its \"Article revision source (Markdown)\" link.\nKeep the complete JSON unchanged as source.json and use its article_markdown\nas the editing source. If the link is unavailable, use the matching Article\nFlow revision-export source.json and article.md when supplied. Never invent\nsource identity or calculate a hash from browser-rendered text.\n\nThen use my stream-of-consciousness feedback as the editing direction. If I\nhave not provided it yet, invite me to give it in my own words. Keep my exact\nfeedback separate from your proposed article. Do not turn generated wording\ninto evidence that I wrote it or silently invent experiences, opinions or facts.\n\nRevise the complete article in Markdown, preserving effective wording, factual\nqualifications, citations, quotations, code and existing asset links. Preserve\nthe article's URL and original publication date. Do not return a full HTML\npage or include navigation, page chrome or an explanatory cover note in the\narticle. Keep its body format; Article Flow supplies the page title and metadata. Describe any material conflict or unsupported addition separately.\n\nReturn three separate UTF-8 files: source.json unchanged, candidate.md with the\ncomplete revised Markdown, and feedback.md with my exact feedback. If source\nidentity is unavailable, still complete the read confirmation and editing draft,\nthen explain that the matching revision-export is needed for an importable\nreturn. Once I submit the requested revision to Article Flow, it should validate\nand republish automatically. Failed checks or material conflicts must retain my\ncandidate and stop for resolution, not silently substitute another rewrite.\n"
+}

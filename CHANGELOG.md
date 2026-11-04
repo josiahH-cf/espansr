@@ -28,6 +28,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   hierarchy decides which source controls; current behavior and recent changes
   are evidence, never authority, and unresolved intent conflicts are asked. `:prune` and `:friction` keep
   their jobs.
+- `:article-flow-revision` revises an article on The Productive Prompter from
+  your own feedback in a chat model. It confirms the article it read first,
+  edits the article's revision source or the matching Article Flow export
+  (`source.json` with `article.md`), keeps your exact words apart from its
+  draft, and returns `source.json` unchanged with `candidate.md` and
+  `feedback.md` for Article Flow to validate. Article Flow supplied the prompt,
+  and it is bundled verbatim. Expanding it starts and publishes nothing.
 - Bundled-note tests reject a trigger that is a prefix of another, which
   Espanso would expand before the longer trigger could be typed.
 - **Local only** prompts: a checkbox in the editor (`"local_only": true` in the

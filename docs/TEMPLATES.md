@@ -38,6 +38,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
+- Article prompts: `:article-flow-revision`
 - Media prompts: `:image-generator`
 - File helpers: `:pocket-extract`
 - Security helpers: `:tenable-scans`, `:pmi-auth`
@@ -145,6 +146,19 @@ Use `:cliche` on supplied text, a referenced source, or the most recent
 eligible prose already in view when its marker is blank. It preserves meaning
 and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
+
+Use `:article-flow-revision` in a chat model to revise an article on The
+Productive Prompter from your own feedback. Article Flow supplied it, and it is
+bundled verbatim. The model first confirms the article it read (title,
+canonical link, original publication date and a brief account). It then edits
+the article's revision source, or the matching Article Flow revision export
+(`source.json` with `article.md`) when you supply one. It invites your feedback
+in your own words if you have not given it, keeps your exact words apart from
+its draft, and returns three files: `source.json` unchanged, `candidate.md` and
+`feedback.md`. Expanding the trigger only inserts the prompt: it starts
+nothing in Article Flow and publishes nothing. Submitting those files to
+Article Flow is your step, and Article Flow does the validation and
+republishing.
 
 Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit that then
 improves the interface. It inspects the affected screens, flows, and states,

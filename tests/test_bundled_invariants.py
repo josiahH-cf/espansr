@@ -33,9 +33,11 @@ INPUT_MARKERS = (
 )
 
 # Notes that do not use the trailing free-text marker: the quick help, shell
-# snippets, self-contained utilities, and notes with their own fill-in list.
+# snippets, self-contained utilities, notes with their own fill-in list, and a
+# prompt its owner supplied verbatim that asks for the user's input itself.
 INPUT_MARKER_EXEMPT = frozenset(
     {
+        "article_flow_revision.json",
         "use_recommendation.json",
         "accept_all_recommendations.json",
         "q_and_a.json",

@@ -320,6 +320,16 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         ),
     ),
     HelpSection(
+        "Article prompts",
+        22,
+        (
+            (
+                ":article-flow-revision",
+                "revise a Productive Prompter article from your feedback for Article Flow",
+            ),
+        ),
+    ),
+    HelpSection(
         "Media prompts",
         16,
         (
