@@ -201,20 +201,15 @@ def push_urls(repo: Path, remote: str) -> List[str]:
     return [line for line in (out or b"").decode("utf-8", "replace").splitlines() if line]
 
 
-def destination_commits(repo: Path, url: str, fetched_remote: str = "") -> Optional[List[str]]:
+def destination_commits(repo: Path, url: str) -> Optional[List[str]]:
     """Commits and tags a push to *url* need not send, because *url* has them; None when unreadable.
 
-    *fetched_remote* names the remote whose fetch read *url*: its remote-tracking
-    refs then describe it, as before. Any other destination (a pushurl naming
-    another repository, a second push URL, a remote not just fetched) is read
-    from the URL itself, since those refs would describe somewhere else. Only
-    objects this repository has can bound what a push sends.
+    The refs are read from *url* itself, never from remote-tracking refs: those
+    can describe another repository (a pushurl, a URL changed since the last
+    fetch) or refs the destination has since deleted, when a narrow fetch
+    refspec keeps them out of pruning. Only objects this repository has can
+    bound what a push sends.
     """
-    if fetched_remote:
-        out = _git_bytes(
-            repo, "for-each-ref", "--format=%(objectname)", f"refs/remotes/{fetched_remote}/"
-        )
-        return None if out is None else sorted(set(out.decode().split()))
     listing = _git_bytes(repo, "ls-remote", url)
     if listing is None:
         return None
@@ -490,20 +485,31 @@ class RemoteManager:
             self._git("reset", "--quiet", "--", *_literal(leaked), check=False)
             raise RemoteError("Refusing to push local-only templates: " + ", ".join(leaked))
 
-    def _refuse_local_only_history(self, local_only: List[str]) -> None:
+    def _refuse_local_only_history(
+        self, local_only: List[str], *, before_staging: bool = False
+    ) -> None:
         """Refuse a push whose unpushed commits would still carry a local-only prompt.
 
         Unpushed means what each URL the push goes to lacks, read from that URL
-        now: a pushurl can name another repository than the one fetched.
+        now (see destination_commits): after set_remote() origin's tracking refs
+        still describe the previous repository. A fetch first brings origin's
+        newest commits here, so commits it already has are recognized. Before
+        staging, a destination that cannot be read is left to the check that runs
+        right before the push, which refuses.
         """
         if self._current_head() is None:
             return  # nothing committed yet, so nothing to send
         private, unknown = set(), set()
         fetched = self._git("remote", "get-url", "origin", check=False).stdout.strip()
-        for url in push_urls(self.templates_dir, "origin") or [""]:
-            tracked = "origin" if url == fetched else ""
-            present = destination_commits(self.templates_dir, url, tracked) if url else []
+        urls = push_urls(self.templates_dir, "origin") or [""]
+        if fetched in urls:
+            self._git("fetch", "--quiet", "origin", check=False)
+        present: Optional[List[str]] = []
+        for url in urls:
+            present = destination_commits(self.templates_dir, url) if url else []
             if present is None:
+                if before_staging:
+                    return
                 raise RemoteError(
                     f"Not pushing: could not read what {url} already has, so espansr cannot "
                     "check what the push would send. Nothing was sent and your files are "
@@ -519,11 +525,12 @@ class RemoteManager:
         found = OutgoingPrivacy(sorted(private), sorted(unknown - private))
         if found.private or found.unknown:
             branch = self._detect_remote_branch()
-            # Resetting to origin's branch helps only when the push goes where it was fetched.
+            tip = branch and self._git("rev-parse", f"origin/{branch}", check=False).stdout.strip()
+            # Resetting to origin's branch helps only when the one destination still has it.
             undo = (
                 f'run: git -C "{self.templates_dir}" reset --soft origin/{branch} '
                 "(it keeps every file), then push again."
-                if branch and push_urls(self.templates_dir, "origin") == [fetched]
+                if tip and urls == [fetched] and tip in (present or [])
                 else "take them out of those commits, then push again."
             )
             problems = []
@@ -976,7 +983,7 @@ class RemoteManager:
         self.ensure_gitignore()
         local_only, unknown = self._privacy()
         self._refuse_unknown_privacy(unknown)
-        self._refuse_local_only_history(local_only)  # before anything is staged
+        self._refuse_local_only_history(local_only, before_staging=True)
         self._keep_local_only_unshared(local_only)
 
         # Stage everything except local-only templates
@@ -1026,7 +1033,7 @@ class RemoteManager:
         self.ensure_gitignore()
         local_only, unknown = self._privacy()
         self._refuse_unknown_privacy(unknown)
-        self._refuse_local_only_history(local_only)  # before anything is staged
+        self._refuse_local_only_history(local_only, before_staging=True)
 
         # Stage .gitignore too if it exists
         gitignore = self.templates_dir / ".gitignore"

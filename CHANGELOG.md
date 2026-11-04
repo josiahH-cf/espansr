@@ -102,6 +102,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   version to a push URL that lacks it. A `pushurl` naming another repository
   was checked against what the fetched remote had. Such a destination is now
   read with `git ls-remote`, and nothing is pushed when it cannot be read.
+- `espansr push`, `push --template` and `espansr sync` read what a destination
+  has from the destination itself, every time. After `espansr remote set`
+  named another repository, origin's remote-tracking refs still described the
+  old one, so history the new one lacked, earlier versions of a local-only
+  template included, went unchecked and was sent. `sync` did the same with refs
+  a narrow fetch refspec keeps out of pruning (a branch deleted on the remote,
+  or one left from the previous URL). `push` fetches `origin` first, so commits
+  it already has are still recognized, and `push` and `sync` suggest
+  `git reset --soft` only to a ref the destination still has.
 - Saving a template as local only (the editor, an import, a restore) withdraws
   a capability publication that still describes it at once, even when the sync
   that follows stops before it publishes.
