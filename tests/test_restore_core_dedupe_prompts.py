@@ -152,6 +152,36 @@ def test_core_behaviors_confirms_only_what_the_reply_covers():
     assert defaulting.search(content) is None
 
 
+def test_bring_back_feature_bisects_apart_and_waits_on_a_conflict():
+    """Bisecting never moves the user's checkout; a genuine conflict waits for the answer."""
+    content = _load("bring_back_feature")["content"]
+    rules = (
+        "bisect when a reliable check exists, in a temporary worktree or disposable copy and "
+        "never in the user's working tree",
+        "with a recommended answer for each, and wait for the answers before changing anything.",
+        "do not choose between them yourself",
+        "and wait for the user's answer before restoring.",
+    )
+    assert [rule for rule in rules if rule not in content] == []
+    assert "do not pick silently" not in content
+    assert "then continue" not in content
+
+
+def test_core_behaviors_never_drops_a_core_behavior_through_a_bulk_reply():
+    """No recommendation drops one, so "approve all" and "all except" keep every core behavior."""
+    content = _load("core_behaviors")["content"]
+    rules = (
+        "or drop it. Never recommend dropping a core behavior: when one looks obsolete, say why "
+        "and recommend keeping it;",
+        'Neither "approve all" nor "all except" drops one.',
+    )
+    assert [rule for rule in rules if rule not in content] == []
+    docs = " ".join((ROOT / "docs" / "TEMPLATES.md").read_text(encoding="utf-8").split())
+    assert 'It never recommends dropping one, so "approve all" keeps every core behavior.' in docs
+    assert "waits for your answer before restoring anything" in docs
+    assert "bisects only in a temporary worktree or disposable copy" in docs
+
+
 def test_dedupe_keeps_the_projects_instruction_hierarchy():
     """Behavior and freshness inform recommendations; they never outrank governing text."""
     content = _load("dedupe")["content"]
