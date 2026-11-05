@@ -325,7 +325,8 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (
                 ":article-flow-revision",
-                "revise a Productive Prompter article from your feedback for Article Flow",
+                "contextualize an article, ask for thoughts, then copy back "
+                "the revision and diagrams",
             ),
         ),
     ),
