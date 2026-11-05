@@ -65,6 +65,8 @@ class FakeRunner:
             return 0, json.dumps(state), ""
         if key.startswith("git rev-parse --short"):
             return 0, "abc1234\n", ""
+        if key.startswith("git remote get-url"):
+            return 0, "https://github.com/o/r.git\n", ""
         return 0, "", ""
 
     def index(self, fragment: str) -> int:
@@ -127,6 +129,28 @@ def test_delivers_through_every_stage_in_order(live_dir, capsys):
     assert "DELIVERY SUMMARY" in summary
     assert f"installed copies and Espanso expansions match main: {TEMPLATE}" in summary
     assert deliver.INDEPENDENT_LINE in summary
+
+
+def test_privacy_check_reads_the_push_destination_right_before_the_push(live_dir):
+    """What the destination has comes from the push URL itself, never from origin/main."""
+    runner = FakeRunner(live_dir)
+    assert _delivery(runner).deliver() == 0
+    reads = [i for i, argv in enumerate(runner.calls) if argv[:2] == ["git", "ls-remote"]]
+    assert reads and runner.index("git commit -F") < reads[-1]
+    assert reads[-1] < runner.index("git push --force-with-lease")
+    assert runner.calls[reads[-1]] == ["git", "ls-remote", "https://github.com/o/r.git"]
+    assert not runner.ran("origin/main..HEAD")
+
+
+def test_a_token_in_a_push_url_never_reaches_the_printed_commands(live_dir, capsys):
+    url = "https://x-access-token:TOKEN-5521@github.com/o/r.git"
+    runner = FakeRunner(live_dir, overrides={"git remote get-url": (0, url + "\n")})
+    delivery = _delivery(runner)
+    assert delivery.deliver() == 0
+    assert ["git", "ls-remote", url] in runner.calls  # git still gets the real URL
+    assert "TOKEN-5521" not in capsys.readouterr().out
+    assert "TOKEN-5521" not in " ".join(delivery.commands)
+    assert "git ls-remote https://***@github.com/o/r.git" in delivery.commands
 
 
 def test_commits_only_the_listed_paths(live_dir):

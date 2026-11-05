@@ -36,6 +36,7 @@ from typing import Callable, Sequence
 ROOT = Path(__file__).resolve().parents[1]
 BRANCH_PATTERN = re.compile(r"^(agent|user)/(feat|bug|refactor|chore|docs)-[a-z0-9][a-z0-9-]*$")
 LOCAL_ONLY_MARK = re.compile(r'"local_only"\s*:\s*true\b')
+URL_CREDENTIALS = re.compile(r"(?<=://)[^/@\s]+@")
 INDEPENDENT_LINE = "Espanso process: running independently"
 # Run with the project's Python: where templates are installed, and what each
 # espansr trigger expands to in Espanso's generated match file.
@@ -153,6 +154,11 @@ def private_identities(templates: Path) -> dict[str, set[str]]:
     return found
 
 
+def masked(text: str) -> str:
+    """*text* with any credentials in a URL (``https://user:token@host``) hidden."""
+    return URL_CREDENTIALS.sub("***@", text)
+
+
 def same_template(raw: bytes, identities: dict[str, set[str]]) -> bool:
     """True when *raw* is a version of one of those templates, whatever its name."""
     data = template_object(raw)
@@ -218,8 +224,9 @@ class Delivery:
     # ── helpers ──────────────────────────────────────────────────────────────
 
     def _run(self, argv: Sequence[str], *, cwd: Path = ROOT, **kwargs):
-        self.commands.append(" ".join(argv))
-        print(f"$ {' '.join(argv)}", flush=True)
+        shown = masked(" ".join(argv))  # git ls-remote takes a URL that may carry a token
+        self.commands.append(shown)
+        print(f"$ {shown}", flush=True)
         return self.runner(list(argv), cwd=cwd, **kwargs)
 
     def _git(self, *args: str, **kwargs):
@@ -231,25 +238,79 @@ class Delivery:
             raise DeliveryError(code, f"{what} failed (exit {result.returncode}): {detail}")
         return result
 
-    def _local_only_history(self) -> list[str]:
-        """Templates whose versions in origin/main..HEAD are local only (then or now) or unclear.
+    def _push_urls(self, code: int) -> list[str]:
+        """Every URL ``git push origin`` sends to (a pushurl, several, pushInsteadOf applied)."""
+        listed = self._git("remote", "get-url", "--push", "--all", "origin")
+        urls = [line.strip() for line in (listed.stdout or "").splitlines() if line.strip()]
+        if listed.returncode != 0 or not urls:
+            raise DeliveryError(
+                code, "could not read where git push origin sends, so nothing was pushed"
+            )
+        return urls
 
-        Every version is read, merge commits included; one that cannot be
-        classified counts, so delivery fails closed. So does an earlier version
-        of a template that is not shareable here now (tracked or untracked,
-        listed or not) under a name no shareable file has now: same trigger,
-        capability ID or prompt text, as ``espansr push`` checks.
+    def _destination_commits(self, url: str, code: int) -> list[str]:
+        """Commits and tags *url* has now, read from *url* itself, that this checkout has too.
+
+        Never origin's remote-tracking refs: they describe the fetch URL as of
+        the last fetch, so a pushurl, a second push URL, or a retargeted origin
+        whose narrow fetch refspec leaves the old refs unpruned makes them
+        describe another repository. Only objects this checkout has can bound
+        what a push sends, so any other commit stays in the check.
         """
-        log = self._git(
-            *("log", "-z", "--raw", "-m", "--no-renames", "--no-abbrev", "--diff-filter=AMT"),
-            *("--format=", "origin/main..HEAD", "--", "templates"),
-            text=False,
+        listing = self._git("ls-remote", url)
+        if listing.returncode != 0:
+            raise DeliveryError(
+                code,
+                f"could not read what {masked(url)} already has, so delivery cannot check what "
+                "the push would send; nothing was pushed",
+            )
+        oids = sorted(
+            {line.split("\t", 1)[0] for line in (listing.stdout or "").splitlines() if "\t" in line}
         )
-        if log.returncode != 0:
-            raise DeliveryError(EXIT_PREFLIGHT, "could not read unpushed commits for privacy")
+        if not oids:
+            return []
+        found = self._git(
+            "cat-file", "--batch-check", input="".join(f"{o}\n" for o in oids).encode(), text=False
+        )
+        if found.returncode != 0:
+            raise DeliveryError(code, f"could not compare {masked(url)} with this checkout")
+        fields = (line.split() for line in (found.stdout or b"").decode().splitlines())
+        return [f[0] for f in fields if len(f) == 3 and f[1] in ("commit", "tag")]
+
+    def _local_only_history(self, revision: str = "HEAD", code: int = EXIT_PREFLIGHT) -> list[str]:
+        """Templates in what pushing *revision* to origin sends that are local only or unclear.
+
+        What a push sends is what each push URL lacks, read from that URL now
+        (see ``_destination_commits``), never origin/main: a pushurl, a second
+        push URL, or a stale tracking ref left by a retargeted origin would
+        leave history the destination lacks unchecked. An unreadable
+        destination stops delivery. Every version is read, merge commits
+        included; one that cannot be classified counts, so delivery fails
+        closed. So does an earlier version of a template that is not shareable
+        here now (tracked or untracked, listed or not) under a name no
+        shareable file has now: same trigger, capability ID or prompt text, as
+        ``espansr push`` checks.
+        """
         identities = private_identities(ROOT / "templates")
+        carried: set[str] = set()
+        for url in self._push_urls(code):
+            present = self._destination_commits(url, code)
+            log = self._git(
+                *("log", "-z", "--raw", "-m", "--no-renames", "--no-abbrev", "--diff-filter=AMT"),
+                *(["--stdin"] if present else []),
+                *("--format=", revision, "--", "templates"),
+                input="".join(f"^{oid}\n" for oid in present).encode() if present else None,
+                text=False,
+            )
+            if log.returncode != 0:
+                raise DeliveryError(code, "could not read unpushed commits for privacy")
+            carried |= self._carried(log.stdout or b"", identities)
+        return sorted(carried)
+
+    def _carried(self, raw_log: bytes, identities: dict[str, set[str]]) -> set[str]:
+        """Paths of the versions in a ``git log -z --raw`` listing that must not be sent."""
         shared_now: dict[str, bool] = {}
-        tokens, carried, index = (log.stdout or b"").split(b"\0"), set(), 0
+        tokens, carried, index = raw_log.split(b"\0"), set(), 0
         while index < len(tokens) - 1:
             fields = tokens[index].split()
             if not (tokens[index].startswith(b":") and len(fields) >= 5):
@@ -276,7 +337,7 @@ class Delivery:
                     shared_now[path] = file.is_file() and local_only_state(file) == "shareable"
                 if not shared_now[path]:
                     carried.add(path)
-        return sorted(carried)
+        return carried
 
     def _unlisted_changes(self) -> list[str]:
         """Tracked files outside the listed paths with staged or unstaged changes.
@@ -417,8 +478,9 @@ class Delivery:
 
     def publish(self) -> None:
         # Read the outgoing commits again as they are now (committed, rebased),
-        # so nothing private is pushed whatever changed since preflight.
-        carried = self._local_only_history()
+        # and the branch the push sends, so nothing private is pushed whatever
+        # changed since preflight.
+        carried = self._local_only_history(f"refs/heads/{self.branch}", EXIT_PUBLISH)
         if carried:
             raise DeliveryError(
                 EXIT_PUBLISH,

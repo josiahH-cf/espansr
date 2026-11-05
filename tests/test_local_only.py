@@ -713,7 +713,9 @@ def test_deliver_refuses_unpushed_commits_that_carry_a_local_only_version(
         out = {"git rev-parse --abbrev-ref HEAD": "main\n"}.get(key, "")
         if argv[:3] == ["git", "status", "--porcelain"]:
             out = " M templates/shared.json\n"
-        if argv[:2] == ["git", "log"] and "origin/main..HEAD" in key:
+        if argv[:3] == ["git", "remote", "get-url"]:
+            out = "https://github.com/o/r.git\n"  # its ls-remote answers that it has nothing
+        if argv[:2] == ["git", "log"] and "HEAD" in argv:
             out = raw
         return subprocess.CompletedProcess(argv, 0, stdout=out, stderr="")
 
