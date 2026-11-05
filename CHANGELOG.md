@@ -111,6 +111,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   or one left from the previous URL). `push` fetches `origin` first, so commits
   it already has are still recognized, and `push` and `sync` suggest
   `git reset --soft` only to a ref the destination still has.
+- `scripts/deliver.py` reads what each push URL has from the URL itself, before
+  it commits and again right before it pushes, as `push` and `sync` do. It
+  trusted `origin/main`, which describes the fetch URL, so with a `pushurl`
+  naming another repository, a second push URL, or an origin retargeted while
+  a narrow fetch refspec kept the old `origin/main`, history the destination
+  lacked, a removed local-only draft included, went unchecked and was pushed.
+  A push URL it cannot read now stops delivery, the recheck reads the branch
+  the push sends, and a token in a push URL is hidden in the commands it prints.
 - Saving a template as local only (the editor, an import, a restore) withdraws
   a capability publication that still describes it at once, even when the sync
   that follows stops before it publishes.

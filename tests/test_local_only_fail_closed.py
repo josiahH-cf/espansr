@@ -638,6 +638,188 @@ def test_delivery_still_commits_a_public_change_no_private_template_claims(
     assert "?? templates/mine.json" in _git(repo, "status", "--porcelain")
 
 
+# ── Delivery reads what each push URL has from the URL itself ───────────────
+
+
+def _bare(base: Path, name: str) -> Path:
+    path = base / f"{name}.git"
+    _git(base, "init", "-q", "--bare", "-b", "main", str(path))
+    return path
+
+
+def _delivery_checkout(base: Path, origin: Path) -> Path:
+    repo = base / "repo"
+    _git(base, "init", "-q", "-b", "main", str(repo))
+    _template(repo / "templates" / "shared.json", "Shared")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base public")
+    _git(repo, "remote", "add", "origin", str(origin))
+    _git(repo, "push", "-q", "-u", "origin", "main")
+    return repo
+
+
+def _private_draft_history(repo: Path) -> None:
+    """A local-only template committed and then removed: only history still carries it."""
+    _template(repo / "templates" / "mine.json", "Mine", f"{SECRET} body", local_only=True)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "private draft")
+    _git(repo, "rm", "-q", "templates/mine.json")
+    _git(repo, "commit", "-q", "-m", "drop private draft")
+
+
+NARROW_FETCH = "+refs/heads/feature/*:refs/remotes/origin/feature/*"
+
+
+def _pushurl_names_another_repository(tmp_path: Path) -> tuple[Path, Path]:
+    """Fetch from a private mirror another machine updated; push to a public repository."""
+    mirror, public = _bare(tmp_path, "mirror"), _bare(tmp_path, "public")
+    repo = _delivery_checkout(tmp_path, mirror)
+    _git(repo, "push", "-q", str(public), "main")
+    other = tmp_path / "other"
+    _git(tmp_path, "clone", "-q", str(mirror), str(other))
+    _private_draft_history(other)
+    _git(other, "push", "-q", "origin", "main")
+    _git(repo, "remote", "set-url", "--push", "origin", str(public))
+    return repo, public
+
+
+def _retargeted_with_a_narrow_fetch_refspec(tmp_path: Path) -> tuple[Path, Path]:
+    """origin/main still names the previous repository: the refspec keeps it from pruning."""
+    old, new = _bare(tmp_path, "old"), _bare(tmp_path, "new")
+    repo = _delivery_checkout(tmp_path, old)
+    _git(repo, "push", "-q", str(new), "main")
+    _private_draft_history(repo)
+    _git(repo, "push", "-q", "origin", "main")
+    _git(repo, "config", "remote.origin.fetch", NARROW_FETCH)
+    _git(repo, "remote", "set-url", "origin", str(new))
+    return repo, new
+
+
+def _a_second_push_url(tmp_path: Path) -> tuple[Path, Path]:
+    """origin pushes to an empty mirror first, then to the repository it fetches from."""
+    private, mirror = _bare(tmp_path, "private"), _bare(tmp_path, "mirror")
+    repo = _delivery_checkout(tmp_path, private)
+    _private_draft_history(repo)
+    _git(repo, "push", "-q", "origin", "main")
+    _git(repo, "remote", "set-url", "--add", "--push", "origin", str(mirror))
+    _git(repo, "remote", "set-url", "--add", "--push", "origin", str(private))
+    return repo, mirror
+
+
+def _delivery_to_real_git(deliver, repo: Path):
+    """The real preflight and publish with real Git; gh answers as if it opened PR #1."""
+    opened = []
+
+    def runner(argv, cwd=None, **kwargs):
+        if argv[0] != "gh":
+            return deliver.run(argv, cwd=repo, **kwargs)
+        if argv[1:3] == ["pr", "create"]:
+            opened.append(argv)
+            return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+        if not opened:
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="no pull requests")
+        info = {"number": 1, "state": "OPEN", "url": "https://example.invalid/pull/1"}
+        return subprocess.CompletedProcess(argv, 0, stdout=json.dumps(info), stderr="")
+
+    _template(repo / "templates" / "shared.json", "Shared", "safe delivery change")
+    return deliver.Delivery(
+        branch="agent/feat-shared",
+        message="feat: public change\n",
+        body=None,
+        paths=["templates/shared.json"],
+        runner=runner,
+    )
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [
+        pytest.param(_pushurl_names_another_repository, id="pushurl-names-another-repository"),
+        pytest.param(_retargeted_with_a_narrow_fetch_refspec, id="stale-origin-main"),
+        pytest.param(_a_second_push_url, id="second-push-url"),
+    ],
+)
+def test_delivery_reads_what_each_push_url_has_not_origin_main(
+    tmp_path, git_identity, monkeypatch, setup
+):
+    """origin/main describes the fetch URL; the push can send what another destination lacks."""
+    deliver = _deliver_module()
+    repo, destination = setup(tmp_path)
+    monkeypatch.setattr(deliver, "ROOT", repo)
+    delivery = _delivery_to_real_git(deliver, repo)
+    before = _git(destination, "for-each-ref")
+
+    with pytest.raises(deliver.DeliveryError, match=r"never delivered: \['templates/mine\.json'\]"):
+        delivery.preflight()
+        delivery.publish()  # catching up with origin/main can bring the history in
+
+    assert not [c for c in delivery.commands if c.startswith(("git push", "gh "))]
+    assert _git(destination, "for-each-ref") == before
+    assert not _remote_holds_secret(destination)
+
+
+def test_delivery_stops_when_a_push_url_cannot_be_read(tmp_path, git_identity, monkeypatch):
+    deliver = _deliver_module()
+    repo = _delivery_checkout(tmp_path, _bare(tmp_path, "origin"))
+    _git(repo, "remote", "set-url", "--push", "origin", str(tmp_path / "missing.git"))
+    monkeypatch.setattr(deliver, "ROOT", repo)
+    delivery = _delivery_to_real_git(deliver, repo)
+
+    with pytest.raises(deliver.DeliveryError, match=r"could not read what .*missing\.git") as stop:
+        delivery.preflight()
+
+    assert stop.value.code == deliver.EXIT_PREFLIGHT
+    assert not [c for c in delivery.commands if c.startswith(("git commit", "git push", "gh "))]
+
+
+def test_delivery_leaves_history_the_destination_already_has_to_the_destination(
+    tmp_path, git_identity, monkeypatch
+):
+    """A push never resends what the URL has, so a version already there does not stop it."""
+    deliver = _deliver_module()
+    origin = _bare(tmp_path, "origin")
+    repo = _delivery_checkout(tmp_path, origin)
+    _private_draft_history(repo)
+    _git(repo, "push", "-q", "origin", "main")  # shared before this delivery: outside its control
+    monkeypatch.setattr(deliver, "ROOT", repo)
+    delivery = _delivery_to_real_git(deliver, repo)
+    url = _git(repo, "remote", "get-url", "--push", "origin").strip()
+
+    assert delivery._destination_commits(url, deliver.EXIT_PREFLIGHT) == [
+        _git(repo, "rev-parse", "main").strip()
+    ]
+    delivery.preflight()
+    delivery.publish()
+
+    head = _git(repo, "rev-parse", "HEAD").strip()
+    assert _git(origin, "rev-parse", "refs/heads/agent/feat-shared").strip() == head
+
+
+@pytest.mark.parametrize("shape", ["same-url", "pushurl-to-an-empty-repository", "retargeted"])
+def test_delivery_still_pushes_public_history_to_the_destination_it_reads(
+    tmp_path, git_identity, monkeypatch, shape
+):
+    deliver = _deliver_module()
+    origin = _bare(tmp_path, "origin")
+    repo, destination = _delivery_checkout(tmp_path, origin), origin
+    if shape == "pushurl-to-an-empty-repository":
+        destination = _bare(tmp_path, "public")
+        _git(repo, "remote", "set-url", "--push", "origin", str(destination))
+    elif shape == "retargeted":
+        destination = _bare(tmp_path, "new")
+        _git(repo, "config", "remote.origin.fetch", NARROW_FETCH)
+        _git(repo, "remote", "set-url", "origin", str(destination))
+    monkeypatch.setattr(deliver, "ROOT", repo)
+    delivery = _delivery_to_real_git(deliver, repo)
+
+    delivery.preflight()
+    delivery.publish()
+
+    head = _git(repo, "rev-parse", "HEAD").strip()
+    assert _git(destination, "rev-parse", "refs/heads/agent/feat-shared").strip() == head
+    assert delivery.pr_number == 1
+
+
 def test_catalog_never_describes_a_template_whose_privacy_is_unclear(tmp_path):
     from espansr.core.capability_catalog import build_catalog
 
