@@ -81,6 +81,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `:bring-back-feature` bisects only in a temporary worktree or disposable
+  copy, never in your working tree, and when the old and new behaviors
+  conflict it waits for your answer before restoring instead of choosing
+  itself. `:core-behaviors` never recommends dropping a core behavior, so
+  "approve all" or "all except" can no longer drop one; only an explicit
+  answer naming the item does.
 - A capability publication that still describes a template now marked local
   only is withdrawn the first time espansr reads the catalog (`espansr catalog`,
   the `:coms` popup, a sync), not only at the next complete publish. No read

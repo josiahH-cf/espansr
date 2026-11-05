@@ -254,14 +254,16 @@ would have caught the loss. It restates the lost behavior as an observable
 before and after, finds evidence of the last known-good state in history,
 releases, tests, and documentation, reproduces the current failure, and narrows
 the change that broke it, separating what that change intended from its side
-effect. It restores the old behavior as a forward fix through the current
-owner, never by reverting commits, resetting history, or touching other
+effect; it bisects only in a temporary worktree or disposable copy, never in
+your working tree. It restores the old behavior as a forward fix through the
+current owner, never by reverting commits, resetting history, or touching other
 sessions' work, keeps the newer behavior the change introduced, and adds a
 check that fails before the restoration and passes after. It asks one
 consolidated question batch only when the old and new behaviors genuinely
-conflict, verifies both the restored feature and the newer behavior the way you
-use them, and reports anything only another machine or a person can confirm as
-unverified. Unlike `:troubleshoot`, it starts from a known-good past.
+conflict, and then waits for your answer before restoring anything. It verifies
+both the restored feature and the newer behavior the way you use them, and
+reports anything only another machine or a person can confirm as unverified.
+Unlike `:troubleshoot`, it starts from a known-good past.
 
 Use `:verify` for fresh-context verification, repair, and affected documentation
 alignment; it takes appended notes after its final marker and no longer carries
@@ -365,7 +367,8 @@ protect, and which additional ones it recommends, each with a recommended
 answer. "approve all" or "all except 3, 5" accepts the recommendations, while
 "approve: 1, 4" confirms only those items; anything your reply does not cover
 stays deferred and unchanged, and a core behavior is dropped only when you say
-so. It then runs as a one shot without further questions: it fixes broken
+so. It never recommends dropping one, so "approve all" keeps every core
+behavior. It then runs as a one shot without further questions: it fixes broken
 confirmed behaviors at
 their root, adds the smallest check that fails if each one breaks, records the
 guarantees in the project's own documentation, and ends by re-verifying every
