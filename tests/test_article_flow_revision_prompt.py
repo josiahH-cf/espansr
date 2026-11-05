@@ -17,7 +17,7 @@ from espansr.core.discovery import SYSTEM_TRIGGERS, render_docs_note_list, rende
 ROOT = Path(__file__).resolve().parents[1]
 NOTE = ROOT / "templates" / "article_flow_revision.json"
 # sha256 of the prompt text exactly as Article Flow's owner handed it over.
-SUPPLIED_SHA256 = "0214c913f364a75f000796516f2b11050d0b797835213d64a5ac749904952ff6"
+SUPPLIED_SHA256 = "bce1413fe529b7c35444c830b993829ceda4fe388725fbaf00000dae58c7ee9d"
 
 
 def _note() -> dict:
@@ -57,22 +57,35 @@ def test_it_is_discoverable_in_help_docs_and_its_group():
 @pytest.mark.parametrize(
     "promise",
     [
-        # The article is read and confirmed before anything is edited.
-        "Before editing, confirm that you found and read it by giving its title, canonical link "
-        "and original publication date",
-        "say exactly what is missing instead of guessing",
-        # Source identity is never invented; the export pair is the fallback.
-        "Keep the complete JSON unchanged as source.json",
-        "use the matching Article Flow revision-export source.json and article.md when supplied",
-        "Never invent source identity or calculate a hash from browser-rendered text.",
-        # The author's words stay theirs.
-        "invite me to give it in my own words",
-        "Keep my exact feedback separate from your proposed article.",
-        # The three files the import takes, and the stop on a failed check.
-        "Return three separate UTF-8 files: source.json unchanged, candidate.md with the complete "
-        "revised Markdown, and feedback.md with my exact feedback.",
-        "Failed checks or material conflicts must retain my candidate and stop for resolution",
+        "First contextualize; do not edit yet.",
+        "I should not have to upload or paste source.json or article.md.",
+        "retain the COMPLETE retrieved JSON, unchanged",
+        "Add a fresh unique ?article-flow=REQUEST_TAG",
+        "Never invent identity fields, calculate source hashes from browser-rendered text",
+        "Keep my actual feedback separate from generated text.",
+        "Use a semantic visual_plan for any new or replaced diagram",
+        "An arrow exists only when you supply it",
+        "ONE code block named article-flow-revision containing valid JSON",
+        '"article_flow_revision_version":"1.0.0"',
+        '"candidate_markdown":"COMPLETE_REVISED_BODY"',
+        '"author_feedback":"MY_EXACT_FEEDBACK"',
+        "The backend unpacks it, validates it, and automatically republishes "
+        "within my revision authorization.",
+        "Failed checks retain the candidate for resolution rather than silently rewriting it.",
     ],
 )
 def test_the_prompt_keeps_the_contract_article_flow_imports(promise):
     assert promise in _prose(_note()["content"])
+
+
+def test_the_first_reply_asks_for_thoughts_and_waits_before_drafting():
+    content = _prose(_note()["content"])
+    first_reply = content.split("For your first reply,", 1)[1]
+    assert first_reply.index("after contextualization") < first_reply.index(
+        "confirm you have everything"
+    )
+    assert first_reply.index("then ask for my thoughts") < first_reply.index(
+        "Stop and wait for my reply"
+    )
+    assert first_reply.endswith("before drafting or producing the return block.")
+    assert "Return three separate UTF-8 files" not in content

@@ -147,18 +147,18 @@ eligible prose already in view when its marker is blank. It preserves meaning
 and formatting, returns only the edited text, and makes no authorship claim and
 no guarantee about AI-detector outcomes.
 
-Use `:article-flow-revision` in a chat model to revise an article on The
-Productive Prompter from your own feedback. Article Flow supplied it, and it is
-bundled verbatim. The model first confirms the article it read (title,
-canonical link, original publication date and a brief account). It then edits
-the article's revision source, or the matching Article Flow revision export
-(`source.json` with `article.md`) when you supply one. It invites your feedback
-in your own words if you have not given it, keeps your exact words apart from
-its draft, and returns three files: `source.json` unchanged, `candidate.md` and
-`feedback.md`. Expanding the trigger only inserts the prompt: it starts
-nothing in Article Flow and publishes nothing. Submitting those files to
-Article Flow is your step, and Article Flow does the validation and
-republishing.
+Use `:article-flow-revision` in GPT to revise an article on The Productive
+Prompter from your own feedback. The Article Flow prompt first reads the newest
+article (or the one you name), retrieves its public revision source, confirms
+context and readiness, asks for your thoughts, and waits before drafting. You
+do not upload source.json or article.md. A public repository mirror is the
+fallback when the site cannot be read; fresh request tags avoid stale caches.
+After editing, GPT returns a readable article and one `article-flow-revision`
+code block containing its unchanged source, full Markdown, exact feedback and
+optional semantic diagram plan. Paste that block or the whole response into
+Article Flow. It checks the inputs, renders declared diagram changes, and
+republishes within your actual revision authorization; failed checks retain the
+candidate. Expanding this trigger only inserts the prompt and starts nothing.
 
 Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit that then
 improves the interface. It inspects the affected screens, flows, and states,
