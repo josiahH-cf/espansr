@@ -8,12 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
-- `:article-flow-revision` contextualizes the article and public source first,
-  confirms readiness, asks for your thoughts and waits before editing. Its
-  return is one copyable block with the source, revised Markdown, exact feedback
-  and optional semantic diagram definitions, so no backend file uploads are
-  needed. A public mirror with fresh request tags handles unreadable or cached
-  pages. Article Flow owns validation and automatic republication.
+- `:article-flow-revision` returns a downloadable review ZIP plus an ingestion
+  prompt after the existing contextualize/ask/wait sequence. Its manifest maps
+  article Markdown, verbatim feedback, private notes, authentic source, optional
+  diagram plans and PNG/JPEG captures. Legacy pages can leave source retrieval
+  to the verified backend; no internal file uploads are needed. Article Flow
+  owns source validation, publication and live asset verification.
 
 
 ### Added
