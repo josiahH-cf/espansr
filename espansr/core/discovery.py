@@ -325,8 +325,8 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (
                 ":article-flow-revision",
-                "contextualize an article, ask for thoughts, then copy back "
-                "the revision and diagrams",
+                "contextualize an article, ask for thoughts, then return "
+                "a review ZIP and ingestion prompt",
             ),
         ),
     ),

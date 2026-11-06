@@ -17,7 +17,7 @@ from espansr.core.discovery import SYSTEM_TRIGGERS, render_docs_note_list, rende
 ROOT = Path(__file__).resolve().parents[1]
 NOTE = ROOT / "templates" / "article_flow_revision.json"
 # sha256 of the prompt text exactly as Article Flow's owner handed it over.
-SUPPLIED_SHA256 = "bce1413fe529b7c35444c830b993829ceda4fe388725fbaf00000dae58c7ee9d"
+SUPPLIED_SHA256 = "98fd36eeff955b1398c1e96e57f8b8d9e1f752d9ecd6e13813dbe2c003986bc1"
 
 
 def _note() -> dict:
@@ -65,10 +65,13 @@ def test_it_is_discoverable_in_help_docs_and_its_group():
         "Keep my actual feedback separate from generated text.",
         "Use a semantic visual_plan for any new or replaced diagram",
         "An arrow exists only when you supply it",
-        "ONE code block named article-flow-revision containing valid JSON",
-        '"article_flow_revision_version":"1.0.0"',
-        '"candidate_markdown":"COMPLETE_REVISED_BODY"',
-        '"author_feedback":"MY_EXACT_FEEDBACK"',
+        "create and return a downloadable ZIP file",
+        "Include revision-bundle.json",
+        "Include INGESTION.txt and return its text below the ZIP download",
+        "Put all files at the ZIP root.",
+        '"article_flow_bundle_version":"1.0.0"',
+        '"candidate_file":"SLUG.revised.md"',
+        '"author_feedback_file":"author-feedback.txt"',
         "The backend unpacks it, validates it, and automatically republishes "
         "within my revision authorization.",
         "Failed checks retain the candidate for resolution rather than silently rewriting it.",
@@ -87,5 +90,5 @@ def test_the_first_reply_asks_for_thoughts_and_waits_before_drafting():
     assert first_reply.index("then ask for my thoughts") < first_reply.index(
         "Stop and wait for my reply"
     )
-    assert first_reply.endswith("before drafting or producing the return block.")
+    assert first_reply.endswith("before drafting or producing the ZIP.")
     assert "Return three separate UTF-8 files" not in content

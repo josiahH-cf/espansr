@@ -153,12 +153,14 @@ article (or the one you name), retrieves its public revision source, confirms
 context and readiness, asks for your thoughts, and waits before drafting. You
 do not upload source.json or article.md. A public repository mirror is the
 fallback when the site cannot be read; fresh request tags avoid stale caches.
-After editing, GPT returns a readable article and one `article-flow-revision`
-code block containing its unchanged source, full Markdown, exact feedback and
-optional semantic diagram plan. Paste that block or the whole response into
-Article Flow. It checks the inputs, renders declared diagram changes, and
-republishes within your actual revision authorization; failed checks retain the
-candidate. Expanding this trigger only inserts the prompt and starts nothing.
+After editing, GPT returns a downloadable review ZIP and a copyable ingestion
+prompt. The ZIP contains readable article Markdown, exact feedback, private notes,
+authentic source when available, and optional semantic diagrams or actual local
+PNG/JPEG captures. A manifest maps the files; missing legacy source is retrieved
+and verified by the backend. Return the ZIP to Article Flow, which validates it,
+renders diagrams, imports declared captures and verifies publication within your
+actual authorization. Failed checks retain the candidate. Expanding this trigger
+only inserts the prompt and starts nothing.
 
 Use `:ui-ux-audit` for a standalone, evidence-led UI/UX audit that then
 improves the interface. It inspects the affected screens, flows, and states,
