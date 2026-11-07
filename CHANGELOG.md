@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- Managed Espanso host and workstation defaults now wait 1 s before pasting,
+  allowing a cold or idle clipboard to publish the prompt before paste is sent.
+  Refresh upgrades only exact untouched earlier defaults, including the earlier
+  November marked blocks. Explicit restore choices, custom settings and external
+  timing overrides stay unchanged; clipboard restoration still uses 2 s on hosts
+  and 1.5 s on workstations. This is a bounded timing mitigation, not proof of
+  foreground paste reliability on every application or remote connection.
+- `:reality-max` explains what the thing in context would create if built to
+  specification, adapting its presentation with separate headings and grounded
+  examples for multiple specs. Its fixed summary/takeaway/completion contract
+  is removed; verified results and hypothetical examples remain distinct.
+
 - `:article-flow-revision` returns a downloadable review ZIP plus an ingestion
   prompt after the existing contextualize/ask/wait sequence. Its manifest maps
   article Markdown, verbatim feedback, private notes, authentic source, optional

@@ -1697,8 +1697,8 @@ def test_bundled_adversary_review_template_contract():
 
 
 def test_bundled_reality_max_template_contract():
-    """:reality-max is the comprehensive reality account, now with grounded visual aids."""
-    from espansr.core.output_contract import check_output
+    """:reality-max projects built-to-spec outcomes without a fixed report form."""
+    from espansr.core.output_contract import normalize_contract
 
     repo_root = Path(__file__).resolve().parents[1]
     data = json.loads((repo_root / "templates" / "reality.json").read_text(encoding="utf-8"))
@@ -1710,82 +1710,36 @@ def test_bundled_reality_max_template_contract():
     assert data["stage"] == "reality-max"
     assert data["next_triggers"] == []
     assert data["replaces"] == [":reality"]
+    assert data["produces"] == ["evidence-report"]
+    assert "context-packet" in data["accepts"]
+    assert normalize_contract(data.get("output_contract")) is None
 
-    # The comprehensive path keeps its grounding and its headed output.
     for phrase in (
-        "You are `reality-max`, a context-grounded reality summarizer",
-        "This is the comprehensive path",
-        "never compress this account to imitate it",
+        "what would be created in reality if the thing in context were built to specification",
         "**Verified reality:**",
         "**Proposed reality:**",
         "**Supported inference:**",
         "**Unknown or unresolved:**",
-        "# Reality Summary",
-        "**If you only read one thing:**",
-        "## ✅ Definition of Done",
-    ):
-        assert phrase in content, phrase
-
-    # Boundaries carried over from the original reality note.
-    for phrase in (
         "Report reality; do not perform the underlying work.",
         "conduct gap analysis or a first-principles critique",
         "recommend improvements, alternate approaches, or next steps",
         "tell the user which other prompt or command to run next",
-        "Be comprehensive rather than artificially short",
-    ):
-        assert phrase in content, phrase
-
-    # Format principles are stated on their own terms; no other note is named.
-    for phrase in (
-        "## Format Principles",
-        "a prominent takeaway line, clear descriptive headings, restrained and consistent "
-        "emoji status markers, tables where comparison or structure helps, and a decisive "
-        "final end state",
+        "Tailor the format to the thing",
+        "For a series of specifications, use separate descriptive headings",
+        "Label illustrative examples as hypothetical",
         "Do not add intake gates, confirmation cycles, baselines, change logs, cleanup "
         "sweeps, execution steps, or recommendations unless the target material itself "
         "contains them.",
-    ):
-        assert phrase in content, phrase
-    assert "show-me" not in content
-    assert "Relationship to" not in content
-
-    # Visual aids are grounded, optional, and never decorative.
-    for phrase in (
         "## Visual Aids",
         "workflow or sequence diagram",
         "Mermaid code block",
-        "A table when several components",
         "never estimated",
         "never adds an element to look complete",
         "When nothing would be clearer as a picture, use none.",
     ):
         assert phrase in content, phrase
-
-    contract = data["output_contract"]
-    assert contract["artifact_type"] == "evidence-report"
-    assert data["produces"] == ["evidence-report"]
-    assert "context-packet" in data["accepts"]
-    skeleton = (
-        "# Reality Summary\n\n"
-        "**If you only read one thing:** done.\n\n"
-        "## ✅ Definition of Done\n\nDone.\n"
-    )
-    assert check_output(contract, skeleton).passed
-    # The colon may sit outside the bold, and the closing heading may omit the emoji.
-    colon_outside = skeleton.replace(
-        "**If you only read one thing:**", "**If you only read one thing**:"
-    )
-    assert check_output(contract, colon_outside).passed
-    no_emoji = skeleton.replace("## ✅ Definition of Done", "## Definition of Done")
-    assert check_output(contract, no_emoji).passed
-    assert not check_output(
-        contract, skeleton.replace("**If you only read one thing:** done.", "")
-    ).passed
-    doubled = skeleton + "\n**If you only read one thing**: twice.\n"
-    assert not check_output(contract, doubled).passed
-    assert not check_output(contract, skeleton.replace("Definition of Done", "Done")).passed
-
+    assert "show-me" not in content
+    assert "Relationship to" not in content
     assert content.endswith(INLINE_CONTEXT_FOOTER)
 
 
