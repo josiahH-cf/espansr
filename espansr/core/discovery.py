@@ -256,7 +256,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":sample", "show a concrete final-state projection of what would be made"),
             (
                 ":reality-max",
-                "full account of what was done or would happen, with tables and diagrams",
+                "what the thing would create if built to spec, with a format and examples that fit",
             ),
             (
                 ":reality-min",

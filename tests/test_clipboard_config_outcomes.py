@@ -110,8 +110,11 @@ def test_a_hand_made_opt_out_in_this_release_block_survives_auto(default_yml, ca
     text = text.replace("preserve_clipboard: true\n", "preserve_clipboard: false\n")
     text = text.replace("restore_clipboard_delay: 2000\n", "")
     default_yml.write_text(text, encoding="utf-8")
+    # Remove the new before-paste setting as well: this hand-made opt-out now
+    # matches an earlier release's defaults except for the current marker.
+    text = text.replace("pre_paste_delay: 1000\n", "")
+    default_yml.write_text(text, encoding="utf-8")
     opted_out = default_yml.read_bytes()
-    # Byte for byte the block an earlier release wrote, except for the defaults line.
     assert espanso._block_settings(text.splitlines(True), "host") in (
         espanso._PREVIOUS_MODE_DEFAULTS["host"]
     )

@@ -94,3 +94,29 @@ def test_reality_max_boundary_points_at_any_next_prompt():
     content = _load("reality.json")["content"]
     assert "- tell the user which other prompt or command to run next." in content
     assert "which espansr command" not in content
+
+
+def test_reality_max_does_not_enforce_a_universal_report_shape():
+    from espansr.core.output_contract import normalize_contract
+
+    data = _load("reality.json")
+    assert normalize_contract(data.get("output_contract")) is None
+    for old_requirement in (
+        "Begin with:",
+        "# Reality Summary",
+        "**If you only read one thing:**",
+        "## ✅ Definition of Done",
+    ):
+        assert old_requirement not in data["content"]
+
+
+def test_reality_max_explains_built_to_spec_results_in_a_suitable_form():
+    content = _load("reality.json")["content"]
+    for requirement in (
+        "what would be created in reality if the thing in context were built to specification",
+        "Tailor the format to the thing",
+        "For a series of specifications, use separate descriptive headings",
+        "Include concrete examples",
+        "Label illustrative examples",
+    ):
+        assert requirement in content

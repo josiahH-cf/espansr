@@ -1224,6 +1224,10 @@ _REMOTE_DESKTOP_KEYS: dict = {
     "win32_exclude_orphan_events": False,
     # Injection: paste expansions instead of per-key typing (clean over remote).
     "backend": "Clipboard",
+    # A cold/idle clipboard can still expose the old copy when paste is sent.
+    # Wait before paste as well as before restore; these solve different races.
+    # https://github.com/espanso/espanso/blob/dev/schemas/config.schema.json
+    "pre_paste_delay": 1000,
     # Clipboard safety: the clipboard backend copies the expansion, sends paste,
     # then restores the prior clipboard. At Espanso's default ~300ms, apps that
     # paste asynchronously (browser/Electron chats) read the clipboard after the
@@ -1254,6 +1258,24 @@ _PREVIOUS_MODE_DEFAULTS: dict[str, tuple[dict, ...]] = {
             "show_notifications": False,
             "key_delay": 30,
             "backspace_delay": 30,
+        },
+        # 2026-11: restore was delayed, but paste still used Espanso's short wait.
+        {
+            "win32_exclude_orphan_events": False,
+            "backend": "Clipboard",
+            "preserve_clipboard": True,
+            "restore_clipboard_delay": 2000,
+            "show_icon": False,
+            "show_notifications": False,
+            "key_delay": 30,
+            "backspace_delay": 30,
+        },
+    ),
+    "workstation": (
+        {
+            "win32_exclude_orphan_events": False,
+            "preserve_clipboard": True,
+            "restore_clipboard_delay": 1500,
         },
     ),
 }
@@ -1309,6 +1331,7 @@ MAX_RESTORE_DELAY_MS = 10000
 # INTO this machine (RDP/RustDesk inject keystrokes Espanso would otherwise drop).
 _WORKSTATION_KEYS: dict = {
     "win32_exclude_orphan_events": False,
+    "pre_paste_delay": 1000,
     "preserve_clipboard": True,
     "restore_clipboard_delay": 1500,
 }
@@ -1341,7 +1364,10 @@ _RESTORE_CHOICE_PREFIX = "# espansr-restore-delay: "
 # a chosen delay, or a hand edit since) is never reset, even when its settings
 # happen to equal an earlier release's defaults.
 _DEFAULTS_PREFIX = "# espansr-defaults: "
-_DEFAULTS_LINE = f"{_DEFAULTS_PREFIX}2026-11 (Sync and reinstall keep this block as it is)"
+_PREVIOUS_DEFAULTS_LINE = f"{_DEFAULTS_PREFIX}2026-11 (Sync and reinstall keep this block as it is)"
+_DEFAULTS_LINE = (
+    f"{_DEFAULTS_PREFIX}2026-11-clipboard-ready (Sync and reinstall keep this block as it is)"
+)
 _RESTORE_KEYS = ("preserve_clipboard", "restore_clipboard_delay")
 # Mode-specific BEGIN line prefixes (the written line appends a reapply/revert hint).
 REMOTE_DESKTOP_MARKER = f"{MANAGED_BLOCK_BEGIN_PREFIX} (host)"
@@ -2006,7 +2032,7 @@ def upgrade_previous_default_config(
 
     That is a block, or a legacy first-line-marker file, holding exactly what an
     earlier release wrote. "skipped" means nothing qualified: no espansr
-    settings, a block this release wrote (it carries the defaults line, so a
+    settings, a block this release wrote (it carries the current defaults line, so a
     chosen or hand-made setting is never reset), settings tuned on this machine
     (a chosen restore delay included), or a user line outside the block that the
     new defaults would take over. Those stay byte for byte. "failed" means the
@@ -2032,9 +2058,18 @@ def upgrade_previous_default_config(
     if written is None or written not in _PREVIOUS_MODE_DEFAULTS[layout.mode]:
         return skipped
     block = lines[layout.block_start : layout.block_end]
-    if any(
-        _line_body(line).startswith((_RESTORE_CHOICE_PREFIX, _DEFAULTS_PREFIX)) for line in block
+    if any(_line_body(line).startswith(_RESTORE_CHOICE_PREFIX) for line in block):
+        return skipped
+    defaults_lines = [
+        _line_body(line) for line in block if _line_body(line).startswith(_DEFAULTS_PREFIX)
+    ]
+    if defaults_lines and (
+        defaults_lines != [_PREVIOUS_DEFAULTS_LINE]
+        or written != _PREVIOUS_MODE_DEFAULTS[layout.mode][-1]
     ):
+        # An old marker only qualifies with that release's exact defaults.
+        # In particular, a hand-made opt-out must never look like the older
+        # unmarked "never restore" default and be silently reset.
         return skipped
     outside = lines[: layout.block_start] + lines[layout.block_end :]
     managed = _MANAGED_MODES[layout.mode]

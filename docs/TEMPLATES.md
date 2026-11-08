@@ -84,8 +84,11 @@ Use `:explain` as the single command for current-context distillation,
 source-grounded summarization, and plain-English explanation. It produces a
 faithful one-page result of three paragraphs, bullets, and an occasional inline
 visual, follows optional focus and voicing direction, and stays read-only. Use
-`:reality-max` for a comprehensive account of what the context created or would
-create in reality, with tables and workflow diagrams where they help, and
+`:reality-max` to explain what the thing in context would create in reality if
+built to specification. It adapts its format to the thing, separates multiple
+specifications with descriptive headings, and uses grounded, clearly hypothetical
+examples where helpful. It distinguishes projected results from verified work,
+without mandatory report headings or a fixed output contract. Use
 `:reality-min` for the same account as one or two sentences and at most ten plain
 `- ` bullets (fewer when fewer suffice, and no headings, tables, or nested
 bullets). Use `:gaps` for critical gap or first-principles review: it is a
