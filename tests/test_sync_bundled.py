@@ -762,7 +762,11 @@ def test_all_bundled_templates_end_with_input_spacing():
     inline_replies = {"use_recommendation.json", "accept_all_recommendations.json"}
     for path in sorted(templates_dir.glob("*.json")):
         content = json.loads(path.read_text(encoding="utf-8")).get("content", "")
-        if path.name in inline_replies:
+        if path.name == "article_dive.json":
+            # Owner requested exact bytes, without adding a footer or whitespace.
+            # test_article_dive_prompt.py pins the complete supplied text hash.
+            assert content.endswith("return its link when available.")
+        elif path.name in inline_replies:
             assert "\n" not in content, f"{path.name} must stay on one line"
             assert content[len(content.rstrip()) :] == " ", f"{path.name} must end with one space"
         else:

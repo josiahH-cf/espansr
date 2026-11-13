@@ -38,6 +38,7 @@ INPUT_MARKERS = (
 INPUT_MARKER_EXEMPT = frozenset(
     {
         "article_flow_revision.json",
+        "article_dive.json",  # Verbatim, self-contained open-tab selection directive.
         "use_recommendation.json",
         "accept_all_recommendations.json",
         "q_and_a.json",

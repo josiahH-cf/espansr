@@ -283,6 +283,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             ),
             (":sanitize", "assess sensitive/internal traces and recommend sanitization"),
             (":research", "research a topic with strong evidence handling and synthesis"),
+            (":article-dive", "deeply research selected article tabs in one GPT session"),
             (":audit", "assess evidence and clarify findings in the console; export on request"),
             (
                 ":html-help-doc",
