@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
 - Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Article prompts: `:article-flow-revision`
@@ -705,3 +705,14 @@ Import strips unrecognized fields and de-duplicates names with numeric suffixes.
 - Unused variables (defined but not referenced in content)
 - Duplicate triggers across templates
 - Warning-only collisions with the generated system triggers `:aopen`, `:coms`, and `:sync`
+
+## Article Dive
+
+`:article-dive` inserts the approved article-research directive verbatim. It asks
+the receiving assistant to freeze a deduplicated selection from the latest AI
+summary and open tabs, leave those tabs unchanged, and investigate the sources
+in one accessible GPT research session. The expansion itself does not launch a
+session or read tabs; the receiving assistant must verify browsing and source
+access. It preserves variable article counts, explicit access limitations,
+substantial explanations, and a follow-up session link without generic project
+implementation suggestions.

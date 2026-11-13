@@ -72,6 +72,7 @@ COMMAND_GROUPS = (
         "Gather evidence, ask grounded questions, challenge assumptions, or assess what exists.",
         (
             "research-report",
+            "article-dive",
             "q_and_a",
             "tool-selection",
             "architecture-stabilization",

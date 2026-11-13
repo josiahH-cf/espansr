@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `:article-dive` inserts the approved selected-article research directive verbatim,
+  with discovery entries and a byte-for-byte regression contract.
+
 ### Changed
 
 - Managed Espanso host and workstation defaults now wait 1 s before pasting,
