@@ -87,7 +87,7 @@ def test_annotation_covers_any_material_and_revises_with_advice():
         "annotate",
         "workflow-agnostic",
         "questions, blockers, specifications, repository findings, a plan",
-        "Show the substance itself comprehensively in console/chat.",
+        "show the substance itself immediately and comprehensively in console/chat",
         "stable identifiers",
         "native methods only when the current app actually supports them",
         "ordinary console replies by number, quoted text or name",
@@ -159,7 +159,7 @@ def test_morning_explicitly_starts_suitable_context_backed_work():
         "one Console calendar feed does not establish complete coverage",
         "Check Console and Todoist stability",
         "physical or human-only tasks, ready AI work and work needing context",
-        "This invocation requests suitable context-backed background work",
+        "This invocation requests the review and suitable context-backed background work",
         "a task title alone is insufficient context",
         "Do not duplicate launches, clear a Stop or invent delegation permission",
         "Start independent ready work while unrelated questions remain open",
@@ -173,13 +173,39 @@ def test_night_prepares_and_reschedules_without_changing_deadline_or_recurrence_
         "today and tomorrow in the user's local timezone",
         "Read tomorrow's business and work calendars",
         "Perform supported preparation within the invocation's scope",
-        "settled intent and available evidence establish the new date",
+        "current intent, calendar commitments, dependencies and task context",
         "Preserve every unrelated field",
         "Do not blindly roll all overdue tasks forward",
         "pass a real deadline, end or reinterpret a repetition",
         "existing owning records",
         "If persistence is unavailable, provide the handoff inline",
     )
+
+
+@pytest.mark.parametrize(
+    "stem,instruction",
+    [
+        ("annotate", "apply unambiguous requested revisions directly"),
+        ("tldr", "Produce the summary immediately without a format-approval step"),
+        ("repo_reconcile", "do not stop after the audit to seek blanket or per-item approval"),
+        (
+            "dot_morning",
+            "start eligible work without another permission question or per-task approval",
+        ),
+        ("dot_night", "do not ask for another blanket or per-task approval"),
+        ("riff", "begin exploring, challenging and testing it immediately"),
+    ],
+)
+def test_settled_intent_proceeds_without_an_extra_approval_gate(stem, instruction):
+    assert_instructions(stem, instruction)
+
+
+def test_automaticity_retains_requested_approval_and_required_boundaries():
+    assert_instructions("tldr", "Put any approval request together at the end")
+    assert_instructions("repo_reconcile", "Required specific confirmations still apply")
+    assert_instructions("dot_morning", "actual available grants and routes")
+    assert_instructions("dot_night", "pass a real deadline, end or reinterpret a repetition")
+    assert_instructions("riff", "This is an advisory conversation")
 
 
 def test_riff_tests_the_simplest_option_in_wider_context_without_implementing():

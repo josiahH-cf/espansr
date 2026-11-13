@@ -545,7 +545,9 @@ It accepts native annotations when supported or ordinary replies by number, then
 returns revisions and advice in one pass. `:tldr` gives one simple line per
 relevant item, preserving outcomes, essential context, questions and required
 human decisions; ask `explain <number>` for detail. Neither imposes a workflow or
-fixed item count. `:riff` considers the wider relevant context, challenges the
+fixed item count or asks permission to produce the requested review or summary.
+Unambiguous annotations are applied directly. `:riff` considers the wider
+relevant context, challenges the
 idea, compares options and recommends the simplest thing that could work with
 a concrete test. These prompts do not themselves authorize underlying actions.
 
@@ -573,6 +575,10 @@ and can recover earlier preparation through those records. They retain source
 freshness and omissions, real deadlines, recurring-task meaning, read-only
 calendar boundaries and original work identities. Missing access stays explicit;
 neither prompt adds a schedule, backend, personal metrics or new permissions.
+Invoking the reviews authorizes their supported preparation and eligible work;
+settled intent needs no further blanket or per-task approval. Flexible task dates
+can be selected from sufficient current context without requiring each date
+from the user, while consequential ambiguities still receive a focused question.
 
 ## Creating Templates
 
