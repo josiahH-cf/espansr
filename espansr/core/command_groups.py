@@ -61,6 +61,7 @@ COMMAND_GROUPS = (
             "user-journey-specs",
             "final-state-sample",
             "gap-review",
+            "idea-riff",
             "use_recommendation",
             "accept_all_recommendations",
         ),
@@ -105,6 +106,7 @@ COMMAND_GROUPS = (
             "feedback-apply",
             "audit-packet",
             "sanitize",
+            "repository-reconciliation",
         ),
         ("fresh-model-verification", "feature-delivery-cycle"),
     ),
@@ -115,6 +117,8 @@ COMMAND_GROUPS = (
         (
             "explain_context_comprehensively",
             "show_me",
+            "annotation-review",
+            "item-summary",
             "reality-max",
             "reality-min",
             "visual-workflow",
@@ -141,7 +145,14 @@ COMMAND_GROUPS = (
         "personal-programs",
         "Personal programs",
         "Review finances, work through personal decisions or growth, or coordinate your systems.",
-        ("finance_review", "project_personal_growth", "project_systems", "project_decision_helper"),
+        (
+            "finance_review",
+            "project_personal_growth",
+            "project_systems",
+            "project_decision_helper",
+            "dot-morning-review",
+            "dot-night-review",
+        ),
     ),
     CommandGroup(
         "tools-setup",
@@ -155,6 +166,7 @@ COMMAND_GROUPS = (
             "git_yolo_ps",
             "git_yolo_sh",
             "work_merge",
+            "repository-reconciliation",
             "project_init_llm",
             "tenable_scans",
             "pmi_auth",
@@ -177,6 +189,30 @@ CUSTOM_GROUP = CommandGroup(
 # Role and recognition cue. These describe the bundled job; full, live template
 # descriptions and use/avoid guidance remain visible in the selected detail.
 _CUES = {
+    "annotation-review": (
+        "Annotate anything",
+        "You want the actual material clearly numbered so you can annotate, revise and discuss it.",
+    ),
+    "item-summary": (
+        "Summarize each item",
+        "You want one short line per relevant item, including outcomes, questions and decisions.",
+    ),
+    "repository-reconciliation": (
+        "Reconcile repository",
+        "Integrate relevant work, align main and prune confirmed obsolete owned work.",
+    ),
+    "dot-morning-review": (
+        "Review the day",
+        "Review calendars, Console and tasks, then start suitable background work.",
+    ),
+    "dot-night-review": (
+        "Prepare tomorrow",
+        "Tomorrow needs preparation and appropriate task rescheduling through existing Dot owners.",
+    ),
+    "idea-riff": (
+        "Riff an idea",
+        "Challenge assumptions and compare and test the simplest useful option in context.",
+    ),
     "final-state-sample": (
         "Preview final state",
         "You want a concrete sample of what would be made if the idea were built.",

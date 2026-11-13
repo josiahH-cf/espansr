@@ -32,10 +32,10 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
-- Personal program prompts: `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:repo-reconcile`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
+- Personal program prompts: `:dot-morning`, `:dot-night`, `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:annotate`, `:tldr`, `:riff`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
 - Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Article prompts: `:article-flow-revision`
@@ -536,6 +536,49 @@ not prove semantic quality, implementation, installed behavior or human approval
 The local synthetic examples in `tests/fixtures/sample_final_state.md` and
 `tests/fixtures/user_journey_specs.md` show the distinction without contacting a
 service or changing another project.
+
+## Annotating, Summarizing and Exploring Ideas
+
+`:annotate` presents the actual material inline with stable component numbers,
+whether it is questions, blockers, specifications, repository findings or a plan.
+It accepts native annotations when supported or ordinary replies by number, then
+returns revisions and advice in one pass. `:tldr` gives one simple line per
+relevant item, preserving outcomes, essential context, questions and required
+human decisions; ask `explain <number>` for detail. Neither imposes a workflow or
+fixed item count or asks permission to produce the requested review or summary.
+Unambiguous annotations are applied directly. `:riff` considers the wider
+relevant context, challenges the
+idea, compares options and recommends the simplest thing that could work with
+a concrete test. These prompts do not themselves authorize underlying actions.
+
+## Repository Reconciliation
+
+`:repo-reconcile` examines the whole selected repository, integrates relevant
+work through its established delivery process, aligns local and remote main and
+prunes confirmed obsolete owned branches, worktrees and versions. It checks
+unique work, ownership and active sessions rather than inferring disposability
+from age. Dirty, active, unknown or third-party work remains preserved. CI
+changes require justified scope and policy support; required merge gates are
+never bypassed. Its numbered audit does not add a routine approval ceremony,
+but unresolved intent and consequential destructive or security actions retain
+their required confirmations.
+
+## Dot Morning and Night
+
+`:dot-morning` combines current business and work calendars, Obsidian Agent
+Console Week/Day context and Todoist evidence, asks material questions, starts
+suitable context-backed background work and reports its actual state through
+existing owners. `:dot-night` looks ahead at tomorrow, prepares what can be done
+now, reschedules flexible tasks where settled intent establishes a date and
+leaves preparation recoverable in existing owning records. Both work independently
+and can recover earlier preparation through those records. They retain source
+freshness and omissions, real deadlines, recurring-task meaning, read-only
+calendar boundaries and original work identities. Missing access stays explicit;
+neither prompt adds a schedule, backend, personal metrics or new permissions.
+Invoking the reviews authorizes their supported preparation and eligible work;
+settled intent needs no further blanket or per-task approval. Flexible task dates
+can be selected from sufficient current context without requiring each date
+from the user, while consequential ambiguities still receive a focused question.
 
 ## Creating Templates
 

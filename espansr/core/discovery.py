@@ -183,6 +183,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "sanitize, verify, then merge and push only when the repo state is safe",
             ),
             (
+                ":repo-reconcile",
+                "integrate relevant work, align main, and prune confirmed obsolete owned work",
+            ),
+            (
                 ":prune",
                 "audit what to update, simplify, or delete across code, process, and governance",
             ),
@@ -212,6 +216,14 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         "Personal program prompts",
         24,
         (
+            (
+                ":dot-morning",
+                "review the day, clarify decisions, and start suitable background work",
+            ),
+            (
+                ":dot-night",
+                "prepare tomorrow, reconcile tasks, and leave a recoverable morning handoff",
+            ),
             (
                 ":finance-review",
                 "review household finances, clarify decisions, and deliver a financial PDF",
@@ -252,6 +264,15 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":q&a", "start evidence-bound Q&A on the current context"),
             (":explain", "explain context or sources in a faithful one-page summary"),
             (":show-me", "make material easy to understand with visuals, tables, and analogies"),
+            (
+                ":annotate",
+                "present any material for component-by-component annotation and revision",
+            ),
+            (
+                ":tldr",
+                "one simple summary per relevant item, with decisions and expansion by number",
+            ),
+            (":riff", "explore an idea in context and test the simplest thing that could work"),
             (":visual", "build workflow diagrams or visual explanations"),
             (":sample", "show a concrete final-state projection of what would be made"),
             (

@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `:annotate` makes any material reviewable by component and combines revisions
+  with advice; `:tldr` gives one simple line per relevant item with questions,
+  decisions and expansion by number.
+- `:repo-reconcile` audits and integrates relevant repository work, aligns local
+  and remote main, and prunes only confirmed obsolete owned work while preserving
+  other sessions and required CI.
+- `:dot-morning` reviews calendars, Console and tasks and starts suitable
+  context-backed background work through existing owners; `:dot-night` prepares
+  tomorrow, reconciles flexible task dates and leaves recoverable preparation.
+- `:riff` explores ideas in their wider context, challenges assumptions and
+  recommends the simplest viable option with a concrete test.
+
 - `:article-dive` inserts the approved selected-article research directive verbatim,
   with discovery entries and a byte-for-byte regression contract.
 
