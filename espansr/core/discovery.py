@@ -161,6 +161,10 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
             (":unblock", "clarify blockers in the console and finish authorized remaining work"),
             (":verify", "verify, repair, and align affected docs"),
             (
+                ":oa-stability-check",
+                "verify OA runtime and actual Dot tool calls on JO with minimal canaries",
+            ),
+            (
                 ":core-behaviors",
                 "confirm core behaviors in one question round, then stabilize and verify them",
             ),

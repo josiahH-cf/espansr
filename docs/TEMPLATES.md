@@ -32,7 +32,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 <!-- BEGIN generated note list: run `python scripts/sync_discovery.py --apply` after changing templates -->
 - Agent feature prompts: `:project-init-llm`, `:feature`, `:clarify-features`, `:cb-transcript-feature`
-- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:repo-reconcile`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
+- Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:oa-stability-check`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:repo-reconcile`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
 - Personal program prompts: `:dot-morning`, `:dot-night`, `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
 - Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:annotate`, `:tldr`, `:riff`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
@@ -579,6 +579,18 @@ Invoking the reviews authorizes their supported preparation and eligible work;
 settled intent needs no further blanket or per-task approval. Flexible task dates
 can be selected from sufficient current context without requiring each date
 from the user, while consequential ambiguities still receive a focused question.
+
+## OA Stability Check
+
+`:oa-stability-check` checks OA on JO through the installed runtime and existing
+automation, integration and actual Dot tool owners. It covers Telegram, Todoist,
+configured OpenClaw, Claude, Codex and the actual Dot surfaces, and requires a
+verified identity for a component called OpenCloud. It reuses qualified receipts,
+uses the smallest adequate supported model for minimal authorized canaries, keeps
+fresh/cached/historical/blocked/untested evidence distinct, and removes only exact
+owned disposable resources after reconciliation. Prior denials, Stops, active
+work, mappings and uncertain-effect identities remain with their owners.
+Expanding this prompt starts no check, grants no access and performs no live effect.
 
 ## Creating Templates
 
