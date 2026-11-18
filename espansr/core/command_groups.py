@@ -97,6 +97,7 @@ COMMAND_GROUPS = (
             "dedupe-reconciliation",
             "core-behavior-stabilization",
             "verification",
+            "oa_stability_check",
             "adversarial-review",
             "canary_runner",
             "observed-journey",
@@ -189,6 +190,11 @@ CUSTOM_GROUP = CommandGroup(
 # Role and recognition cue. These describe the bundled job; full, live template
 # descriptions and use/avoid guidance remain visible in the selected detail.
 _CUES = {
+    "oa_stability_check": (
+        "Check OA stability",
+        "Verify OA runtime, automation and actual Dot tool calls through current owners, "
+        "with minimal authorized canaries and reconciled cleanup.",
+    ),
     "annotation-review": (
         "Annotate anything",
         "You want the actual material clearly numbered so you can annotate, revise and discuss it.",

@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `:oa-stability-check` verifies OA on JO through current runtime, automation and
+  granted tool owners, with explicit integration coverage, qualified evidence,
+  minimal authorized canaries and reconciled cleanup.
+
 - `:annotate` makes any material reviewable by component and combines revisions
   with advice; `:tldr` gives one simple line per relevant item with questions,
   decisions and expansion by number.
