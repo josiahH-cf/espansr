@@ -19,4 +19,4 @@ def test_cb_sync_is_public_safe_and_review_gated():
     assert "re-read the affected rows" in content
     assert "Read back the changed rows" in content
     assert "paste-ready rows and say nothing was applied" in content
-    assert content.endswith("MEETING SOURCE, TRACKER LINK, OR NOTES BELOW. IGNORE IF BLANK.\n\n")
+    assert content.endswith("USER CONTEXT, GOAL, OR NOTES BELOW. IGNORE IF BLANK.\n\n")

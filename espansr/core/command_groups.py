@@ -131,6 +131,7 @@ COMMAND_GROUPS = (
             "cliche",
             "article-flow-revision",
             "cb_agenda",
+            "cb_sync",
             "meeting_actions",
         ),
         ("evidence-research-cycle",),
