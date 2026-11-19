@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `:cb-sync` turns approved internal meeting notes into reviewed tracker updates
+  and the next agenda, with a paste-ready fallback when Sheets is read-only.
+
 - `:oa-stability-check` verifies OA on JO through current runtime, automation and
   granted tool owners, with explicit integration coverage, qualified evidence,
   minimal authorized canaries and reconciled cleanup.
