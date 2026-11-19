@@ -35,7 +35,7 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 - Project and maintenance prompts: `:goal`, `:clarity`, `:troubleshoot`, `:fix-this`, `:bring-back-feature`, `:one-shot`, `:continue`, `:unblock`, `:verify`, `:oa-stability-check`, `:core-behaviors`, `:adversary-review`, `:litmus`, `:canary-runner`, `:feedback`, `:docs-qa`, `:work-merge`, `:repo-reconcile`, `:prune`, `:dedupe`, `:test-speed`, `:friction`, `:journey`, `:user-journey`
 - Personal program prompts: `:dot-morning`, `:dot-night`, `:finance-review`, `:project-personal-growth`, `:project-systems`, `:project-decision-helper`
 - Git helpers: `:git-yolo-sh`, `:git-rebase-sh`, `:git-branch-sh`, `:git-yolo-ps`, `:git-rebase-ps`, `:git-branch-ps`
-- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:annotate`, `:tldr`, `:riff`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`
+- Explanation, research, and analysis prompts: `:q&a`, `:explain`, `:show-me`, `:annotate`, `:tldr`, `:riff`, `:visual`, `:sample`, `:reality-max`, `:reality-min`, `:gaps`, `:meta`, `:right-tool`, `:stabilize`, `:context`, `:template-builder`, `:reverse-engineer`, `:sanitize`, `:research`, `:article-dive`, `:audit`, `:html-help-doc`, `:playbook`, `:ui-ux-audit`, `:cb-agenda`, `:cb-sync`
 - Source and capture prompts: `:telegram`, `:meeting-actions`
 - Utility prompts: `:rec`, `:acc`, `:tddh`, `:listen`, `:revise`, `:cliche`
 - Article prompts: `:article-flow-revision`
@@ -45,6 +45,11 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 <!-- END generated note list -->
 
 Use `:espansr` for the current quick reference list.
+
+Use `:cb-sync` with one internal meeting’s approved notes or transcript and the
+existing Tracker and Sync log. It proposes goal and action changes plus the
+next agenda, then applies only explicitly approved items or returns rows to
+paste when it cannot write. Use `:cb-agenda` for a standalone agenda draft.
 
 `:pmi-auth` expands into a thin WSL Bash invocation of the registered PMI
 release's `scripts/pmi-auth`. Run it from any WSL directory with `python3`

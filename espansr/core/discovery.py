@@ -323,6 +323,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
                 "audit, apply, and verify front-end improvements; report in the console",
             ),
             (":cb-agenda", "turn project context into an email-ready meeting agenda"),
+            (":cb-sync", "review meeting evidence, goals, and the next agenda"),
         ),
     ),
     HelpSection(
