@@ -73,6 +73,27 @@ def test_oa_check_preserves_critical_evidence_and_effect_boundaries(note, obliga
     assert obligation in note["content"]
 
 
+def test_oa_check_requires_a_fresh_live_claude_code_canary(note):
+    section = note["content"].split("## Required live retained Dot to Claude Code check\n\n")[1]
+    section = section.split("\n\n## ", 1)[0]
+    for required in (
+        "Every stability run requires a fresh, single-turn, no-write canary",
+        "Personal WSL Claude Code (`P-L-Claude`)",
+        "trusted registered checkout for the exact Project, repository and route",
+        "`oa_launch_managed_local` with the fixed `kind: route-check`",
+        "only when the fixed interface accepts those controls. Otherwise use the route default.",
+        "`oa_launch_status` with `managed=true` under the original operation ID",
+        "`oa_result_read` for that outcome",
+        "a succeeded original outcome with its checked checkout and a completed native turn",
+        "authentication, catalog discovery, fixture results, queued acknowledgments "
+        "and earlier turns",
+        "blocked or unverified and holds the overall pass",
+        "Dispatch once on the bound route",
+        "Reconcile uncertainty only under the original operation identity",
+    ):
+        assert required in section
+
+
 def test_oa_check_covers_named_tools_without_equating_opencloud_with_openclaw(note):
     content = note["content"]
     assert all(name in content for name in ("Telegram:", "Todoist:", "OpenClaw:"))
