@@ -32,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `:oa-stability-check` requires a fresh read-only retained Dot to Claude Code
+  canary with the original successful OA outcome and completed native turn.
+
 - Managed Espanso host and workstation defaults now wait 1 s before pasting,
   allowing a cold or idle clipboard to publish the prompt before paste is sent.
   Refresh upgrades only exact untouched earlier defaults, including the earlier

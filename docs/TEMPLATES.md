@@ -595,6 +595,11 @@ uses the smallest adequate supported model for minimal authorized canaries, keep
 fresh/cached/historical/blocked/untested evidence distinct, and removes only exact
 owned disposable resources after reconciliation. Prior denials, Stops, active
 work, mappings and uncertain-effect identities remain with their owners.
+Every run requires a fresh, one-turn, read-only check from the retained Dot to
+Personal WSL Claude Code (`P-L-Claude`). The original OA outcome and completed
+native turn must agree. Missing grant, checkout or completion evidence holds
+the stability verdict.
+
 Expanding this prompt starts no check, grants no access and performs no live effect.
 
 ## Creating Templates
