@@ -32,6 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `:cb-sync` prepares uncapped agendas, reconciles confirmed meeting outcomes,
+  tracks open and superseded items, and updates the managed invite block for the
+  approved occurrence with a linked, unsent email summary.
+
 - `:oa-stability-check` requires a fresh read-only retained Dot to Claude Code
   canary with the original successful OA outcome and completed native turn.
 

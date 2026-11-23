@@ -46,10 +46,14 @@ quick help (`espansr.core.discovery`), so the surfaces cannot drift; run
 
 Use `:espansr` for the current quick reference list.
 
-Use `:cb-sync` with one internal meeting’s approved notes or transcript and the
-existing Tracker and Sync log. It proposes goal and action changes plus the
-next agenda, then applies only explicitly approved items or returns rows to
-paste when it cannot write. Use `:cb-agenda` for a standalone agenda draft.
+Use `:cb-sync` with the exact shared workbook from private context. Build an
+upcoming agenda from stated priorities or reconcile decisions and actions from
+selected evidence for a completed meeting. Related topics can share a bullet.
+After approval, update the agenda and managed description block on the exact
+Monday or Thursday occurrence, with superseded topics and open actions tracked
+in the existing workbook. Use the same agenda link in the unsent email draft.
+When a required write is unavailable, use the paste-ready output. Use
+`:cb-agenda` for a standalone agenda draft.
 
 `:pmi-auth` expands into a thin WSL Bash invocation of the registered PMI
 release's `scripts/pmi-auth`. Run it from any WSL directory with `python3`
