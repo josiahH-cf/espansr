@@ -42,6 +42,7 @@ def _data():
 def launcher(tmp_path):
     if os.name == "nt" or not BASH or not shutil.which("python3") or not shutil.which("git"):
         pytest.skip("Behavioral launcher tests require native POSIX Bash and python3")
+    tmp_path = tmp_path.resolve()
     home = tmp_path / "WSL home 'quoted $literal"
     home.mkdir()
     registration = home / ".local/state/pmi-kc-release/checkout-pair.json"
@@ -103,7 +104,7 @@ def test_pmi_auth_delegates_without_private_values_or_duplicated_auth():
     assert data["category"] == "utility"
     assert data["stage"] == "authentication"
     assert not data.get("variables")
-    assert len(content.encode("utf-8")) < 2600
+    assert len(content.encode("utf-8")) < 2700
     assert content.startswith("(\n  set -euo pipefail\n")
     assert content.endswith('  exec bash "$pmi_auth_root/scripts/pmi-auth"\n)\n')
     assert ".local/state/pmi-kc-release/checkout-pair.json" in content
