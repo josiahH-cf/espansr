@@ -152,6 +152,16 @@ def test_dot_reviews_reuse_owners_and_preserve_actual_source_and_effect_state(st
         assert distinction in content
 
 
+@pytest.mark.parametrize("stem", ["dot_morning", "dot_night"])
+def test_dot_reviews_include_the_task_caps_and_preserve_earlier_text(stem):
+    expected = (
+        "Keep task titles to one line of at most 80 characters and task descriptions to at most "
+        "5 lines of 100 characters, and keep goal and project outcomes to one sentence; before "
+        "replacing a title or description, keep the earlier text in a Todoist comment."
+    )
+    assert load(stem)["content"].count(expected) == 1
+
+
 def test_morning_explicitly_starts_suitable_context_backed_work():
     assert_instructions(
         "dot_morning",
