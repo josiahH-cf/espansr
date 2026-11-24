@@ -54,6 +54,10 @@ Monday or Thursday occurrence, with superseded topics and open actions tracked
 in the existing workbook. Use the same agenda link in the unsent email draft.
 When a required write is unavailable, use the paste-ready output. Use
 `:cb-agenda` for a standalone agenda draft.
+For completed meetings, `:cb-sync` also proposes changes to shared Cherry Bridge
+entrypoints' checkpoints through Dot's day or week review. Standing changes
+require verification outside the meeting notes. Ask-first changes require
+explicit approval by proposal ID. It returns any unapplied checkpoint proposals.
 
 `:pmi-auth` expands into a thin WSL Bash invocation of the registered PMI
 release's `scripts/pmi-auth`. Run it from any WSL directory with `python3`
