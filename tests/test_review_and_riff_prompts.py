@@ -162,6 +162,39 @@ def test_dot_reviews_include_the_task_caps_and_preserve_earlier_text(stem):
     assert load(stem)["content"].count(expected) == 1
 
 
+def test_dot_reviews_keep_checkpoints_under_their_change_classes():
+    assert_instructions(
+        "dot_morning",
+        "Apply the settled plan as checkpoint changes under each project's entrypoint task in "
+        "Todoist, through the existing Day review owner.",
+        "Apply standing changes without asking: mark a checkpoint done when its result is "
+        "verified, move a waiting entrypoint's next occurrence to its check-by date while "
+        "keeping its recurrence, clear a wait whose condition is verified met, and set or move "
+        "the single `nra` daily pick.",
+        "Propose ask-first changes and apply each only after the user's yes in this "
+        "conversation: adding, removing, reordering or rewording checkpoints, setting or "
+        "changing a checkpoint's due date, including re-dating a wait, changing a mode or "
+        "milestone, and creating an entrypoint.",
+        "Never write a task labeled `na-ai`; suggest its change in one line instead.",
+        "Leave the Daily Note to the Day review owner's Next Right Action and project link "
+        "lines, and never write plan blocks, a Day plan section or copies of checkpoints there.",
+    )
+    assert (
+        "Keep settled preparation and work references in existing owning records when supported "
+        "and authorized so another review can recover them."
+    ) not in load("dot_morning")["content"]
+    assert_instructions(
+        "dot_night",
+        "Entrypoint tasks and their checkpoint sub-tasks are not ordinary flexible tasks.",
+        "Move a waiting entrypoint's next occurrence to its check-by date through the Day "
+        "review owner's entrypoint-check-by change, keeping its recurrence, without asking.",
+        "Propose any change to a checkpoint's due date, including re-dating a wait, and any "
+        "added, removed, reordered or reworded checkpoint, and apply it only after the user's "
+        "yes.",
+        "Never write a task labeled `na-ai`; suggest its change in one line instead.",
+    )
+
+
 def test_morning_explicitly_starts_suitable_context_backed_work():
     assert_instructions(
         "dot_morning",

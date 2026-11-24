@@ -588,6 +588,9 @@ Invoking the reviews authorizes their supported preparation and eligible work;
 settled intent needs no further blanket or per-task approval. Flexible task dates
 can be selected from sufficient current context without requiring each date
 from the user, while consequential ambiguities still receive a focused question.
+Both reviews follow the standing and ask-first change classes for entrypoints
+and checkpoints. The Day review owner applies standing changes directly and
+waits for the user's agreement before applying ask-first changes.
 
 ## OA Stability Check
 
