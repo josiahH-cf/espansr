@@ -199,6 +199,7 @@ class Delivery:
         body: str | None,
         paths: list[str],
         install: bool = True,
+        ordinary_push: bool = False,
         checks_timeout: float = 45 * 60,
         runner: Runner = run,
         python: str | None = None,
@@ -212,6 +213,7 @@ class Delivery:
         self.body = (body or self.commit_body or self.subject).strip() + "\n"
         self.paths = [p.replace("\\", "/") for p in paths]
         self.install = install
+        self.ordinary_push = ordinary_push
         self.checks_timeout = checks_timeout
         self.runner = runner
         self.python = python or project_python()
@@ -456,8 +458,19 @@ class Delivery:
     def local_checks(self) -> None:
         worktree = Path(tempfile.mkdtemp(prefix="esp-deliver-"))
         worktree.rmdir()
+        # Check the whole committed tree even when the release checkout is sparse.
         self._must(
-            self._git("worktree", "add", "--detach", str(worktree), "HEAD"),
+            self._git(
+                "-c",
+                "core.sparseCheckout=false",
+                "-c",
+                "core.sparseCheckoutCone=false",
+                "worktree",
+                "add",
+                "--detach",
+                str(worktree),
+                "HEAD",
+            ),
             EXIT_CHECKS,
             "git worktree add",
         )
@@ -486,8 +499,9 @@ class Delivery:
                 EXIT_PUBLISH,
                 f"unpushed commits carry local-only templates, never delivered: {carried}",
             )
+        force_options = [] if self.ordinary_push else ["--force-with-lease"]
         self._must(
-            self._git("push", "--force-with-lease", "-u", "origin", self.branch),
+            self._git("push", *force_options, "-u", "origin", self.branch),
             EXIT_PUBLISH,
             "git push",
         )
@@ -675,6 +689,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--message-file", required=True, type=Path)
     parser.add_argument("--body-file", type=Path)
     parser.add_argument("--path", dest="paths", action="append", default=[])
+    parser.add_argument(
+        "--ordinary-push",
+        action="store_true",
+        help="use a plain branch push and stop on a non-fast-forward update",
+    )
     parser.add_argument("--no-install", action="store_true", help="only when the user says so")
     parser.add_argument("--checks-timeout-minutes", type=float, default=45)
     args = parser.parse_args(argv)
@@ -692,6 +711,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         body=args.body_file.read_text(encoding="utf-8") if args.body_file else None,
         paths=args.paths,
         install=not args.no_install,
+        ordinary_push=args.ordinary_push,
         checks_timeout=args.checks_timeout_minutes * 60,
     )
     return delivery.deliver()

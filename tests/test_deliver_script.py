@@ -102,19 +102,54 @@ def _delivery(runner, **overrides):
     return deliver.Delivery(**options)
 
 
-def test_delivers_through_every_stage_in_order(live_dir, capsys):
+@pytest.mark.parametrize("ordinary_push", [False, True], ids=["default", "ordinary-push"])
+def test_delivers_through_every_stage_in_order(
+    live_dir, capsys, tmp_path, monkeypatch, ordinary_push
+):
     runner = FakeRunner(live_dir)
-    assert _delivery(runner).deliver() == 0
+    delivery_type = deliver.Delivery
+    monkeypatch.setattr(deliver.shutil, "which", lambda _name: "gh")
+    monkeypatch.setattr(
+        deliver,
+        "Delivery",
+        lambda **options: delivery_type(
+            **options, runner=runner, python="py", is_windows=True, sleep=lambda _: None
+        ),
+    )
+    message_file = tmp_path / "message.txt"
+    message_file.write_text(MESSAGE, encoding="utf-8")
+    args = [
+        "--branch",
+        "agent/feat-a-thing",
+        "--message-file",
+        str(message_file),
+        "--path",
+        TEMPLATE,
+    ]
+    if ordinary_push:
+        args.append("--ordinary-push")
+    assert deliver.main(args) == 0
+
+    push = ["git", "push"]
+    if not ordinary_push:
+        push.append("--force-with-lease")
+    push += ["-u", "origin", "agent/feat-a-thing"]
+    push_calls = [
+        argv for argv in runner.calls if argv[:2] == ["git", "push"] and "--delete" not in argv
+    ]
+    assert push_calls == [push]
 
     order = [
         "git fetch --prune origin",
         "git switch -c agent/feat-a-thing",
         f"git add -- {TEMPLATE}",
         "git commit -F",
-        "git worktree add --detach",
+        "worktree add --detach",
         "py -m pytest -q",
+        "py -m ruff check .",
         "py -m black --check .",
-        "git push --force-with-lease -u origin agent/feat-a-thing",
+        "py scripts/sync_discovery.py --check",
+        " ".join(push),
         "gh pr create --base main --head agent/feat-a-thing --title feat: add a thing",
         "gh pr checks 7 --watch --fail-fast",
         "gh pr merge 7 --squash --subject feat: add a thing (#7)",
@@ -129,6 +164,22 @@ def test_delivers_through_every_stage_in_order(live_dir, capsys):
     assert "DELIVERY SUMMARY" in summary
     assert f"installed copies and Espanso expansions match main: {TEMPLATE}" in summary
     assert deliver.INDEPENDENT_LINE in summary
+
+
+def test_ordinary_push_stops_on_non_fast_forward(live_dir, capsys):
+    push = ["git", "push", "-u", "origin", "agent/feat-a-thing"]
+    runner = FakeRunner(
+        live_dir,
+        overrides={" ".join(push): (1, "! [rejected] agent/feat-a-thing (non-fast-forward)")},
+    )
+
+    assert _delivery(runner, ordinary_push=True).deliver() == deliver.EXIT_PUBLISH
+    assert [argv for argv in runner.calls if argv[:2] == ["git", "push"]] == [push]
+    assert runner.index("py scripts/sync_discovery.py --check") < runner.index(" ".join(push))
+    assert not runner.ran("gh pr")
+    assert not runner.ran("espansr refresh")
+    assert not runner.ran("espansr doctor")
+    assert "non-fast-forward" in capsys.readouterr().out
 
 
 def test_privacy_check_reads_the_push_destination_right_before_the_push(live_dir):
@@ -255,6 +306,53 @@ def _git(cwd: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(cwd), *args], check=True, capture_output=True, text=True
     ).stdout.strip()
+
+
+def test_local_checks_use_a_complete_worktree_from_a_sparse_checkout(tmp_path, monkeypatch):
+    repo = tmp_path / "release"
+    relative = "templates/delivery-fixture.json"
+    _git(tmp_path, "init", "-q", "-b", "main", str(repo))
+    template = repo / relative
+    template.parent.mkdir()
+    template.write_text("{}", encoding="utf-8")
+    _git(repo, "add", "--", relative)
+    _git(
+        repo,
+        "-c",
+        "user.name=Espansr fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-qm",
+        "base",
+    )
+    head = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "sparse-checkout", "set", "--no-cone", "/*", f"!/{relative}")
+    patterns = _git(repo, "sparse-checkout", "list")
+    assert not template.exists()
+
+    checked_worktrees = set()
+
+    def run_local_git_and_check_tree(argv, cwd, **kwargs):
+        if argv[0] == "git":
+            return deliver.run(argv, cwd=repo, **kwargs)
+        if cwd == repo or not (cwd / relative).is_file():
+            pytest.fail("checks did not receive a complete temporary worktree", pytrace=False)
+        if _git(cwd, "rev-parse", "HEAD") != head:
+            pytest.fail("checks did not receive the candidate commit", pytrace=False)
+        checked_worktrees.add(cwd)
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(deliver.tempfile, "tempdir", str(tmp_path))
+    _delivery(run_local_git_and_check_tree).local_checks()
+
+    assert len(checked_worktrees) == 1
+    assert not checked_worktrees.pop().exists()
+    assert not template.exists()
+    assert _git(repo, "sparse-checkout", "list") == patterns
+    assert _git(repo, "config", "--get", "core.sparseCheckout") == "true"
+    assert _git(repo, "config", "--get", "core.sparseCheckoutCone") == "false"
+    assert _git(repo, "status", "--porcelain") == ""
 
 
 @pytest.fixture()
