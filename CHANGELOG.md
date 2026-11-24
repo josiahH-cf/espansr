@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - `:dot-morning` and `:dot-night` follow standing and ask-first rules for
   entrypoint and checkpoint changes through the Day review owner.
+
+- `:cb-sync` proposes shared Cherry Bridge checkpoint changes from confirmed
+  meeting decisions and applies them through Dot review under the standing or
+  ask-first requirements.
 - `:oa-stability-check` requires a fresh read-only retained Dot to Claude Code
   canary with the original successful OA outcome and completed native turn.
 

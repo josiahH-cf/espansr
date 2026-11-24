@@ -65,3 +65,22 @@ def test_cb_sync_preserves_history_and_reconciles_partial_writes(cb_sync):
     assert "unsent email draft" in content
     assert "only the current agenda bullets and the same agenda link" in content
     assert "Exclude history and dropped topics" in content
+
+
+def test_cb_sync_reconciles_shared_checkpoints_through_dot_review(cb_sync):
+    _, _, tail = cb_sync["content"].partition("\n## Reconcile shared checkpoints\n")
+    step, _, _ = tail.partition("\nUSER CONTEXT")
+    assert step, "expected the separate checkpoint reconciliation step"
+    assert "For post-meeting reconciliation only" in step
+    assert "confirmed decisions from the selected completed occurrence" in step
+    assert "shared Cherry Bridge entrypoints' checkpoints" in step
+    assert "proposal ID, class (standing or ask-first), and evidence" in step
+    assert "Keep checkpoint proposals separate from the workbook and invite review" in step
+    assert "verifying its result or condition outside the meeting notes" in step
+    assert "ask-first change only after explicit approval of that proposal ID" in step
+    route = "Use only the `changes` operation of `oa_day_review` or `oa_weekly_review` in Dot"
+    assert route in step
+    assert "Keep each assignee and every existing task ID" in step
+    assert "never write an `na-ai` task" in step
+    assert "If neither review operation is available or one refuses a change" in step
+    assert "return the proposed checkpoint changes and state exactly what was not applied" in step
