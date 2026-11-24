@@ -36,6 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   tracks open and superseded items, and updates the managed invite block for the
   approved occurrence with a linked, unsent email summary.
 
+
+- `:dot-morning` and `:dot-night` state the task field caps and one-sentence
+  outcomes, and preserve replaced task text in a Todoist comment.
 - `:oa-stability-check` requires a fresh read-only retained Dot to Claude Code
   canary with the original successful OA outcome and completed native turn.
 
