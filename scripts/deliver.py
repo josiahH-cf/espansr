@@ -458,8 +458,19 @@ class Delivery:
     def local_checks(self) -> None:
         worktree = Path(tempfile.mkdtemp(prefix="esp-deliver-"))
         worktree.rmdir()
+        # Check the whole committed tree even when the release checkout is sparse.
         self._must(
-            self._git("worktree", "add", "--detach", str(worktree), "HEAD"),
+            self._git(
+                "-c",
+                "core.sparseCheckout=false",
+                "-c",
+                "core.sparseCheckoutCone=false",
+                "worktree",
+                "add",
+                "--detach",
+                str(worktree),
+                "HEAD",
+            ),
             EXIT_CHECKS,
             "git worktree add",
         )

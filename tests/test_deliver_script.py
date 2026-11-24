@@ -144,7 +144,7 @@ def test_delivers_through_every_stage_in_order(
         "git switch -c agent/feat-a-thing",
         f"git add -- {TEMPLATE}",
         "git commit -F",
-        "git worktree add --detach",
+        "worktree add --detach",
         "py -m pytest -q",
         "py -m ruff check .",
         "py -m black --check .",
@@ -306,6 +306,53 @@ def _git(cwd: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(cwd), *args], check=True, capture_output=True, text=True
     ).stdout.strip()
+
+
+def test_local_checks_use_a_complete_worktree_from_a_sparse_checkout(tmp_path, monkeypatch):
+    repo = tmp_path / "release"
+    relative = "templates/delivery-fixture.json"
+    _git(tmp_path, "init", "-q", "-b", "main", str(repo))
+    template = repo / relative
+    template.parent.mkdir()
+    template.write_text("{}", encoding="utf-8")
+    _git(repo, "add", "--", relative)
+    _git(
+        repo,
+        "-c",
+        "user.name=Espansr fixture",
+        "-c",
+        "user.email=fixture@example.invalid",
+        "commit",
+        "-qm",
+        "base",
+    )
+    head = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "sparse-checkout", "set", "--no-cone", "/*", f"!/{relative}")
+    patterns = _git(repo, "sparse-checkout", "list")
+    assert not template.exists()
+
+    checked_worktrees = set()
+
+    def run_local_git_and_check_tree(argv, cwd, **kwargs):
+        if argv[0] == "git":
+            return deliver.run(argv, cwd=repo, **kwargs)
+        if cwd == repo or not (cwd / relative).is_file():
+            pytest.fail("checks did not receive a complete temporary worktree", pytrace=False)
+        if _git(cwd, "rev-parse", "HEAD") != head:
+            pytest.fail("checks did not receive the candidate commit", pytrace=False)
+        checked_worktrees.add(cwd)
+        return subprocess.CompletedProcess(argv, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(deliver.tempfile, "tempdir", str(tmp_path))
+    _delivery(run_local_git_and_check_tree).local_checks()
+
+    assert len(checked_worktrees) == 1
+    assert not checked_worktrees.pop().exists()
+    assert not template.exists()
+    assert _git(repo, "sparse-checkout", "list") == patterns
+    assert _git(repo, "config", "--get", "core.sparseCheckout") == "true"
+    assert _git(repo, "config", "--get", "core.sparseCheckoutCone") == "false"
+    assert _git(repo, "status", "--porcelain") == ""
 
 
 @pytest.fixture()
