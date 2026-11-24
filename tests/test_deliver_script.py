@@ -102,9 +102,42 @@ def _delivery(runner, **overrides):
     return deliver.Delivery(**options)
 
 
-def test_delivers_through_every_stage_in_order(live_dir, capsys):
+@pytest.mark.parametrize("ordinary_push", [False, True], ids=["default", "ordinary-push"])
+def test_delivers_through_every_stage_in_order(
+    live_dir, capsys, tmp_path, monkeypatch, ordinary_push
+):
     runner = FakeRunner(live_dir)
-    assert _delivery(runner).deliver() == 0
+    delivery_type = deliver.Delivery
+    monkeypatch.setattr(deliver.shutil, "which", lambda _name: "gh")
+    monkeypatch.setattr(
+        deliver,
+        "Delivery",
+        lambda **options: delivery_type(
+            **options, runner=runner, python="py", is_windows=True, sleep=lambda _: None
+        ),
+    )
+    message_file = tmp_path / "message.txt"
+    message_file.write_text(MESSAGE, encoding="utf-8")
+    args = [
+        "--branch",
+        "agent/feat-a-thing",
+        "--message-file",
+        str(message_file),
+        "--path",
+        TEMPLATE,
+    ]
+    if ordinary_push:
+        args.append("--ordinary-push")
+    assert deliver.main(args) == 0
+
+    push = ["git", "push"]
+    if not ordinary_push:
+        push.append("--force-with-lease")
+    push += ["-u", "origin", "agent/feat-a-thing"]
+    push_calls = [
+        argv for argv in runner.calls if argv[:2] == ["git", "push"] and "--delete" not in argv
+    ]
+    assert push_calls == [push]
 
     order = [
         "git fetch --prune origin",
@@ -113,8 +146,10 @@ def test_delivers_through_every_stage_in_order(live_dir, capsys):
         "git commit -F",
         "git worktree add --detach",
         "py -m pytest -q",
+        "py -m ruff check .",
         "py -m black --check .",
-        "git push --force-with-lease -u origin agent/feat-a-thing",
+        "py scripts/sync_discovery.py --check",
+        " ".join(push),
         "gh pr create --base main --head agent/feat-a-thing --title feat: add a thing",
         "gh pr checks 7 --watch --fail-fast",
         "gh pr merge 7 --squash --subject feat: add a thing (#7)",
@@ -129,6 +164,22 @@ def test_delivers_through_every_stage_in_order(live_dir, capsys):
     assert "DELIVERY SUMMARY" in summary
     assert f"installed copies and Espanso expansions match main: {TEMPLATE}" in summary
     assert deliver.INDEPENDENT_LINE in summary
+
+
+def test_ordinary_push_stops_on_non_fast_forward(live_dir, capsys):
+    push = ["git", "push", "-u", "origin", "agent/feat-a-thing"]
+    runner = FakeRunner(
+        live_dir,
+        overrides={" ".join(push): (1, "! [rejected] agent/feat-a-thing (non-fast-forward)")},
+    )
+
+    assert _delivery(runner, ordinary_push=True).deliver() == deliver.EXIT_PUBLISH
+    assert [argv for argv in runner.calls if argv[:2] == ["git", "push"]] == [push]
+    assert runner.index("py scripts/sync_discovery.py --check") < runner.index(" ".join(push))
+    assert not runner.ran("gh pr")
+    assert not runner.ran("espansr refresh")
+    assert not runner.ran("espansr doctor")
+    assert "non-fast-forward" in capsys.readouterr().out
 
 
 def test_privacy_check_reads_the_push_destination_right_before_the_push(live_dir):
