@@ -554,6 +554,9 @@ service or changing another project.
 
 `:annotate` presents the actual material inline with stable component numbers,
 whether it is questions, blockers, specifications, repository findings or a plan.
+For a Project, Goal or portfolio, it leads with the lasting outcomes and the
+evidence that would show each is true. Separate tables let you correct the
+end states, fill in missing context and weigh actions that could help.
 It accepts native annotations when supported or ordinary replies by number, then
 returns revisions and advice in one pass. `:tldr` gives one simple line per
 relevant item, preserving outcomes, essential context, questions and required
