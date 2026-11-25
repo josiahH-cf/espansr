@@ -32,6 +32,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- `:annotate` leads reviews of Project and portfolio direction with lasting
+  outcomes and observable evidence. Each Project gets separate tables for end
+  states, missing context and suggested actions.
+
 - `:cb-sync` prepares uncapped agendas, reconciles confirmed meeting outcomes,
   tracks open and superseded items, and updates the managed invite block for the
   approved occurrence with a linked, unsent email summary.

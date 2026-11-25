@@ -97,6 +97,23 @@ def test_annotation_covers_any_material_and_revises_with_advice():
     )
 
 
+def test_directional_annotation_separates_success_from_context_and_possible_actions():
+    assert_instructions(
+        "annotate",
+        "space, Goal, Project, portfolio",
+        "lasting end states",
+        "observable evidence",
+        "separate tables",
+        "End states",
+        "Missing context",
+        "Suggested actions",
+        "Label proposals and inferences",
+        "multiple end states",
+        "arbitrary first result",
+        "invent a deadline",
+    )
+
+
 def test_tldr_preserves_each_item_outcome_and_human_decision():
     assert_instructions(
         "tldr",
