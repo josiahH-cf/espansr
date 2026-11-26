@@ -581,23 +581,21 @@ their required confirmations.
 
 ## Dot Morning and Night
 
-`:dot-morning` combines current business and work calendars, Obsidian Agent
-Console Week/Day context and Todoist evidence, asks material questions, starts
-suitable context-backed background work and reports its actual state through
-existing owners. `:dot-night` looks ahead at tomorrow, prepares what can be done
-now, reschedules flexible tasks where settled intent establishes a date and
-leaves preparation recoverable in existing owning records. Both work independently
-and can recover earlier preparation through those records. They retain source
-freshness and omissions, real deadlines, recurring-task meaning, read-only
-calendar boundaries and original work identities. Missing access stays explicit;
-neither prompt adds a schedule, backend, personal metrics or new permissions.
-Invoking the reviews authorizes their supported preparation and eligible work;
-settled intent needs no further blanket or per-task approval. Flexible task dates
-can be selected from sufficient current context without requiring each date
-from the user, while consequential ambiguities still receive a focused question.
-Both reviews follow the standing and ask-first change classes for entrypoints
-and checkpoints. The Day review owner applies standing changes directly and
-waits for the user's agreement before applying ask-first changes.
+`:dot-morning` opens the existing OA Day review and uses its frame, calendar,
+current Todoist tasks, Project records and original work receipts for the day's
+rundown. It shows what is underway, what is blocked and the next viable action
+for each relevant Project. A rundown leaves task and execution state alone.
+When the user requests work, Dot resolves the exact Project and task from the
+conversation and current records, reads back any settled Project context edit,
+and sends the bound request through the existing work owner.
+
+`:dot-night` looks ahead at tomorrow, prepares what can be done now, reschedules
+flexible tasks where settled intent establishes a date and leaves preparation
+recoverable in existing owning records. Its invocation authorizes supported
+preparation and eligible work. Both prompts retain freshness, omissions, real
+deadlines, recurring-task meaning, read-only calendars and original work
+identities. For settled changes, follow the Day review owner's standing and
+ask-first checkpoint rules. Neither prompt adds a schedule or permissions.
 
 ## OA Stability Check
 
