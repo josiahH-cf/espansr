@@ -185,7 +185,8 @@ def test_dot_reviews_keep_checkpoints_under_their_change_classes():
         "Apply the settled plan as checkpoint changes under each project's entrypoint task in "
         "Todoist, through the existing Day review owner.",
         "mark a checkpoint done after verification",
-        "move a waiting entrypoint's next occurrence to its check-by date while keeping its recurrence",
+        "move a waiting entrypoint's next occurrence to its check-by date while keeping its "
+        "recurrence",
         "clear a verified wait",
         "set or move the single `nra` daily pick",
         "Ask-first proposals to add, remove, reorder or reword checkpoints, change a "
