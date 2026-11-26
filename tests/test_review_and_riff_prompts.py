@@ -184,17 +184,16 @@ def test_dot_reviews_keep_checkpoints_under_their_change_classes():
         "dot_morning",
         "Apply the settled plan as checkpoint changes under each project's entrypoint task in "
         "Todoist, through the existing Day review owner.",
-        "Apply standing changes without asking: mark a checkpoint done when its result is "
-        "verified, move a waiting entrypoint's next occurrence to its check-by date while "
-        "keeping its recurrence, clear a wait whose condition is verified met, and set or move "
-        "the single `nra` daily pick.",
-        "Propose ask-first changes and apply each only after the user's yes in this "
-        "conversation: adding, removing, reordering or rewording checkpoints, setting or "
-        "changing a checkpoint's due date, including re-dating a wait, changing a mode or "
-        "milestone, and creating an entrypoint.",
-        "Never write a task labeled `na-ai`; suggest its change in one line instead.",
-        "Leave the Daily Note to the Day review owner's Next Right Action and project link "
-        "lines, and never write plan blocks, a Day plan section or copies of checkpoints there.",
+        "mark a checkpoint done after verification",
+        "move a waiting entrypoint's next occurrence to its check-by date while keeping its recurrence",
+        "clear a verified wait",
+        "set or move the single `nra` daily pick",
+        "Ask-first proposals to add, remove, reorder or reword checkpoints, change a "
+        "checkpoint date or wait, or change a mode or milestone need the user's agreement.",
+        "Send a directly settled change through its existing owner.",
+        "Entrypoint creation uses its existing setup owner.",
+        "Return a one-line suggestion for a task labeled `na-ai`.",
+        "Leave the Daily Note to the Day review owner's Next Right Action and project link lines.",
     )
     assert (
         "Keep settled preparation and work references in existing owning records when supported "
@@ -212,16 +211,17 @@ def test_dot_reviews_keep_checkpoints_under_their_change_classes():
     )
 
 
-def test_morning_explicitly_starts_suitable_context_backed_work():
+def test_morning_starts_suitable_context_backed_work_when_requested():
     assert_instructions(
         "dot_morning",
         "current Week context, known answers and original work receipts",
         "one Console calendar feed does not establish complete coverage",
         "Check Console and Todoist stability",
         "physical or human-only tasks, ready AI work and work needing context",
-        "This invocation requests the review and suitable context-backed background work",
-        "a task title alone is insufficient context",
-        "Do not duplicate launches, clear a Stop or invent delegation permission",
+        "When the user asks to start work",
+        "A task title alone is insufficient context",
+        "Before launch, check for an existing admission and keep its identity.",
+        "preserve every Stop",
         "Start independent ready work while unrelated questions remain open",
         "A queued response does not prove execution",
     )
