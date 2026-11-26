@@ -21,9 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - `:repo-reconcile` audits and integrates relevant repository work, aligns local
   and remote main, and prunes only confirmed obsolete owned work while preserving
   other sessions and required CI.
-- `:dot-morning` reviews calendars, Console and tasks and starts suitable
-  context-backed background work through existing owners; `:dot-night` prepares
-  tomorrow, reconciles flexible task dates and leaves recoverable preparation.
+- `:dot-morning` opens the OA Day review for a project-by-project rundown and
+  hands off requested work with the exact Project, task and current context.
+  `:dot-night` prepares tomorrow, reconciles flexible task dates and leaves
+  recoverable preparation.
 - `:riff` explores ideas in their wider context, challenges assumptions and
   recommends the simplest viable option with a concrete test.
 

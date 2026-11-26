@@ -222,7 +222,7 @@ PROMPT_SECTIONS: Tuple[HelpSection, ...] = (
         (
             (
                 ":dot-morning",
-                "review the day, clarify decisions, and start suitable background work",
+                "review the day by Project and start requested work",
             ),
             (
                 ":dot-night",
